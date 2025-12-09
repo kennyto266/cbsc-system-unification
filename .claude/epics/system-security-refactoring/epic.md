@@ -4,7 +4,7 @@ status: backlog
 created: 2025-12-09T11:13:49Z
 progress: 0%
 prd: .claude/prds/system-security-refactoring.md
-github: [Will be updated when synced to GitHub]
+github: https://github.com/your-repo/CODEX--/tree/master/.claude/epics/system-security-refactoring
 ---
 
 # Epic: system-security-refactoring
