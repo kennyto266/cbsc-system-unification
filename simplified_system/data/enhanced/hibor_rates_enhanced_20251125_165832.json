@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "success": true,
+    "record_count": 7228,
+    "collection_time_ms": 453.61,
+    "date_range": {
+      "start": "1996-07-01",
+      "end": "2025-10-31",
+      "days": 10714,
+      "years": 29.3
+    },
+    "years_of_data": 29.333333333333332,
+    "data_shape": [
+      7228,
+      8
+    ],
+    "columns": [
+      "end_of_day",
+      "ir_overnight",
+      "ir_1w",
+      "ir_1m",
+      "ir_3m",
+      "ir_6m",
+      "ir_9m",
+      "ir_12m"
+    ],
+    "sample_data": {
+      "end_of_day": {

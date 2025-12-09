@@ -1,0 +1,27 @@
+Complete CBSC Strategies Parameter Optimization Report
+Generated: 20251204_205615
+============================================================
+
+Optimization Overview:
+  Data Period: 2010-09-01 to 2024-12-31
+  Trading Days: 3740
+  Strategies Tested: 4
+
+Strategy Performance Summary:
+----------------------------------------
+
+SENTIMENT MOMENTUM:
+  Total Combinations Tested: 12,600
+  Combinations with Trades: 0
+
+VOLUME REVERSAL:
+  Total Combinations Tested: 19,200
+  Combinations with Trades: 0
+
+RISK ADJUSTED BOLLINGER:
+  Total Combinations Tested: 36,864
+  Combinations with Trades: 0
+
+TIME DECAY MOMENTUM:
+  Total Combinations Tested: 14,400
+  Combinations with Trades: 0

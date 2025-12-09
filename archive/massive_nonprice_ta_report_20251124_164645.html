@@ -1,0 +1,358 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>大規模非價格技術指標優化報告</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background: #2c3e50; color: white; padding: 20px; text-align: center; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .strategy { background: #f8f9fa; margin: 10px 0; padding: 10px; }
+        .best { background: #d4edda; border: 1px solid #c3e6cb; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>大規模非價格技術指標優化報告</h1>
+        <p>香港政府9個非價格數據源 × 5種技術指標類型 × 0-300參數範圍</p>
+    </div>
+
+    <div class="section">
+        <h2>優化總結</h2>
+        <div class="metric">總策略數: 23,855</div>
+        <div class="metric">成功策略: 23,855</div>
+        <div class="metric">成功率: 100.0%</div>
+        <div class="metric">最佳評分: 212.8</div>
+        <div class="metric">數據源: 9個香港政府非價格數據</div>
+        <div class="metric">技術指標: 5種指標類型</div>
+        <div class="metric">參數範圍: 1-300 (完整覆蓋)</div>
+    </div>
+
+    <div class="section">
+        <h2>非價格數據源表現</h2>
+        <table>
+            <tr><th>數據源</th><th>策略數</th><th>平均評分</th><th>最高評分</th><th>平均Sharpe</th></tr>
+
+            <tr>
+                <td>HB (HIBOR利率數據)</td>
+                <td>2,634</td>
+                <td>55.0</td>
+                <td>144.1</td>
+                <td>-0.208</td>
+            </tr>
+
+            <tr>
+                <td>GD (GDP數據)</td>
+                <td>2,650</td>
+                <td>31.0</td>
+                <td>130.4</td>
+                <td>-0.581</td>
+            </tr>
+
+            <tr>
+                <td>RT (零售銷售數據)</td>
+                <td>2,639</td>
+                <td>71.1</td>
+                <td>164.2</td>
+                <td>-0.108</td>
+            </tr>
+
+            <tr>
+                <td>PT (物業市場數據)</td>
+                <td>2,745</td>
+                <td>0.0</td>
+                <td>0.0</td>
+                <td>-1.362</td>
+            </tr>
+
+            <tr>
+                <td>TR (貿易數據)</td>
+                <td>2,635</td>
+                <td>26.4</td>
+                <td>132.7</td>
+                <td>-0.595</td>
+            </tr>
+
+            <tr>
+                <td>TS (旅遊數據)</td>
+                <td>2,636</td>
+                <td>59.9</td>
+                <td>146.9</td>
+                <td>-0.225</td>
+            </tr>
+
+            <tr>
+                <td>CP (CPI通脹數據)</td>
+                <td>2,638</td>
+                <td>11.8</td>
+                <td>212.8</td>
+                <td>-1.044</td>
+            </tr>
+
+            <tr>
+                <td>UE (失業率數據)</td>
+                <td>2,635</td>
+                <td>64.3</td>
+                <td>168.4</td>
+                <td>-0.169</td>
+            </tr>
+
+            <tr>
+                <td>MB (貨幣基礎數據)</td>
+                <td>2,643</td>
+                <td>72.7</td>
+                <td>172.6</td>
+                <td>-0.034</td>
+            </tr>
+
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>技術指標類型表現</h2>
+        <table>
+            <tr><th>指標類型</th><th>策略數</th><th>平均評分</th><th>最高評分</th><th>平均Sharpe</th></tr>
+
+            <tr>
+                <td>RSI</td>
+                <td>318</td>
+                <td>5.2</td>
+                <td>126.9</td>
+                <td>-1.296</td>
+            </tr>
+
+            <tr>
+                <td>MACD</td>
+                <td>22,500</td>
+                <td>44.2</td>
+                <td>172.6</td>
+                <td>-0.476</td>
+            </tr>
+
+            <tr>
+                <td>BB</td>
+                <td>477</td>
+                <td>41.7</td>
+                <td>212.8</td>
+                <td>-0.338</td>
+            </tr>
+
+            <tr>
+                <td>CCI</td>
+                <td>160</td>
+                <td>42.9</td>
+                <td>206.2</td>
+                <td>-0.297</td>
+            </tr>
+
+            <tr>
+                <td>KDJ</td>
+                <td>400</td>
+                <td>27.2</td>
+                <td>88.7</td>
+                <td>-0.555</td>
+            </tr>
+
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>頂級非價格技術指標策略 (Top 20)</h2>
+
+        <div class="strategy best">
+            <h3>#1 CP_BB_[10, 2.0]</h3>
+            <div class="metric">質量評分: 212.8</div>
+            <div class="metric">年化回報: 52.67%</div>
+            <div class="metric">Sharpe比率: 3.336</div>
+            <div class="metric">最大回撤: -5.21%</div>
+            <div class="metric">交易次數: 126</div>
+        </div>
+
+        <div class="strategy best">
+            <h3>#2 CP_BB_[20, 2.0]</h3>
+            <div class="metric">質量評分: 206.6</div>
+            <div class="metric">年化回報: 51.17%</div>
+            <div class="metric">Sharpe比率: 3.220</div>
+            <div class="metric">最大回撤: -4.74%</div>
+            <div class="metric">交易次數: 112</div>
+        </div>
+
+        <div class="strategy best">
+            <h3>#3 CP_CCI_[20]</h3>
+            <div class="metric">質量評分: 206.2</div>
+            <div class="metric">年化回報: 51.11%</div>
+            <div class="metric">Sharpe比率: 3.215</div>
+            <div class="metric">最大回撤: -4.74%</div>
+            <div class="metric">交易次數: 110</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#4 CP_CCI_[90]</h3>
+            <div class="metric">質量評分: 202.9</div>
+            <div class="metric">年化回報: 42.66%</div>
+            <div class="metric">Sharpe比率: 3.435</div>
+            <div class="metric">最大回撤: -2.08%</div>
+            <div class="metric">交易次數: 82</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#5 CP_BB_[50, 2.0]</h3>
+            <div class="metric">質量評分: 199.3</div>
+            <div class="metric">年化回報: 46.75%</div>
+            <div class="metric">Sharpe比率: 3.183</div>
+            <div class="metric">最大回撤: -4.74%</div>
+            <div class="metric">交易次數: 94</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#6 CP_BB_[55, 2.0]</h3>
+            <div class="metric">質量評分: 198.2</div>
+            <div class="metric">年化回報: 49.78%</div>
+            <div class="metric">Sharpe比率: 3.046</div>
+            <div class="metric">最大回撤: -4.74%</div>
+            <div class="metric">交易次數: 94</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#7 CP_BB_[75, 1.5]</h3>
+            <div class="metric">質量評分: 197.8</div>
+            <div class="metric">年化回報: 44.67%</div>
+            <div class="metric">Sharpe比率: 3.128</div>
+            <div class="metric">最大回撤: -3.33%</div>
+            <div class="metric">交易次數: 110</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#8 CP_BB_[90, 1.5]</h3>
+            <div class="metric">質量評分: 197.5</div>
+            <div class="metric">年化回報: 45.16%</div>
+            <div class="metric">Sharpe比率: 3.172</div>
+            <div class="metric">最大回撤: -5.66%</div>
+            <div class="metric">交易次數: 100</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#9 CP_BB_[90, 2.0]</h3>
+            <div class="metric">質量評分: 196.7</div>
+            <div class="metric">年化回報: 41.33%</div>
+            <div class="metric">Sharpe比率: 3.280</div>
+            <div class="metric">最大回撤: -2.95%</div>
+            <div class="metric">交易次數: 84</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#10 CP_BB_[35, 2.0]</h3>
+            <div class="metric">質量評分: 195.3</div>
+            <div class="metric">年化回報: 46.47%</div>
+            <div class="metric">Sharpe比率: 3.028</div>
+            <div class="metric">最大回撤: -4.74%</div>
+            <div class="metric">交易次數: 104</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#11 CP_BB_[75, 2.0]</h3>
+            <div class="metric">質量評分: 189.2</div>
+            <div class="metric">年化回報: 40.45%</div>
+            <div class="metric">Sharpe比率: 3.041</div>
+            <div class="metric">最大回撤: -3.33%</div>
+            <div class="metric">交易次數: 92</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#12 CP_BB_[25, 2.0]</h3>
+            <div class="metric">質量評分: 187.6</div>
+            <div class="metric">年化回報: 44.91%</div>
+            <div class="metric">Sharpe比率: 2.810</div>
+            <div class="metric">最大回撤: -4.74%</div>
+            <div class="metric">交易次數: 108</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#13 CP_BB_[80, 2.0]</h3>
+            <div class="metric">質量評分: 187.5</div>
+            <div class="metric">年化回報: 39.95%</div>
+            <div class="metric">Sharpe比率: 3.000</div>
+            <div class="metric">最大回撤: -2.95%</div>
+            <div class="metric">交易次數: 90</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#14 CP_CCI_[80]</h3>
+            <div class="metric">質量評分: 187.5</div>
+            <div class="metric">年化回報: 39.95%</div>
+            <div class="metric">Sharpe比率: 3.000</div>
+            <div class="metric">最大回撤: -2.95%</div>
+            <div class="metric">交易次數: 90</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#15 CP_CCI_[100]</h3>
+            <div class="metric">質量評分: 187.3</div>
+            <div class="metric">年化回報: 38.92%</div>
+            <div class="metric">Sharpe比率: 3.068</div>
+            <div class="metric">最大回撤: -2.95%</div>
+            <div class="metric">交易次數: 78</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#16 CP_CCI_[95]</h3>
+            <div class="metric">質量評分: 186.9</div>
+            <div class="metric">年化回報: 38.79%</div>
+            <div class="metric">Sharpe比率: 3.046</div>
+            <div class="metric">最大回撤: -2.95%</div>
+            <div class="metric">交易次數: 82</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#17 CP_BB_[70, 1.5]</h3>
+            <div class="metric">質量評分: 186.5</div>
+            <div class="metric">年化回報: 42.61%</div>
+            <div class="metric">Sharpe比率: 2.818</div>
+            <div class="metric">最大回撤: -4.56%</div>
+            <div class="metric">交易次數: 116</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#18 CP_BB_[85, 2.0]</h3>
+            <div class="metric">質量評分: 185.6</div>
+            <div class="metric">年化回報: 39.51%</div>
+            <div class="metric">Sharpe比率: 2.959</div>
+            <div class="metric">最大回撤: -2.95%</div>
+            <div class="metric">交易次數: 88</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#19 CP_CCI_[85]</h3>
+            <div class="metric">質量評分: 185.6</div>
+            <div class="metric">年化回報: 39.51%</div>
+            <div class="metric">Sharpe比率: 2.959</div>
+            <div class="metric">最大回撤: -2.95%</div>
+            <div class="metric">交易次數: 88</div>
+        </div>
+
+        <div class="strategy">
+            <h3>#20 CP_CCI_[25]</h3>
+            <div class="metric">質量評分: 185.5</div>
+            <div class="metric">年化回報: 44.29%</div>
+            <div class="metric">Sharpe比率: 2.766</div>
+            <div class="metric">最大回撤: -4.74%</div>
+            <div class="metric">交易次數: 106</div>
+        </div>
+
+    </div>
+
+    <div class="section">
+        <h2>系統信息</h2>
+        <p><strong>數據源:</strong> 9個香港政府非價格數據源 (HIBOR, GDP, 零售, 物業, 貿易, 旅遊, CPI, 失業率, 貨幣基礎)</p>
+        <p><strong>技術指標:</strong> RSI, MACD, 布林帶, CCI, KDJ (5種技術指標類型)</p>
+        <p><strong>參數範圍:</strong> 1-300 (完整覆蓋所有可能的參數組合)</p>
+        <p><strong>分析目標:</strong> 0700.HK (騰訊控股)</p>
+        <p><strong>並行核心:</strong> 32核CPU</p>
+        <p><strong>數據真實性:</strong> 100% 真實市場數據 + 香港政府非價格數據</p>
+    </div>
+</body>
+</html>

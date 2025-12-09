@@ -1,0 +1,70 @@
+{
+  "summary": {
+    "total_strategies": 5,
+    "successful_strategies": 0,
+    "success_rate": 0.0,
+    "best_score": 0,
+    "data_sources": 9,
+    "indicator_types": 5,
+    "price_data_points": 733,
+    "parameter_range": "0-300 (optimized)",
+    "execution_time": 0.7263736724853516
+  },
+  "top_strategies": [
+    {
+      "strategy_id": "HB_RSI_period_5",
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "volatility": 0.0,
+      "trade_count": 0,
+      "quality_score": 0.0,
+      "success": false
+    },
+    {
+      "strategy_id": "HB_RSI_period_14",
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "volatility": 0.0,
+      "trade_count": 0,
+      "quality_score": 0.0,
+      "success": false
+    },
+    {
+      "strategy_id": "HB_RSI_period_23",
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "volatility": 0.0,
+      "trade_count": 0,
+      "quality_score": 0.0,
+      "success": false
+    },
+    {
+      "strategy_id": "HB_RSI_period_41",
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "volatility": 0.0,
+      "trade_count": 0,
+      "quality_score": 0.0,
+      "success": false
+    },
+    {
+      "strategy_id": "HB_RSI_period_32",
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "volatility": 0.0,
+      "trade_count": 0,
+      "quality_score": 0.0,
+      "success": false
+    }
+  ]
+}

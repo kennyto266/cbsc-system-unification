@@ -1,0 +1,185 @@
+uid=3_0 RootWebArea "策略管理Dashboard - 后备版本" url="http://localhost:3004/"
+  uid=3_1 ignored
+    uid=3_2 ignored
+      uid=3_3 ignored
+        uid=3_4 ignored
+          uid=3_5 heading "策略管理Dashboard" level="1"
+            uid=3_6 StaticText "策略管理Dashboard"
+              uid=3_7 InlineTextBox "策略管理Dashboard"
+          uid=3_8 paragraph
+            uid=3_9 StaticText "专业级CBSC策略管理平台"
+              uid=3_10 InlineTextBox "专业级CBSC策略管理平台"
+          uid=3_11 paragraph
+            uid=3_12 StaticText "✅ HEALTHY"
+              uid=3_13 InlineTextBox "✅ HEALTHY"
+          uid=3_14 paragraph
+            uid=3_15 StaticText "📦 后备版本 - HTTP服务器模式"
+              uid=3_16 InlineTextBox "📦 后备版本 - HTTP服务器模式"
+        uid=3_17 ignored
+          uid=3_18 heading "🎉 Dashboard成功启动!" level="2"
+            uid=3_19 StaticText "🎉 Dashboard成功启动!"
+              uid=3_20 InlineTextBox "🎉 Dashboard成功启动!"
+          uid=3_21 paragraph
+            uid=3_22 StaticText "使用Python HTTP服务器解决了FastAPI兼容性问题"
+              uid=3_23 InlineTextBox "使用Python HTTP服务器解决了FastAPI兼容性问题"
+        uid=3_24 ignored
+          uid=3_25 ignored
+            uid=3_26 heading "📈 策略监控" level="3"
+              uid=3_27 StaticText "📈 策略监控"
+                uid=3_28 InlineTextBox "📈 策略监控"
+            uid=3_29 paragraph
+              uid=3_30 StaticText "监控4种CBSC情绪策略"
+                uid=3_31 InlineTextBox "监控4种CBSC情绪策略"
+            uid=3_32 paragraph
+              uid=3_33 StaticText "实时信号分析"
+                uid=3_34 InlineTextBox "实时信号分析"
+            uid=3_35 paragraph
+              uid=3_36 StaticText "性能指标跟踪"
+                uid=3_37 InlineTextBox "性能指标跟踪"
+            uid=3_38 generic
+              uid=3_39 StaticText "状态: 运行正常"
+                uid=3_40 InlineTextBox "状态: 运行正常"
+          uid=3_41 ignored
+            uid=3_42 heading "⚙️ 参数优化" level="3"
+              uid=3_43 StaticText "⚙️ 参数优化"
+                uid=3_44 InlineTextBox "⚙️ 参数优化"
+            uid=3_45 paragraph
+              uid=3_46 StaticText "多种优化算法"
+                uid=3_47 InlineTextBox "多种优化算法"
+            uid=3_48 paragraph
+              uid=3_49 StaticText "参数空间探索"
+                uid=3_50 InlineTextBox "参数空间探索"
+            uid=3_51 paragraph
+              uid=3_52 StaticText "性能响应分析"
+                uid=3_53 InlineTextBox "性能响应分析"
+            uid=3_54 generic
+              uid=3_55 StaticText "状态: 模拟运行"
+                uid=3_56 InlineTextBox "状态: 模拟运行"
+          uid=3_57 ignored
+            uid=3_58 heading "🔬 回测分析" level="3"
+              uid=3_59 StaticText "🔬 回测分析"
+                uid=3_60 InlineTextBox "🔬 回测分析"
+            uid=3_61 paragraph
+              uid=3_62 StaticText "历史数据回测"
+                uid=3_63 InlineTextBox "历史数据回测"
+            uid=3_64 paragraph
+              uid=3_65 StaticText "策略性能评估"
+                uid=3_66 InlineTextBox "策略性能评估"
+            uid=3_67 paragraph
+              uid=3_68 StaticText "风险指标计算"
+                uid=3_69 InlineTextBox "风险指标计算"
+            uid=3_70 generic
+              uid=3_71 StaticText "状态: 模拟运行"
+                uid=3_72 InlineTextBox "状态: 模拟运行"
+          uid=3_73 ignored
+            uid=3_74 heading "📊 系统监控" level="3"
+              uid=3_75 StaticText "📊 系统监控"
+                uid=3_76 InlineTextBox "📊 系统监控"
+            uid=3_77 paragraph
+              uid=3_78 StaticText "实时性能监控"
+                uid=3_79 InlineTextBox "实时性能监控"
+            uid=3_80 paragraph
+              uid=3_81 StaticText "系统状态检查"
+                uid=3_82 InlineTextBox "系统状态检查"
+            uid=3_83 paragraph
+              uid=3_84 StaticText "健康指标显示"
+                uid=3_85 InlineTextBox "健康指标显示"
+            uid=3_86 generic
+              uid=3_87 StaticText "状态: 正常"
+                uid=3_88 InlineTextBox "状态: 正常"
+        uid=3_89 ignored
+          uid=3_90 heading "📈 策略数据概览" level="3"
+            uid=3_91 StaticText "📈 策略数据概览"
+              uid=3_92 InlineTextBox "📈 策略数据概览"
+          uid=3_93 generic
+            uid=3_94 ignored
+              uid=3_95 heading "直接RSI情绪策略" level="4"
+                uid=3_96 StaticText "直接RSI情绪策略"
+                  uid=3_97 InlineTextBox "直接RSI情绪策略"
+              uid=3_98 paragraph
+                uid=3_99 StaticText "状态: active"
+                  uid=3_100 InlineTextBox "状态: active"
+              uid=3_101 paragraph
+                uid=3_102 StaticText "收益率: 2.34%"
+                  uid=3_103 InlineTextBox "收益率: 2.34%"
+              uid=3_104 paragraph
+                uid=3_105 StaticText "夏普比率: 1.45"
+                  uid=3_106 InlineTextBox "夏普比率: 1.45"
+            uid=3_107 ignored
+              uid=3_108 heading "情绪动量策略" level="4"
+                uid=3_109 StaticText "情绪动量策略"
+                  uid=3_110 InlineTextBox "情绪动量策略"
+              uid=3_111 paragraph
+                uid=3_112 StaticText "状态: active"
+                  uid=3_113 InlineTextBox "状态: active"
+              uid=3_114 paragraph
+                uid=3_115 StaticText "收益率: 1.56%"
+                  uid=3_116 InlineTextBox "收益率: 1.56%"
+              uid=3_117 paragraph
+                uid=3_118 StaticText "夏普比率: 1.23"
+                  uid=3_119 InlineTextBox "夏普比率: 1.23"
+            uid=3_120 ignored
+              uid=3_121 heading "复合指標策略" level="4"
+                uid=3_122 StaticText "复合指標策略"
+                  uid=3_123 InlineTextBox "复合指標策略"
+              uid=3_124 paragraph
+                uid=3_125 StaticText "状态: active"
+                  uid=3_126 InlineTextBox "状态: active"
+              uid=3_127 paragraph
+                uid=3_128 StaticText "收益率: 3.12%"
+                  uid=3_129 InlineTextBox "收益率: 3.12%"
+              uid=3_130 paragraph
+                uid=3_131 StaticText "夏普比率: 1.67"
+                  uid=3_132 InlineTextBox "夏普比率: 1.67"
+            uid=3_133 ignored
+              uid=3_134 heading "波動率調整策略" level="4"
+                uid=3_135 StaticText "波動率調整策略"
+                  uid=3_136 InlineTextBox "波動率調整策略"
+              uid=3_137 paragraph
+                uid=3_138 StaticText "状态: active"
+                  uid=3_139 InlineTextBox "状态: active"
+              uid=3_140 paragraph
+                uid=3_141 StaticText "收益率: 1.98%"
+                  uid=3_142 InlineTextBox "收益率: 1.98%"
+              uid=3_143 paragraph
+                uid=3_144 StaticText "夏普比率: 1.34"
+                  uid=3_145 InlineTextBox "夏普比率: 1.34"
+        uid=3_146 ignored
+          uid=3_147 heading "💰 性能摘要" level="3"
+            uid=3_148 StaticText "💰 性能摘要"
+              uid=3_149 InlineTextBox "💰 性能摘要"
+          uid=3_150 generic
+            uid=3_151 paragraph
+              uid=3_152 StaticText "总收益率: 2.25%"
+                uid=3_153 InlineTextBox "总收益率: 2.25%"
+            uid=3_154 paragraph
+              uid=3_155 StaticText "年化收益率: 4.56%"
+                uid=3_156 InlineTextBox "年化收益率: 4.56%"
+            uid=3_157 paragraph
+              uid=3_158 StaticText "夏普比率: 1.42"
+                uid=3_159 InlineTextBox "夏普比率: 1.42"
+            uid=3_160 paragraph
+              uid=3_161 StaticText "最大回撤: -8.01%"
+                uid=3_162 InlineTextBox "最大回撤: -8.01%"
+            uid=3_163 paragraph
+              uid=3_164 StaticText "胜率: 62.3%"
+                uid=3_165 InlineTextBox "胜率: 62.3%"
+            uid=3_166 paragraph
+              uid=3_167 StaticText "盈亏比: 1.78"
+                uid=3_168 InlineTextBox "盈亏比: 1.78"
+        uid=3_169 ignored
+          uid=3_170 heading "🔗 API接口" level="3"
+            uid=3_171 StaticText "🔗 API接口"
+              uid=3_172 InlineTextBox "🔗 API接口"
+          uid=3_173 link "健康检查" url="http://localhost:3004/health"
+            uid=3_174 StaticText "健康检查"
+              uid=3_175 InlineTextBox "健康检查"
+          uid=3_176 link "系统状态" url="http://localhost:3004/api/status"
+            uid=3_177 StaticText "系统状态"
+              uid=3_178 InlineTextBox "系统状态"
+          uid=3_179 link "策略列表" url="http://localhost:3004/api/strategies"
+            uid=3_180 StaticText "策略列表"
+              uid=3_181 InlineTextBox "策略列表"
+          uid=3_182 link "性能摘要" url="http://localhost:3004/api/performance/summary"
+            uid=3_183 StaticText "性能摘要"
+              uid=3_184 InlineTextBox "性能摘要"

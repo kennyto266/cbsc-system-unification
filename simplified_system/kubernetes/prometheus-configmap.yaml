@@ -1,0 +1,182 @@
+# Prometheus监控配置
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: quant-trading
+  labels:
+    app: prometheus
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: 'quant-trading'
+        environment: 'production'
+
+    rule_files:
+      - "/etc/prometheus/rules/*.yml"
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+              - alertmanager:9093
+
+    scrape_configs:
+      # API服务监控
+      - job_name: 'quant-api'
+        static_configs:
+          - targets: ['quant-api-service:80']
+        metrics_path: /metrics
+        scrape_interval: 10s
+        scrape_timeout: 5s
+
+      # 优化工作节点监控
+      - job_name: 'optimization-workers'
+        static_configs:
+          - targets: ['optimization-worker-service:9091']
+        metrics_path: /metrics
+        scrape_interval: 30s
+
+      # Redis监控
+      - job_name: 'redis'
+        static_configs:
+          - targets: ['redis-service:6379']
+        metrics_path: /metrics
+        scrape_interval: 15s
+
+      # Kubernetes节点监控
+      - job_name: 'kubernetes-nodes'
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - source_labels: [__address__]
+            regex: '(.*):10250'
+            target_label: __address__
+            replacement: '${1}:9100'
+
+      # KubernetesPod监控
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+
+      # 系统级监控
+      - job_name: 'node-exporter'
+        static_configs:
+          - targets: ['node-exporter:9100']
+
+    remote_write:
+      - url: "http://influxdb-service:8086/api/v1/prom/write?db=prometheus"
+
+  alert_rules.yml: |
+    groups:
+    - name: quant-trading-alerts
+      rules:
+      # API服务告警
+      - alert: APIServiceDown
+        expr: up{job="quant-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API服务已停止"
+          description: "API服务已停止超过1分钟"
+
+      - alert: APIHighLatency
+        expr: http_request_duration_seconds{quantile="0.95"} > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API延迟过高"
+          description: "95%的请求延迟超过2秒"
+
+      - alert: APIHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API错误率过高"
+          description: "5xx错误率超过10%"
+
+      # 性能告警
+      - alert: OptimizationQueueBacklog
+        expr: optimization_queue_size > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "优化队列积压"
+          description: "优化队列积压超过1000个任务"
+
+      - alert: StrategyPerformanceDegradation
+        expr: strategy_execution_time_seconds > 30
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "策略执行性能下降"
+          description: "策略平均执行时间超过30秒"
+
+      # 系统资源告警
+      - alert: HighCPUUsage
+        expr: cpu_usage_percent > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU使用率过高"
+          description: "CPU使用率持续超过80%"
+
+      - alert: HighMemoryUsage
+        expr: memory_usage_percent > 85
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "内存使用率过高"
+          description: "内存使用率持续超过85%"
+
+      - alert: DiskSpaceLow
+        expr: disk_usage_percent > 90
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "磁盘空间不足"
+          description: "磁盘使用率超过90%"
+
+      # 业务告警
+      - alert: SharpeRatioDegradation
+        expr: strategy_sharpe_ratio < 1.0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "策略Sharpe比率下降"
+          description: "策略Sharpe比率低于1.0"
+
+      - alert: MaxDrawdownExceeded
+        expr: strategy_max_drawdown > 0.15
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "最大回撤超限"
+          description: "策略最大回撤超过15%"

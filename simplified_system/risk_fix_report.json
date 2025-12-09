@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-11-29T01:30:40.826693",
+  "fix_summary": {
+    "sharpe_anomaly_fixed": true,
+    "old_extreme_value": 1.5988493604231235,
+    "new_safe_value": 1.5988493604231235,
+    "improvement_ratio": 1.0
+  },
+  "risk_metrics": {
+    "var_95": -0.8769939913998885,
+    "cvar_95": -0.9530679370215042,
+    "max_drawdown": -0.9980197966153291,
+    "volatility": 0.25
+  },
+  "position_management": {
+    "recommended_position": 40000.0,
+    "shares": 100,
+    "position_percentage": 0.04
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "timestamp": "2025-11-28T16:58:24.027443",
+  "portfolio_weights": {
+    "RSI_Reversion": 0.25,
+    "MA_Momentum": 0.25,
+    "Interest_Rate_Cycle": 0.25,
+    "Equity_Bond_Rotation": 0.25
+  },
+  "performance_metrics": {
+    "annual_return": 1.7139105392155898,
+    "sharpe_ratio": 5.259145699785379,
+    "max_drawdown": -0.8877641479358527,
+    "win_rate": 0.771513353115727,
+    "information_ratio": 5.102986997250171,
+    "correlation_to_market": 0,
+    "signal_count": 1011
+  },
+  "independence_score": 1.0,
+  "alpha_sources": [
+    {
+      "name": "RSI_Reversion",
+      "type": "technical_analysis",
+      "signal_count": 942
+    },
+    {
+      "name": "MA_Momentum",
+      "type": "technical_analysis",
+      "signal_count": 844
+    },
+    {
+      "name": "Interest_Rate_Cycle",
+      "type": "macro_economic",
+      "signal_count": 33
+    },
+    {
+      "name": "Equity_Bond_Rotation",
+      "type": "cross_asset",
+      "signal_count": 339
+    }
+  ]
+}

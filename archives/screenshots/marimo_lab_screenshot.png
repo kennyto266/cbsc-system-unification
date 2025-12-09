@@ -1,0 +1,37 @@
+uid=1_0 RootWebArea "cbsc_final_lab.py" url="http://127.0.0.1:3007/"
+  uid=1_1 button
+  uid=1_2 button
+  uid=1_3 button
+  uid=1_4 button
+  uid=1_5 button
+  uid=1_6 button
+  uid=1_7 button
+  uid=1_8 button
+  uid=1_9 button
+  uid=1_10 button
+  uid=1_11 button
+  uid=1_12 button
+  uid=1_13 button
+  uid=1_14 button
+  uid=1_15 button
+  uid=1_16 separator orientation="horizontal" value="10" valuemax="75" valuemin="10" valuetext=""
+  uid=1_17 generic
+    uid=1_18 listbox "Suggestions" orientation="vertical"
+      uid=1_19 combobox autocomplete="list" expandable expanded haspopup="listbox" value="C:\Users\Penguin8n\CODEX--\cbsc_final_lab.py"
+  uid=1_20 StaticText "Notebook already connected"
+  uid=1_21 StaticText "another browser tab is already connected to the kernel"
+  uid=1_22 button "Take over session"
+  uid=1_23 button "Save"
+  uid=1_24 button
+  uid=1_25 button
+  uid=1_26 StaticText "Minimap"
+  uid=1_27 button
+  uid=1_28 contentinfo
+    uid=1_29 StaticText "0"
+    uid=1_30 StaticText "on startup:"
+    uid=1_31 StaticText "lazy"
+    uid=1_32 StaticText "on cell change:"
+    uid=1_33 StaticText "autorun"
+    uid=1_34 button "on module change: off" haspopup="menu"
+  uid=1_35 region "Notifications (F8)"
+    uid=1_36 list

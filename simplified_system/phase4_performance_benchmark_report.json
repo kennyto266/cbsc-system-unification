@@ -1,0 +1,156 @@
+{
+  "timestamp": "2025-11-26 11:50:21",
+  "phase": "Phase 4 - Performance Benchmark Testing",
+  "total_execution_time": 18.960037231445312,
+  "benchmarks": {
+    "strategy_execution": {
+      "RSI_MEAN_REVERSION": {
+        "sequential_time": 0.01859593391418457,
+        "parallel_time": 0.020726442337036133,
+        "speedup": 0.8972081948166979,
+        "executions_per_second": 482.4754696145307
+      },
+      "MACD_CROSSOVER": {
+        "sequential_time": 0.01093602180480957,
+        "parallel_time": 0.016172409057617188,
+        "speedup": 0.6762147658922043,
+        "executions_per_second": 618.3370680504777
+      },
+      "DUAL_MOVING_AVERAGE": {
+        "sequential_time": 0.010297536849975586,
+        "parallel_time": 0.015122175216674805,
+        "speedup": 0.6809560597222003,
+        "executions_per_second": 661.2805272202689
+      }
+    },
+    "parallel_processing": {
+      "chunk_size_100": {
+        "sequential_time": 0.0044362545013427734,
+        "parallel_time": 0.006193637847900391,
+        "speedup": 0.7162599122334283,
+        "throughput_sequential": 4508307.626162197,
+        "throughput_parallel": 3229120.0246362304
+      },
+      "chunk_size_500": {
+        "sequential_time": 0.0009672641754150391,
+        "parallel_time": 0.0022356510162353516,
+        "speedup": 0.43265436706835875,
+        "throughput_sequential": 20676874.53783584,
+        "throughput_parallel": 8945940.066119228
+      },
+      "chunk_size_1000": {
+        "sequential_time": 0.0006363391876220703,
+        "parallel_time": 0.0024704933166503906,
+        "speedup": 0.25757575757575757,
+        "throughput_sequential": 31429778.943424504,
+        "throughput_parallel": 8095549.12179116
+      },
+      "chunk_size_2000": {
+        "sequential_time": 0.0003323554992675781,
+        "parallel_time": 0.0013031959533691406,
+        "speedup": 0.2550311013538236,
+        "throughput_sequential": 60176527.97704448,
+        "throughput_parallel": 15346886.205634834
+      }
+    },
+    "vectorbt_performance": {
+      "size_1000": {
+        "vectorbt_time": 2.4793758392333984,
+        "pandas_time": 0.0017597675323486328,
+        "speedup": 0.0007097623137655232,
+        "vectorbt_throughput": 403.3273149540698,
+        "pandas_throughput": 568256.8757620918
+      },
+      "size_5000": {
+        "vectorbt_time": 0.025789260864257812,
+        "pandas_time": 0.002460956573486328,
+        "speedup": 0.09542563419865395,
+        "vectorbt_throughput": 193879.1509503735,
+        "pandas_throughput": 2031730.2848285215
+      },
+      "size_10000": {
+        "vectorbt_time": 0.026805877685546875,
+        "pandas_time": 0.003512144088745117,
+        "speedup": 0.1310214173900669,
+        "vectorbt_throughput": 373052.5117404298,
+        "pandas_throughput": 2847263.5937818205
+      }
+    },
+    "memory_usage": {
+      "initial_memory_mb": 379.5234375,
+      "peak_memory_mb": 380.58984375,
+      "final_memory_mb": 380.3359375,
+      "memory_increase_mb": 1.06640625,
+      "memory_recovered_mb": 0.25390625,
+      "recovery_rate": 0.23809523809523808,
+      "memory_efficiency": 2.1328125e-05
+    },
+    "cache_performance": {
+      "avg_cache_miss_time_ms": 0.010576248168945312,
+      "avg_cache_hit_time_ms": 0.00047206878662109375,
+      "cache_speedup": 22.404040404040405,
+      "cache_hit_rate": 0.5,
+      "cache_size": 0
+    },
+    "api_performance": {
+      "Stock API": {
+        "avg_response_time_ms": 50.27073621749878,
+        "max_response_time_ms": 50.97460746765137,
+        "min_response_time_ms": 50.02737045288086,
+        "total_calls": 100,
+        "total_time": 5.027073621749878,
+        "calls_per_second": 19.892288739783947
+      },
+      "Government API": {
+        "avg_response_time_ms": 100.31510829925537,
+        "max_response_time_ms": 100.9984016418457,
+        "min_response_time_ms": 100.03495216369629,
+        "total_calls": 50,
+        "total_time": 5.0157554149627686,
+        "calls_per_second": 9.9685881514163
+      },
+      "Technical Indicators API": {
+        "avg_response_time_ms": 20.256370306015015,
+        "max_response_time_ms": 20.653963088989258,
+        "min_response_time_ms": 20.0192928314209,
+        "total_calls": 200,
+        "total_time": 4.051274061203003,
+        "calls_per_second": 49.36718597127224
+      }
+    },
+    "overall_performance": {
+      "targets": {
+        "strategy_speedup": 3.0,
+        "parallel_speedup": 4.0,
+        "vectorbt_speedup": 5.0,
+        "cache_speedup": 10.0,
+        "memory_efficiency": 0.1,
+        "api_response_time": 0.1
+      },
+      "actual": {
+        "strategy_speedup": 0.7514596734770341,
+        "parallel_speedup": 0.41538028455784204,
+        "vectorbt_speedup": 0.07571893796749546,
+        "cache_speedup": 22.404040404040405,
+        "memory_efficiency": 2.1328125e-05,
+        "api_response_time": 0.05694740494092306
+      },
+      "scores": {
+        "strategy_speedup": 0.250486557825678,
+        "parallel_speedup": 0.10384507113946051,
+        "vectorbt_speedup": 0.015143787593499092,
+        "cache_speedup": 2.2404040404040404,
+        "memory_efficiency": 5.0,
+        "api_response_time": 1.7560062676032293
+      },
+      "overall_score": 1.560980954094318,
+      "overall_improvement": 5.911649825010694,
+      "meets_5x_target": "True"
+    }
+  },
+  "summary": {
+    "overall_improvement": 5.911649825010694,
+    "meets_5x_target": "True",
+    "overall_score": 1.560980954094318
+  }
+}

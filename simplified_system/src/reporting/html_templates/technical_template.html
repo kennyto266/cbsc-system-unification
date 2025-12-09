@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ report_title }}</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            margin: 0;
+            padding: 20px;
+        }
+        .tech-header {
+            background-color: #252526;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .tech-header h1 {
+            color: #569cd6;
+            margin: 0;
+        }
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .metrics-table th {
+            background-color: #094771;
+            color: #ffffff;
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #3c3c3c;
+        }
+        .metrics-table td {
+            background-color: #252526;
+            padding: 10px;
+            border: 1px solid #3c3c3c;
+        }
+        .code-block {
+            background-color: #1e1e1e;
+            border: 1px solid #3c3c3c;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        .positive { color: #4ec9b0; }
+        .negative { color: #f44747; }
+        .neutral { color: #dcdcaa; }
+    </style>
+</head>
+<body>
+    <div class="tech-header">
+        <h1>{{ report_title }}</h1>
+        <p>Technical Analysis Report | {{ generation_time }}</p>
+    </div>
+
+    <table class="metrics-table">
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Strategy Name</td>
+                <td>{{ strategy_name }}</td>
+                <td class="neutral">ACTIVE</td>
+            </tr>
+            <tr>
+                <td>Total Return</td>
+                <td>{{ total_return }}</td>
+                <td class="positive">POSITIVE</td>
+            </tr>
+            <tr>
+                <td>Sharpe Ratio</td>
+                <td>{{ sharpe_ratio }}</td>
+                <td class="positive">EXCELLENT</td>
+            </tr>
+            <tr>
+                <td>Max Drawdown</td>
+                <td>{{ max_drawdown }}</td>
+                <td class="negative">MONITOR</td>
+            </tr>
+            <tr>
+                <td>Win Rate</td>
+                <td>{{ win_rate }}</td>
+                <td class="positive">GOOD</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="code-block">
+        <h3>Technical Parameters</h3>
+        <pre>
+Strategy Configuration:
+- Name: {{ strategy_name }}
+- Period: {{ analysis_period }}
+- Total Trades: {{ total_trades }}
+- Profit Factor: {{ profit_factor }}
+
+Risk Metrics:
+- VaR (95%): {{ var_95 }}
+- Beta: {{ beta }}
+        </pre>
+    </div>
+</body>
+</html>
+        

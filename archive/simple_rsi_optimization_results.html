@@ -1,0 +1,486 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate RSI VectorBT Optimization Report</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
+            color: white;
+            border-radius: 10px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .stat-label {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+        .best-strategy {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+        }
+        .best-strategy h2 {
+            margin-top: 0;
+            color: #fff;
+        }
+        .strategy-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .detail-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .detail-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .detail-label {
+            opacity: 0.9;
+            font-size: 0.8em;
+        }
+        .top-strategies {
+            margin: 30px 0;
+        }
+        .top-strategies h2 {
+            color: #2196F3;
+            margin-bottom: 20px;
+        }
+        .strategy-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .strategy-table th {
+            background: #2196F3;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        .strategy-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        .strategy-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .strategy-table tr:hover {
+            background: #f5f5f5;
+        }
+        .quality-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .quality-high {
+            background: #4CAF50;
+            color: white;
+        }
+        .quality-medium {
+            background: #FFC107;
+            color: black;
+        }
+        .quality-low {
+            background: #f44336;
+            color: white;
+        }
+        .data-sources {
+            margin: 30px 0;
+        }
+        .data-sources h2 {
+            color: #FF9800;
+            margin-bottom: 20px;
+        }
+        .source-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .source-card {
+            background: #fff;
+            border: 2px solid #FF9800;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 3px 10px rgba(255, 152, 0, 0.2);
+        }
+        .source-name {
+            font-weight: bold;
+            color: #FF9800;
+            margin-bottom: 10px;
+        }
+        .source-metrics {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            color: #666;
+        }
+        .timestamp {
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Ultimate RSI VectorBT Optimization Report</h1>
+            <div class="subtitle">Non-Price Data → Technical Analysis → Trading Signals → VectorBT Backtest</div>
+            <div class="timestamp">Generated: 2025-11-20 11:14:15</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Strategies Tested</div>
+                <div class="stat-number">1,282</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Successful Strategies</div>
+                <div class="stat-number">1,282</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Execution Time</div>
+                <div class="stat-number">10.80s</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Strategies/Second</div>
+                <div class="stat-number">118.7</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">RSI Periods Tested</div>
+                <div class="stat-number">60</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Data Sources</div>
+                <div class="stat-number">9</div>
+            </div>
+        </div>
+
+        <div class="best-strategy">
+            <h2>🏆 Best Strategy</h2>
+            <div style="font-size: 1.3em; margin: 15px 0;">MONETARY_RSI_155_Cross_0.7</div>
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="vectorbt_charts_MONETARY_RSI_155.html"
+                   target="_blank"
+                   style="display: inline-block; padding: 12px 24px; background: white; color: #4CAF50; text-decoration: none;
+                          border-radius: 25px; font-weight: bold; box-shadow: 0 3px 10px rgba(0,0,0,0.2);">
+                    📈 View Interactive VectorBT Charts
+                </a>
+            </div>
+            <div class="strategy-details">
+                <div class="detail-item">
+                    <div class="detail-value">80.0/100</div>
+                    <div class="detail-label">Quality Score</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-value">37.92%</div>
+                    <div class="detail-label">Total Return</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-value">1.11</div>
+                    <div class="detail-label">Sharpe Ratio</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-value">-2.04%</div>
+                    <div class="detail-label">Max Drawdown</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-value">0.0%</div>
+                    <div class="detail-label">Win Rate</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-value">7</div>
+                    <div class="detail-label">Trade Count</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="top-strategies">
+            <h2>📊 Top 10 Strategies</h2>
+            <table class="strategy-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Strategy Name</th>
+                        <th>Quality Score</th>
+                        <th>Total Return</th>
+                        <th>Sharpe Ratio</th>
+                        <th>Max Drawdown</th>
+                        <th>Win Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr>
+                        <td><strong>1</strong></td>
+                        <td>MONETARY_RSI_155_Cross_0.7</td>
+                        <td><span class="quality-badge quality-high">80.0/100</span></td>
+                        <td>37.92%</td>
+                        <td>1.11</td>
+                        <td>-2.04%</td>
+                        <td>0.0%</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>2</strong></td>
+                        <td>HIBOR_RSI_150_Cross_0.7</td>
+                        <td><span class="quality-badge quality-high">75.0/100</span></td>
+                        <td>17.62%</td>
+                        <td>0.57</td>
+                        <td>-4.68%</td>
+                        <td>0.0%</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>3</strong></td>
+                        <td>HIBOR_RSI_300_Cross_0.3</td>
+                        <td><span class="quality-badge quality-high">75.0/100</span></td>
+                        <td>25.28%</td>
+                        <td>0.75</td>
+                        <td>-5.60%</td>
+                        <td>0.0%</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>4</strong></td>
+                        <td>GDP_RSI_150_Cross_0.5</td>
+                        <td><span class="quality-badge quality-high">75.0/100</span></td>
+                        <td>21.88%</td>
+                        <td>0.74</td>
+                        <td>-7.60%</td>
+                        <td>0.0%</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>5</strong></td>
+                        <td>GDP_RSI_250_Cross_0.3</td>
+                        <td><span class="quality-badge quality-high">75.0/100</span></td>
+                        <td>23.84%</td>
+                        <td>0.71</td>
+                        <td>-9.91%</td>
+                        <td>0.0%</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>6</strong></td>
+                        <td>PROPERTY_RSI_265_Cross_0.3</td>
+                        <td><span class="quality-badge quality-high">75.0/100</span></td>
+                        <td>16.56%</td>
+                        <td>0.73</td>
+                        <td>-7.27%</td>
+                        <td>0.0%</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>7</strong></td>
+                        <td>UNEMPLOYMENT_RSI_160_Cross_0.7</td>
+                        <td><span class="quality-badge quality-high">75.0/100</span></td>
+                        <td>33.46%</td>
+                        <td>0.85</td>
+                        <td>-9.03%</td>
+                        <td>0.0%</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>8</strong></td>
+                        <td>MONETARY_RSI_175_Cross_0.5</td>
+                        <td><span class="quality-badge quality-high">75.0/100</span></td>
+                        <td>15.25%</td>
+                        <td>0.60</td>
+                        <td>-6.24%</td>
+                        <td>0.0%</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>9</strong></td>
+                        <td>MONETARY_RSI_195_Cross_0.5</td>
+                        <td><span class="quality-badge quality-high">75.0/100</span></td>
+                        <td>16.88%</td>
+                        <td>0.65</td>
+                        <td>-4.69%</td>
+                        <td>0.0%</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>10</strong></td>
+                        <td>HIBOR_RSI_130_Cross_0.5</td>
+                        <td><span class="quality-badge quality-high">70.0/100</span></td>
+                        <td>28.44%</td>
+                        <td>0.58</td>
+                        <td>-11.96%</td>
+                        <td>0.0%</td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class="data-sources">
+            <h2>📈 Data Source Performance</h2>
+            <div class="source-grid">
+
+                <div class="source-card">
+                    <div class="source-name">UNEMPLOYMENT</div>
+                    <div class="source-metrics">
+                        <div>Avg Quality: 23.4/100</div>
+                        <div>Avg Return: -4.16%</div>
+                        <div>Avg Sharpe: -0.02</div>
+                        <div>Best Quality: 75.0/100</div>
+                        <div>Strategies: 167</div>
+                    </div>
+                </div>
+
+                <div class="source-card">
+                    <div class="source-name">PROPERTY</div>
+                    <div class="source-metrics">
+                        <div>Avg Quality: 22.4/100</div>
+                        <div>Avg Return: -6.61%</div>
+                        <div>Avg Sharpe: -0.06</div>
+                        <div>Best Quality: 75.0/100</div>
+                        <div>Strategies: 159</div>
+                    </div>
+                </div>
+
+                <div class="source-card">
+                    <div class="source-name">MONETARY</div>
+                    <div class="source-metrics">
+                        <div>Avg Quality: 20.4/100</div>
+                        <div>Avg Return: -11.02%</div>
+                        <div>Avg Sharpe: -0.17</div>
+                        <div>Best Quality: 80.0/100</div>
+                        <div>Strategies: 167</div>
+                    </div>
+                </div>
+
+                <div class="source-card">
+                    <div class="source-name">TOURISM</div>
+                    <div class="source-metrics">
+                        <div>Avg Quality: 20.4/100</div>
+                        <div>Avg Return: -12.91%</div>
+                        <div>Avg Sharpe: -0.19</div>
+                        <div>Best Quality: 70.0/100</div>
+                        <div>Strategies: 159</div>
+                    </div>
+                </div>
+
+                <div class="source-card">
+                    <div class="source-name">CPI</div>
+                    <div class="source-metrics">
+                        <div>Avg Quality: 18.7/100</div>
+                        <div>Avg Return: -16.47%</div>
+                        <div>Avg Sharpe: -0.32</div>
+                        <div>Best Quality: 70.0/100</div>
+                        <div>Strategies: 155</div>
+                    </div>
+                </div>
+
+                <div class="source-card">
+                    <div class="source-name">HIBOR</div>
+                    <div class="source-metrics">
+                        <div>Avg Quality: 17.7/100</div>
+                        <div>Avg Return: -16.52%</div>
+                        <div>Avg Sharpe: -0.25</div>
+                        <div>Best Quality: 75.0/100</div>
+                        <div>Strategies: 151</div>
+                    </div>
+                </div>
+
+                <div class="source-card">
+                    <div class="source-name">GDP</div>
+                    <div class="source-metrics">
+                        <div>Avg Quality: 17.3/100</div>
+                        <div>Avg Return: -17.68%</div>
+                        <div>Avg Sharpe: -0.26</div>
+                        <div>Best Quality: 75.0/100</div>
+                        <div>Strategies: 168</div>
+                    </div>
+                </div>
+
+                <div class="source-card">
+                    <div class="source-name">TRADE</div>
+                    <div class="source-metrics">
+                        <div>Avg Quality: 16.6/100</div>
+                        <div>Avg Return: -17.64%</div>
+                        <div>Avg Sharpe: -0.32</div>
+                        <div>Best Quality: 65.0/100</div>
+                        <div>Strategies: 156</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Ultimate RSI VectorBT Optimization System</strong></p>
+            <p>Powered by VectorBT Professional Backtest Engine | Non-Price Data: Hong Kong Government Sources</p>
+            <p>RSI Fast-Slow Cross Strategy | Parameter Range: 5-300 (step=5) | Signal Thresholds: [0.3, 0.5, 0.7]</p>
+            <p>Execution: 118.7 strategies/second | Multi-process: 8 cores</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,1023 @@
+{
+  "source": "hkd_forward_exchange_daily",
+  "title": "市場數據與統計資料 - 金融數據月報 - 匯率及利率 - 港元遠期匯率 - 每日數字",
+  "api_url": "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hkd-fer-daily",
+  "description": "此應用程式介面提供毎日的港元遠期匯率的數字",
+  "data_type": "forward_exchange_rates",
+  "collection_time": "2025-11-28T18:02:07.937084",
+  "status": "success",
+  "record_count": 1,
+  "extra_params": {},
+  "data": {
+    "header": {
+      "success": true,
+      "err_code": "0000",
+      "err_msg": "No error found"
+    },
+    "result": {
+      "datasize": 100,
+      "records": [
+        {
+          "end_of_day": "2025-10-31",
+          "hkd_fer_spot": 7.7692,
+          "hkd_fer_1w": -11.5,
+          "hkd_fer_1m": -43,
+          "hkd_fer_3m": -94.5,
+          "hkd_fer_6m": -205.5,
+          "hkd_fer_9m": -308,
+          "hkd_fer_12m": -403
+        },
+        {
+          "end_of_day": "2025-10-30",
+          "hkd_fer_spot": 7.7685,
+          "hkd_fer_1w": -11,
+          "hkd_fer_1m": -45.5,
+          "hkd_fer_3m": -101,
+          "hkd_fer_6m": -214.5,
+          "hkd_fer_9m": -310,
+          "hkd_fer_12m": -409
+        },
+        {
+          "end_of_day": "2025-10-28",
+          "hkd_fer_spot": 7.7681,
+          "hkd_fer_1w": -5.5,
+          "hkd_fer_1m": -39.5,
+          "hkd_fer_3m": -84,
+          "hkd_fer_6m": -197,
+          "hkd_fer_9m": -297,
+          "hkd_fer_12m": -394
+        },
+        {
+          "end_of_day": "2025-10-27",
+          "hkd_fer_spot": 7.7676,
+          "hkd_fer_1w": -5,
+          "hkd_fer_1m": -37.5,
+          "hkd_fer_3m": -82.5,
+          "hkd_fer_6m": -194.5,
+          "hkd_fer_9m": -300,
+          "hkd_fer_12m": -395
+        },
+        {
+          "end_of_day": "2025-10-24",
+          "hkd_fer_spot": 7.76975,
+          "hkd_fer_1w": -7,
+          "hkd_fer_1m": -44,
+          "hkd_fer_3m": -89,
+          "hkd_fer_6m": -205.5,
+          "hkd_fer_9m": -314.5,
+          "hkd_fer_12m": -413
+        },
+        {
+          "end_of_day": "2025-10-23",
+          "hkd_fer_spot": 7.77225,
+          "hkd_fer_1w": -7,
+          "hkd_fer_1m": -46.5,
+          "hkd_fer_3m": -95,
+          "hkd_fer_6m": -228,
+          "hkd_fer_9m": -333.5,
+          "hkd_fer_12m": -443
+        },
+        {
+          "end_of_day": "2025-10-22",
+          "hkd_fer_spot": 7.77015,
+          "hkd_fer_1w": -7.5,
+          "hkd_fer_1m": -34,
+          "hkd_fer_3m": -85,
+          "hkd_fer_6m": -216,
+          "hkd_fer_9m": -319,
+          "hkd_fer_12m": -431
+        },
+        {
+          "end_of_day": "2025-10-21",
+          "hkd_fer_spot": 7.7677,
+          "hkd_fer_1w": -4.5,
+          "hkd_fer_1m": -26.5,
+          "hkd_fer_3m": -69.5,
+          "hkd_fer_6m": -191,
+          "hkd_fer_9m": -292,
+          "hkd_fer_12m": -400
+        },
+        {
+          "end_of_day": "2025-10-20",
+          "hkd_fer_spot": 7.7677,
+          "hkd_fer_1w": -3.5,
+          "hkd_fer_1m": -26.5,
+          "hkd_fer_3m": -72,
+          "hkd_fer_6m": -197,
+          "hkd_fer_9m": -301.5,
+          "hkd_fer_12m": -402
+        },
+        {
+          "end_of_day": "2025-10-17",
+          "hkd_fer_spot": 7.7685,
+          "hkd_fer_1w": -6.5,
+          "hkd_fer_1m": -36,
+          "hkd_fer_3m": -88.5,
+          "hkd_fer_6m": -201.5,
+          "hkd_fer_9m": -304.5,
+          "hkd_fer_12m": -406
+        },
+        {
+          "end_of_day": "2025-10-16",
+          "hkd_fer_spot": 7.77165,
+          "hkd_fer_1w": -9.5,
+          "hkd_fer_1m": -43.5,
+          "hkd_fer_3m": -101,
+          "hkd_fer_6m": -222,
+          "hkd_fer_9m": -334,
+          "hkd_fer_12m": -445.5
+        },
+        {
+          "end_of_day": "2025-10-15",
+          "hkd_fer_spot": 7.7759,
+          "hkd_fer_1w": -11,
+          "hkd_fer_1m": -51,
+          "hkd_fer_3m": -113,
+          "hkd_fer_6m": -235.5,
+          "hkd_fer_9m": -351,
+          "hkd_fer_12m": -466
+        },
+        {
+          "end_of_day": "2025-10-14",
+          "hkd_fer_spot": 7.77615,
+          "hkd_fer_1w": -10,
+          "hkd_fer_1m": -48.5,
+          "hkd_fer_3m": -101.5,
+          "hkd_fer_6m": -225,
+          "hkd_fer_9m": -343.5,
+          "hkd_fer_12m": -459.5
+        },
+        {
+          "end_of_day": "2025-10-13",
+          "hkd_fer_spot": 7.77635,
+          "hkd_fer_1w": -10.5,
+          "hkd_fer_1m": -42.5,
+          "hkd_fer_3m": -94.5,
+          "hkd_fer_6m": -223,
+          "hkd_fer_9m": -341,
+          "hkd_fer_12m": -458
+        },
+        {
+          "end_of_day": "2025-10-10",
+          "hkd_fer_spot": 7.78175,
+          "hkd_fer_1w": -13.5,
+          "hkd_fer_1m": -56.5,
+          "hkd_fer_3m": -122,
+          "hkd_fer_6m": -262,
+          "hkd_fer_9m": -382,
+          "hkd_fer_12m": -500
+        },
+        {
+          "end_of_day": "2025-10-09",
+          "hkd_fer_spot": 7.78075,
+          "hkd_fer_1w": -11.5,
+          "hkd_fer_1m": -54,
+          "hkd_fer_3m": -116,
+          "hkd_fer_6m": -256,
+          "hkd_fer_9m": -376,
+          "hkd_fer_12m": -495
+        },
+        {
+          "end_of_day": "2025-10-08",
+          "hkd_fer_spot": 7.78365,
+          "hkd_fer_1w": -11.5,
+          "hkd_fer_1m": -53,
+          "hkd_fer_3m": -119,
+          "hkd_fer_6m": -257,
+          "hkd_fer_9m": -378,
+          "hkd_fer_12m": -500
+        },
+        {
+          "end_of_day": "2025-10-06",
+          "hkd_fer_spot": 7.7819,
+          "hkd_fer_1w": -8.5,
+          "hkd_fer_1m": -49.5,
+          "hkd_fer_3m": -106.5,
+          "hkd_fer_6m": -241,
+          "hkd_fer_9m": -357,
+          "hkd_fer_12m": -482
+        },
+        {
+          "end_of_day": "2025-10-03",
+          "hkd_fer_spot": 7.7811,
+          "hkd_fer_1w": -7,
+          "hkd_fer_1m": -44.5,
+          "hkd_fer_3m": -101,
+          "hkd_fer_6m": -231,
+          "hkd_fer_9m": -353,
+          "hkd_fer_12m": -468.5
+        },
+        {
+          "end_of_day": "2025-10-02",
+          "hkd_fer_spot": 7.7803,
+          "hkd_fer_1w": -10.5,
+          "hkd_fer_1m": -48.5,
+          "hkd_fer_3m": -113.5,
+          "hkd_fer_6m": -250,
+          "hkd_fer_9m": -366,
+          "hkd_fer_12m": -485
+        },
+        {
+          "end_of_day": "2025-09-30",
+          "hkd_fer_spot": 7.78035,
+          "hkd_fer_1w": -12.5,
+          "hkd_fer_1m": -59.5,
+          "hkd_fer_3m": -138.5,
+          "hkd_fer_6m": -280,
+          "hkd_fer_9m": -395,
+          "hkd_fer_12m": -515
+        },
+        {
+          "end_of_day": "2025-09-29",
+          "hkd_fer_spot": 7.77915,
+          "hkd_fer_1w": -6.5,
+          "hkd_fer_1m": -52.5,
+          "hkd_fer_3m": -126.5,
+          "hkd_fer_6m": -260,
+          "hkd_fer_9m": -379,
+          "hkd_fer_12m": -494
+        },
+        {
+          "end_of_day": "2025-09-26",
+          "hkd_fer_spot": 7.78015,
+          "hkd_fer_1w": 0.5,
+          "hkd_fer_1m": -49.5,
+          "hkd_fer_3m": -142.5,
+          "hkd_fer_6m": -268,
+          "hkd_fer_9m": -386,
+          "hkd_fer_12m": -501
+        },
+        {
+          "end_of_day": "2025-09-25",
+          "hkd_fer_spot": 7.77735,
+          "hkd_fer_1w": 1.5,
+          "hkd_fer_1m": -45.5,
+          "hkd_fer_3m": -139.5,
+          "hkd_fer_6m": -264,
+          "hkd_fer_9m": -374,
+          "hkd_fer_12m": -484
+        },
+        {
+          "end_of_day": "2025-09-24",
+          "hkd_fer_spot": 7.77655,
+          "hkd_fer_1w": 6,
+          "hkd_fer_1m": -39.5,
+          "hkd_fer_3m": -146.5,
+          "hkd_fer_6m": -261,
+          "hkd_fer_9m": -374,
+          "hkd_fer_12m": -480
+        },
+        {
+          "end_of_day": "2025-09-22",
+          "hkd_fer_spot": 7.7691,
+          "hkd_fer_1w": 10.5,
+          "hkd_fer_1m": -22,
+          "hkd_fer_3m": -100,
+          "hkd_fer_6m": -197.5,
+          "hkd_fer_9m": -302.5,
+          "hkd_fer_12m": -403
+        },
+        {
+          "end_of_day": "2025-09-19",
+          "hkd_fer_spot": 7.77515,
+          "hkd_fer_1w": -12.5,
+          "hkd_fer_1m": -48.5,
+          "hkd_fer_3m": -138,
+          "hkd_fer_6m": -252.5,
+          "hkd_fer_9m": -375,
+          "hkd_fer_12m": -480
+        },
+        {
+          "end_of_day": "2025-09-18",
+          "hkd_fer_spot": 7.7761,
+          "hkd_fer_1w": -13.5,
+          "hkd_fer_1m": -52.5,
+          "hkd_fer_3m": -142.5,
+          "hkd_fer_6m": -263,
+          "hkd_fer_9m": -384,
+          "hkd_fer_12m": -493
+        },
+        {
+          "end_of_day": "2025-09-17",
+          "hkd_fer_spot": 7.77815,
+          "hkd_fer_1w": -17.5,
+          "hkd_fer_1m": -60.5,
+          "hkd_fer_3m": -155.5,
+          "hkd_fer_6m": -267,
+          "hkd_fer_9m": -395,
+          "hkd_fer_12m": -502
+        },
+        {
+          "end_of_day": "2025-09-16",
+          "hkd_fer_spot": 7.77995,
+          "hkd_fer_1w": -20,
+          "hkd_fer_1m": -70.5,
+          "hkd_fer_3m": -171,
+          "hkd_fer_6m": -282,
+          "hkd_fer_9m": -408,
+          "hkd_fer_12m": -525
+        },
+        {
+          "end_of_day": "2025-09-15",
+          "hkd_fer_spot": 7.77585,
+          "hkd_fer_1w": -16,
+          "hkd_fer_1m": -58.5,
+          "hkd_fer_3m": -152.5,
+          "hkd_fer_6m": -262,
+          "hkd_fer_9m": -389.5,
+          "hkd_fer_12m": -499.5
+        },
+        {
+          "end_of_day": "2025-09-12",
+          "hkd_fer_spot": 7.78365,
+          "hkd_fer_1w": -19.5,
+          "hkd_fer_1m": -68,
+          "hkd_fer_3m": -177.5,
+          "hkd_fer_6m": -304,
+          "hkd_fer_9m": -443.5,
+          "hkd_fer_12m": -552.5
+        },
+        {
+          "end_of_day": "2025-09-11",
+          "hkd_fer_spot": 7.78685,
+          "hkd_fer_1w": -25,
+          "hkd_fer_1m": -78,
+          "hkd_fer_3m": -204.5,
+          "hkd_fer_6m": -353,
+          "hkd_fer_9m": -497.5,
+          "hkd_fer_12m": -617.5
+        },
+        {
+          "end_of_day": "2025-09-10",
+          "hkd_fer_spot": 7.7908,
+          "hkd_fer_1w": -26.5,
+          "hkd_fer_1m": -86.5,
+          "hkd_fer_3m": -212.5,
+          "hkd_fer_6m": -360,
+          "hkd_fer_9m": -509,
+          "hkd_fer_12m": -625
+        },
+        {
+          "end_of_day": "2025-09-09",
+          "hkd_fer_spot": 7.79005,
+          "hkd_fer_1w": -24.5,
+          "hkd_fer_1m": -86.5,
+          "hkd_fer_3m": -212.5,
+          "hkd_fer_6m": -366,
+          "hkd_fer_9m": -516.5,
+          "hkd_fer_12m": -625
+        },
+        {
+          "end_of_day": "2025-09-08",
+          "hkd_fer_spot": 7.79345,
+          "hkd_fer_1w": -25,
+          "hkd_fer_1m": -83.5,
+          "hkd_fer_3m": -226.5,
+          "hkd_fer_6m": -379,
+          "hkd_fer_9m": -534.5,
+          "hkd_fer_12m": -655.5
+        },
+        {
+          "end_of_day": "2025-09-05",
+          "hkd_fer_spot": 7.80065,
+          "hkd_fer_1w": -27,
+          "hkd_fer_1m": -89.5,
+          "hkd_fer_3m": -237.5,
+          "hkd_fer_6m": -419,
+          "hkd_fer_9m": -577.5,
+          "hkd_fer_12m": -703
+        },
+        {
+          "end_of_day": "2025-09-04",
+          "hkd_fer_spot": 7.79725,
+          "hkd_fer_1w": -24.5,
+          "hkd_fer_1m": -83.5,
+          "hkd_fer_3m": -228,
+          "hkd_fer_6m": -406,
+          "hkd_fer_9m": -555.5,
+          "hkd_fer_12m": -674.5
+        },
+        {
+          "end_of_day": "2025-09-03",
+          "hkd_fer_spot": 7.80295,
+          "hkd_fer_1w": -29,
+          "hkd_fer_1m": -97.5,
+          "hkd_fer_3m": -254,
+          "hkd_fer_6m": -434,
+          "hkd_fer_9m": -600,
+          "hkd_fer_12m": -731
+        },
+        {
+          "end_of_day": "2025-09-02",
+          "hkd_fer_spot": 7.80385,
+          "hkd_fer_1w": -26.5,
+          "hkd_fer_1m": -96.5,
+          "hkd_fer_3m": -254,
+          "hkd_fer_6m": -440,
+          "hkd_fer_9m": -605.5,
+          "hkd_fer_12m": -737.5
+        },
+        {
+          "end_of_day": "2025-09-01",
+          "hkd_fer_spot": 7.79285,
+          "hkd_fer_1w": -19,
+          "hkd_fer_1m": -77.5,
+          "hkd_fer_3m": -227,
+          "hkd_fer_6m": -407.5,
+          "hkd_fer_9m": -569.5,
+          "hkd_fer_12m": -699.5
+        },
+        {
+          "end_of_day": "2025-08-29",
+          "hkd_fer_spot": 7.79315,
+          "hkd_fer_1w": -19,
+          "hkd_fer_1m": -78,
+          "hkd_fer_3m": -232.5,
+          "hkd_fer_6m": -417,
+          "hkd_fer_9m": -578.5,
+          "hkd_fer_12m": -704.5
+        },
+        {
+          "end_of_day": "2025-08-28",
+          "hkd_fer_spot": 7.79595,
+          "hkd_fer_1w": -18,
+          "hkd_fer_1m": -81.5,
+          "hkd_fer_3m": -240.5,
+          "hkd_fer_6m": -432,
+          "hkd_fer_9m": -588,
+          "hkd_fer_12m": -720
+        },
+        {
+          "end_of_day": "2025-08-27",
+          "hkd_fer_spot": 7.7819,
+          "hkd_fer_1w": -1,
+          "hkd_fer_1m": -64,
+          "hkd_fer_3m": -179,
+          "hkd_fer_6m": -350.5,
+          "hkd_fer_9m": -482,
+          "hkd_fer_12m": -592
+        },
+        {
+          "end_of_day": "2025-08-26",
+          "hkd_fer_spot": 7.80255,
+          "hkd_fer_1w": -18.5,
+          "hkd_fer_1m": -101,
+          "hkd_fer_3m": -264.5,
+          "hkd_fer_6m": -467,
+          "hkd_fer_9m": -621.5,
+          "hkd_fer_12m": -756
+        },
+        {
+          "end_of_day": "2025-08-25",
+          "hkd_fer_spot": 7.8124,
+          "hkd_fer_1w": -20,
+          "hkd_fer_1m": -111.5,
+          "hkd_fer_3m": -298,
+          "hkd_fer_6m": -508,
+          "hkd_fer_9m": -674,
+          "hkd_fer_12m": -811.5
+        },
+        {
+          "end_of_day": "2025-08-22",
+          "hkd_fer_spot": 7.8163,
+          "hkd_fer_1w": -23.5,
+          "hkd_fer_1m": -119,
+          "hkd_fer_3m": -320,
+          "hkd_fer_6m": -539,
+          "hkd_fer_9m": -709,
+          "hkd_fer_12m": -855
+        },
+        {
+          "end_of_day": "2025-08-21",
+          "hkd_fer_spot": 7.81145,
+          "hkd_fer_1w": -26,
+          "hkd_fer_1m": -116,
+          "hkd_fer_3m": -313,
+          "hkd_fer_6m": -513,
+          "hkd_fer_9m": -675,
+          "hkd_fer_12m": -813
+        },
+        {
+          "end_of_day": "2025-08-20",
+          "hkd_fer_spot": 7.81105,
+          "hkd_fer_1w": -25,
+          "hkd_fer_1m": -112.5,
+          "hkd_fer_3m": -305,
+          "hkd_fer_6m": -506,
+          "hkd_fer_9m": -656.5,
+          "hkd_fer_12m": -795.5
+        },
+        {
+          "end_of_day": "2025-08-19",
+          "hkd_fer_spot": 7.80185,
+          "hkd_fer_1w": -21,
+          "hkd_fer_1m": -104.5,
+          "hkd_fer_3m": -288,
+          "hkd_fer_6m": -474,
+          "hkd_fer_9m": -624.5,
+          "hkd_fer_12m": -751
+        },
+        {
+          "end_of_day": "2025-08-18",
+          "hkd_fer_spot": 7.82295,
+          "hkd_fer_1w": -31.5,
+          "hkd_fer_1m": -152,
+          "hkd_fer_3m": -394,
+          "hkd_fer_6m": -631,
+          "hkd_fer_9m": -810,
+          "hkd_fer_12m": -961
+        },
+        {
+          "end_of_day": "2025-08-15",
+          "hkd_fer_spot": 7.81445,
+          "hkd_fer_1w": -36,
+          "hkd_fer_1m": -152,
+          "hkd_fer_3m": -420,
+          "hkd_fer_6m": -652,
+          "hkd_fer_9m": -823,
+          "hkd_fer_12m": -962
+        },
+        {
+          "end_of_day": "2025-08-14",
+          "hkd_fer_spot": 7.84815,
+          "hkd_fer_1w": -56.5,
+          "hkd_fer_1m": -221,
+          "hkd_fer_3m": -512,
+          "hkd_fer_6m": -769.5,
+          "hkd_fer_9m": -959,
+          "hkd_fer_12m": -1123
+        },
+        {
+          "end_of_day": "2025-08-13",
+          "hkd_fer_spot": 7.84995,
+          "hkd_fer_1w": -59,
+          "hkd_fer_1m": -233,
+          "hkd_fer_3m": -545,
+          "hkd_fer_6m": -807,
+          "hkd_fer_9m": -993,
+          "hkd_fer_12m": -1165
+        },
+        {
+          "end_of_day": "2025-08-12",
+          "hkd_fer_spot": 7.84995,
+          "hkd_fer_1w": -60.5,
+          "hkd_fer_1m": -248,
+          "hkd_fer_3m": -560.5,
+          "hkd_fer_6m": -844,
+          "hkd_fer_9m": -1031,
+          "hkd_fer_12m": -1204
+        },
+        {
+          "end_of_day": "2025-08-11",
+          "hkd_fer_spot": 7.8499,
+          "hkd_fer_1w": -60,
+          "hkd_fer_1m": -250,
+          "hkd_fer_3m": -551,
+          "hkd_fer_6m": -819.5,
+          "hkd_fer_9m": -1018.5,
+          "hkd_fer_12m": -1191.5
+        },
+        {
+          "end_of_day": "2025-08-08",
+          "hkd_fer_spot": 7.84985,
+          "hkd_fer_1w": -60.5,
+          "hkd_fer_1m": -239.5,
+          "hkd_fer_3m": -553.5,
+          "hkd_fer_6m": -830,
+          "hkd_fer_9m": -1030,
+          "hkd_fer_12m": -1206
+        },
+        {
+          "end_of_day": "2025-08-07",
+          "hkd_fer_spot": 7.84975,
+          "hkd_fer_1w": -58.5,
+          "hkd_fer_1m": -231,
+          "hkd_fer_3m": -547.5,
+          "hkd_fer_6m": -814,
+          "hkd_fer_9m": -1014.5,
+          "hkd_fer_12m": -1187
+        },
+        {
+          "end_of_day": "2025-08-06",
+          "hkd_fer_spot": 7.84995,
+          "hkd_fer_1w": -61.5,
+          "hkd_fer_1m": -244,
+          "hkd_fer_3m": -570,
+          "hkd_fer_6m": -844.5,
+          "hkd_fer_9m": -1035,
+          "hkd_fer_12m": -1215
+        },
+        {
+          "end_of_day": "2025-08-05",
+          "hkd_fer_spot": 7.84975,
+          "hkd_fer_1w": -60.5,
+          "hkd_fer_1m": -241,
+          "hkd_fer_3m": -544.5,
+          "hkd_fer_6m": -829.5,
+          "hkd_fer_9m": -1023,
+          "hkd_fer_12m": -1191
+        },
+        {
+          "end_of_day": "2025-08-04",
+          "hkd_fer_spot": 7.85,
+          "hkd_fer_1w": -60.5,
+          "hkd_fer_1m": -247,
+          "hkd_fer_3m": -552,
+          "hkd_fer_6m": -840,
+          "hkd_fer_9m": -1044,
+          "hkd_fer_12m": -1217
+        },
+        {
+          "end_of_day": "2025-08-01",
+          "hkd_fer_spot": 7.85,
+          "hkd_fer_1w": -60.5,
+          "hkd_fer_1m": -240,
+          "hkd_fer_3m": -584.5,
+          "hkd_fer_6m": -882.5,
+          "hkd_fer_9m": -1096,
+          "hkd_fer_12m": -1277
+        },
+        {
+          "end_of_day": "2025-07-31",
+          "hkd_fer_spot": 7.84985,
+          "hkd_fer_1w": -57.5,
+          "hkd_fer_1m": -230.5,
+          "hkd_fer_3m": -578.5,
+          "hkd_fer_6m": -885.5,
+          "hkd_fer_9m": -1098,
+          "hkd_fer_12m": -1274
+        },
+        {
+          "end_of_day": "2025-07-30",
+          "hkd_fer_spot": 7.84995,
+          "hkd_fer_1w": -55.5,
+          "hkd_fer_1m": -235,
+          "hkd_fer_3m": -582.5,
+          "hkd_fer_6m": -883.5,
+          "hkd_fer_9m": -1094,
+          "hkd_fer_12m": -1273
+        },
+        {
+          "end_of_day": "2025-07-29",
+          "hkd_fer_spot": 7.84995,
+          "hkd_fer_1w": -53.5,
+          "hkd_fer_1m": -212.5,
+          "hkd_fer_3m": -562.5,
+          "hkd_fer_6m": -855,
+          "hkd_fer_9m": -1067,
+          "hkd_fer_12m": -1241
+        },
+        {
+          "end_of_day": "2025-07-28",
+          "hkd_fer_spot": 7.84945,
+          "hkd_fer_1w": -52.5,
+          "hkd_fer_1m": -221,
+          "hkd_fer_3m": -566,
+          "hkd_fer_6m": -861,
+          "hkd_fer_9m": -1068.5,
+          "hkd_fer_12m": -1244.5
+        },
+        {
+          "end_of_day": "2025-07-25",
+          "hkd_fer_spot": 7.84825,
+          "hkd_fer_1w": -50.5,
+          "hkd_fer_1m": -227.5,
+          "hkd_fer_3m": -558.5,
+          "hkd_fer_6m": -836.5,
+          "hkd_fer_9m": -1039,
+          "hkd_fer_12m": -1211
+        },
+        {
+          "end_of_day": "2025-07-24",
+          "hkd_fer_spot": 7.8496,
+          "hkd_fer_1w": -56.5,
+          "hkd_fer_1m": -239,
+          "hkd_fer_3m": -560,
+          "hkd_fer_6m": -826.5,
+          "hkd_fer_9m": -1026.5,
+          "hkd_fer_12m": -1200
+        },
+        {
+          "end_of_day": "2025-07-23",
+          "hkd_fer_spot": 7.84995,
+          "hkd_fer_1w": -59.5,
+          "hkd_fer_1m": -239.5,
+          "hkd_fer_3m": -560,
+          "hkd_fer_6m": -809.5,
+          "hkd_fer_9m": -1014,
+          "hkd_fer_12m": -1181
+        },
+        {
+          "end_of_day": "2025-07-22",
+          "hkd_fer_spot": 7.84975,
+          "hkd_fer_1w": -60.5,
+          "hkd_fer_1m": -244.5,
+          "hkd_fer_3m": -551.5,
+          "hkd_fer_6m": -810,
+          "hkd_fer_9m": -1016,
+          "hkd_fer_12m": -1185
+        },
+        {
+          "end_of_day": "2025-07-21",
+          "hkd_fer_spot": 7.84975,
+          "hkd_fer_1w": -62,
+          "hkd_fer_1m": -260,
+          "hkd_fer_3m": -567,
+          "hkd_fer_6m": -835,
+          "hkd_fer_9m": -1045,
+          "hkd_fer_12m": -1217
+        },
+        {
+          "end_of_day": "2025-07-18",
+          "hkd_fer_spot": 7.8489,
+          "hkd_fer_1w": -62.5,
+          "hkd_fer_1m": -253.5,
+          "hkd_fer_3m": -584,
+          "hkd_fer_6m": -853,
+          "hkd_fer_9m": -1075,
+          "hkd_fer_12m": -1234.5
+        },
+        {
+          "end_of_day": "2025-07-17",
+          "hkd_fer_spot": 7.8495,
+          "hkd_fer_1w": -60.5,
+          "hkd_fer_1m": -224,
+          "hkd_fer_3m": -496.5,
+          "hkd_fer_6m": -744,
+          "hkd_fer_9m": -949,
+          "hkd_fer_12m": -1109
+        },
+        {
+          "end_of_day": "2025-07-16",
+          "hkd_fer_spot": 7.8499,
+          "hkd_fer_1w": -58.5,
+          "hkd_fer_1m": -219.5,
+          "hkd_fer_3m": -491.5,
+          "hkd_fer_6m": -733,
+          "hkd_fer_9m": -939,
+          "hkd_fer_12m": -1097
+        },
+        {
+          "end_of_day": "2025-07-15",
+          "hkd_fer_spot": 7.84995,
+          "hkd_fer_1w": -60.5,
+          "hkd_fer_1m": -231,
+          "hkd_fer_3m": -505,
+          "hkd_fer_6m": -758,
+          "hkd_fer_9m": -967,
+          "hkd_fer_12m": -1128
+        },
+        {
+          "end_of_day": "2025-07-14",
+          "hkd_fer_spot": 7.85,
+          "hkd_fer_1w": -58.5,
+          "hkd_fer_1m": -233,
+          "hkd_fer_3m": -498.5,
+          "hkd_fer_6m": -750,
+          "hkd_fer_9m": -965,
+          "hkd_fer_12m": -1122
+        },
+        {
+          "end_of_day": "2025-07-11",
+          "hkd_fer_spot": 7.84995,
+          "hkd_fer_1w": -59.5,
+          "hkd_fer_1m": -223.5,
+          "hkd_fer_3m": -514.5,
+          "hkd_fer_6m": -777.5,
+          "hkd_fer_9m": -1002,
+          "hkd_fer_12m": -1166
+        },
+        {
+          "end_of_day": "2025-07-10",
+          "hkd_fer_spot": 7.84995,
+          "hkd_fer_1w": -61,
+          "hkd_fer_1m": -226,
+          "hkd_fer_3m": -525.5,
+          "hkd_fer_6m": -800,
+          "hkd_fer_9m": -1026,
+          "hkd_fer_12m": -1189
+        },
+        {
+          "end_of_day": "2025-07-09",
+          "hkd_fer_spot": 7.85,
+          "hkd_fer_1w": -60.5,
+          "hkd_fer_1m": -221.5,
+          "hkd_fer_3m": -531.5,
+          "hkd_fer_6m": -790,
+          "hkd_fer_9m": -1006,
+          "hkd_fer_12m": -1170
+        },
+        {
+          "end_of_day": "2025-07-08",
+          "hkd_fer_spot": 7.84995,
+          "hkd_fer_1w": -60.5,
+          "hkd_fer_1m": -227.5,
+          "hkd_fer_3m": -522,
+          "hkd_fer_6m": -801,
+          "hkd_fer_9m": -1012,
+          "hkd_fer_12m": -1174
+        },
+        {
+          "end_of_day": "2025-07-07",
+          "hkd_fer_spot": 7.8499,
+          "hkd_fer_1w": -59,
+          "hkd_fer_1m": -233.5,
+          "hkd_fer_3m": -523.5,
+          "hkd_fer_6m": -790,
+          "hkd_fer_9m": -1004.5,
+          "hkd_fer_12m": -1161
+        },
+        {
+          "end_of_day": "2025-07-04",
+          "hkd_fer_spot": 7.84965,
+          "hkd_fer_1w": -58,
+          "hkd_fer_1m": -228.5,
+          "hkd_fer_3m": -528.5,
+          "hkd_fer_6m": -800,
+          "hkd_fer_9m": -1011,
+          "hkd_fer_12m": -1172
+        },
+        {
+          "end_of_day": "2025-07-03",
+          "hkd_fer_spot": 7.84985,
+          "hkd_fer_1w": -63,
+          "hkd_fer_1m": -250.5,
+          "hkd_fer_3m": -568.5,
+          "hkd_fer_6m": -842,
+          "hkd_fer_9m": -1050,
+          "hkd_fer_12m": -1207
+        },
+        {
+          "end_of_day": "2025-07-02",
+          "hkd_fer_spot": 7.84985,
+          "hkd_fer_1w": -62,
+          "hkd_fer_1m": -248,
+          "hkd_fer_3m": -560.5,
+          "hkd_fer_6m": -832,
+          "hkd_fer_9m": -1033,
+          "hkd_fer_12m": -1184
+        },
+        {
+          "end_of_day": "2025-06-30",
+          "hkd_fer_spot": 7.84985,
+          "hkd_fer_1w": -64,
+          "hkd_fer_1m": -265.5,
+          "hkd_fer_3m": -573.5,
+          "hkd_fer_6m": -870,
+          "hkd_fer_9m": -1075,
+          "hkd_fer_12m": -1226.5
+        },
+        {
+          "end_of_day": "2025-06-27",
+          "hkd_fer_spot": 7.84985,
+          "hkd_fer_1w": -63.5,
+          "hkd_fer_1m": -267.5,
+          "hkd_fer_3m": -563,
+          "hkd_fer_6m": -840,
+          "hkd_fer_9m": -1035,
+          "hkd_fer_12m": -1190
+        },
+        {
+          "end_of_day": "2025-06-26",
+          "hkd_fer_spot": 7.84965,
+          "hkd_fer_1w": -63,
+          "hkd_fer_1m": -245,
+          "hkd_fer_3m": -536.5,
+          "hkd_fer_6m": -817,
+          "hkd_fer_9m": -992,
+          "hkd_fer_12m": -1134
+        },
+        {
+          "end_of_day": "2025-06-25",
+          "hkd_fer_spot": 7.84995,
+          "hkd_fer_1w": -87,
+          "hkd_fer_1m": -236.5,
+          "hkd_fer_3m": -546,
+          "hkd_fer_6m": -827,
+          "hkd_fer_9m": -996,
+          "hkd_fer_12m": -1143.5
+        },
+        {
+          "end_of_day": "2025-06-24",
+          "hkd_fer_spot": 7.84995,
+          "hkd_fer_1w": -61,
+          "hkd_fer_1m": -243,
+          "hkd_fer_3m": -564.5,
+          "hkd_fer_6m": -871,
+          "hkd_fer_9m": -1030,
+          "hkd_fer_12m": -1171.5
+        },
+        {
+          "end_of_day": "2025-06-23",
+          "hkd_fer_spot": 7.84995,
+          "hkd_fer_1w": -61,
+          "hkd_fer_1m": -239.5,
+          "hkd_fer_3m": -583,
+          "hkd_fer_6m": -889,
+          "hkd_fer_9m": -1045,
+          "hkd_fer_12m": -1189.5
+        },
+        {
+          "end_of_day": "2025-06-20",
+          "hkd_fer_spot": 7.84985,
+          "hkd_fer_1w": -69.5,
+          "hkd_fer_1m": -241.5,
+          "hkd_fer_3m": -588,
+          "hkd_fer_6m": -883,
+          "hkd_fer_9m": -1050,
+          "hkd_fer_12m": -1200.5
+        },
+        {
+          "end_of_day": "2025-06-19",
+          "hkd_fer_spot": 7.84985,
+          "hkd_fer_1w": -63.5,
+          "hkd_fer_1m": -253.5,
+          "hkd_fer_3m": -608.5,
+          "hkd_fer_6m": -925,
+          "hkd_fer_9m": -1093,
+          "hkd_fer_12m": -1205.5
+        },
+        {
+          "end_of_day": "2025-06-18",
+          "hkd_fer_spot": 7.84985,
+          "hkd_fer_1w": -64,
+          "hkd_fer_1m": -261.5,
+          "hkd_fer_3m": -613.5,
+          "hkd_fer_6m": -907,
+          "hkd_fer_9m": -1089,
+          "hkd_fer_12m": -1241
+        },
+        {
+          "end_of_day": "2025-06-17",
+          "hkd_fer_spot": 7.84975,
+          "hkd_fer_1w": -63.5,
+          "hkd_fer_1m": -261.5,
+          "hkd_fer_3m": -607.5,
+          "hkd_fer_6m": -907,
+          "hkd_fer_9m": -1071,
+          "hkd_fer_12m": -1228.5
+        },
+        {
+          "end_of_day": "2025-06-16",
+          "hkd_fer_spot": 7.84975,
+          "hkd_fer_1w": -63.5,
+          "hkd_fer_1m": -256.5,
+          "hkd_fer_3m": -596.5,
+          "hkd_fer_6m": -900,
+          "hkd_fer_9m": -1056.5,
+          "hkd_fer_12m": -1200.5
+        },
+        {
+          "end_of_day": "2025-06-13",
+          "hkd_fer_spot": 7.8494,
+          "hkd_fer_1w": -63.5,
+          "hkd_fer_1m": -256.5,
+          "hkd_fer_3m": -589.5,
+          "hkd_fer_6m": -874,
+          "hkd_fer_9m": -1027.5,
+          "hkd_fer_12m": -1175.5
+        },
+        {
+          "end_of_day": "2025-06-12",
+          "hkd_fer_spot": 7.84835,
+          "hkd_fer_1w": -63.5,
+          "hkd_fer_1m": -252.5,
+          "hkd_fer_3m": -567.5,
+          "hkd_fer_6m": -850,
+          "hkd_fer_9m": -1001.5,
+          "hkd_fer_12m": -1151.5
+        },
+        {
+          "end_of_day": "2025-06-11",
+          "hkd_fer_spot": 7.8492,
+          "hkd_fer_1w": -62.5,
+          "hkd_fer_1m": -251.5,
+          "hkd_fer_3m": -566.5,
+          "hkd_fer_6m": -842,
+          "hkd_fer_9m": -995,
+          "hkd_fer_12m": -1141
+        },
+        {
+          "end_of_day": "2025-06-10",
+          "hkd_fer_spot": 7.84865,
+          "hkd_fer_1w": -72.5,
+          "hkd_fer_1m": -266.5,
+          "hkd_fer_3m": -575,
+          "hkd_fer_6m": -864,
+          "hkd_fer_9m": -1028,
+          "hkd_fer_12m": -1180
+        },
+        {
+          "end_of_day": "2025-06-09",
+          "hkd_fer_spot": 7.84805,
+          "hkd_fer_1w": -64.5,
+          "hkd_fer_1m": -255.5,
+          "hkd_fer_3m": -581.5,
+          "hkd_fer_6m": -864,
+          "hkd_fer_9m": -1030,
+          "hkd_fer_12m": -1185
+        }
+      ]
+    }
+  }
+}

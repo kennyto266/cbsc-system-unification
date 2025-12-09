@@ -1,0 +1,186 @@
+{
+  "data_source": "interbank_liquidity",
+  "data_characteristics": {
+    "type": "liquidity",
+    "length": 8704,
+    "has_date_column": true,
+    "numeric_columns": 44
+  },
+  "total_indicators_evaluated": 10,
+  "suitable_indicators_count": 10,
+  "indicators_by_category": {
+    "trend": [
+      {
+        "name": "SMA",
+        "suitability_score": 1,
+        "recommended_params": {},
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for liquidity data"
+        ]
+      },
+      {
+        "name": "EMA",
+        "suitability_score": 1,
+        "recommended_params": {},
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for liquidity data"
+        ]
+      },
+      {
+        "name": "MACD",
+        "suitability_score": 0.95,
+        "recommended_params": {},
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for liquidity data"
+        ]
+      }
+    ],
+    "custom": [
+      {
+        "name": "Rate_Spread",
+        "suitability_score": 1,
+        "recommended_params": {},
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for liquidity data"
+        ]
+      },
+      {
+        "name": "Yield_Curve",
+        "suitability_score": 1,
+        "recommended_params": {},
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for liquidity data"
+        ]
+      }
+    ],
+    "momentum": [
+      {
+        "name": "CCI",
+        "suitability_score": 0.85,
+        "recommended_params": {},
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for liquidity data"
+        ]
+      },
+      {
+        "name": "RSI",
+        "suitability_score": 0.7,
+        "recommended_params": {},
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for liquidity data"
+        ]
+      },
+      {
+        "name": "Stochastic",
+        "suitability_score": 0.6,
+        "recommended_params": {},
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for liquidity data"
+        ]
+      }
+    ],
+    "volatility": [
+      {
+        "name": "Bollinger_Bands",
+        "suitability_score": 0.7,
+        "recommended_params": {},
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for liquidity data"
+        ]
+      },
+      {
+        "name": "ATR",
+        "suitability_score": 0.6,
+        "recommended_params": {},
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for liquidity data"
+        ]
+      }
+    ]
+  },
+  "top_recommendations": [
+    {
+      "name": "SMA",
+      "suitability_score": 1,
+      "category": "trend",
+      "recommended_params": {},
+      "reasons": [
+        "Sufficient data length (8704 records)"
+      ]
+    },
+    {
+      "name": "EMA",
+      "suitability_score": 1,
+      "category": "trend",
+      "recommended_params": {},
+      "reasons": [
+        "Sufficient data length (8704 records)"
+      ]
+    },
+    {
+      "name": "Rate_Spread",
+      "suitability_score": 1,
+      "category": "custom",
+      "recommended_params": {},
+      "reasons": [
+        "Sufficient data length (8704 records)"
+      ]
+    },
+    {
+      "name": "Yield_Curve",
+      "suitability_score": 1,
+      "category": "custom",
+      "recommended_params": {},
+      "reasons": [
+        "Sufficient data length (8704 records)"
+      ]
+    },
+    {
+      "name": "MACD",
+      "suitability_score": 0.95,
+      "category": "trend",
+      "recommended_params": {},
+      "reasons": [
+        "Sufficient data length (8704 records)"
+      ]
+    }
+  ],
+  "not_recommended": [],
+  "summary": {
+    "highly_suitable_count": 6,
+    "moderately_suitable_count": 4,
+    "not_suitable_count": 0,
+    "best_indicator": "SMA",
+    "best_score": 1
+  }
+}

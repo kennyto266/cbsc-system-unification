@@ -1,0 +1,56 @@
+{
+  "timestamp": "2025-11-24 00:03:26",
+  "test_summary": {
+    "total_tests": 7,
+    "passed_tests": 0,
+    "failed_tests": 7,
+    "success_rate": 0.0,
+    "health_status": "需要改進"
+  },
+  "test_details": [
+    {
+      "name": "智能緩存系統",
+      "success": false,
+      "time": 0.0002875328063964844
+    },
+    {
+      "name": "錯誤處理系統",
+      "success": false,
+      "time": 0.00021576881408691406
+    },
+    {
+      "name": "性能監控系統",
+      "success": false,
+      "time": 0.0002079010009765625
+    },
+    {
+      "name": "指標計算引擎",
+      "success": false,
+      "time": 0.00020265579223632812
+    },
+    {
+      "name": "數據源管理器",
+      "success": false,
+      "time": 0.00020360946655273438
+    },
+    {
+      "name": "保護策略驗證",
+      "success": false,
+      "time": 0.00020074844360351562
+    },
+    {
+      "name": "性能基準驗證",
+      "success": false,
+      "time": 0.0001976490020751953
+    }
+  ],
+  "system_validation": {
+    "cache_working": false,
+    "error_handling_working": false,
+    "performance_monitoring_working": false,
+    "indicator_engine_working": false,
+    "data_manager_working": false,
+    "protected_strategies_valid": false,
+    "performance_benchmarks_met": false
+  }
+}

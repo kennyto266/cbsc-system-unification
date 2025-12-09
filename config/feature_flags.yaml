@@ -1,0 +1,230 @@
+# Feature Flags Configuration for 32-Core Parallel Processing System
+# This configuration allows gradual rollout of new stability features
+# All features are initially disabled for safe deployment
+
+feature_flags:
+  # Memory Management Features (Phase 1)
+  enable_adaptive_memory: false
+  enable_memory_leak_detection: false
+  enable_memory_pool_management: false
+
+  # IPC Synchronization Features (Phase 2)
+  enable_atomic_initialization: false
+  enable_deadlock_detection: false
+  enable_smart_message_queue: false
+
+  # Resource Lifecycle Management Features (Phase 3)
+  enable_lifecycle_manager: false
+  enable_zombie_detection: false
+  enable_resource_cleaner: false
+
+  # Monitoring and Recovery Features (Phase 4-5)
+  enable_stability_monitor: false
+  enable_auto_recovery: false
+  enable_performance_profiling: false
+
+# Feature Rollout Configuration
+rollout_strategy:
+  # Enable features gradually by percentage of processes
+  percentage_enabled:
+    adaptive_memory: 0          # 0% of processes
+    memory_leak_detection: 0    # 0% of processes
+    memory_pool_management: 0   # 0% of processes
+
+  # Process-based rollout (list of process IDs)
+  process_whitelist: []
+
+  # Time-based rollout schedule
+  rollout_schedule:
+    phase1_memory_management:
+      start_time: "2025-11-29T00:00:00Z"
+      enable_adaptive_memory: true
+      enable_memory_leak_detection: true
+      enable_memory_pool_management: true
+
+    phase2_ipc_synchronization:
+      start_time: "2025-12-01T00:00:00Z"
+      enable_atomic_initialization: true
+      enable_deadlock_detection: true
+      enable_smart_message_queue: true
+
+# Safety Configuration
+safety_settings:
+  # Emergency disable all features if critical issues detected
+  emergency_disable_all: false
+
+  # Maximum memory usage before automatic feature disable
+  max_memory_usage_percent: 90
+
+  # Maximum error rate before automatic feature disable
+  max_error_rate_percent: 5
+
+  # Automatic rollback conditions
+  auto_rollback_conditions:
+    memory_oom: true
+    deadlock_detected: true
+    system_crash: true
+    performance_degradation: true
+
+# Monitoring Configuration
+monitoring:
+  # Enable detailed logging for debugging
+  verbose_logging: false
+
+  # Log levels for different components
+  log_levels:
+    adaptive_allocator: "INFO"
+    leak_detector: "WARNING"
+    pool_manager: "INFO"
+    ipc_system: "INFO"
+    lifecycle_manager: "INFO"
+
+  # Performance metrics collection
+  enable_metrics_collection: true
+  metrics_retention_days: 30
+
+# Feature-specific Configuration
+feature_config:
+  adaptive_memory:
+    # Memory allocation parameters
+    safety_margin_percent: 10
+    max_shared_memory_ratio: 0.65
+    min_shared_memory_ratio: 0.15
+
+    # Pressure thresholds
+    pressure_thresholds:
+      low: 50
+      medium: 75
+      high: 85
+      critical: 90
+
+  memory_leak_detection:
+    # Detection thresholds
+    detection_threshold_mb: 100
+    monitoring_interval_seconds: 30
+    time_window_minutes: 10
+
+    # Auto-cleanup settings
+    auto_cleanup_threshold_mb: 500
+    enable_auto_cleanup: true
+
+    # Alert settings
+    alert_cooldown_minutes: 5
+    max_alerts_per_hour: 10
+
+  memory_pool_manager:
+    # Pool management parameters
+    max_pools: 100
+    max_total_memory_mb: 8192
+    defragmentation_threshold: 0.7
+
+    # Maintenance settings
+    auto_defragment: true
+    defragmentation_interval_seconds: 300
+    pool_timeout_minutes: 60
+
+    # Backup settings
+    enable_backup: true
+    backup_retention_days: 7
+
+  atomic_initialization:
+    # Initialization parameters
+    max_init_attempts: 3
+    init_timeout_seconds: 30
+    dependency_check_interval_seconds: 5
+
+  deadlock_detection:
+    # Detection parameters
+    detection_interval_seconds: 5
+    max_lock_wait_time_seconds: 60
+    deadlock_resolution_strategy: "kill_lowest_priority"
+
+  smart_message_queue:
+    # Queue parameters
+    max_queue_size: 10000
+    backpressure_threshold: 0.8
+    message_timeout_seconds: 30
+
+    # Retry settings
+    max_retries: 3
+    retry_backoff_factor: 2
+
+  lifecycle_manager:
+    # Shutdown parameters
+    graceful_shutdown_timeout_seconds: 60
+    force_termination_timeout_seconds: 20
+
+    # Phase timeouts
+    phase_timeouts:
+      stop_new_work: 5
+      graceful_shutdown: 30
+      force_termination: 20
+      resource_cleanup: 5
+
+  zombie_detection:
+    # Detection parameters
+    check_interval_seconds: 10
+    zombie_cleanup_delay_seconds: 5
+
+    # Alert settings
+    max_zombie_count: 5
+    alert_on_zombie_detection: true
+
+  resource_cleaner:
+    # Cleanup parameters
+    cleanup_interval_seconds: 60
+    max_cleanup_time_seconds: 30
+
+    # Resource types to clean
+    cleanup_resources:
+      - file_handles
+      - shared_memory
+      - network_connections
+      - threads
+      - locks
+
+# Testing Configuration
+testing:
+  # Enable test mode for development
+  test_mode: false
+
+  # Mock external dependencies
+  mock_dependencies: false
+
+  # Test data generation
+  generate_test_data: false
+
+  # Performance testing
+  enable_performance_tests: false
+  performance_test_duration_seconds: 300
+
+# Development Configuration
+development:
+  # Enable debug features
+  debug_mode: false
+
+  # Enable feature override for testing
+  allow_feature_override: true
+
+  # Development logging
+  development_logging: true
+
+  # Hot reload configuration changes
+  hot_reload_config: false
+
+# Production Configuration
+production:
+  # Production mode settings
+  production_mode: true
+
+  # Strict feature flag enforcement
+  strict_feature_enforcement: true
+
+  # Disable development features
+  disable_dev_features: true
+
+  # Production logging
+  production_logging: true
+
+  # Performance optimization
+  optimize_for_performance: true

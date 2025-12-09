@@ -1,0 +1,22 @@
+{
+  "name": "Executive",
+  "template_type": "executive_briefing",
+  "description": "Executive briefing template for senior management",
+  "author": "System",
+  "version": "1.0.0",
+  "created_at": "2025-11-23T23:12:52.484232",
+  "updated_at": "2025-11-23T23:12:52.484234",
+  "file_path": "executive_template.html",
+  "preview_image": null,
+  "css_files": [],
+  "js_files": [],
+  "variables": {},
+  "sections": [
+    "Executive Header",
+    "Summary",
+    "Key Metrics",
+    "Recommendations"
+  ],
+  "is_default": false,
+  "is_active": true
+}

@@ -1,0 +1,870 @@
+{
+  "Unnamed: 0": {
+    "data_type": "ratio_data",
+    "data_length": 8704,
+    "indicators": {
+      "sma": {
+        "mean": 5542.169223272087,
+        "std": 1696.0008699906325,
+        "min": 2609.0,
+        "max": 8474.64,
+        "latest": 8474.64,
+        "info": {
+          "data_type": "ratio_data",
+          "period_used": 25,
+          "data_length": 8704,
+          "adaptation_reason": "Adapted for ratio_data"
+        },
+        "data_points": 8704
+      },
+      "ema": {
+        "mean": 5543.852401387672,
+        "std": 1696.0035100919533,
+        "min": 2609.0,
+        "max": 8476.441928599375,
+        "latest": 8476.441928599375,
+        "info": {},
+        "data_points": 8704
+      },
+      "macd": {
+        "macd": "0       0.000000\n1       0.094862\n2       0.259089\n3       0.377676\n4       0.460293\n          ...   \n8699    4.012117\n8700    4.030138\n8701    3.979882\n8702    3.974278\n8703    4.002119\nName: Unnamed: 0, Length: 8704, dtype: float64",
+        "signal": "0       0.000000\n1       0.018972\n2       0.066996\n3       0.129132\n4       0.195364\n          ...   \n8699    3.991867\n8700    3.999522\n8701    3.995594\n8702    3.991331\n8703    3.993488\nName: Unnamed: 0, Length: 8704, dtype: float64",
+        "histogram": "0       0.000000\n1       0.075889\n2       0.192093\n3       0.248544\n4       0.264929\n          ...   \n8699    0.020250\n8700    0.030616\n8701   -0.015711\n8702   -0.017052\n8703    0.008631\nName: Unnamed: 0, Length: 8704, dtype: float64",
+        "adaptation_info": {
+          "data_type": "ratio_data",
+          "parameters_used": {
+            "fast": 10,
+            "slow": 22,
+            "signal": 9
+          },
+          "data_length": 8704
+        }
+      },
+      "rsi": {
+        "mean": 50.0,
+        "std": 0.0,
+        "min": 50.0,
+        "max": 50.0,
+        "latest": 50.0,
+        "info": {
+          "data_type": "ratio_data",
+          "period_used": 16,
+          "data_length": 8704,
+          "adaptation_reason": "Optimized for ratio_data"
+        },
+        "data_points": 8704
+      },
+      "bollinger_bands": {
+        "upper": "0               NaN\n1       2610.914214\n2       2612.000000\n3       2612.164854\n4       2612.188854\n           ...     \n8699    8481.966755\n8700    8482.666755\n8701    8483.258966\n8702    8483.966755\n8703    8484.666755\nName: Unnamed: 0, Length: 8704, dtype: float64",
+        "middle": "0       2609.00\n1       2609.50\n2       2610.00\n3       2610.25\n4       2610.40\n         ...   \n8699    8473.65\n8700    8474.35\n8701    8475.00\n8702    8475.65\n8703    8476.35\nName: Unnamed: 0, Length: 8704, dtype: float64",
+        "lower": "0               NaN\n1       2608.085786\n2       2608.000000\n3       2608.335146\n4       2608.611146\n           ...     \n8699    8465.333245\n8700    8466.033245\n8701    8466.741034\n8702    8467.333245\n8703    8468.033245\nName: Unnamed: 0, Length: 8704, dtype: float64"
+      }
+    }
+  },
+  "efb_7d": {
+    "data_type": "flow_data",
+    "data_length": 8704,
+    "indicators": {
+      "sma": {
+        "mean": 1.049742514428002,
+        "std": 1.3986353072612365,
+        "min": -0.7230000000000001,
+        "max": 4.894666666666666,
+        "latest": 3.1733333333333333,
+        "info": {
+          "data_type": "flow_data",
+          "period_used": 30,
+          "data_length": 8704,
+          "adaptation_reason": "Adapted for flow_data"
+        },
+        "data_points": 8704
+      },
+      "ema": {
+        "mean": 1.0507312686612758,
+        "std": 1.401097430353509,
+        "min": -1.066272448383112,
+        "max": 4.97323698974642,
+        "latest": 3.1715829023427746,
+        "info": {},
+        "data_points": 8704
+      },
+      "macd": {
+        "macd": "0       0.000000\n1      -0.003480\n2      -0.011867\n3      -0.018886\n4      -0.024706\n          ...   \n8699    0.031344\n8700    0.038176\n8701    0.043725\n8702    0.045674\n8703    0.053019\nName: efb_7d, Length: 8704, dtype: float64",
+        "signal": "0       0.000000\n1      -0.000696\n2      -0.002930\n3      -0.006121\n4      -0.009838\n          ...   \n8699    0.083687\n8700    0.074585\n8701    0.068413\n8702    0.063865\n8703    0.061696\nName: efb_7d, Length: 8704, dtype: float64",
+        "histogram": "0       0.000000\n1      -0.002784\n2      -0.008937\n3      -0.012765\n4      -0.014868\n          ...   \n8699   -0.052343\n8700   -0.036409\n8701   -0.024687\n8702   -0.018191\n8703   -0.008677\nName: efb_7d, Length: 8704, dtype: float64",
+        "adaptation_info": {
+          "data_type": "flow_data",
+          "parameters_used": {
+            "fast": 18,
+            "slow": 35,
+            "signal": 9
+          },
+          "data_length": 8704
+        }
+      },
+      "rsi": {
+        "mean": 49.82740965824305,
+        "std": 16.01495533760999,
+        "min": 0.0,
+        "max": 99.54545454545455,
+        "latest": 51.832460732984295,
+        "info": {
+          "data_type": "flow_data",
+          "period_used": 21,
+          "data_length": 8704,
+          "adaptation_reason": "Optimized for flow_data"
+        },
+        "data_points": 8704
+      },
+      "bollinger_bands": {
+        "upper": "0            NaN\n1       1.913995\n2       1.948142\n3       1.919418\n4       1.894373\n          ...   \n8699    3.546139\n8700    3.558650\n8701    3.570361\n8702    3.565566\n8703    3.574449\nName: efb_7d, Length: 8704, dtype: float64",
+        "middle": "0       1.850000\n1       1.815000\n2       1.766667\n3       1.742500\n4       1.728000\n          ...   \n8699    3.148500\n8700    3.157500\n8701    3.169000\n8702    3.166500\n8703    3.170000\nName: efb_7d, Length: 8704, dtype: float64",
+        "lower": "0            NaN\n1       1.716005\n2       1.585191\n3       1.565582\n4       1.561627\n          ...   \n8699    2.750861\n8700    2.756350\n8701    2.767639\n8702    2.767434\n8703    2.765551\nName: efb_7d, Length: 8704, dtype: float64"
+      }
+    }
+  },
+  "efb_30d": {
+    "data_type": "rate_data",
+    "data_length": 8704,
+    "indicators": {
+      "sma": {
+        "mean": 1.1160604543954253,
+        "std": 1.4124639019627665,
+        "min": -0.373,
+        "max": 4.927999999999999,
+        "latest": 3.214,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 20,
+          "data_length": 8704,
+          "adaptation_reason": "Adapted for rate_data"
+        },
+        "data_points": 8704
+      },
+      "ema": {
+        "mean": 1.1161130468047002,
+        "std": 1.4085102453963054,
+        "min": -0.4302468907947724,
+        "max": 4.937511320227873,
+        "latest": 3.1844253275672987,
+        "info": {},
+        "data_points": 8704
+      },
+      "macd": {
+        "macd": "0       0.000000\n1       0.000798\n2      -0.000980\n3      -0.002361\n4      -0.003416\n          ...   \n8699    0.040920\n8700    0.041743\n8701    0.041912\n8702    0.037578\n8703    0.037743\nName: efb_30d, Length: 8704, dtype: float64",
+        "signal": "0       0.000000\n1       0.000160\n2      -0.000068\n3      -0.000527\n4      -0.001105\n          ...   \n8699    0.071633\n8700    0.065655\n8701    0.060907\n8702    0.056241\n8703    0.052541\nName: efb_30d, Length: 8704, dtype: float64",
+        "histogram": "0       0.000000\n1       0.000638\n2      -0.000911\n3      -0.001834\n4      -0.002311\n          ...   \n8699   -0.030713\n8700   -0.023912\n8701   -0.018995\n8702   -0.018663\n8703   -0.014799\nName: efb_30d, Length: 8704, dtype: float64",
+        "adaptation_info": {
+          "data_type": "rate_data",
+          "parameters_used": {
+            "fast": 12,
+            "slow": 26,
+            "signal": 9
+          },
+          "data_length": 8704
+        }
+      },
+      "rsi": {
+        "mean": 49.031360342688956,
+        "std": 22.610666017706485,
+        "min": 0.0,
+        "max": 99.24242424242426,
+        "latest": 44.23076923076922,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 14,
+          "data_length": 8704,
+          "adaptation_reason": "Optimized for rate_data"
+        },
+        "data_points": 8704
+      },
+      "bollinger_bands": {
+        "upper": "0            NaN\n1       1.679142\n2       1.687217\n3       1.682500\n4       1.678284\n          ...   \n8699    3.370653\n8700    3.372549\n8701    3.361955\n8702    3.361623\n8703    3.363159\nName: efb_30d, Length: 8704, dtype: float64",
+        "middle": "0       1.660000\n1       1.665000\n2       1.656667\n3       1.652500\n4       1.650000\n          ...   \n8699    3.191500\n8700    3.198000\n8701    3.208500\n8702    3.210000\n8703    3.214000\nName: efb_30d, Length: 8704, dtype: float64",
+        "lower": "0            NaN\n1       1.650858\n2       1.626116\n3       1.622500\n4       1.621716\n          ...   \n8699    3.012347\n8700    3.023451\n8701    3.055045\n8702    3.058377\n8703    3.064841\nName: efb_30d, Length: 8704, dtype: float64"
+      }
+    }
+  },
+  "efb_91d": {
+    "data_type": "rate_data",
+    "data_length": 8704,
+    "indicators": {
+      "sma": {
+        "mean": 1.2226703589186598,
+        "std": 1.4332369495315973,
+        "min": -0.06,
+        "max": 5.075,
+        "latest": 3.2840000000000003,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 20,
+          "data_length": 8704,
+          "adaptation_reason": "Adapted for rate_data"
+        },
+        "data_points": 8704
+      },
+      "ema": {
+        "mean": 1.2227406562637815,
+        "std": 1.430302174047612,
+        "min": -0.05334533229246353,
+        "max": 5.075558163807459,
+        "latest": 3.251613461057592,
+        "info": {},
+        "data_points": 8704
+      },
+      "macd": {
+        "macd": "0       0.000000\n1       0.000000\n2      -0.002393\n3      -0.004241\n4      -0.005640\n          ...   \n8699    0.069426\n8700    0.064207\n8701    0.059387\n8702    0.055731\n8703    0.053029\nName: efb_91d, Length: 8704, dtype: float64",
+        "signal": "0       0.000000\n1       0.000000\n2      -0.000479\n3      -0.001231\n4      -0.002113\n          ...   \n8699    0.091460\n8700    0.086009\n8701    0.080685\n8702    0.075694\n8703    0.071161\nName: efb_91d, Length: 8704, dtype: float64",
+        "histogram": "0       0.000000\n1       0.000000\n2      -0.001915\n3      -0.003010\n4      -0.003527\n          ...   \n8699   -0.022033\n8700   -0.021802\n8701   -0.021298\n8702   -0.019963\n8703   -0.018132\nName: efb_91d, Length: 8704, dtype: float64",
+        "adaptation_info": {
+          "data_type": "rate_data",
+          "parameters_used": {
+            "fast": 12,
+            "slow": 26,
+            "signal": 9
+          },
+          "data_length": 8704
+        }
+      },
+      "rsi": {
+        "mean": 47.98686135502288,
+        "std": 24.073337346427014,
+        "min": 0.0,
+        "max": 99.34210526315788,
+        "latest": 50.0,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 14,
+          "data_length": 8704,
+          "adaptation_reason": "Optimized for rate_data"
+        },
+        "data_points": 8704
+      },
+      "bollinger_bands": {
+        "upper": "0            NaN\n1       1.670000\n2       1.694641\n3       1.689641\n4       1.684863\n          ...   \n8699    3.345200\n8700    3.341596\n8701    3.338429\n8702    3.337423\n8703    3.336476\nName: efb_91d, Length: 8704, dtype: float64",
+        "middle": "0       1.6700\n1       1.6700\n2       1.6600\n3       1.6550\n4       1.6520\n         ...  \n8699    3.2740\n8700    3.2770\n8701    3.2795\n8702    3.2815\n8703    3.2840\nName: efb_91d, Length: 8704, dtype: float64",
+        "lower": "0            NaN\n1       1.670000\n2       1.625359\n3       1.620359\n4       1.619137\n          ...   \n8699    3.202800\n8700    3.212404\n8701    3.220571\n8702    3.225577\n8703    3.231524\nName: efb_91d, Length: 8704, dtype: float64"
+      }
+    }
+  },
+  "efb_182d": {
+    "data_type": "rate_data",
+    "data_length": 8704,
+    "indicators": {
+      "sma": {
+        "mean": 1.311506659474212,
+        "std": 1.4413473341944416,
+        "min": -0.014500000000000002,
+        "max": 4.882,
+        "latest": 2.9400000000000004,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 20,
+          "data_length": 8704,
+          "adaptation_reason": "Adapted for rate_data"
+        },
+        "data_points": 8704
+      },
+      "ema": {
+        "mean": 1.3115612558688576,
+        "std": 1.4392496418557068,
+        "min": -0.0028788438698949433,
+        "max": 4.879416379773447,
+        "latest": 2.9220872544701746,
+        "info": {},
+        "data_points": 8704
+      },
+      "macd": {
+        "macd": "0       0.000000\n1       0.000000\n2      -0.004786\n3      -0.008482\n4      -0.011280\n          ...   \n8699    0.025517\n8700    0.023882\n8701    0.022329\n8702    0.020060\n8703    0.019649\nName: efb_182d, Length: 8704, dtype: float64",
+        "signal": "0       0.000000\n1       0.000000\n2      -0.000957\n3      -0.002462\n4      -0.004226\n          ...   \n8699    0.041235\n8700    0.037764\n8701    0.034677\n8702    0.031754\n8703    0.029333\nName: efb_182d, Length: 8704, dtype: float64",
+        "histogram": "0       0.000000\n1       0.000000\n2      -0.003829\n3      -0.006020\n4      -0.007055\n          ...   \n8699   -0.015717\n8700   -0.013882\n8701   -0.012348\n8702   -0.011694\n8703   -0.009684\nName: efb_182d, Length: 8704, dtype: float64",
+        "adaptation_info": {
+          "data_type": "rate_data",
+          "parameters_used": {
+            "fast": 12,
+            "slow": 26,
+            "signal": 9
+          },
+          "data_length": 8704
+        }
+      },
+      "rsi": {
+        "mean": 47.90793181316802,
+        "std": 24.393521236455342,
+        "min": 0.0,
+        "max": 98.79518072289159,
+        "latest": 40.0,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 14,
+          "data_length": 8704,
+          "adaptation_reason": "Optimized for rate_data"
+        },
+        "data_points": 8704
+      },
+      "bollinger_bands": {
+        "upper": "0            NaN\n1       1.740000\n2       1.789282\n3       1.779282\n4       1.769727\n          ...   \n8699    3.012917\n8700    3.011770\n8701    3.011559\n8702    3.008707\n8703    3.005855\nName: efb_182d, Length: 8704, dtype: float64",
+        "middle": "0       1.7400\n1       1.7400\n2       1.7200\n3       1.7100\n4       1.7040\n         ...  \n8699    2.9430\n8700    2.9445\n8701    2.9440\n8702    2.9415\n8703    2.9400\nName: efb_182d, Length: 8704, dtype: float64",
+        "lower": "0            NaN\n1       1.740000\n2       1.650718\n3       1.640718\n4       1.638273\n          ...   \n8699    2.873083\n8700    2.877230\n8701    2.876441\n8702    2.874293\n8703    2.874145\nName: efb_182d, Length: 8704, dtype: float64"
+      }
+    }
+  },
+  "efb_273d": {
+    "data_type": "rate_data",
+    "data_length": 8356,
+    "indicators": {
+      "sma": {
+        "mean": 1.3513993646296756,
+        "std": 1.4686928064434983,
+        "min": 0.01,
+        "max": 4.798500000000001,
+        "latest": 2.7655000000000003,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 20,
+          "data_length": 8356,
+          "adaptation_reason": "Adapted for rate_data"
+        },
+        "data_points": 8356
+      },
+      "ema": {
+        "mean": 1.3514070699466,
+        "std": 1.4668310691413788,
+        "min": 0.010274872049120217,
+        "max": 4.792705413086904,
+        "latest": 2.758581423811609,
+        "info": {},
+        "data_points": 8356
+      },
+      "macd": {
+        "macd": "348     0.000000\n349     0.001595\n350     0.003625\n351     0.002781\n352     0.000731\n          ...   \n8699    0.023059\n8700    0.020549\n8701    0.018348\n8702    0.019605\n8703    0.021164\nName: efb_273d, Length: 8356, dtype: float64",
+        "signal": "348     0.000000\n349     0.000319\n350     0.000980\n351     0.001340\n352     0.001219\n          ...   \n8699    0.031334\n8700    0.029177\n8701    0.027011\n8702    0.025530\n8703    0.024657\nName: efb_273d, Length: 8356, dtype: float64",
+        "histogram": "348     0.000000\n349     0.001276\n350     0.002645\n351     0.001440\n352    -0.000487\n          ...   \n8699   -0.008274\n8700   -0.008628\n8701   -0.008663\n8702   -0.005925\n8703   -0.003492\nName: efb_273d, Length: 8356, dtype: float64",
+        "adaptation_info": {
+          "data_type": "rate_data",
+          "parameters_used": {
+            "fast": 12,
+            "slow": 26,
+            "signal": 9
+          },
+          "data_length": 8356
+        }
+      },
+      "rsi": {
+        "mean": 46.6717648204502,
+        "std": 25.44078424374939,
+        "min": 0.0,
+        "max": 98.36065573770492,
+        "latest": 58.06451612903224,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 14,
+          "data_length": 8356,
+          "adaptation_reason": "Optimized for rate_data"
+        },
+        "data_points": 8356
+      },
+      "bollinger_bands": {
+        "upper": "348          NaN\n349     1.468284\n350     1.477217\n351     1.472500\n352     1.473630\n          ...   \n8699    2.844105\n8700    2.841129\n8701    2.837334\n8702    2.829945\n8703    2.823347\nName: efb_273d, Length: 8356, dtype: float64",
+        "middle": "348     1.430000\n349     1.440000\n350     1.446667\n351     1.442500\n352     1.436600\n          ...   \n8699    2.764000\n8700    2.766500\n8701    2.769000\n8702    2.767000\n8703    2.765500\nName: efb_273d, Length: 8356, dtype: float64",
+        "lower": "348          NaN\n349     1.411716\n350     1.416116\n351     1.412500\n352     1.399570\n          ...   \n8699    2.683895\n8700    2.691871\n8701    2.700666\n8702    2.704055\n8703    2.707653\nName: efb_273d, Length: 8356, dtype: float64"
+      }
+    }
+  },
+  "efb_364d": {
+    "data_type": "rate_data",
+    "data_length": 8704,
+    "indicators": {
+      "sma": {
+        "mean": 1.42268924847924,
+        "std": 1.4416799597675354,
+        "min": 0.02,
+        "max": 4.7829999999999995,
+        "latest": 2.708,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 20,
+          "data_length": 8704,
+          "adaptation_reason": "Adapted for rate_data"
+        },
+        "data_points": 8704
+      },
+      "ema": {
+        "mean": 1.422727300533815,
+        "std": 1.4399041941853084,
+        "min": 0.020274782641101087,
+        "max": 4.749765243522359,
+        "latest": 2.7017448582815957,
+        "info": {},
+        "data_points": 8704
+      },
+      "macd": {
+        "macd": "0       0.000000\n1       0.003989\n2       0.000686\n3      -0.001909\n4      -0.003920\n          ...   \n8699    0.025625\n8700    0.023665\n8701    0.021860\n8702    0.024185\n8703    0.025731\nName: efb_364d, Length: 8704, dtype: float64",
+        "signal": "0       0.000000\n1       0.000798\n2       0.000775\n3       0.000239\n4      -0.000593\n          ...   \n8699    0.032626\n8700    0.030834\n8701    0.029039\n8702    0.028068\n8703    0.027601\nName: efb_364d, Length: 8704, dtype: float64",
+        "histogram": "0       0.000000\n1       0.003191\n2      -0.000089\n3      -0.002147\n4      -0.003327\n          ...   \n8699   -0.007001\n8700   -0.007169\n8701   -0.007180\n8702   -0.003884\n8703   -0.001870\nName: efb_364d, Length: 8704, dtype: float64",
+        "adaptation_info": {
+          "data_type": "rate_data",
+          "parameters_used": {
+            "fast": 12,
+            "slow": 26,
+            "signal": 9
+          },
+          "data_length": 8704
+        }
+      },
+      "rsi": {
+        "mean": 46.69163755283772,
+        "std": 25.067961554980926,
+        "min": 0.0,
+        "max": 98.18181818181819,
+        "latest": 56.75675675675673,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 14,
+          "data_length": 8704,
+          "adaptation_reason": "Optimized for rate_data"
+        },
+        "data_points": 8704
+      },
+      "bollinger_bands": {
+        "upper": "0            NaN\n1       2.225711\n2       2.217496\n3       2.202998\n4       2.191857\n          ...   \n8699    2.760171\n8700    2.760171\n8701    2.756845\n8702    2.760548\n8703    2.764045\nName: efb_364d, Length: 8704, dtype: float64",
+        "middle": "0       2.130000\n1       2.155000\n2       2.136667\n3       2.127500\n4       2.122000\n          ...   \n8699    2.703500\n8700    2.703500\n8701    2.706000\n8702    2.707000\n8703    2.708000\nName: efb_364d, Length: 8704, dtype: float64",
+        "lower": "0            NaN\n1       2.084289\n2       2.055838\n3       2.052002\n4       2.052143\n          ...   \n8699    2.646829\n8700    2.646829\n8701    2.655155\n8702    2.653452\n8703    2.651955\nName: efb_364d, Length: 8704, dtype: float64"
+      }
+    }
+  },
+  "efn_2y": {
+    "data_type": "rate_data",
+    "data_length": 8704,
+    "indicators": {
+      "sma": {
+        "mean": 1.6132137906822466,
+        "std": 1.3583173670462314,
+        "min": 0.0558,
+        "max": 4.59755,
+        "latest": 2.3569,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 20,
+          "data_length": 8704,
+          "adaptation_reason": "Adapted for rate_data"
+        },
+        "data_points": 8704
+      },
+      "ema": {
+        "mean": 1.6132957760134037,
+        "std": 1.3566635417396788,
+        "min": 0.06150090775418498,
+        "max": 4.566359538177723,
+        "latest": 2.375533218877207,
+        "info": {},
+        "data_points": 8704
+      },
+      "macd": {
+        "macd": "0       0.000000\n1       0.005584\n2      -0.002868\n3      -0.009458\n4      -0.014512\n          ...   \n8699   -0.011446\n8700   -0.009001\n8701   -0.006983\n8702    0.001618\n8703    0.009774\nName: efn_2y, Length: 8704, dtype: float64",
+        "signal": "0       0.000000\n1       0.001117\n2       0.000320\n3      -0.001636\n4      -0.004211\n          ...   \n8699   -0.009457\n8700   -0.009366\n8701   -0.008889\n8702   -0.006788\n8703   -0.003475\nName: efn_2y, Length: 8704, dtype: float64",
+        "histogram": "0       0.000000\n1       0.004467\n2      -0.003188\n3      -0.007822\n4      -0.010301\n          ...   \n8699   -0.001988\n8700    0.000365\n8701    0.001907\n8702    0.008406\n8703    0.013250\nName: efn_2y, Length: 8704, dtype: float64",
+        "adaptation_info": {
+          "data_type": "rate_data",
+          "parameters_used": {
+            "fast": 12,
+            "slow": 26,
+            "signal": 9
+          },
+          "data_length": 8704
+        }
+      },
+      "rsi": {
+        "mean": 49.25659665093508,
+        "std": 22.394262832156446,
+        "min": 0.0,
+        "max": 99.76190476190473,
+        "latest": 75.48387096774202,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 14,
+          "data_length": 8704,
+          "adaptation_reason": "Optimized for rate_data"
+        },
+        "data_points": 8704
+      },
+      "bollinger_bands": {
+        "upper": "0            NaN\n1       3.433995\n2       3.453749\n3       3.427742\n4       3.405602\n          ...   \n8699    2.448396\n8700    2.441645\n8701    2.432979\n8702    2.438995\n8703    2.449942\nName: efn_2y, Length: 8704, dtype: float64",
+        "middle": "0       3.300000\n1       3.335000\n2       3.293333\n3       3.272500\n4       3.260000\n          ...   \n8699    2.359300\n8700    2.356700\n8701    2.353800\n8702    2.354900\n8703    2.356900\nName: efn_2y, Length: 8704, dtype: float64",
+        "lower": "0            NaN\n1       3.236005\n2       3.132917\n3       3.117258\n4       3.114398\n          ...   \n8699    2.270204\n8700    2.271755\n8701    2.274621\n8702    2.270805\n8703    2.263858\nName: efn_2y, Length: 8704, dtype: float64"
+      }
+    }
+  },
+  "efn_3y": {
+    "data_type": "rate_data",
+    "data_length": 8704,
+    "indicators": {
+      "sma": {
+        "mean": 1.3929719487048313,
+        "std": 1.184198092120476,
+        "min": 0.12589999999999998,
+        "max": 4.66175,
+        "latest": 0.748,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 20,
+          "data_length": 8704,
+          "adaptation_reason": "Adapted for rate_data"
+        },
+        "data_points": 8704
+      },
+      "ema": {
+        "mean": 1.3930494025735296,
+        "std": 1.183045630187275,
+        "min": 0.12896200660973847,
+        "max": 4.635720108939577,
+        "latest": 0.7480000000000003,
+        "info": {},
+        "data_points": 8704
+      },
+      "macd": {
+        "macd": "0       0.000000e+00\n1       7.179487e-03\n2      -8.386296e-04\n3      -7.111073e-03\n4      -1.194434e-02\n            ...     \n8699   -1.110223e-15\n8700   -1.110223e-15\n8701   -1.110223e-15\n8702   -1.110223e-15\n8703   -1.110223e-15\nName: efn_3y, Length: 8704, dtype: float64",
+        "signal": "0       0.000000e+00\n1       1.435897e-03\n2       9.809920e-04\n3      -6.374209e-04\n4      -2.898805e-03\n            ...     \n8699   -1.110223e-15\n8700   -1.110223e-15\n8701   -1.110223e-15\n8702   -1.110223e-15\n8703   -1.110223e-15\nName: efn_3y, Length: 8704, dtype: float64",
+        "histogram": "0       0.000000e+00\n1       5.743590e-03\n2      -1.819622e-03\n3      -6.473652e-03\n4      -9.045537e-03\n            ...     \n8699    5.916457e-31\n8700    5.916457e-31\n8701    5.916457e-31\n8702    5.916457e-31\n8703    5.916457e-31\nName: efn_3y, Length: 8704, dtype: float64",
+        "adaptation_info": {
+          "data_type": "rate_data",
+          "parameters_used": {
+            "fast": 12,
+            "slow": 26,
+            "signal": 9
+          },
+          "data_length": 8704
+        }
+      },
+      "rsi": {
+        "mean": 48.82166039590941,
+        "std": 17.253234168413226,
+        "min": 0.0,
+        "max": 99.31972789115646,
+        "latest": 50.0,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 14,
+          "data_length": 8704,
+          "adaptation_reason": "Optimized for rate_data"
+        },
+        "data_points": 8704
+      },
+      "bollinger_bands": {
+        "upper": "0            NaN\n1       4.322279\n2       4.323431\n3       4.294467\n4       4.270997\n          ...   \n8699    0.748000\n8700    0.748000\n8701    0.748000\n8702    0.748000\n8703    0.748000\nName: efn_3y, Length: 8704, dtype: float64",
+        "middle": "0       4.150000\n1       4.195000\n2       4.153333\n3       4.132500\n4       4.120000\n          ...   \n8699    0.748000\n8700    0.748000\n8701    0.748000\n8702    0.748000\n8703    0.748000\nName: efn_3y, Length: 8704, dtype: float64",
+        "lower": "0            NaN\n1       4.067721\n2       3.983235\n3       3.970533\n4       3.969003\n          ...   \n8699    0.748000\n8700    0.748000\n8701    0.748000\n8702    0.748000\n8703    0.748000\nName: efn_3y, Length: 8704, dtype: float64"
+      }
+    }
+  },
+  "efn_4y": {
+    "data_type": "rate_data",
+    "data_length": 8356,
+    "indicators": {
+      "sma": {
+        "mean": 1.5773514838944505,
+        "std": 1.0842460528555435,
+        "min": 0.19424999999999998,
+        "max": 4.712000000000001,
+        "latest": 1.022,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 20,
+          "data_length": 8356,
+          "adaptation_reason": "Adapted for rate_data"
+        },
+        "data_points": 8356
+      },
+      "ema": {
+        "mean": 1.5773886428913364,
+        "std": 1.082995009027136,
+        "min": 0.20209049671100732,
+        "max": 4.688594039594214,
+        "latest": 1.0220000000000011,
+        "info": {},
+        "data_points": 8356
+      },
+      "macd": {
+        "macd": "348     0.000000e+00\n349     4.227920e-03\n350     5.497910e-03\n351     2.878117e-04\n352    -8.184918e-03\n            ...     \n8699   -4.440892e-16\n8700   -4.440892e-16\n8701   -4.440892e-16\n8702   -4.440892e-16\n8703   -4.440892e-16\nName: efn_4y, Length: 8356, dtype: float64",
+        "signal": "348     0.000000e+00\n349     8.455840e-04\n350     1.776049e-03\n351     1.478402e-03\n352    -4.542623e-04\n            ...     \n8699   -4.440892e-16\n8700   -4.440892e-16\n8701   -4.440892e-16\n8702   -4.440892e-16\n8703   -4.440892e-16\nName: efn_4y, Length: 8356, dtype: float64",
+        "histogram": "348     0.000000e+00\n349     3.382336e-03\n350     3.721861e-03\n351    -1.190590e-03\n352    -7.730656e-03\n            ...     \n8699    2.958228e-31\n8700    2.958228e-31\n8701    2.958228e-31\n8702    2.958228e-31\n8703    2.958228e-31\nName: efn_4y, Length: 8356, dtype: float64",
+        "adaptation_info": {
+          "data_type": "rate_data",
+          "parameters_used": {
+            "fast": 12,
+            "slow": 26,
+            "signal": 9
+          },
+          "data_length": 8356
+        }
+      },
+      "rsi": {
+        "mean": 49.11381835772867,
+        "std": 16.75144825397101,
+        "min": 0.0,
+        "max": 99.74226804123714,
+        "latest": 50.0,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 14,
+          "data_length": 8356,
+          "adaptation_reason": "Optimized for rate_data"
+        },
+        "data_points": 8356
+      },
+      "bollinger_bands": {
+        "upper": "348          NaN\n349     3.258453\n350     3.237028\n351     3.252468\n352     3.268191\n          ...   \n8699    1.022000\n8700    1.022000\n8701    1.022000\n8702    1.022000\n8703    1.022000\nName: efn_4y, Length: 8356, dtype: float64",
+        "middle": "348     3.1570\n349     3.1835\n350     3.1840\n351     3.1650\n352     3.1426\n         ...  \n8699    1.0220\n8700    1.0220\n8701    1.0220\n8702    1.0220\n8703    1.0220\nName: efn_4y, Length: 8356, dtype: float64",
+        "lower": "348          NaN\n349     3.108547\n350     3.130972\n351     3.077532\n352     3.017009\n          ...   \n8699    1.022000\n8700    1.022000\n8701    1.022000\n8702    1.022000\n8703    1.022000\nName: efn_4y, Length: 8356, dtype: float64"
+      }
+    }
+  },
+  "efn_5y": {
+    "data_type": "rate_data",
+    "data_length": 8704,
+    "indicators": {
+      "sma": {
+        "mean": 1.9680829829367459,
+        "std": 1.1348042224203292,
+        "min": 0.22784999999999997,
+        "max": 5.4590000000000005,
+        "latest": 1.394,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 20,
+          "data_length": 8704,
+          "adaptation_reason": "Adapted for rate_data"
+        },
+        "data_points": 8704
+      },
+      "ema": {
+        "mean": 1.9681399356617637,
+        "std": 1.1336142004978684,
+        "min": 0.2383570090112247,
+        "max": 5.403183665215392,
+        "latest": 1.393999999999998,
+        "info": {},
+        "data_points": 8704
+      },
+      "macd": {
+        "macd": "0       0.000000e+00\n1       7.977208e-03\n2       1.372716e-03\n3      -3.817387e-03\n4      -7.840204e-03\n            ...     \n8699    1.998401e-15\n8700    1.998401e-15\n8701    1.998401e-15\n8702    1.998401e-15\n8703    1.998401e-15\nName: efn_5y, Length: 8704, dtype: float64",
+        "signal": "0       0.000000e+00\n1       1.595442e-03\n2       1.550897e-03\n3       4.772398e-04\n4      -1.186249e-03\n            ...     \n8699    1.998401e-15\n8700    1.998401e-15\n8701    1.998401e-15\n8702    1.998401e-15\n8703    1.998401e-15\nName: efn_5y, Length: 8704, dtype: float64",
+        "histogram": "0       0.000000e+00\n1       6.381766e-03\n2      -1.781804e-04\n3      -4.294627e-03\n4      -6.653955e-03\n            ...     \n8699   -1.577722e-30\n8700   -1.577722e-30\n8701   -1.577722e-30\n8702   -1.577722e-30\n8703   -1.577722e-30\nName: efn_5y, Length: 8704, dtype: float64",
+        "adaptation_info": {
+          "data_type": "rate_data",
+          "parameters_used": {
+            "fast": 12,
+            "slow": 26,
+            "signal": 9
+          },
+          "data_length": 8704
+        }
+      },
+      "rsi": {
+        "mean": 48.760667720273155,
+        "std": 16.625726313027794,
+        "min": 0.0,
+        "max": 99.26605504587155,
+        "latest": 50.0,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 14,
+          "data_length": 8704,
+          "adaptation_reason": "Optimized for rate_data"
+        },
+        "data_points": 8704
+      },
+      "bollinger_bands": {
+        "upper": "0            NaN\n1       5.351421\n2       5.334991\n3       5.305997\n4       5.283714\n          ...   \n8699    1.394000\n8700    1.394000\n8701    1.394000\n8702    1.394000\n8703    1.394000\nName: efn_5y, Length: 8704, dtype: float64",
+        "middle": "0       5.160000\n1       5.210000\n2       5.173333\n3       5.155000\n4       5.144000\n          ...   \n8699    1.394000\n8700    1.394000\n8701    1.394000\n8702    1.394000\n8703    1.394000\nName: efn_5y, Length: 8704, dtype: float64",
+        "lower": "0            NaN\n1       5.068579\n2       5.011675\n3       5.004003\n4       5.004286\n          ...   \n8699    1.394000\n8700    1.394000\n8701    1.394000\n8702    1.394000\n8703    1.394000\nName: efn_5y, Length: 8704, dtype: float64"
+      }
+    }
+  },
+  "efn_7y": {
+    "data_type": "rate_data",
+    "data_length": 8704,
+    "indicators": {
+      "sma": {
+        "mean": 2.161121234103434,
+        "std": 1.217735990212395,
+        "min": 0.35195,
+        "max": 5.9455,
+        "latest": 1.394,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 20,
+          "data_length": 8704,
+          "adaptation_reason": "Adapted for rate_data"
+        },
+        "data_points": 8704
+      },
+      "ema": {
+        "mean": 2.161162568933824,
+        "std": 1.2165565283270126,
+        "min": 0.3540049652858597,
+        "max": 5.876210732289017,
+        "latest": 1.394000000000002,
+        "info": {},
+        "data_points": 8704
+      },
+      "macd": {
+        "macd": "0       0.000000e+00\n1       7.977208e-03\n2       2.968158e-03\n3      -9.901370e-04\n4      -4.080081e-03\n            ...     \n8699    4.440892e-16\n8700    4.440892e-16\n8701    4.440892e-16\n8702    4.440892e-16\n8703    4.440892e-16\nName: efn_7y, Length: 8704, dtype: float64",
+        "signal": "0       0.000000e+00\n1       1.595442e-03\n2       1.869985e-03\n3       1.297960e-03\n4       2.223521e-04\n            ...     \n8699    4.440892e-16\n8700    4.440892e-16\n8701    4.440892e-16\n8702    4.440892e-16\n8703    4.440892e-16\nName: efn_7y, Length: 8704, dtype: float64",
+        "histogram": "0       0.000000e+00\n1       6.381766e-03\n2       1.098173e-03\n3      -2.288097e-03\n4      -4.302434e-03\n            ...     \n8699    9.860761e-32\n8700    9.860761e-32\n8701    9.860761e-32\n8702    9.860761e-32\n8703    9.860761e-32\nName: efn_7y, Length: 8704, dtype: float64",
+        "adaptation_info": {
+          "data_type": "rate_data",
+          "parameters_used": {
+            "fast": 12,
+            "slow": 26,
+            "signal": 9
+          },
+          "data_length": 8704
+        }
+      },
+      "rsi": {
+        "mean": 48.72429313229639,
+        "std": 16.74522130389674,
+        "min": 0.0,
+        "max": 99.03381642512088,
+        "latest": 50.0,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 14,
+          "data_length": 8704,
+          "adaptation_reason": "Optimized for rate_data"
+        },
+        "data_points": 8704
+      },
+      "bollinger_bands": {
+        "upper": "0            NaN\n1       5.741421\n2       5.714222\n3       5.687162\n4       5.667326\n          ...   \n8699    1.394000\n8700    1.394000\n8701    1.394000\n8702    1.394000\n8703    1.394000\nName: efn_7y, Length: 8704, dtype: float64",
+        "middle": "0       5.550\n1       5.600\n2       5.570\n3       5.555\n4       5.546\n        ...  \n8699    1.394\n8700    1.394\n8701    1.394\n8702    1.394\n8703    1.394\nName: efn_7y, Length: 8704, dtype: float64",
+        "lower": "0            NaN\n1       5.458579\n2       5.425778\n3       5.422838\n4       5.424674\n          ...   \n8699    1.394000\n8700    1.394000\n8701    1.394000\n8702    1.394000\n8703    1.394000\nName: efn_7y, Length: 8704, dtype: float64"
+      }
+    }
+  },
+  "efn_10y": {
+    "data_type": "rate_data",
+    "data_length": 8704,
+    "indicators": {
+      "sma": {
+        "mean": 2.395374915183695,
+        "std": 1.265742083278489,
+        "min": 0.5498999999999999,
+        "max": 6.2835,
+        "latest": 1.533,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 20,
+          "data_length": 8704,
+          "adaptation_reason": "Adapted for rate_data"
+        },
+        "data_points": 8704
+      },
+      "ema": {
+        "mean": 2.395434800091912,
+        "std": 1.2647469105973324,
+        "min": 0.5656656206478391,
+        "max": 6.222094056763609,
+        "latest": 1.5330000000000001,
+        "info": {},
+        "data_points": 8704
+      },
+      "macd": {
+        "macd": "0       0.000000e+00\n1       6.381766e-03\n2      -1.454534e-03\n3      -7.577509e-03\n4      -1.228836e-02\n            ...     \n8699   -2.220446e-15\n8700   -2.220446e-15\n8701   -2.220446e-15\n8702   -2.220446e-15\n8703   -2.220446e-15\nName: efn_10y, Length: 8704, dtype: float64",
+        "signal": "0       0.000000e+00\n1       1.276353e-03\n2       7.301759e-04\n3      -9.313611e-04\n4      -3.202761e-03\n            ...     \n8699   -2.220446e-15\n8700   -2.220446e-15\n8701   -2.220446e-15\n8702   -2.220446e-15\n8703   -2.220446e-15\nName: efn_10y, Length: 8704, dtype: float64",
+        "histogram": "0       0.000000e+00\n1       5.105413e-03\n2      -2.184710e-03\n3      -6.646148e-03\n4      -9.085598e-03\n            ...     \n8699    1.183291e-30\n8700    1.183291e-30\n8701    1.183291e-30\n8702    1.183291e-30\n8703    1.183291e-30\nName: efn_10y, Length: 8704, dtype: float64",
+        "adaptation_info": {
+          "data_type": "rate_data",
+          "parameters_used": {
+            "fast": 12,
+            "slow": 26,
+            "signal": 9
+          },
+          "data_length": 8704
+        }
+      },
+      "rsi": {
+        "mean": 48.62098411575848,
+        "std": 16.416198220019503,
+        "min": 0.0,
+        "max": 98.94736842105263,
+        "latest": 50.0,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 14,
+          "data_length": 8704,
+          "adaptation_reason": "Optimized for rate_data"
+        },
+        "data_points": 8704
+      },
+      "bollinger_bands": {
+        "upper": "0            NaN\n1       6.273137\n2       6.280000\n3       6.253188\n4       6.231108\n          ...   \n8699    1.533000\n8700    1.533000\n8701    1.533000\n8702    1.533000\n8703    1.533000\nName: efn_10y, Length: 8704, dtype: float64",
+        "middle": "0       6.120\n1       6.160\n2       6.120\n3       6.100\n4       6.088\n        ...  \n8699    1.533\n8700    1.533\n8701    1.533\n8702    1.533\n8703    1.533\nName: efn_10y, Length: 8704, dtype: float64",
+        "lower": "0            NaN\n1       6.046863\n2       5.960000\n3       5.946812\n4       5.944892\n          ...   \n8699    1.533000\n8700    1.533000\n8701    1.533000\n8702    1.533000\n8703    1.533000\nName: efn_10y, Length: 8704, dtype: float64"
+      }
+    }
+  },
+  "efn_15y": {
+    "data_type": "rate_data",
+    "data_length": 6639,
+    "indicators": {
+      "sma": {
+        "mean": 1.917795855990246,
+        "std": 0.5878678191312846,
+        "min": 0.67005,
+        "max": 4.571599999999999,
+        "latest": 1.668,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 20,
+          "data_length": 6639,
+          "adaptation_reason": "Adapted for rate_data"
+        },
+        "data_points": 6639
+      },
+      "ema": {
+        "mean": 1.917777978611237,
+        "std": 0.5858008214898248,
+        "min": 0.688874504468875,
+        "max": 4.54954966294908,
+        "latest": 1.6680000000000006,
+        "info": {},
+        "data_points": 6639
+      },
+      "macd": {
+        "macd": "2065    0.000000e+00\n2066    3.350427e-03\n2067    6.734945e-03\n2068    9.309882e-03\n2069    1.122119e-02\n            ...     \n8699   -1.554312e-15\n8700   -1.554312e-15\n8701   -1.554312e-15\n8702   -1.554312e-15\n8703   -1.554312e-15\nName: efn_15y, Length: 6639, dtype: float64",
+        "signal": "2065    0.000000e+00\n2066    6.700855e-04\n2067    1.883057e-03\n2068    3.368422e-03\n2069    4.938975e-03\n            ...     \n8699   -1.554312e-15\n8700   -1.554312e-15\n8701   -1.554312e-15\n8702   -1.554312e-15\n8703   -1.554312e-15\nName: efn_15y, Length: 6639, dtype: float64",
+        "histogram": "2065    0.000000e+00\n2066    2.680342e-03\n2067    4.851888e-03\n2068    5.941459e-03\n2069    6.282211e-03\n            ...     \n8699    1.183291e-30\n8700    1.183291e-30\n8701    1.183291e-30\n8702    1.183291e-30\n8703    1.183291e-30\nName: efn_15y, Length: 6639, dtype: float64",
+        "adaptation_info": {
+          "data_type": "rate_data",
+          "parameters_used": {
+            "fast": 12,
+            "slow": 26,
+            "signal": 9
+          },
+          "data_length": 6639
+        }
+      },
+      "rsi": {
+        "mean": 48.79100317165528,
+        "std": 15.07105613066491,
+        "min": 0.0,
+        "max": 99.72826086956525,
+        "latest": 50.0,
+        "info": {
+          "data_type": "rate_data",
+          "period_used": 14,
+          "data_length": 6639,
+          "adaptation_reason": "Optimized for rate_data"
+        },
+        "data_points": 6639
+      },
+      "bollinger_bands": {
+        "upper": "2065         NaN\n2066    4.612397\n2067    4.618518\n2068    4.618071\n2069    4.616713\n          ...   \n8699    1.668000\n8700    1.668000\n8701    1.668000\n8702    1.668000\n8703    1.668000\nName: efn_15y, Length: 6639, dtype: float64",
+        "middle": "2065    4.532000\n2066    4.553000\n2067    4.563333\n2068    4.568500\n2069    4.571600\n          ...   \n8699    1.668000\n8700    1.668000\n8701    1.668000\n8702    1.668000\n8703    1.668000\nName: efn_15y, Length: 6639, dtype: float64",
+        "lower": "2065         NaN\n2066    4.493603\n2067    4.508149\n2068    4.518929\n2069    4.526487\n          ...   \n8699    1.668000\n8700    1.668000\n8701    1.668000\n8702    1.668000\n8703    1.668000\nName: efn_15y, Length: 6639, dtype: float64"
+      }
+    }
+  }
+}

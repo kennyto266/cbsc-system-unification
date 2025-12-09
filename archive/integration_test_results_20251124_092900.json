@@ -1,0 +1,33 @@
+{
+  "start_time": "2025-11-24T09:29:00.434276",
+  "phases": {
+    "phase1": {
+      "status": "FAILED",
+      "data": {
+        "error": "'CompleteParameterSpace' object has no attribute 'get_total_combinations'"
+      }
+    },
+    "phase2": {
+      "status": "SKIPPED",
+      "reason": "No stock data available"
+    },
+    "phase3": {
+      "status": "FAILED",
+      "data": {
+        "error": "'AdvancedMultiProcessOptimizer' object has no attribute 'run_parallel_optimization'"
+      }
+    },
+    "phase4": {
+      "status": "PASSED",
+      "data": {
+        "total_strategies": 100,
+        "successful_strategies": 100,
+        "avg_sharpe": 0.5040625294389388,
+        "max_sharpe": 2.7188326441968003
+      }
+    }
+  },
+  "overall_status": "FAILED",
+  "end_time": "2025-11-24T09:29:00.597817",
+  "success_rate": 0.25
+}

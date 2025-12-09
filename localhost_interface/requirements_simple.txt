@@ -1,0 +1,48 @@
+# 量化交易系統 - Localhost Interface 後端依賴 (簡化版)
+
+# FastAPI 和 Web 框架
+fastapi==0.104.1
+uvicorn[standard]==0.24.0.post1
+websockets==11.0.3
+python-multipart==0.0.6
+
+# 認證和安全
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# 數據驗證和序列化
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# 數據庫 (使用SQLite避免編譯問題)
+aiosqlite==0.19.0
+
+# HTTP 客戶端
+httpx==0.25.2
+
+# 配置管理
+python-dotenv==1.0.0
+
+# 密碼哈希
+bcrypt==4.1.1
+
+# 加密
+cryptography==41.0.8
+
+# 環境變量
+environ==1.0
+
+# 異步支持
+asyncio-mqtt==0.13.0
+
+# JSON 和數據格式
+orjson==3.9.10
+
+# 系統監控
+psutil==5.9.6
+
+# 數據驗證
+email-validator==2.1.0
+
+# 錯誤處理
+sentry-sdk==1.38.0

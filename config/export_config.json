@@ -1,0 +1,67 @@
+{
+  "export_settings": {
+    "default_format": "xlsx",
+    "output_directory": "exports",
+    "auto_timestamp": true,
+    "compression": false,
+    "include_charts": true,
+    "include_raw_data": false,
+    "language": "zh-CN"
+  },
+  "excel_settings": {
+    "engine": "openpyxl",
+    "include_formulas": true,
+    "conditional_formatting": true,
+    "chart_types": ["line", "bar", "scatter"],
+    "max_rows_per_sheet": 100000,
+    "auto_column_width": true
+  },
+  "pdf_settings": {
+    "page_size": "A4",
+    "orientation": "portrait",
+    "margin": "1cm",
+    "font_family": "Arial",
+    "font_size": 10,
+    "include_toc": true,
+    "include_page_numbers": true,
+    "color_scheme": "professional"
+  },
+  "json_settings": {
+    "indent": 2,
+    "ensure_ascii": false,
+    "date_format": "iso",
+    "include_metadata": true,
+    "compress": false
+  },
+  "csv_settings": {
+    "encoding": "utf-8-sig",
+    "date_format": "%Y-%m-%d",
+    "decimal_separator": ".",
+    "include_headers": true
+  },
+  "html_settings": {
+    "template": "professional",
+    "include_css": true,
+    "include_javascript": true,
+    "responsive": true,
+    "theme": "bootstrap",
+    "interactive_charts": true
+  },
+  "automation_settings": {
+    "enabled": false,
+    "schedule": "daily",
+    "time": "09:00",
+    "email_recipients": [],
+    "cloud_storage": {
+      "enabled": false,
+      "provider": "google_drive",
+      "folder": "/quantitative_reports"
+    }
+  },
+  "batch_export": {
+    "max_concurrent_jobs": 5,
+    "progress_reporting": true,
+    "error_handling": "continue",
+    "retry_attempts": 3
+  }
+}

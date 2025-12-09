@@ -1,0 +1,10 @@
+{
+  "strategy_name": "UNKNOWN",
+  "symbol": "UNKNOWN",
+  "total_combinations": 0,
+  "successful_combinations": 0,
+  "best_parameters": null,
+  "best_metric": -Infinity,
+  "error": "No successful results",
+  "all_results": []
+}

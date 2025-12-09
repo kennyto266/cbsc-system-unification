@@ -1,0 +1,7 @@
+[ai.models]
+chat_model = "openai/gpt-4o-mini"
+edit_model = "openai/gpt-4o"
+
+[ai.open_ai]
+# Get an API key at https://platform.openai.com/account/api-keys
+# api_key = "sk-proj-..."  # 通過環境變量或界面設置

@@ -1,0 +1,329 @@
+{
+  "GPU": {
+    "rsi_results": [
+      {
+        "period": 1,
+        "total_return": 5.963576063521876,
+        "sharpe_ratio": 9.694985262773606,
+        "max_drawdown": 0.0,
+        "quality_score": 1081.106869490868,
+        "trade_count": "183",
+        "final_rsi": 0.0
+      },
+      {
+        "period": 6,
+        "total_return": 1.3610482721522912,
+        "sharpe_ratio": 1.8586241098463334,
+        "max_drawdown": -0.16178018806394773,
+        "quality_score": 196.6799950947562,
+        "trade_count": "49",
+        "final_rsi": 0.0
+      },
+      {
+        "period": 16,
+        "total_return": 0.7960602239698183,
+        "sharpe_ratio": 1.2297179083060727,
+        "max_drawdown": -0.15117155001588287,
+        "quality_score": 110.85760780910888,
+        "trade_count": "14",
+        "final_rsi": 32.773109243697476
+      },
+      {
+        "period": 11,
+        "total_return": 0.6991443534999713,
+        "sharpe_ratio": 0.9187739524487618,
+        "max_drawdown": -0.2533810755320379,
+        "quality_score": 65.17691786602764,
+        "trade_count": "31",
+        "final_rsi": 28.75
+      },
+      {
+        "period": 21,
+        "total_return": 0.3838572161211913,
+        "sharpe_ratio": 0.4426951443613208,
+        "max_drawdown": -0.3197717168598246,
+        "quality_score": -3.433864541779748,
+        "trade_count": "9",
+        "final_rsi": 45.99406528189911
+      },
+      {
+        "period": 26,
+        "total_return": 0.19301263139040706,
+        "sharpe_ratio": 0.18859862490366802,
+        "max_drawdown": -0.2776868551867094,
+        "quality_score": -26.80617665311777,
+        "trade_count": "1",
+        "final_rsi": 46.082949308755765
+      },
+      {
+        "period": 31,
+        "total_return": 0.0,
+        "sharpe_ratio": -3.48610695127786e+16,
+        "max_drawdown": 0.0,
+        "quality_score": -1.74305347563893e+18,
+        "trade_count": "0",
+        "final_rsi": 38.309352517985616
+      },
+      {
+        "period": 36,
+        "total_return": 0.0,
+        "sharpe_ratio": -3.48610695127786e+16,
+        "max_drawdown": 0.0,
+        "quality_score": -1.74305347563893e+18,
+        "trade_count": "0",
+        "final_rsi": 41.776315789473685
+      },
+      {
+        "period": 41,
+        "total_return": 0.0,
+        "sharpe_ratio": -3.48610695127786e+16,
+        "max_drawdown": 0.0,
+        "quality_score": -1.74305347563893e+18,
+        "trade_count": "0",
+        "final_rsi": 45.52023121387283
+      },
+      {
+        "period": 46,
+        "total_return": 0.0,
+        "sharpe_ratio": -3.48610695127786e+16,
+        "max_drawdown": 0.0,
+        "quality_score": -1.74305347563893e+18,
+        "trade_count": "0",
+        "final_rsi": 45.654993514915695
+      }
+    ],
+    "macd_results": [
+      {
+        "fast": 1,
+        "slow": 51,
+        "signal": 1,
+        "total_return": 0.0,
+        "sharpe_ratio": -4.648142601703813e+16,
+        "max_drawdown": 0.0,
+        "quality_score": -2.3240713008519066e+18,
+        "trade_count": "0",
+        "final_macd": -8.374775702858848e-12
+      },
+      {
+        "fast": 1,
+        "slow": 51,
+        "signal": 6,
+        "total_return": 0.0,
+        "sharpe_ratio": -4.648142601703813e+16,
+        "max_drawdown": 0.0,
+        "quality_score": -2.3240713008519066e+18,
+        "trade_count": "0",
+        "final_macd": -8.374775702858848e-12
+      },
+      {
+        "fast": 1,
+        "slow": 51,
+        "signal": 11,
+        "total_return": 0.0,
+        "sharpe_ratio": -4.648142601703813e+16,
+        "max_drawdown": 0.0,
+        "quality_score": -2.3240713008519066e+18,
+        "trade_count": "0",
+        "final_macd": -8.374775702858848e-12
+      },
+      {
+        "fast": 1,
+        "slow": 51,
+        "signal": 16,
+        "total_return": 0.0,
+        "sharpe_ratio": -4.648142601703813e+16,
+        "max_drawdown": 0.0,
+        "quality_score": -2.3240713008519066e+18,
+        "trade_count": "0",
+        "final_macd": -8.374775702858848e-12
+      },
+      {
+        "fast": 1,
+        "slow": 56,
+        "signal": 1,
+        "total_return": 0.0,
+        "sharpe_ratio": -4.648142601703813e+16,
+        "max_drawdown": 0.0,
+        "quality_score": -2.3240713008519066e+18,
+        "trade_count": "0",
+        "final_macd": -9.79822011863791e-11
+      }
+    ],
+    "backend_info": {
+      "backend": "gpu",
+      "use_gpu": true,
+      "gpu_available": true,
+      "min_data_size": 1000,
+      "cache_size": 1,
+      "optimization_level": "FINAL_OPTIMIZED",
+      "gpu_info": {
+        "cupy_available": true,
+        "cuda_available": true,
+        "gpu_count": 1,
+        "gpu_memory_gb": 0,
+        "backend": "gpu",
+        "fallback_enabled": true,
+        "gpu_acceleration_possible": true
+      }
+    }
+  },
+  "CPU": {
+    "rsi_results": [
+      {
+        "period": 1,
+        "total_return": 5.963576063521876,
+        "sharpe_ratio": 9.694985262773606,
+        "max_drawdown": 0.0,
+        "quality_score": 1081.106869490868,
+        "trade_count": "183",
+        "final_rsi": 0.0
+      },
+      {
+        "period": 6,
+        "total_return": 1.3610482721522912,
+        "sharpe_ratio": 1.8586241098463334,
+        "max_drawdown": -0.16178018806394773,
+        "quality_score": 196.6799950947562,
+        "trade_count": "49",
+        "final_rsi": 0.0
+      },
+      {
+        "period": 16,
+        "total_return": 0.7960602239698183,
+        "sharpe_ratio": 1.2297179083060727,
+        "max_drawdown": -0.15117155001588287,
+        "quality_score": 110.85760780910888,
+        "trade_count": "14",
+        "final_rsi": 32.773109243697476
+      },
+      {
+        "period": 11,
+        "total_return": 0.6991443534999713,
+        "sharpe_ratio": 0.9187739524487618,
+        "max_drawdown": -0.2533810755320379,
+        "quality_score": 65.17691786602764,
+        "trade_count": "31",
+        "final_rsi": 28.75
+      },
+      {
+        "period": 21,
+        "total_return": 0.3838572161211913,
+        "sharpe_ratio": 0.4426951443613208,
+        "max_drawdown": -0.3197717168598246,
+        "quality_score": -3.433864541779748,
+        "trade_count": "9",
+        "final_rsi": 45.99406528189911
+      },
+      {
+        "period": 26,
+        "total_return": 0.19301263139040706,
+        "sharpe_ratio": 0.18859862490366802,
+        "max_drawdown": -0.2776868551867094,
+        "quality_score": -26.80617665311777,
+        "trade_count": "1",
+        "final_rsi": 46.082949308755765
+      },
+      {
+        "period": 31,
+        "total_return": 0.0,
+        "sharpe_ratio": -3.48610695127786e+16,
+        "max_drawdown": 0.0,
+        "quality_score": -1.74305347563893e+18,
+        "trade_count": "0",
+        "final_rsi": 38.309352517985616
+      },
+      {
+        "period": 36,
+        "total_return": 0.0,
+        "sharpe_ratio": -3.48610695127786e+16,
+        "max_drawdown": 0.0,
+        "quality_score": -1.74305347563893e+18,
+        "trade_count": "0",
+        "final_rsi": 41.776315789473685
+      },
+      {
+        "period": 41,
+        "total_return": 0.0,
+        "sharpe_ratio": -3.48610695127786e+16,
+        "max_drawdown": 0.0,
+        "quality_score": -1.74305347563893e+18,
+        "trade_count": "0",
+        "final_rsi": 45.52023121387283
+      },
+      {
+        "period": 46,
+        "total_return": 0.0,
+        "sharpe_ratio": -3.48610695127786e+16,
+        "max_drawdown": 0.0,
+        "quality_score": -1.74305347563893e+18,
+        "trade_count": "0",
+        "final_rsi": 45.654993514915695
+      }
+    ],
+    "macd_results": [
+      {
+        "fast": 1,
+        "slow": 61,
+        "signal": 6,
+        "total_return": 4.026074223313413,
+        "sharpe_ratio": 6.374416123877932,
+        "max_drawdown": -0.03715485773749511,
+        "quality_score": 713.8972569777388,
+        "trade_count": "86",
+        "final_macd": -13.872974315284864
+      },
+      {
+        "fast": 1,
+        "slow": 56,
+        "signal": 6,
+        "total_return": 4.0188581088565805,
+        "sharpe_ratio": 6.359679508963413,
+        "max_drawdown": -0.03715485773749511,
+        "quality_score": 712.4388147863297,
+        "trade_count": "88",
+        "final_macd": -16.312802463092225
+      },
+      {
+        "fast": 1,
+        "slow": 51,
+        "signal": 6,
+        "total_return": 4.015830870560056,
+        "sharpe_ratio": 6.338718575055386,
+        "max_drawdown": -0.03715485773749512,
+        "quality_score": 711.0880442612759,
+        "trade_count": "91",
+        "final_macd": -18.585028205191293
+      },
+      {
+        "fast": 1,
+        "slow": 66,
+        "signal": 6,
+        "total_return": 3.896800662270597,
+        "sharpe_ratio": 6.279430340620339,
+        "max_drawdown": -0.03715485773749523,
+        "quality_score": 696.2206117105776,
+        "trade_count": "83",
+        "final_macd": -11.313196994156783
+      },
+      {
+        "fast": 1,
+        "slow": 71,
+        "signal": 6,
+        "total_return": 3.893425134844436,
+        "sharpe_ratio": 6.27269540093468,
+        "max_drawdown": -0.03715485773749523,
+        "quality_score": 695.5463119836785,
+        "trade_count": "82",
+        "final_macd": -8.670319206536647
+      }
+    ],
+    "backend_info": {
+      "backend": "cpu",
+      "use_gpu": false,
+      "gpu_available": true,
+      "min_data_size": 1000,
+      "cache_size": 0,
+      "optimization_level": "FINAL_OPTIMIZED"
+    }
+  }
+}

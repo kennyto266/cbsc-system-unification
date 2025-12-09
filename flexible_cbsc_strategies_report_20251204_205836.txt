@@ -1,0 +1,39 @@
+Flexible CBSC Strategies Parameter Optimization Report
+Generated: 20251204_205836
+============================================================
+
+Optimization Summary:
+  Data Period: 2010-09-01 to 2024-12-31
+  Trading Days: 3740
+  Strategies Tested: 5
+
+RSI:
+  Combinations Tested: 80
+  With Trades: 80
+  Best Sharpe: -0.163365
+  Best Parameters: {'buy_threshold': 35, 'sell_threshold': 55}
+
+SENTIMENT MOMENTUM:
+  Combinations Tested: 156
+  With Trades: 156
+  Best Sharpe: 0.123784
+  Best Parameters: {'short_window': 5, 'long_window': 15, 'momentum_threshold': 0.01, 'position_size': 0.4}
+
+VOLUME REVERSAL:
+  Combinations Tested: 192
+  With Trades: 192
+  Best Sharpe: 0.000000
+  Best Parameters: {'ratio_window': 3, 'volume_multiplier': 2.0, 'extreme_threshold': 0.4, 'position_size': 0.2}
+
+RISK ADJUSTED BOLLINGER:
+  Combinations Tested: 432
+  With Trades: 432
+  Best Sharpe: -0.051976
+  Best Parameters: {'rsi_overbought': 65, 'rsi_oversold': 20, 'bb_multiplier': 1.5, 'risk_threshold': 0.4, 'position_size': 0.4}
+
+TIME DECAY MOMENTUM:
+  Combinations Tested: 108
+  With Trades: 36
+  Best Sharpe: -0.395043
+  Best Parameters: {'decay_period': 5, 'momentum_threshold': 0.01, 'bull_threshold': 0.4, 'position_size': 0.4}
+

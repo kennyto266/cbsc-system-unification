@@ -1,0 +1,252 @@
+{
+  "analysis_session": {
+    "timestamp": "2025-11-28T17:07:42.115343",
+    "symbols_analyzed": [
+      "0700.HK",
+      "0941.HK",
+      "1398.HK"
+    ],
+    "analysis_type": "real_data_alpha_integration"
+  },
+  "individual_results": {
+    "0700.HK": {
+      "symbol": "0700.HK",
+      "timestamp": "2025-11-28T17:07:42.115385",
+      "data_sources_used": [
+        "stock_data: 2 records",
+        "hibor_rates: 100 records",
+        "exchange_rates: 100 records",
+        "monetary_base: 100 records",
+        "interbank_liquidity: 100 records",
+        "efbn_indicative: 100 records"
+      ],
+      "signals": {
+        "technical": {},
+        "macro": {
+          "hibor": {
+            "overnight_rate": 3.85667,
+            "one_month_rate": 3.42911,
+            "level_signal": "NEUTRAL",
+            "change_signal": "TIGHTENING",
+            "rate_impact": "NEUTRAL",
+            "weight": 0.25
+          },
+          "exchange_rate": {
+            "usd_hkd": 7.8,
+            "stability_signal": "STABLE",
+            "deviation_from_peg": 0.0,
+            "weight": 0.15
+          },
+          "liquidity": {
+            "liquidity_level": 0,
+            "signal": "TIGHT",
+            "weight": 0.2
+          }
+        },
+        "composite": {
+          "overall_signal": "HOLD",
+          "signal_strength": 0.01666666666666668,
+          "confidence": 0.6,
+          "component_weights": {
+            "macro": 0.4
+          },
+          "alpha_score": -0.01666666666666668
+        }
+      },
+      "performance_metrics": {
+        "signal_count": 3,
+        "data_source_diversity": 0.6,
+        "signal_consistency": 0.6,
+        "expected_alpha": -0.002500000000000002
+      },
+      "quality_score": 0.6799999999999999
+    },
+    "0941.HK": {
+      "symbol": "0941.HK",
+      "timestamp": "2025-11-28T17:07:42.421554",
+      "data_sources_used": [
+        "stock_data: 2 records",
+        "hibor_rates: 100 records",
+        "exchange_rates: 100 records",
+        "monetary_base: 100 records",
+        "interbank_liquidity: 100 records",
+        "efbn_indicative: 100 records"
+      ],
+      "signals": {
+        "technical": {},
+        "macro": {
+          "hibor": {
+            "overnight_rate": 3.85667,
+            "one_month_rate": 3.42911,
+            "level_signal": "NEUTRAL",
+            "change_signal": "TIGHTENING",
+            "rate_impact": "NEUTRAL",
+            "weight": 0.25
+          },
+          "exchange_rate": {
+            "usd_hkd": 7.8,
+            "stability_signal": "STABLE",
+            "deviation_from_peg": 0.0,
+            "weight": 0.15
+          },
+          "liquidity": {
+            "liquidity_level": 0,
+            "signal": "TIGHT",
+            "weight": 0.2
+          }
+        },
+        "composite": {
+          "overall_signal": "HOLD",
+          "signal_strength": 0.01666666666666668,
+          "confidence": 0.6,
+          "component_weights": {
+            "macro": 0.4
+          },
+          "alpha_score": -0.01666666666666668
+        }
+      },
+      "performance_metrics": {
+        "signal_count": 3,
+        "data_source_diversity": 0.6,
+        "signal_consistency": 0.6,
+        "expected_alpha": -0.002500000000000002
+      },
+      "quality_score": 0.6799999999999999
+    },
+    "1398.HK": {
+      "symbol": "1398.HK",
+      "timestamp": "2025-11-28T17:07:42.709778",
+      "data_sources_used": [
+        "stock_data: 2 records",
+        "hibor_rates: 100 records",
+        "exchange_rates: 100 records",
+        "monetary_base: 100 records",
+        "interbank_liquidity: 100 records",
+        "efbn_indicative: 100 records"
+      ],
+      "signals": {
+        "technical": {},
+        "macro": {
+          "hibor": {
+            "overnight_rate": 3.85667,
+            "one_month_rate": 3.42911,
+            "level_signal": "NEUTRAL",
+            "change_signal": "TIGHTENING",
+            "rate_impact": "NEUTRAL",
+            "weight": 0.25
+          },
+          "exchange_rate": {
+            "usd_hkd": 7.8,
+            "stability_signal": "STABLE",
+            "deviation_from_peg": 0.0,
+            "weight": 0.15
+          },
+          "liquidity": {
+            "liquidity_level": 0,
+            "signal": "TIGHT",
+            "weight": 0.2
+          }
+        },
+        "composite": {
+          "overall_signal": "HOLD",
+          "signal_strength": 0.01666666666666668,
+          "confidence": 0.6,
+          "component_weights": {
+            "macro": 0.4
+          },
+          "alpha_score": -0.01666666666666668
+        }
+      },
+      "performance_metrics": {
+        "signal_count": 3,
+        "data_source_diversity": 0.6,
+        "signal_consistency": 0.6,
+        "expected_alpha": -0.002500000000000002
+      },
+      "quality_score": 0.6799999999999999
+    }
+  },
+  "comparative_analysis": {
+    "best_alpha_source": null,
+    "highest_quality": {
+      "symbol": "0700.HK",
+      "quality_score": 0.6799999999999999,
+      "alpha_signals": {
+        "technical": {},
+        "macro": {
+          "hibor": {
+            "overnight_rate": 3.85667,
+            "one_month_rate": 3.42911,
+            "level_signal": "NEUTRAL",
+            "change_signal": "TIGHTENING",
+            "rate_impact": "NEUTRAL",
+            "weight": 0.25
+          },
+          "exchange_rate": {
+            "usd_hkd": 7.8,
+            "stability_signal": "STABLE",
+            "deviation_from_peg": 0.0,
+            "weight": 0.15
+          },
+          "liquidity": {
+            "liquidity_level": 0,
+            "signal": "TIGHT",
+            "weight": 0.2
+          }
+        },
+        "composite": {
+          "overall_signal": "HOLD",
+          "signal_strength": 0.01666666666666668,
+          "confidence": 0.6,
+          "component_weights": {
+            "macro": 0.4
+          },
+          "alpha_score": -0.01666666666666668
+        }
+      }
+    },
+    "signal_diversity": {},
+    "performance_ranking": [
+      {
+        "symbol": "0700.HK",
+        "quality_score": 0.6799999999999999
+      },
+      {
+        "symbol": "0941.HK",
+        "quality_score": 0.6799999999999999
+      },
+      {
+        "symbol": "1398.HK",
+        "quality_score": 0.6799999999999999
+      }
+    ]
+  },
+  "portfolio_signals": {
+    "overall_recommendation": "HOLD",
+    "top_picks": [],
+    "allocation_weights": {
+      "0700.HK": 0.3333333333333333,
+      "0941.HK": 0.3333333333333333,
+      "1398.HK": 0.3333333333333333
+    },
+    "risk_assessment": "MEDIUM"
+  },
+  "quality_summary": {
+    "total_symbols": 3,
+    "average_quality": 0.68,
+    "quality_distribution": {
+      "HIGH": 0,
+      "MEDIUM": 3,
+      "LOW": 0
+    },
+    "data_source_coverage": {
+      "stock_data: 2 records": 3,
+      "hibor_rates: 100 records": 3,
+      "exchange_rates: 100 records": 3,
+      "monetary_base: 100 records": 3,
+      "interbank_liquidity: 100 records": 3,
+      "efbn_indicative: 100 records": 3
+    },
+    "integration_status": "SUCCESS"
+  }
+}

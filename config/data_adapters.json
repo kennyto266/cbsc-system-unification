@@ -1,0 +1,63 @@
+{
+  "adapters": [
+    {
+      "name": "raw_data",
+      "enabled": true,
+      "priority": 1,
+      "config": {
+        "source_type": "raw_data",
+        "source_path": "C:\\Users\\Penguin8n\\Desktop\\黑人RAW DATA",
+        "data_directory": "C:\\Users\\Penguin8n\\Desktop\\黑人RAW DATA",
+        "file_pattern": "*.csv",
+        "encoding": "utf-8",
+        "delimiter": ",",
+        "date_column": "date",
+        "symbol_column": "symbol",
+        "price_columns": {
+          "open": "open",
+          "high": "high",
+          "low": "low",
+          "close": "close",
+          "volume": "volume"
+        },
+        "market_cap_column": "market_cap",
+        "pe_ratio_column": "pe_ratio",
+        "update_frequency": 60,
+        "max_retries": 3,
+        "timeout": 30,
+        "cache_enabled": true,
+        "cache_ttl": 300,
+        "quality_threshold": 0.8
+      }
+    },
+    {
+      "name": "http_api",
+      "enabled": true,
+      "priority": 1,
+      "config": {
+        "source_type": "http_api",
+        "source_path": "http://18.180.162.113:9191",
+        "endpoint_symbol": "/inst/getInst",
+        "api_key": null,
+        "api_key_header": null,
+        "default_params": {"duration": 1385},
+        "update_frequency": 5,
+        "max_retries": 3,
+        "timeout": 10,
+        "cache_enabled": true,
+        "cache_ttl": 60,
+        "quality_threshold": 0.8,
+        "rate_limit_rps": 1.0,
+        "per_symbol_min_interval_sec": 2.0,
+        "json_field_map": {
+          "open": "open",
+          "high": "high",
+          "low": "low",
+          "close": "close",
+          "volume": "volume",
+          "timestamp": "timestamp"
+        }
+      }
+    }
+  ]
+}

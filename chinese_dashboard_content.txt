@@ -1,0 +1,6 @@
+uid=2_0 RootWebArea url="http://localhost:3004/dashboard/bull_bear_dashboard_20251130_135050.html"
+  uid=2_1 ignored
+    uid=2_2 ignored
+      uid=2_3 generic
+        uid=2_4 StaticText "404 Not Found"
+          uid=2_5 InlineTextBox "404 Not Found"

@@ -1,0 +1,31 @@
+{
+  "validation_timestamp": "2025-12-05T19:46:51.774615",
+  "summary": {
+    "critical_issues": 3,
+    "methodology_issues": 13,
+    "data_quality_issues": 0,
+    "readiness_score": "MODERATE RISK - FIXES REQUIRED",
+    "risk_level": "MODERATE"
+  },
+  "critical_issues": [
+    "RSI Aggressive: Return > 500% - unrealistic",
+    "RSI Aggressive: Exact return suggests calculation error",
+    "MACD Standard and Sensitive have identical results"
+  ],
+  "methodology_issues": [
+    "RSI Conservative: Trading cost HKD 2000/trade - unrealistic",
+    "RSI Aggressive: Trading cost HKD 2000/trade - unrealistic",
+    "MACD Standard: Trading cost HKD 2000/trade - unrealistic",
+    "MACD Standard: Excessive trading (609 trades)",
+    "MACD Sensitive: Trading cost HKD 2000/trade - unrealistic",
+    "MACD Sensitive: Excessive trading (609 trades)",
+    "Bollinger Breakout: Trading cost HKD 2000/trade - unrealistic",
+    "Bollinger Wide: Trading cost HKD 2000/trade - unrealistic",
+    "Trading cost assumption is 6-20x higher than realistic",
+    "MACD Standard: Annual return calculation results in NaN",
+    "MACD Standard: Drawdown inconsistent with returns",
+    "MACD Sensitive: Annual return calculation results in NaN",
+    "MACD Sensitive: Drawdown inconsistent with returns"
+  ],
+  "data_quality_issues": []
+}

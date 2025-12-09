@@ -1,0 +1,167 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Integrated Real Data Backtest Report - 0700.HK</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+                .header { text-align: center; color: #333; background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+                .summary { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+                .strategy { border: 1px solid #ddd; border-radius: 8px; margin: 10px 0; padding: 15px; background: white; }
+                .best { border: 2px solid #FFD700; background: #FFFACD; }
+                table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+                .metric { display: inline-block; margin: 5px 10px; padding: 5px 10px; background: #e3f2fd; border-radius: 5px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>Integrated Real Data Backtest Report</h1>
+                <h2>0700.HK - Real Data Technical Analysis</h2>
+                <h3>2025-11-22 10:06:36</h3>
+            </div>
+
+            <div class="summary">
+                <h3>System Summary</h3>
+                <div class="metric">Total Strategies Tested: 19</div>
+                <div class="metric">Data Sources: CBBC + HIBOR + Government Data</div>
+                <div class="metric">Price Data Period: 246 days</div>
+                <div class="metric">Technical Indicators: 14</div>
+            </div>
+
+            <h3>Top 10 Strategies by Composite Score</h3>
+            <table>
+                <tr>
+                    <th>Rank</th><th>Strategy Name</th><th>Composite Score</th>
+                    <th>Sharpe Ratio</th><th>Max Drawdown (%)</th>
+                    <th>Total Return (%)</th><th>Win Rate (%)</th><th>Trades</th>
+                </tr>
+        
+                <tr class="best">
+                    <td><b>#1</b></td>
+                    <td>economic_vitality_index_bollinger</td>
+                    <td><b>67.2</b></td>
+                    <td>1.911</td>
+                    <td>-19.95</td>
+                    <td>70.3</td>
+                    <td>14.29</td>
+                    <td>3</td>
+                </tr>
+            
+                <tr class="">
+                    <td><b>#2</b></td>
+                    <td>market_confidence_index_bollinger</td>
+                    <td><b>67.1</b></td>
+                    <td>2.086</td>
+                    <td>-4.57</td>
+                    <td>38.94</td>
+                    <td>50.0</td>
+                    <td>2</td>
+                </tr>
+            
+                <tr class="">
+                    <td><b>#3</b></td>
+                    <td>hibor_volatility_bollinger</td>
+                    <td><b>63.8</b></td>
+                    <td>1.881</td>
+                    <td>-4.12</td>
+                    <td>29.15</td>
+                    <td>33.33</td>
+                    <td>3</td>
+                </tr>
+            
+                <tr class="">
+                    <td><b>#4</b></td>
+                    <td>cbbc_issuer_concentration_bollinger</td>
+                    <td><b>59.0</b></td>
+                    <td>1.465</td>
+                    <td>-8.02</td>
+                    <td>29.09</td>
+                    <td>63.64</td>
+                    <td>5</td>
+                </tr>
+            
+                <tr class="">
+                    <td><b>#5</b></td>
+                    <td>cbbc_issuer_concentration_macd</td>
+                    <td><b>57.9</b></td>
+                    <td>1.358</td>
+                    <td>-10.57</td>
+                    <td>31.14</td>
+                    <td>98.82</td>
+                    <td>42</td>
+                </tr>
+            
+                <tr class="">
+                    <td><b>#6</b></td>
+                    <td>hibor_term_spread_bollinger</td>
+                    <td><b>57.3</b></td>
+                    <td>1.383</td>
+                    <td>-2.22</td>
+                    <td>15.48</td>
+                    <td>44.44</td>
+                    <td>4</td>
+                </tr>
+            
+                <tr class="">
+                    <td><b>#7</b></td>
+                    <td>market_confidence_index_macd</td>
+                    <td><b>55.3</b></td>
+                    <td>1.18</td>
+                    <td>-11.75</td>
+                    <td>26.55</td>
+                    <td>98.41</td>
+                    <td>31</td>
+                </tr>
+            
+                <tr class="">
+                    <td><b>#8</b></td>
+                    <td>visitor_seasonal_strength_bollinger</td>
+                    <td><b>51.6</b></td>
+                    <td>0.967</td>
+                    <td>-19.49</td>
+                    <td>23.24</td>
+                    <td>28.57</td>
+                    <td>3</td>
+                </tr>
+            
+                <tr class="">
+                    <td><b>#9</b></td>
+                    <td>cbbc_sentiment_rsi_bollinger</td>
+                    <td><b>49.9</b></td>
+                    <td>0.769</td>
+                    <td>-10.22</td>
+                    <td>15.12</td>
+                    <td>66.67</td>
+                    <td>4</td>
+                </tr>
+            
+                <tr class="">
+                    <td><b>#10</b></td>
+                    <td>cbbc_activity_index_macd</td>
+                    <td><b>49.6</b></td>
+                    <td>0.783</td>
+                    <td>-15.35</td>
+                    <td>17.79</td>
+                    <td>98.51</td>
+                    <td>33</td>
+                </tr>
+            
+            </table>
+
+            <div class="summary">
+                <h3>Best Strategy Performance</h3>
+        
+                <p><b>Strategy:</b> economic_vitality_index_bollinger</p>
+                <p><b>Composite Score:</b> 67.2/100</p>
+                <p><b>Sharpe Ratio:</b> 1.911</p>
+                <p><b>Total Return:</b> 70.3%</p>
+                <p><b>Max Drawdown:</b> -19.95%</p>
+                <p><b>Win Rate:</b> 14.29%</p>
+                <p><b>Outperformance vs Buy & Hold:</b> 16.7%</p>
+            
+            </div>
+        </body>
+        </html>
+        

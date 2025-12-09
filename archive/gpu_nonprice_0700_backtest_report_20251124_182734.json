@@ -1,0 +1,85 @@
+{
+  "metadata": {
+    "stock": "0700.HK",
+    "company": "Tencent Holdings Limited",
+    "backtest_date": "2025-11-24T18:27:34.481556",
+    "data_period": "2024-11-25 至 2025-11-24",
+    "total_days": 246,
+    "gpu_used": true,
+    "data_points": 246
+  },
+  "data_summary": {
+    "price_range": {
+      "min": 366.0,
+      "max": 677.5,
+      "current": 624.5
+    },
+    "government_sources": [
+      "hibor",
+      "monetary_base"
+    ]
+  },
+  "strategy_results": {
+    "RSI_Strategy": {
+      "sharpe_ratio": -2.53435207541002,
+      "total_return": -0.5217758329132167,
+      "annual_return": -0.5303031430406626,
+      "max_drawdown": -0.5217758329132167,
+      "volatility": 0.2210833879306268,
+      "calmar_ratio": -1.0163428614158605,
+      "win_rate": 0.09349593495934959,
+      "profit_factor": 0.7396700259312047,
+      "total_trades": 83
+    },
+    "MACD_Strategy": {
+      "sharpe_ratio": -1.454824438447819,
+      "total_return": -0.42864361575257137,
+      "annual_return": -0.43639090986972384,
+      "max_drawdown": -0.5015506195407966,
+      "volatility": 0.3205822623981527,
+      "calmar_ratio": -0.870083482838221,
+      "win_rate": 0.43902439024390244,
+      "profit_factor": 0.8812338915466459,
+      "total_trades": 236
+    },
+    "MA_Cross_Strategy": {
+      "sharpe_ratio": -1.0517991527765893,
+      "total_return": -0.27516331943981986,
+      "annual_return": -0.28083029196887843,
+      "max_drawdown": -0.4205333581660332,
+      "volatility": 0.2955224779829247,
+      "calmar_ratio": -0.6677955185139016,
+      "win_rate": 0.3821138211382114,
+      "profit_factor": 0.8283898257089332,
+      "total_trades": 189
+    },
+    "Fusion_Consensus_Strategy": {
+      "sharpe_ratio": -2.885714654172088,
+      "total_return": -0.5074896033110763,
+      "annual_return": -0.5159242362283514,
+      "max_drawdown": -0.53097217748211,
+      "volatility": 0.18918164186437106,
+      "calmar_ratio": -0.9716596426481016,
+      "win_rate": 0.10975609756097561,
+      "profit_factor": 0.714583254451387,
+      "total_trades": 91
+    }
+  },
+  "performance_comparison": {
+    "avg_sharpe": -1.9816725802016293,
+    "max_sharpe": -1.0517991527765893,
+    "min_sharpe": -2.885714654172088,
+    "avg_return": -0.43326809285417106,
+    "max_return": -0.27516331943981986,
+    "min_return": -0.5217758329132167
+  },
+  "best_strategy": {
+    "name": "MA_Cross_Strategy",
+    "sharpe_ratio": -1.0517991527765893,
+    "total_return": -0.27516331943981986
+  },
+  "execution_summary": {
+    "total_strategies": 4,
+    "successful_strategies": 0
+  }
+}

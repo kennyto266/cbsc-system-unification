@@ -1,0 +1,46 @@
+{
+  "test_timestamp": "20251125_175819",
+  "total_test_time_seconds": 0.17365169525146484,
+  "test_statistics": {
+    "total_tests": 8,
+    "passed_tests": 1,
+    "failed_tests": 7,
+    "warned_tests": 0,
+    "success_rate": 12.5
+  },
+  "readiness_level": "NEEDS_FIXES",
+  "detailed_results": {
+    "data_setup": {
+      "status": "PASS",
+      "records": 100
+    },
+    "core_indicators": {
+      "status": "FAIL",
+      "error": "No module named 'src.indicators.core_indicators'"
+    },
+    "extended_indicators": {
+      "status": "FAIL",
+      "error": "No module named 'src.indicators.phase2_extended_indicators'"
+    },
+    "vectorbt_engine": {
+      "status": "FAIL",
+      "error": "No module named 'src.backtest.vectorbt_engine'"
+    },
+    "massive_optimizer": {
+      "status": "FAIL",
+      "error": "No module named 'src.backtest.massive_optimizer'"
+    },
+    "composite_signal_generator": {
+      "status": "FAIL",
+      "error": "No module named 'src.signal_fusion'"
+    },
+    "end_to_end_workflow": {
+      "status": "FAIL",
+      "error": "No module named 'src.indicators.core_indicators'"
+    },
+    "performance_benchmarks": {
+      "status": "FAIL",
+      "error": "No module named 'src.indicators.core_indicators'"
+    }
+  }
+}

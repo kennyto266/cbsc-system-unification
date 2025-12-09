@@ -1,0 +1,24 @@
+{
+  "symbol": "0941.HK",
+  "data_type": "daily",
+  "last_updated": "2025-11-29T16:33:07.272557",
+  "storage_stats": {
+    "symbol": "0941.HK",
+    "total_records": 1230,
+    "years_stored": [
+      2020,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "date_range": {
+      "start": "2020-11-30",
+      "end": "2025-11-28"
+    },
+    "partitions_created": 5,
+    "storage_size_mb": 0.0595855712890625,
+    "compression_ratio": 2.7535833212682785
+  }
+}

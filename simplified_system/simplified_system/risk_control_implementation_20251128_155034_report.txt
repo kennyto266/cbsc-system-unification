@@ -1,0 +1,33 @@
+================================================================================
+Risk Control Implementation Report
+Generated: 2025-11-28 15:50:34
+================================================================================
+
+IMPLEMENTATION SUCCESS
+------------------------------
+Selected Strategy: RSI_{'period': 20, 'oversold': 25, 'overbought': 80}
+Strategy Parameters: {'period': 20, 'oversold': 25, 'overbought': 80}
+Risk-Adjusted Score: 0.609
+
+CURRENT RISK METRICS
+-------------------------
+Current Drawdown: -10.88%
+Current Volatility: 30.14%
+95% VaR: -2.91%
+Sharpe Ratio: -0.100
+Max Consecutive Losses: 6
+
+TRADING SIGNALS
+--------------------
+Entry Signal: False
+Exit Signal: False
+Position Size: 0.0%
+Stop Loss: 0.0%
+Take Profit: 0.0%
+Risk Adjustments: HIGH_DRAWDOWN_RISK, HIGH_VOLATILITY_RISK, CONSECUTIVE_LOSSES
+
+EXPECTED PERFORMANCE
+-------------------------
+Walk-Forward Sharpe: 0.835
+Walk-Forward Return: -6.73%
+Walk-Forward Drawdown: 12.47%

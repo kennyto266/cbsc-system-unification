@@ -1,0 +1,2019 @@
+{
+  "success": true,
+  "data": [
+    {
+      "date": "2025-11-26",
+      "raw_data": {
+        "end_of_date": "2025-11-26",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 925,
+        "intraday_repo_at_1100": 14000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2500,
+        "intraday_repo_at_1400": 11705,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2700,
+        "intraday_repo_at_1600": 23404,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4700
+      },
+      "record_index": 0,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-25",
+      "raw_data": {
+        "end_of_date": "2025-11-25",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 4100,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 4300,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 11300,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 1,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-24",
+      "raw_data": {
+        "end_of_date": "2025-11-24",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 3350,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 3770,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 3500,
+        "intraday_repo_at_1600": 14500,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 7500
+      },
+      "record_index": 2,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-21",
+      "raw_data": {
+        "end_of_date": "2025-11-21",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 3500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 4680,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 3500,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 3,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-20",
+      "raw_data": {
+        "end_of_date": "2025-11-20",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 3500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 3500,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 4000,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 2000
+      },
+      "record_index": 4,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-19",
+      "raw_data": {
+        "end_of_date": "2025-11-19",
+        "intraday_repo_at_0900": 3250,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 7850,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 12560,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4700,
+        "intraday_repo_at_1600": 12500,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 5,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-18",
+      "raw_data": {
+        "end_of_date": "2025-11-18",
+        "intraday_repo_at_0900": 12200,
+        "overnight_repo_at_0900": 450,
+        "plp_fac_at_0900": 5060,
+        "intraday_repo_at_1100": 10600,
+        "overnight_repo_at_1100": 450,
+        "plp_fac_at_1100": 4500,
+        "intraday_repo_at_1400": 11700,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 11700,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 6,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-17",
+      "raw_data": {
+        "end_of_date": "2025-11-17",
+        "intraday_repo_at_0900": 8150,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 4000,
+        "intraday_repo_at_1100": 7600,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 7600,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 8600,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 7000
+      },
+      "record_index": 7,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-14",
+      "raw_data": {
+        "end_of_date": "2025-11-14",
+        "intraday_repo_at_0900": 685,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 3600,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 13600,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 13750,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 8,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-13",
+      "raw_data": {
+        "end_of_date": "2025-11-13",
+        "intraday_repo_at_0900": 2700,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 4100,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 5800,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 12600,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5000
+      },
+      "record_index": 9,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-12",
+      "raw_data": {
+        "end_of_date": "2025-11-12",
+        "intraday_repo_at_0900": 4000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 12600,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 23600,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 5000,
+        "intraday_repo_at_1600": 23600,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 10,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-11",
+      "raw_data": {
+        "end_of_date": "2025-11-11",
+        "intraday_repo_at_0900": 9000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2230,
+        "intraday_repo_at_1100": 9600,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2200,
+        "intraday_repo_at_1400": 9730,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2200,
+        "intraday_repo_at_1600": 3610,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 2000
+      },
+      "record_index": 11,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-10",
+      "raw_data": {
+        "end_of_date": "2025-11-10",
+        "intraday_repo_at_0900": 11010,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2841,
+        "intraday_repo_at_1100": 14600,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4741,
+        "intraday_repo_at_1400": 15610,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 5000,
+        "intraday_repo_at_1600": 15900,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5000
+      },
+      "record_index": 12,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-07",
+      "raw_data": {
+        "end_of_date": "2025-11-07",
+        "intraday_repo_at_0900": 15000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 3310,
+        "intraday_repo_at_1100": 19100,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4810,
+        "intraday_repo_at_1400": 19500,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 20100,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5000
+      },
+      "record_index": 13,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-06",
+      "raw_data": {
+        "end_of_date": "2025-11-06",
+        "intraday_repo_at_0900": 3800,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2249,
+        "intraday_repo_at_1100": 3600,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2249,
+        "intraday_repo_at_1400": 3900,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 14500,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 14,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-05",
+      "raw_data": {
+        "end_of_date": "2025-11-05",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 3600,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 3650,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 4150,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 2000
+      },
+      "record_index": 15,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-04",
+      "raw_data": {
+        "end_of_date": "2025-11-04",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 1813,
+        "intraday_repo_at_1100": 4000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2090,
+        "intraday_repo_at_1400": 3500,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2090,
+        "intraday_repo_at_1600": 13100,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4090
+      },
+      "record_index": 16,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-11-03",
+      "raw_data": {
+        "end_of_date": "2025-11-03",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 3600,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 4000,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4100,
+        "intraday_repo_at_1600": 14600,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6100
+      },
+      "record_index": 17,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-31",
+      "raw_data": {
+        "end_of_date": "2025-10-31",
+        "intraday_repo_at_0900": 300,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 3600,
+        "intraday_repo_at_1100": 3600,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 3600,
+        "intraday_repo_at_1400": 4100,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 3600,
+        "intraday_repo_at_1600": 17100,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 18,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-30",
+      "raw_data": {
+        "end_of_date": "2025-10-30",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 1215,
+        "intraday_repo_at_1100": 4150,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2530,
+        "intraday_repo_at_1400": 4710,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 3400,
+        "intraday_repo_at_1600": 3810,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4900
+      },
+      "record_index": 19,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-28",
+      "raw_data": {
+        "end_of_date": "2025-10-28",
+        "intraday_repo_at_0900": 15000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 3000,
+        "intraday_repo_at_1100": 18500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 5000,
+        "intraday_repo_at_1400": 18200,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 5000,
+        "intraday_repo_at_1600": 21150,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4900
+      },
+      "record_index": 20,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-27",
+      "raw_data": {
+        "end_of_date": "2025-10-27",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 4200,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 3000,
+        "intraday_repo_at_1400": 5370,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 5000,
+        "intraday_repo_at_1600": 11600,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6499
+      },
+      "record_index": 21,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-24",
+      "raw_data": {
+        "end_of_date": "2025-10-24",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 1000,
+        "intraday_repo_at_1100": 3500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 4000,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 11800,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5000
+      },
+      "record_index": 22,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-23",
+      "raw_data": {
+        "end_of_date": "2025-10-23",
+        "intraday_repo_at_0900": 1800,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 3300,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 3901,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 4601,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 3000
+      },
+      "record_index": 23,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-22",
+      "raw_data": {
+        "end_of_date": "2025-10-22",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 1930,
+        "intraday_repo_at_1100": 5000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2300,
+        "intraday_repo_at_1400": 5800,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 7600,
+        "intraday_repo_at_1600": 4100,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 7599
+      },
+      "record_index": 24,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-21",
+      "raw_data": {
+        "end_of_date": "2025-10-21",
+        "intraday_repo_at_0900": 1100,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 1070,
+        "intraday_repo_at_1100": 6565,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 5000,
+        "intraday_repo_at_1400": 6850,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 5000,
+        "intraday_repo_at_1600": 14300,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 7000
+      },
+      "record_index": 25,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-20",
+      "raw_data": {
+        "end_of_date": "2025-10-20",
+        "intraday_repo_at_0900": 6500,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 4700,
+        "intraday_repo_at_1100": 9500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 5000,
+        "intraday_repo_at_1400": 10350,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 5000,
+        "intraday_repo_at_1600": 10300,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5000
+      },
+      "record_index": 26,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-17",
+      "raw_data": {
+        "end_of_date": "2025-10-17",
+        "intraday_repo_at_0900": 7000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 4100,
+        "intraday_repo_at_1100": 11600,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 5500,
+        "intraday_repo_at_1400": 12100,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6500,
+        "intraday_repo_at_1600": 14200,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6500
+      },
+      "record_index": 27,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-16",
+      "raw_data": {
+        "end_of_date": "2025-10-16",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 5,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 3500,
+        "overnight_repo_at_1100": 5,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 4950,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 4950,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 2000
+      },
+      "record_index": 28,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-15",
+      "raw_data": {
+        "end_of_date": "2025-10-15",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 400,
+        "intraday_repo_at_1100": 4500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 4500,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 5200,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 2000
+      },
+      "record_index": 29,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-14",
+      "raw_data": {
+        "end_of_date": "2025-10-14",
+        "intraday_repo_at_0900": 3100,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 3000,
+        "intraday_repo_at_1100": 10155,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 5000,
+        "intraday_repo_at_1400": 10155,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 7000,
+        "intraday_repo_at_1600": 10455,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 7000
+      },
+      "record_index": 30,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-13",
+      "raw_data": {
+        "end_of_date": "2025-10-13",
+        "intraday_repo_at_0900": 800,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 300,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 50,
+        "intraday_repo_at_1400": 1300,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2700,
+        "intraday_repo_at_1600": 1720,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 2000
+      },
+      "record_index": 31,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-10",
+      "raw_data": {
+        "end_of_date": "2025-10-10",
+        "intraday_repo_at_0900": 2790,
+        "overnight_repo_at_0900": 1500,
+        "plp_fac_at_0900": 4650,
+        "intraday_repo_at_1100": 4900,
+        "overnight_repo_at_1100": 1500,
+        "plp_fac_at_1100": 4950,
+        "intraday_repo_at_1400": 13689,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 8100,
+        "intraday_repo_at_1600": 20689,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 8100
+      },
+      "record_index": 32,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-09",
+      "raw_data": {
+        "end_of_date": "2025-10-09",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 260,
+        "intraday_repo_at_1100": 8500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 8500,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 14520,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5600
+      },
+      "record_index": 33,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-08",
+      "raw_data": {
+        "end_of_date": "2025-10-08",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 600,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 0,
+        "intraday_repo_at_1400": 600,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 0,
+        "intraday_repo_at_1600": 600,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 260
+      },
+      "record_index": 34,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-06",
+      "raw_data": {
+        "end_of_date": "2025-10-06",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 0,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 0,
+        "intraday_repo_at_1400": 500,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 0,
+        "intraday_repo_at_1600": 500,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 0
+      },
+      "record_index": 35,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-03",
+      "raw_data": {
+        "end_of_date": "2025-10-03",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 0,
+        "intraday_repo_at_1400": 500,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 0,
+        "intraday_repo_at_1600": 500,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 0
+      },
+      "record_index": 36,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-10-02",
+      "raw_data": {
+        "end_of_date": "2025-10-02",
+        "intraday_repo_at_0900": 2300,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 3000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 1900,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 1900,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 2000
+      },
+      "record_index": 37,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-30",
+      "raw_data": {
+        "end_of_date": "2025-09-30",
+        "intraday_repo_at_0900": 12000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 3400,
+        "intraday_repo_at_1100": 17450,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 6000,
+        "intraday_repo_at_1400": 19650,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 18800,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6000
+      },
+      "record_index": 38,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-29",
+      "raw_data": {
+        "end_of_date": "2025-09-29",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 80,
+        "intraday_repo_at_1100": 6620,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 13420,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 12860,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 39,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-26",
+      "raw_data": {
+        "end_of_date": "2025-09-26",
+        "intraday_repo_at_0900": 6000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 3600,
+        "intraday_repo_at_1100": 11600,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 11650,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 19449,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6000
+      },
+      "record_index": 40,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-25",
+      "raw_data": {
+        "end_of_date": "2025-09-25",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 3500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 3675,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 7500,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4500
+      },
+      "record_index": 41,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-24",
+      "raw_data": {
+        "end_of_date": "2025-09-24",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 9410,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 10760,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 4260,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 2000
+      },
+      "record_index": 42,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-23",
+      "raw_data": {
+        "end_of_date": "2025-09-23",
+        "intraday_repo_at_0900": 4000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 7500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 18250,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 18250,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 43,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-22",
+      "raw_data": {
+        "end_of_date": "2025-09-22",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 12050,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 12460,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 11710,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 44,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-19",
+      "raw_data": {
+        "end_of_date": "2025-09-19",
+        "intraday_repo_at_0900": 8000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 12000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 12290,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 13140,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6000
+      },
+      "record_index": 45,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-18",
+      "raw_data": {
+        "end_of_date": "2025-09-18",
+        "intraday_repo_at_0900": 8000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 3400,
+        "intraday_repo_at_1100": 12000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 12550,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 12650,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5800
+      },
+      "record_index": 46,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-17",
+      "raw_data": {
+        "end_of_date": "2025-09-17",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 300,
+        "intraday_repo_at_1100": 10100,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 11850,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 15400,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 47,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-16",
+      "raw_data": {
+        "end_of_date": "2025-09-16",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 12890,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 12955,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 13085,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 48,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-15",
+      "raw_data": {
+        "end_of_date": "2025-09-15",
+        "intraday_repo_at_0900": 7000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 12200,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 17390,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 18500,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 49,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-12",
+      "raw_data": {
+        "end_of_date": "2025-09-12",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 330,
+        "intraday_repo_at_1100": 6900,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2330,
+        "intraday_repo_at_1400": 5400,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 14410,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 50,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-11",
+      "raw_data": {
+        "end_of_date": "2025-09-11",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 1300,
+        "intraday_repo_at_1100": 8000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 6200,
+        "intraday_repo_at_1400": 9925,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6200,
+        "intraday_repo_at_1600": 9700,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4200
+      },
+      "record_index": 51,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-10",
+      "raw_data": {
+        "end_of_date": "2025-09-10",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 150,
+        "intraday_repo_at_1100": 10580,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 10540,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 11000,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5000
+      },
+      "record_index": 52,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-09",
+      "raw_data": {
+        "end_of_date": "2025-09-09",
+        "intraday_repo_at_0900": 8000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 12000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 16340,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 16170,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6000
+      },
+      "record_index": 53,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-08",
+      "raw_data": {
+        "end_of_date": "2025-09-08",
+        "intraday_repo_at_0900": 260,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2500,
+        "intraday_repo_at_1100": 3600,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 5400,
+        "intraday_repo_at_1400": 13615,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 9000,
+        "intraday_repo_at_1600": 19995,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 8200
+      },
+      "record_index": 54,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-05",
+      "raw_data": {
+        "end_of_date": "2025-09-05",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 1890,
+        "intraday_repo_at_1100": 4000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 4000,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 4800,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 55,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-04",
+      "raw_data": {
+        "end_of_date": "2025-09-04",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 230,
+        "intraday_repo_at_1100": 4000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 5100,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 5300,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 2000
+      },
+      "record_index": 56,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-03",
+      "raw_data": {
+        "end_of_date": "2025-09-03",
+        "intraday_repo_at_0900": 1800,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 3500,
+        "intraday_repo_at_1100": 4000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 4612,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 4400,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5000
+      },
+      "record_index": 57,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-02",
+      "raw_data": {
+        "end_of_date": "2025-09-02",
+        "intraday_repo_at_0900": 2100,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 11600,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 11600,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 5000,
+        "intraday_repo_at_1600": 6604,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5000
+      },
+      "record_index": 58,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-09-01",
+      "raw_data": {
+        "end_of_date": "2025-09-01",
+        "intraday_repo_at_0900": 15,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 400,
+        "intraday_repo_at_1100": 1770,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 0,
+        "intraday_repo_at_1400": 2090,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2100,
+        "intraday_repo_at_1600": 2026,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 2100
+      },
+      "record_index": 59,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-29",
+      "raw_data": {
+        "end_of_date": "2025-08-29",
+        "intraday_repo_at_0900": 6000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 3080,
+        "intraday_repo_at_1100": 10770,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 6000,
+        "intraday_repo_at_1400": 10290,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 10000,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6000
+      },
+      "record_index": 60,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-28",
+      "raw_data": {
+        "end_of_date": "2025-08-28",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 19915,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 19995,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 19780,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 61,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-27",
+      "raw_data": {
+        "end_of_date": "2025-08-27",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 700,
+        "intraday_repo_at_1100": 20000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 5000,
+        "intraday_repo_at_1400": 20000,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 9000,
+        "intraday_repo_at_1600": 14904,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 9000
+      },
+      "record_index": 62,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-26",
+      "raw_data": {
+        "end_of_date": "2025-08-26",
+        "intraday_repo_at_0900": 1190,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 555,
+        "intraday_repo_at_1100": 4000,
+        "overnight_repo_at_1100": 1190,
+        "plp_fac_at_1100": 2355,
+        "intraday_repo_at_1400": 5150,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 13680,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6000
+      },
+      "record_index": 63,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-25",
+      "raw_data": {
+        "end_of_date": "2025-08-25",
+        "intraday_repo_at_0900": 50,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 680,
+        "intraday_repo_at_1100": 4000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2880,
+        "intraday_repo_at_1400": 6060,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2200,
+        "intraday_repo_at_1600": 19525,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4200
+      },
+      "record_index": 64,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-22",
+      "raw_data": {
+        "end_of_date": "2025-08-22",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 200,
+        "intraday_repo_at_1100": 4365,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 10365,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 8000,
+        "intraday_repo_at_1600": 11365,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 8000
+      },
+      "record_index": 65,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-21",
+      "raw_data": {
+        "end_of_date": "2025-08-21",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 4000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 11308,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 11308,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 66,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-20",
+      "raw_data": {
+        "end_of_date": "2025-08-20",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 290,
+        "intraday_repo_at_1100": 5050,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 18859,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 16660,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6000
+      },
+      "record_index": 67,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-19",
+      "raw_data": {
+        "end_of_date": "2025-08-19",
+        "intraday_repo_at_0900": 1999,
+        "overnight_repo_at_0900": 3000,
+        "plp_fac_at_0900": 3760,
+        "intraday_repo_at_1100": 15999,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 3760,
+        "intraday_repo_at_1400": 12091,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 3000,
+        "intraday_repo_at_1600": 14100,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5000
+      },
+      "record_index": 68,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-18",
+      "raw_data": {
+        "end_of_date": "2025-08-18",
+        "intraday_repo_at_0900": 100,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2200,
+        "intraday_repo_at_1100": 4000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2200,
+        "intraday_repo_at_1400": 5530,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4200,
+        "intraday_repo_at_1600": 15031,
+        "overnight_repo_at_1600": 3000,
+        "plp_fac_at_1600": 7000
+      },
+      "record_index": 69,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-15",
+      "raw_data": {
+        "end_of_date": "2025-08-15",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 1400,
+        "intraday_repo_at_1100": 4000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 3400,
+        "intraday_repo_at_1400": 4440,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 3500,
+        "intraday_repo_at_1600": 5800,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 70,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-14",
+      "raw_data": {
+        "end_of_date": "2025-08-14",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 3750,
+        "intraday_repo_at_1100": 3500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 5150,
+        "intraday_repo_at_1400": 13550,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 19650,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6700
+      },
+      "record_index": 71,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-13",
+      "raw_data": {
+        "end_of_date": "2025-08-13",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 1250,
+        "intraday_repo_at_1100": 4000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 19135,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 19677,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6000
+      },
+      "record_index": 72,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-12",
+      "raw_data": {
+        "end_of_date": "2025-08-12",
+        "intraday_repo_at_0900": 200,
+        "overnight_repo_at_0900": 600,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 4200,
+        "overnight_repo_at_1100": 600,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 5200,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 16400,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 8000
+      },
+      "record_index": 73,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-11",
+      "raw_data": {
+        "end_of_date": "2025-08-11",
+        "intraday_repo_at_0900": 4000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2300,
+        "intraday_repo_at_1100": 8500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 9800,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 16480,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 8000
+      },
+      "record_index": 74,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-08",
+      "raw_data": {
+        "end_of_date": "2025-08-08",
+        "intraday_repo_at_0900": 3185,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 3400,
+        "intraday_repo_at_1100": 7000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 8200,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 8200,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6500
+      },
+      "record_index": 75,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-07",
+      "raw_data": {
+        "end_of_date": "2025-08-07",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 20000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 20000,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 20000,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 76,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-06",
+      "raw_data": {
+        "end_of_date": "2025-08-06",
+        "intraday_repo_at_0900": 1500,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 4000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 4000,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 4700,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 77,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-05",
+      "raw_data": {
+        "end_of_date": "2025-08-05",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 1410,
+        "intraday_repo_at_1100": 4100,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2500,
+        "intraday_repo_at_1400": 4100,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 4100,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6000
+      },
+      "record_index": 78,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-04",
+      "raw_data": {
+        "end_of_date": "2025-08-04",
+        "intraday_repo_at_0900": 150,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2460,
+        "intraday_repo_at_1100": 5200,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4300,
+        "intraday_repo_at_1400": 7400,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 8000,
+        "intraday_repo_at_1600": 8320,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6000
+      },
+      "record_index": 79,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-08-01",
+      "raw_data": {
+        "end_of_date": "2025-08-01",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 4990,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 5390,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 3000,
+        "intraday_repo_at_1600": 14990,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5000
+      },
+      "record_index": 80,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-31",
+      "raw_data": {
+        "end_of_date": "2025-07-31",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 5700,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 5200,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 9443,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4300
+      },
+      "record_index": 81,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-30",
+      "raw_data": {
+        "end_of_date": "2025-07-30",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 6800,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 6800,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 8720,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5000
+      },
+      "record_index": 82,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-29",
+      "raw_data": {
+        "end_of_date": "2025-07-29",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 5870,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 7150,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 6730,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4600
+      },
+      "record_index": 83,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-28",
+      "raw_data": {
+        "end_of_date": "2025-07-28",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 10000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 10410,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 5000,
+        "intraday_repo_at_1600": 19960,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5000
+      },
+      "record_index": 84,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-25",
+      "raw_data": {
+        "end_of_date": "2025-07-25",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 19500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 6400,
+        "intraday_repo_at_1400": 20000,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6400,
+        "intraday_repo_at_1600": 20000,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6400
+      },
+      "record_index": 85,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-24",
+      "raw_data": {
+        "end_of_date": "2025-07-24",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 5,
+        "plp_fac_at_0900": 1370,
+        "intraday_repo_at_1100": 4000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 3370,
+        "intraday_repo_at_1400": 8805,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 8605,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 7000
+      },
+      "record_index": 86,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-23",
+      "raw_data": {
+        "end_of_date": "2025-07-23",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 5,
+        "plp_fac_at_0900": 300,
+        "intraday_repo_at_1100": 8000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 8300,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 5800,
+        "intraday_repo_at_1600": 17400,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 5800
+      },
+      "record_index": 87,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-22",
+      "raw_data": {
+        "end_of_date": "2025-07-22",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 5500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 12800,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 13460,
+        "overnight_repo_at_1600": 5,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 88,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-21",
+      "raw_data": {
+        "end_of_date": "2025-07-21",
+        "intraday_repo_at_0900": 7000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 10000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 18000,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 19253,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 89,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-18",
+      "raw_data": {
+        "end_of_date": "2025-07-18",
+        "intraday_repo_at_0900": 4080,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 8500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 12800,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 8000,
+        "intraday_repo_at_1600": 12800,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 8000
+      },
+      "record_index": 90,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-17",
+      "raw_data": {
+        "end_of_date": "2025-07-17",
+        "intraday_repo_at_0900": 8000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 13000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 14600,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 14920,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 7000
+      },
+      "record_index": 91,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-16",
+      "raw_data": {
+        "end_of_date": "2025-07-16",
+        "intraday_repo_at_0900": 2050,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 6500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 7920,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 7830,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 8180
+      },
+      "record_index": 92,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-15",
+      "raw_data": {
+        "end_of_date": "2025-07-15",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 8500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 20000,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 20000,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 8000
+      },
+      "record_index": 93,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-14",
+      "raw_data": {
+        "end_of_date": "2025-07-14",
+        "intraday_repo_at_0900": 2190,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 4500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 4500,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 6970,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 94,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-11",
+      "raw_data": {
+        "end_of_date": "2025-07-11",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 0,
+        "intraday_repo_at_1100": 4500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 6700,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 8178,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 95,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-10",
+      "raw_data": {
+        "end_of_date": "2025-07-10",
+        "intraday_repo_at_0900": 4000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 14500,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 18500,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4650,
+        "intraday_repo_at_1600": 18500,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4650
+      },
+      "record_index": 96,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-09",
+      "raw_data": {
+        "end_of_date": "2025-07-09",
+        "intraday_repo_at_0900": 2810,
+        "overnight_repo_at_0900": 500,
+        "plp_fac_at_0900": 930,
+        "intraday_repo_at_1100": 5000,
+        "overnight_repo_at_1100": 500,
+        "plp_fac_at_1100": 2690,
+        "intraday_repo_at_1400": 5350,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 2000,
+        "intraday_repo_at_1600": 7300,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 4000
+      },
+      "record_index": 97,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-08",
+      "raw_data": {
+        "end_of_date": "2025-07-08",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 1700,
+        "intraday_repo_at_1100": 4000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 2000,
+        "intraday_repo_at_1400": 6000,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 6925,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 6000
+      },
+      "record_index": 98,
+      "source": "rmb_liquidity"
+    },
+    {
+      "date": "2025-07-07",
+      "raw_data": {
+        "end_of_date": "2025-07-07",
+        "intraday_repo_at_0900": 2000,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 2000,
+        "intraday_repo_at_1100": 11000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4000,
+        "intraday_repo_at_1400": 13400,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 6000,
+        "intraday_repo_at_1600": 7004,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 7000
+      },
+      "record_index": 99,
+      "source": "rmb_liquidity"
+    }
+  ],
+  "source": {
+    "name": "人民幣流動資金安排",
+    "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/usage-rmb-liquidity-fac",
+    "category": "daily_monetary",
+    "provider": "香港金融管理局"
+  },
+  "metadata": {
+    "total_records_available": 100,
+    "records_returned": 100,
+    "request_limit": 1000,
+    "fetch_time": "2025-11-27 00:41:51",
+    "response_size": 37077,
+    "api_success": true
+  }
+}

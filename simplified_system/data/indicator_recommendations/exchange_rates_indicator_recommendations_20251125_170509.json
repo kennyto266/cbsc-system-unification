@@ -1,0 +1,337 @@
+{
+  "data_source": "exchange_rates",
+  "data_characteristics": {
+    "type": "interest_rate",
+    "length": 8704,
+    "has_date_column": true,
+    "numeric_columns": 36
+  },
+  "total_indicators_evaluated": 10,
+  "suitable_indicators_count": 10,
+  "indicators_by_category": {
+    "trend": [
+      {
+        "name": "SMA",
+        "suitability_score": 1,
+        "recommended_params": {
+          "min_period": 5,
+          "max_period": 50,
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16,
+          "bb_period": 20
+        },
+        "reasons": [
+          "Suitable for interest_rate data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": []
+      },
+      {
+        "name": "EMA",
+        "suitability_score": 1,
+        "recommended_params": {
+          "min_period": 5,
+          "max_period": 50,
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16,
+          "bb_period": 20
+        },
+        "reasons": [
+          "Suitable for interest_rate data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": []
+      },
+      {
+        "name": "MACD",
+        "suitability_score": 1,
+        "recommended_params": {
+          "fast_range": [
+            5,
+            15
+          ],
+          "slow_range": [
+            20,
+            40
+          ],
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16,
+          "bb_period": 20
+        },
+        "reasons": [
+          "Suitable for interest_rate data",
+          "Sufficient data length (8704 records)",
+          "Strong trend improves indicator performance"
+        ],
+        "limitations": []
+      }
+    ],
+    "momentum": [
+      {
+        "name": "RSI",
+        "suitability_score": 1,
+        "recommended_params": {
+          "period_range": [
+            7,
+            21
+          ],
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16,
+          "bb_period": 20
+        },
+        "reasons": [
+          "Suitable for interest_rate data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": []
+      },
+      {
+        "name": "Stochastic",
+        "suitability_score": 1,
+        "recommended_params": {
+          "k_range": [
+            10,
+            20
+          ],
+          "d_range": [
+            2,
+            5
+          ],
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16,
+          "bb_period": 20
+        },
+        "reasons": [
+          "Suitable for interest_rate data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": []
+      },
+      {
+        "name": "CCI",
+        "suitability_score": 1,
+        "recommended_params": {
+          "period_range": [
+            14,
+            21
+          ],
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16,
+          "bb_period": 20
+        },
+        "reasons": [
+          "Suitable for interest_rate data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": []
+      }
+    ],
+    "custom": [
+      {
+        "name": "Rate_Spread",
+        "suitability_score": 1,
+        "recommended_params": {
+          "tenor_pairs": [
+            [
+              "1m",
+              "3m"
+            ],
+            [
+              "3m",
+              "12m"
+            ]
+          ],
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16,
+          "bb_period": 20
+        },
+        "reasons": [
+          "Suitable for interest_rate data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": []
+      },
+      {
+        "name": "Yield_Curve",
+        "suitability_score": 1,
+        "recommended_params": {
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16,
+          "bb_period": 20
+        },
+        "reasons": [
+          "Suitable for interest_rate data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": []
+      }
+    ],
+    "volatility": [
+      {
+        "name": "Bollinger_Bands",
+        "suitability_score": 0.9,
+        "recommended_params": {
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16,
+          "bb_period": 20
+        },
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for interest_rate data"
+        ]
+      },
+      {
+        "name": "ATR",
+        "suitability_score": 0.6,
+        "recommended_params": {
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16,
+          "bb_period": 20
+        },
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for interest_rate data"
+        ]
+      }
+    ]
+  },
+  "top_recommendations": [
+    {
+      "name": "SMA",
+      "suitability_score": 1,
+      "category": "trend",
+      "recommended_params": {
+        "min_period": 5,
+        "max_period": 50,
+        "rsi_period": 12,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "sma_period": 16,
+        "bb_period": 20
+      },
+      "reasons": [
+        "Suitable for interest_rate data",
+        "Sufficient data length (8704 records)"
+      ]
+    },
+    {
+      "name": "EMA",
+      "suitability_score": 1,
+      "category": "trend",
+      "recommended_params": {
+        "min_period": 5,
+        "max_period": 50,
+        "rsi_period": 12,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "sma_period": 16,
+        "bb_period": 20
+      },
+      "reasons": [
+        "Suitable for interest_rate data",
+        "Sufficient data length (8704 records)"
+      ]
+    },
+    {
+      "name": "MACD",
+      "suitability_score": 1,
+      "category": "trend",
+      "recommended_params": {
+        "fast_range": [
+          5,
+          15
+        ],
+        "slow_range": [
+          20,
+          40
+        ],
+        "rsi_period": 12,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "sma_period": 16,
+        "bb_period": 20
+      },
+      "reasons": [
+        "Suitable for interest_rate data",
+        "Sufficient data length (8704 records)",
+        "Strong trend improves indicator performance"
+      ]
+    },
+    {
+      "name": "RSI",
+      "suitability_score": 1,
+      "category": "momentum",
+      "recommended_params": {
+        "period_range": [
+          7,
+          21
+        ],
+        "rsi_period": 12,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "sma_period": 16,
+        "bb_period": 20
+      },
+      "reasons": [
+        "Suitable for interest_rate data",
+        "Sufficient data length (8704 records)"
+      ]
+    },
+    {
+      "name": "Stochastic",
+      "suitability_score": 1,
+      "category": "momentum",
+      "recommended_params": {
+        "k_range": [
+          10,
+          20
+        ],
+        "d_range": [
+          2,
+          5
+        ],
+        "rsi_period": 12,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "sma_period": 16,
+        "bb_period": 20
+      },
+      "reasons": [
+        "Suitable for interest_rate data",
+        "Sufficient data length (8704 records)"
+      ]
+    }
+  ],
+  "not_recommended": [],
+  "summary": {
+    "highly_suitable_count": 9,
+    "moderately_suitable_count": 1,
+    "not_suitable_count": 0,
+    "best_indicator": "SMA",
+    "best_score": 1
+  }
+}

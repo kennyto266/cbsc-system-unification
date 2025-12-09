@@ -1,0 +1,62 @@
+{
+  "implementation_status": "success",
+  "selected_strategy": {
+    "strategy_name": "RSI_{'period': 20, 'oversold': 25, 'overbought': 80}",
+    "params": {
+      "period": 20,
+      "oversold": 25,
+      "overbought": 80
+    },
+    "walk_forward_sharpe": 0.8346655317202105,
+    "walk_forward_return": -0.06731482373254663,
+    "walk_forward_drawdown": 0.1246995259523199,
+    "risk_adjusted_score": 0.608610429935297,
+    "stability_score": 0.7384508034691161,
+    "trade_frequency": 16.5,
+    "validation_passed": true,
+    "risk_metrics": {
+      "min_trades_passed": true,
+      "drawdown_passed": true,
+      "sharpe_passed": true,
+      "volatility_passed": true,
+      "win_rate_passed": true
+    }
+  },
+  "risk_metrics": {
+    "current_drawdown": -0.10884554189508289,
+    "current_volatility": 0.30141276835132597,
+    "var_95": -0.02914258124804728,
+    "sharpe_ratio": -0.10019507911111071,
+    "max_consecutive_losses": 6
+  },
+  "trading_signals": {
+    "strategy": "RSI_{'period': 20, 'oversold': 25, 'overbought': 80}",
+    "params": {
+      "period": 20,
+      "oversold": 25,
+      "overbought": 80
+    },
+    "entry_signal": false,
+    "exit_signal": false,
+    "position_size": 0.0,
+    "stop_loss": 0.0,
+    "take_profit": 0.0,
+    "risk_adjustments": [
+      "HIGH_DRAWDOWN_RISK",
+      "HIGH_VOLATILITY_RISK",
+      "CONSECUTIVE_LOSSES"
+    ]
+  },
+  "risk_controls": {
+    "max_position_size": 0.12,
+    "stop_loss_threshold": -0.08,
+    "portfolio_heat_limit": 0.6,
+    "position_sizing_method": "volatility_based"
+  },
+  "expected_performance": {
+    "walk_forward_sharpe": 0.8346655317202105,
+    "walk_forward_return": -0.06731482373254663,
+    "walk_forward_drawdown": 0.1246995259523199,
+    "risk_adjusted_score": 0.608610429935297
+  }
+}

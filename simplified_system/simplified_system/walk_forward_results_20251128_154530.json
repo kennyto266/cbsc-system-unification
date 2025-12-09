@@ -1,0 +1,234 @@
+{
+  "MA_Short": {
+    "params": {
+      "short_period": 10,
+      "long_period": 30
+    },
+    "summary": {
+      "num_windows": 14,
+      "mean_return": -0.10488175160763366,
+      "std_return": 0.0950977468295298,
+      "mean_sharpe": -1.2400587838153216,
+      "std_sharpe": 1.314834424983382,
+      "mean_drawdown": -0.15522585354018395,
+      "max_drawdown": -0.37040396242203205,
+      "mean_win_rate": 0.1712018140589569,
+      "mean_trades": 6.0,
+      "mean_calmar": -0.48823354684081505,
+      "success_rate": 0.14285714285714285,
+      "low_risk_rate": 0.7857142857142857
+    },
+    "windows": [
+      {
+        "total_return": 0.03523143343899937,
+        "sharpe_ratio": 0.6414797827464209,
+        "max_drawdown": -0.09451762435914225,
+        "win_rate": 0.1746031746031746,
+        "trades_count": "5",
+        "volatility": 0.278225968350875,
+        "calmar_ratio": 0.372749883187173,
+        "window_info": {
+          "train_start": "2019-01-01 00:00:00",
+          "train_end": "2019-12-18 00:00:00",
+          "test_start": "2019-12-19 00:00:00",
+          "test_end": "2020-03-16 00:00:00"
+        }
+      },
+      {
+        "total_return": -0.026097376166603903,
+        "sharpe_ratio": -0.28694329257580253,
+        "max_drawdown": -0.09522939201092168,
+        "win_rate": 0.1111111111111111,
+        "trades_count": "8",
+        "volatility": 0.2581929252591488,
+        "calmar_ratio": -0.2740474932740392,
+        "window_info": {
+          "train_start": "2019-02-28 00:00:00",
+          "train_end": "2020-02-14 00:00:00",
+          "test_start": "2020-02-17 00:00:00",
+          "test_end": "2020-05-13 00:00:00"
+        }
+      },
+      {
+        "total_return": -0.10130566827100262,
+        "sharpe_ratio": -1.1200945978334023,
+        "max_drawdown": -0.12249362355583365,
+        "win_rate": 0.25396825396825395,
+        "trades_count": "7",
+        "volatility": 0.33664418383502265,
+        "calmar_ratio": -0.827028096077398,
+        "window_info": {
+          "train_start": "2019-03-29 00:00:00",
+          "train_end": "2020-03-16 00:00:00",
+          "test_start": "2020-03-17 00:00:00",
+          "test_end": "2020-06-11 00:00:00"
+        }
+      },
+      {
+        "total_return": -0.1152861062640218,
+        "sharpe_ratio": -1.522399176031557,
+        "max_drawdown": -0.1657692870963235,
+        "win_rate": 0.20634920634920634,
+        "trades_count": "5",
+        "volatility": 0.2978627532880871,
+        "calmar_ratio": -0.6954611935866778,
+        "window_info": {
+          "train_start": "2019-04-29 00:00:00",
+          "train_end": "2020-04-14 00:00:00",
+          "test_start": "2020-04-15 00:00:00",
+          "test_end": "2020-07-10 00:00:00"
+        }
+      },
+      {
+        "total_return": -0.16382557425764743,
+        "sharpe_ratio": -2.1700700106942645,
+        "max_drawdown": -0.16828667479860404,
+        "win_rate": 0.12698412698412698,
+        "trades_count": "5",
+        "volatility": 0.3121085306168146,
+        "calmar_ratio": -0.9734910648968768,
+        "window_info": {
+          "train_start": "2019-05-28 00:00:00",
+          "train_end": "2020-05-13 00:00:00",
+          "test_start": "2020-05-14 00:00:00",
+          "test_end": "2020-08-10 00:00:00"
+        }
+      },
+      {
+        "total_return": -0.11862609041704464,
+        "sharpe_ratio": -1.6894558534864457,
+        "max_drawdown": -0.15903387664360302,
+        "win_rate": 0.23809523809523808,
+        "trades_count": "5",
+        "volatility": 0.2804912231988376,
+        "calmar_ratio": -0.7459171147722649,
+        "window_info": {
+          "train_start": "2019-06-26 00:00:00",
+          "train_end": "2020-06-11 00:00:00",
+          "test_start": "2020-06-12 00:00:00",
+          "test_end": "2020-09-08 00:00:00"
+        }
+      },
+      {
+        "total_return": -0.13947470396092687,
+        "sharpe_ratio": -1.91896764271881,
+        "max_drawdown": -0.15394249861632725,
+        "win_rate": 0.12698412698412698,
+        "trades_count": "5",
+        "volatility": 0.29511853296433527,
+        "calmar_ratio": -0.9060181900031476,
+        "window_info": {
+          "train_start": "2019-11-20 00:00:00",
+          "train_end": "2020-11-05 00:00:00",
+          "test_start": "2020-11-06 00:00:00",
+          "test_end": "2021-02-02 00:00:00"
+        }
+      },
+      {
+        "total_return": 0.05476872934662591,
+        "sharpe_ratio": 1.5088333333124218,
+        "max_drawdown": -0.041570724819390635,
+        "win_rate": 0.09523809523809523,
+        "trades_count": "5",
+        "volatility": 0.15113148943867688,
+        "calmar_ratio": 1.3174831467234625,
+        "window_info": {
+          "train_start": "2020-03-17 00:00:00",
+          "train_end": "2021-03-03 00:00:00",
+          "test_start": "2021-03-04 00:00:00",
+          "test_end": "2021-05-31 00:00:00"
+        }
+      },
+      {
+        "total_return": -0.1703653560940669,
+        "sharpe_ratio": -2.367568916771774,
+        "max_drawdown": -0.2226917694215076,
+        "win_rate": 0.1746031746031746,
+        "trades_count": "9",
+        "volatility": 0.30096698503985064,
+        "calmar_ratio": -0.7650276278132306,
+        "window_info": {
+          "train_start": "2020-04-15 00:00:00",
+          "train_end": "2021-04-01 00:00:00",
+          "test_start": "2021-04-02 00:00:00",
+          "test_end": "2021-06-29 00:00:00"
+        }
+      },
+      {
+        "total_return": -0.19953960464302367,
+        "sharpe_ratio": -2.461277767595158,
+        "max_drawdown": -0.237311313700865,
+        "win_rate": 0.19047619047619047,
+        "trades_count": "6",
+        "volatility": 0.3426455062921851,
+        "calmar_ratio": -0.8408347732402964,
+        "window_info": {
+          "train_start": "2020-05-14 00:00:00",
+          "train_end": "2021-04-30 00:00:00",
+          "test_start": "2021-05-03 00:00:00",
+          "test_end": "2021-07-28 00:00:00"
+        }
+      },
+      {
+        "total_return": -0.05781507643095629,
+        "sharpe_ratio": -0.6580621376039435,
+        "max_drawdown": -0.12550465767705465,
+        "win_rate": 0.14285714285714285,
+        "trades_count": "5",
+        "volatility": 0.30063968265172264,
+        "calmar_ratio": -0.4606608033601793,
+        "window_info": {
+          "train_start": "2020-07-13 00:00:00",
+          "train_end": "2021-06-29 00:00:00",
+          "test_start": "2021-06-30 00:00:00",
+          "test_end": "2021-09-24 00:00:00"
+        }
+      },
+      {
+        "total_return": -0.32468301360259055,
+        "sharpe_ratio": -3.7844434323236062,
+        "max_drawdown": -0.37040396242203205,
+        "win_rate": 0.19047619047619047,
+        "trades_count": "7",
+        "volatility": 0.39917988612529265,
+        "calmar_ratio": -0.8765646335949618,
+        "window_info": {
+          "train_start": "2020-11-06 00:00:00",
+          "train_end": "2021-10-25 00:00:00",
+          "test_start": "2021-10-26 00:00:00",
+          "test_end": "2022-01-20 00:00:00"
+        }
+      },
+      {
+        "total_return": -0.0249231783882099,
+        "sharpe_ratio": -0.24092409087763203,
+        "max_drawdown": -0.07795030969699679,
+        "win_rate": 0.14285714285714285,
+        "trades_count": "5",
+        "volatility": 0.2731936213725844,
+        "calmar_ratio": -0.31973161473109735,
+        "window_info": {
+          "train_start": "2021-01-05 00:00:00",
+          "train_end": "2021-12-22 00:00:00",
+          "test_start": "2021-12-23 00:00:00",
+          "test_end": "2022-03-21 00:00:00"
+        }
+      },
+      {
+        "total_return": -0.11640293679640201,
+        "sharpe_ratio": -1.2909291709609507,
+        "max_drawdown": -0.13845623474397278,
+        "win_rate": 0.2222222222222222,
+        "trades_count": "7",
+        "volatility": 0.3436856833750762,
+        "calmar_ratio": -0.840720080331877,
+        "window_info": {
+          "train_start": "2021-03-04 00:00:00",
+          "train_end": "2022-02-18 00:00:00",
+          "test_start": "2022-02-21 00:00:00",
+          "test_end": "2022-05-18 00:00:00"
+        }
+      }
+    ]
+  }
+}

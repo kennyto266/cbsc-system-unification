@@ -1,0 +1,114 @@
+{
+  "summary": {
+    "total_results": 3,
+    "valid_results": 3,
+    "overfitted_results": 0,
+    "evaluation_time": "2025-11-25T20:53:50.076434"
+  },
+  "top_strategies": [
+    {
+      "rank": 1,
+      "indicator": "Balanced",
+      "parameters": {
+        "period": 14,
+        "oversold": 30,
+        "overbought": 70
+      },
+      "composite_score": 4.431567795070341,
+      "sharpe_ratio": 10.779219091006189,
+      "total_return": 0.25183973230232337,
+      "max_drawdown": -0.0015000000000000462,
+      "is_overfitted": false
+    },
+    {
+      "rank": 2,
+      "indicator": "Aggressive",
+      "parameters": {
+        "fast_period": 5,
+        "slow_period": 20,
+        "signal_period": 3
+      },
+      "composite_score": 3.868738758305173,
+      "sharpe_ratio": 9.275252692881448,
+      "total_return": 0.3893246933283334,
+      "max_drawdown": -0.0030000000000000825,
+      "is_overfitted": false
+    },
+    {
+      "rank": 3,
+      "indicator": "Conservative",
+      "parameters": {
+        "period": 21,
+        "oversold": 25,
+        "overbought": 75
+      },
+      "composite_score": 2.9875488052639625,
+      "sharpe_ratio": 7.228138771796356,
+      "total_return": 0.12395651210571645,
+      "max_drawdown": -0.001200000000000073,
+      "is_overfitted": false
+    }
+  ],
+  "performance_statistics": {
+    "sharpe_ratio": {
+      "mean": 9.094203518561331,
+      "std": 1.4553640921344158,
+      "min": 7.228138771796356,
+      "max": 10.779219091006189,
+      "median": 9.275252692881448
+    },
+    "total_return": {
+      "mean": 0.25504031257879106,
+      "std": 0.10835974248440393,
+      "min": 0.12395651210571645,
+      "max": 0.3893246933283334,
+      "median": 0.25183973230232337
+    },
+    "max_drawdown": {
+      "mean": -0.0019000000000000672,
+      "std": 0.00078740078740119,
+      "min": -0.0030000000000000825,
+      "max": -0.001200000000000073,
+      "median": -0.0015000000000000462
+    }
+  },
+  "overfitting_analysis": {},
+  "pareto_frontier": [
+    {
+      "indicator": "Conservative",
+      "parameters": {
+        "period": 21,
+        "oversold": 25,
+        "overbought": 75
+      },
+      "composite_score": 2.9875488052639625,
+      "sharpe_ratio": 7.228138771796356,
+      "total_return": 0.12395651210571645,
+      "max_drawdown": -0.001200000000000073
+    },
+    {
+      "indicator": "Aggressive",
+      "parameters": {
+        "fast_period": 5,
+        "slow_period": 20,
+        "signal_period": 3
+      },
+      "composite_score": 3.868738758305173,
+      "sharpe_ratio": 9.275252692881448,
+      "total_return": 0.3893246933283334,
+      "max_drawdown": -0.0030000000000000825
+    },
+    {
+      "indicator": "Balanced",
+      "parameters": {
+        "period": 14,
+        "oversold": 30,
+        "overbought": 70
+      },
+      "composite_score": 4.431567795070341,
+      "sharpe_ratio": 10.779219091006189,
+      "total_return": 0.25183973230232337,
+      "max_drawdown": -0.0015000000000000462
+    }
+  ]
+}

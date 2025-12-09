@@ -1,0 +1,91 @@
+{
+  "timestamp": "20251129_015507",
+  "risk_analysis": {
+    "timestamp": "2025-11-29T01:55:07.203436",
+    "basic_metrics": {
+      "total_return": -0.10970431885520981,
+      "volatility": 0.3921716756981167,
+      "sharpe_ratio": -0.0609174535989979,
+      "max_drawdown": 0,
+      "calmar_ratio": -0.2890474748239612
+    },
+    "var_analysis": {
+      "var_95_1day": -0.04061464609918963,
+      "var_99_1day": -0.058530780842370976,
+      "expected_shortfall_95": -0.05146234187781493,
+      "var_95_10day": -0.12843478803511219,
+      "var_99_10day": -0.1850905806900411
+    },
+    "drawdown_analysis": {
+      "max_drawdown": -0.37953737157545875,
+      "drawdown_start": "2023-01-17T00:00:00",
+      "drawdown_end": "2023-09-08T00:00:00",
+      "drawdown_duration_days": 234
+    },
+    "risk_adjusted_metrics": {
+      "sortino_ratio": -0.1001767262189597,
+      "downside_deviation": 0.238479542693019,
+      "positive_return_ratio": 0.5166666666666667,
+      "average_win": 0.0188258591831664,
+      "average_loss": -0.020074030915479855
+    },
+    "recommendations": [
+      "High volatility detected - consider reducing position sizes",
+      "Maximum drawdown exceeded 20% - review risk management",
+      "Low Sharpe ratio - consider strategy improvement"
+    ]
+  },
+  "stress_test": {
+    "market_crash": {
+      "shock_magnitude": -0.2,
+      "portfolio_value": 80002.42456354873,
+      "loss_amount": 19997.57543645127,
+      "loss_percentage": 0.2,
+      "recovery_days_estimate": 2040
+    },
+    "volatility_spike": {
+      "shock_magnitude": -0.15,
+      "portfolio_value": 85002.42456354875,
+      "loss_amount": 14997.575436451254,
+      "loss_percentage": 0.15,
+      "recovery_days_estimate": 1530
+    },
+    "liquidity_crisis": {
+      "shock_magnitude": -0.25,
+      "portfolio_value": 75002.42456354873,
+      "loss_amount": 24997.57543645127,
+      "loss_percentage": 0.25,
+      "recovery_days_estimate": 2550
+    },
+    "interest_rate_shock": {
+      "shock_magnitude": -0.1,
+      "portfolio_value": 90002.42456354873,
+      "loss_amount": 9997.575436451269,
+      "loss_percentage": 0.1,
+      "recovery_days_estimate": 1020
+    },
+    "correlation_breakdown": {
+      "shock_magnitude": -0.18,
+      "portfolio_value": 82002.42456354873,
+      "loss_amount": 17997.57543645127,
+      "loss_percentage": 0.18,
+      "recovery_days_estimate": 1836
+    }
+  },
+  "position_sizing": {
+    "dynamic_position": 0.030039643087615732,
+    "kelly_position": 0.0,
+    "max_position_limit": 0.2
+  },
+  "var_analysis": {
+    "var_95_1day": -0.04061464609918963,
+    "var_99_1day": -0.058530780842370976,
+    "es_95_1day": -0.05146234187781493,
+    "var_95_10day": -0.12843478803511219
+  },
+  "drawdown_analysis": {
+    "max_drawdown": -0.37953737157545875,
+    "drawdown_start": "2023-01-17T00:00:00",
+    "drawdown_end": "2023-09-08T00:00:00"
+  }
+}

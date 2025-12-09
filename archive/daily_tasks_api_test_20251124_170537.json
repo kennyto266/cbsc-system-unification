@@ -1,0 +1,35 @@
+{
+  "test_time": "2025-11-24T17:05:37.394810",
+  "summary": {
+    "total_urls": 6,
+    "successful_urls": 0,
+    "working_sources": [],
+    "success_rate": 0.0
+  },
+  "detailed_results": {
+    "hibor_rates": {
+      "status": "exception",
+      "error": "-1"
+    },
+    "exchange_rates": {
+      "status": "exception",
+      "error": "-1"
+    },
+    "monetary_base": {
+      "status": "exception",
+      "error": "-1"
+    },
+    "interbank_liquidity": {
+      "status": "exception",
+      "error": "-1"
+    },
+    "efbn_indicative": {
+      "status": "exception",
+      "error": "-1"
+    },
+    "rmb_liquidity": {
+      "status": "exception",
+      "error": "-1"
+    }
+  }
+}

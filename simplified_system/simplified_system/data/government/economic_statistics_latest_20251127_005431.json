@@ -1,0 +1,359 @@
+{
+  "success": true,
+  "data": [
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2025-10",
+        "nominal_gdp": null,
+        "real_gdp": null,
+        "gov_consol_bal": null,
+        "composite_cpi": null,
+        "unemploy_rate": null,
+        "curr_acc_bal": null,
+        "fc_reserve": null
+      },
+      "composite_cpi": null,
+      "unemploy_rate": null,
+      "record_index": 0,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2025-09",
+        "nominal_gdp": null,
+        "real_gdp": null,
+        "gov_consol_bal": -35593.6,
+        "composite_cpi": 109.105,
+        "unemploy_rate": 3.9,
+        "curr_acc_bal": null,
+        "fc_reserve": 419.091
+      },
+      "composite_cpi": 109.105,
+      "unemploy_rate": 3.9,
+      "record_index": 1,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2025-08",
+        "nominal_gdp": null,
+        "real_gdp": null,
+        "gov_consol_bal": 48316.2,
+        "composite_cpi": 109.028,
+        "unemploy_rate": 3.7,
+        "curr_acc_bal": null,
+        "fc_reserve": 421.633
+      },
+      "composite_cpi": 109.028,
+      "unemploy_rate": 3.7,
+      "record_index": 2,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2025-07",
+        "nominal_gdp": null,
+        "real_gdp": null,
+        "gov_consol_bal": -22002.7,
+        "composite_cpi": 108.899,
+        "unemploy_rate": 3.7,
+        "curr_acc_bal": null,
+        "fc_reserve": 425.395
+      },
+      "composite_cpi": 108.899,
+      "unemploy_rate": 3.7,
+      "record_index": 3,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2025-06",
+        "nominal_gdp": 785210,
+        "real_gdp": 757806,
+        "gov_consol_bal": -15465,
+        "composite_cpi": 108.253,
+        "unemploy_rate": 3.5,
+        "curr_acc_bal": 92563,
+        "fc_reserve": 431.998
+      },
+      "composite_cpi": 108.253,
+      "unemploy_rate": 3.5,
+      "record_index": 4,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2025-05",
+        "nominal_gdp": null,
+        "real_gdp": null,
+        "gov_consol_bal": -59513.7,
+        "composite_cpi": 108.221,
+        "unemploy_rate": 3.5,
+        "curr_acc_bal": null,
+        "fc_reserve": 431.061
+      },
+      "composite_cpi": 108.221,
+      "unemploy_rate": 3.5,
+      "record_index": 5,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2025-04",
+        "nominal_gdp": null,
+        "real_gdp": null,
+        "gov_consol_bal": -18940.1,
+        "composite_cpi": 108.528,
+        "unemploy_rate": 3.4,
+        "curr_acc_bal": null,
+        "fc_reserve": 410.176
+      },
+      "composite_cpi": 108.528,
+      "unemploy_rate": 3.4,
+      "record_index": 6,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2025-03",
+        "nominal_gdp": 800259,
+        "real_gdp": 772221,
+        "gov_consol_bal": 12013.2,
+        "composite_cpi": 108.609,
+        "unemploy_rate": 3.2,
+        "curr_acc_bal": 126920,
+        "fc_reserve": 412.531
+      },
+      "composite_cpi": 108.609,
+      "unemploy_rate": 3.2,
+      "record_index": 7,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2025-02",
+        "nominal_gdp": null,
+        "real_gdp": null,
+        "gov_consol_bal": -32381.8,
+        "composite_cpi": 108.622,
+        "unemploy_rate": 3.2,
+        "curr_acc_bal": null,
+        "fc_reserve": 416.365
+      },
+      "composite_cpi": 108.622,
+      "unemploy_rate": 3.2,
+      "record_index": 8,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2025-01",
+        "nominal_gdp": null,
+        "real_gdp": null,
+        "gov_consol_bal": 10607.6,
+        "composite_cpi": 108.729,
+        "unemploy_rate": 3.1,
+        "curr_acc_bal": null,
+        "fc_reserve": 421.478
+      },
+      "composite_cpi": 108.729,
+      "unemploy_rate": 3.1,
+      "record_index": 9,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2024-12",
+        "nominal_gdp": 836481,
+        "real_gdp": 804162,
+        "gov_consol_bal": 72665.4,
+        "composite_cpi": 108.246,
+        "unemploy_rate": 3.1,
+        "curr_acc_bal": 95899,
+        "fc_reserve": 421.56
+      },
+      "composite_cpi": 108.246,
+      "unemploy_rate": 3.1,
+      "record_index": 10,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2024-11",
+        "nominal_gdp": null,
+        "real_gdp": null,
+        "gov_consol_bal": 20478.7,
+        "composite_cpi": 108.1,
+        "unemploy_rate": 3.1,
+        "curr_acc_bal": null,
+        "fc_reserve": 425.141
+      },
+      "composite_cpi": 108.1,
+      "unemploy_rate": 3.1,
+      "record_index": 11,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2024-10",
+        "nominal_gdp": null,
+        "real_gdp": null,
+        "gov_consol_bal": 62339.3,
+        "composite_cpi": 108.128,
+        "unemploy_rate": 3.1,
+        "curr_acc_bal": null,
+        "fc_reserve": 421.343
+      },
+      "composite_cpi": 108.128,
+      "unemploy_rate": 3.1,
+      "record_index": 12,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2024-09",
+        "nominal_gdp": 814297,
+        "real_gdp": 769349,
+        "gov_consol_bal": -42137.5,
+        "composite_cpi": 107.948,
+        "unemploy_rate": 3,
+        "curr_acc_bal": 120378,
+        "fc_reserve": 422.83
+      },
+      "composite_cpi": 107.948,
+      "unemploy_rate": 3.0,
+      "record_index": 13,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2024-08",
+        "nominal_gdp": null,
+        "real_gdp": null,
+        "gov_consol_bal": -48438,
+        "composite_cpi": 107.817,
+        "unemploy_rate": 3,
+        "curr_acc_bal": null,
+        "fc_reserve": 423.479
+      },
+      "composite_cpi": 107.817,
+      "unemploy_rate": 3.0,
+      "record_index": 14,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2024-00",
+        "nominal_gdp": 3175094,
+        "real_gdp": 3058142,
+        "gov_consol_bal": -80268.645,
+        "composite_cpi": 107.3,
+        "unemploy_rate": 3,
+        "curr_acc_bal": 410054,
+        "fc_reserve": 421.56
+      },
+      "composite_cpi": 107.3,
+      "unemploy_rate": 3.0,
+      "record_index": 15,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2023-00",
+        "nominal_gdp": 2983408,
+        "real_gdp": 2983408,
+        "gov_consol_bal": -100205.235,
+        "composite_cpi": 105.5,
+        "unemploy_rate": 2.9,
+        "curr_acc_bal": 253103,
+        "fc_reserve": 425.65
+      },
+      "composite_cpi": 105.5,
+      "unemploy_rate": 2.9,
+      "record_index": 16,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2022-00",
+        "nominal_gdp": 2808969,
+        "real_gdp": 2890231,
+        "gov_consol_bal": -122337.705,
+        "composite_cpi": 103.3,
+        "unemploy_rate": 4.3,
+        "curr_acc_bal": 286089,
+        "fc_reserve": 424.052
+      },
+      "composite_cpi": 103.3,
+      "unemploy_rate": 4.3,
+      "record_index": 17,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2021-00",
+        "nominal_gdp": 2867973,
+        "real_gdp": 3000773,
+        "gov_consol_bal": 29361.482,
+        "composite_cpi": 101.4,
+        "unemploy_rate": 5.2,
+        "curr_acc_bal": 339429,
+        "fc_reserve": 496.921
+      },
+      "composite_cpi": 101.4,
+      "unemploy_rate": 5.2,
+      "record_index": 18,
+      "source": "economic_statistics"
+    },
+    {
+      "date": "",
+      "raw_data": {
+        "end_of_month": "2020-00",
+        "nominal_gdp": 2675793,
+        "real_gdp": 2818833,
+        "gov_consol_bal": -232541,
+        "composite_cpi": 99.867,
+        "unemploy_rate": 5.8,
+        "curr_acc_bal": 187012,
+        "fc_reserve": 491.91
+      },
+      "composite_cpi": 99.867,
+      "unemploy_rate": 5.8,
+      "record_index": 19,
+      "source": "economic_statistics"
+    }
+  ],
+  "source": {
+    "name": "經濟統計數據",
+    "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics",
+    "category": "economic_data",
+    "provider": "香港金融管理局"
+  },
+  "metadata": {
+    "total_records_available": 20,
+    "records_returned": 20,
+    "request_limit": 1000,
+    "fetch_time": "2025-11-27 00:54:31",
+    "response_size": 3928,
+    "api_success": true
+  }
+}

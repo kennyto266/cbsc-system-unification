@@ -1,0 +1,182 @@
+[
+    {
+        "date": "2025-11-15",
+        "tenor": "Overnight",
+        "rate": 3.15
+    },
+    {
+        "date": "2025-11-15",
+        "tenor": "1 Week",
+        "rate": 3.18
+    },
+    {
+        "date": "2025-11-15",
+        "tenor": "1 Month",
+        "rate": 3.25
+    },
+    {
+        "date": "2025-11-15",
+        "tenor": "3 Months",
+        "rate": 3.32
+    },
+    {
+        "date": "2025-11-15",
+        "tenor": "6 Months",
+        "rate": 3.45
+    },
+    {
+        "date": "2025-11-15",
+        "tenor": "12 Months",
+        "rate": 3.58
+    },
+    {
+        "date": "2025-11-14",
+        "tenor": "Overnight",
+        "rate": 3.14
+    },
+    {
+        "date": "2025-11-14",
+        "tenor": "1 Week",
+        "rate": 3.17
+    },
+    {
+        "date": "2025-11-14",
+        "tenor": "1 Month",
+        "rate": 3.24
+    },
+    {
+        "date": "2025-11-14",
+        "tenor": "3 Months",
+        "rate": 3.31
+    },
+    {
+        "date": "2025-11-14",
+        "tenor": "6 Months",
+        "rate": 3.44
+    },
+    {
+        "date": "2025-11-14",
+        "tenor": "12 Months",
+        "rate": 3.57
+    },
+    {
+        "date": "2025-11-13",
+        "tenor": "Overnight",
+        "rate": 3.13
+    },
+    {
+        "date": "2025-11-13",
+        "tenor": "1 Week",
+        "rate": 3.16
+    },
+    {
+        "date": "2025-11-13",
+        "tenor": "1 Month",
+        "rate": 3.23
+    },
+    {
+        "date": "2025-11-13",
+        "tenor": "3 Months",
+        "rate": 3.30
+    },
+    {
+        "date": "2025-11-13",
+        "tenor": "6 Months",
+        "rate": 3.43
+    },
+    {
+        "date": "2025-11-13",
+        "tenor": "12 Months",
+        "rate": 3.56
+    },
+    {
+        "date": "2025-11-12",
+        "tenor": "Overnight",
+        "rate": 3.12
+    },
+    {
+        "date": "2025-11-12",
+        "tenor": "1 Week",
+        "rate": 3.15
+    },
+    {
+        "date": "2025-11-12",
+        "tenor": "1 Month",
+        "rate": 3.22
+    },
+    {
+        "date": "2025-11-12",
+        "tenor": "3 Months",
+        "rate": 3.29
+    },
+    {
+        "date": "2025-11-12",
+        "tenor": "6 Months",
+        "rate": 3.42
+    },
+    {
+        "date": "2025-11-12",
+        "tenor": "12 Months",
+        "rate": 3.55
+    },
+    {
+        "date": "2025-11-11",
+        "tenor": "Overnight",
+        "rate": 3.11
+    },
+    {
+        "date": "2025-11-11",
+        "tenor": "1 Week",
+        "rate": 3.14
+    },
+    {
+        "date": "2025-11-11",
+        "tenor": "1 Month",
+        "rate": 3.21
+    },
+    {
+        "date": "2025-11-11",
+        "tenor": "3 Months",
+        "rate": 3.28
+    },
+    {
+        "date": "2025-11-11",
+        "tenor": "6 Months",
+        "rate": 3.41
+    },
+    {
+        "date": "2025-11-11",
+        "tenor": "12 Months",
+        "rate": 3.54
+    },
+    {
+        "date": "2025-11-08",
+        "tenor": "Overnight",
+        "rate": 3.10
+    },
+    {
+        "date": "2025-11-08",
+        "tenor": "1 Week",
+        "rate": 3.13
+    },
+    {
+        "date": "2025-11-08",
+        "tenor": "1 Month",
+        "rate": 3.20
+    },
+    {
+        "date": "2025-11-08",
+        "tenor": "3 Months",
+        "rate": 3.27
+    },
+    {
+        "date": "2025-11-08",
+        "tenor": "6 Months",
+        "rate": 3.40
+    },
+    {
+        "date": "2025-11-08",
+        "tenor": "12 Months",
+        "rate": 3.53
+    }
+]

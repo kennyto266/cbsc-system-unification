@@ -1,0 +1,132 @@
+{
+  "test_session": {
+    "timestamp": "2025-11-28T17:11:01.536785",
+    "total_tests": 13,
+    "passed_tests": 6,
+    "failed_tests": 3,
+    "critical_issues": [
+      "Stock API failed: 'dict' object has no attribute 'columns'"
+    ]
+  },
+  "module_tests": {
+    "src.api.government_data": {
+      "status": "PASS",
+      "message": "Successfully imported"
+    },
+    "src.api.stock_api": {
+      "status": "PASS",
+      "message": "Successfully imported"
+    },
+    "unified_data_architecture_standard": {
+      "status": "PASS",
+      "message": "Successfully imported"
+    },
+    "improved_real_data_integration": {
+      "status": "PASS",
+      "message": "Successfully imported"
+    }
+  },
+  "api_tests": {
+    "hibor_api": {
+      "status": "FAIL",
+      "error": "No data returned"
+    },
+    "exchange_api": {
+      "status": "FAIL",
+      "error": "No data returned"
+    },
+    "stock_api": {
+      "status": "FAIL",
+      "error": "'dict' object has no attribute 'columns'"
+    }
+  },
+  "data_tests": {
+    "standardization": {
+      "status": "PASS",
+      "input_records": 3,
+      "output_records": 3,
+      "columns": [
+        "value"
+      ]
+    },
+    "local_files": {
+      "directory_exists": true,
+      "total_files": 18,
+      "file_list": [
+        "efbn_indicative_20251123_132049.json",
+        "efbn_indicative_20251123_132502.json",
+        "exchange_rates_20251123_131647.json",
+        "exchange_rates_20251123_131828.json",
+        "exchange_rates_20251123_132447.json",
+        "hibor_rates_20251123_131633.json",
+        "hibor_rates_20251123_131814.json",
+        "hibor_rates_20251123_132433.json",
+        "hibor_rates_20251124_174050.json",
+        "interbank_liquidity_20251123_131648.json",
+        "interbank_liquidity_20251123_131841.json",
+        "interbank_liquidity_20251123_132501.json",
+        "monetary_base_20251123_131516.json",
+        "monetary_base_20251123_131620.json",
+        "monetary_base_20251123_131813.json",
+        "monetary_base_20251123_132434.json",
+        "rmb_liquidity_20251123_132337.json",
+        "rmb_liquidity_20251123_132515.json"
+      ]
+    },
+    "integration": {
+      "status": "PASS",
+      "quality_score": 0.6799999999999999,
+      "data_sources": 6,
+      "signals_generated": true
+    }
+  },
+  "performance_tests": {
+    "memory": {
+      "total_gb": 125.6,
+      "used_gb": 39.75,
+      "percent": 31.7
+    },
+    "cpu": {
+      "percent": 7.5
+    },
+    "api_response_time": {
+      "hibor_api_ms": 264.2
+    },
+    "disk": {
+      "total_gb": 1862.02,
+      "used_gb": 1263.96,
+      "free_gb": 598.06,
+      "percent": 67.88
+    }
+  },
+  "dependency_tests": {
+    "pandas": {
+      "status": "PASS",
+      "type": "required"
+    },
+    "numpy": {
+      "status": "PASS",
+      "type": "required"
+    },
+    "requests": {
+      "status": "PASS",
+      "type": "required"
+    },
+    "pathlib": {
+      "status": "PASS",
+      "type": "required"
+    },
+    "psutil": {
+      "status": "PASS",
+      "type": "optional"
+    },
+    "aiohttp": {
+      "status": "PASS",
+      "type": "optional"
+    },
+    "vectorbt": {
+      "status": "PASS",
+      "type": "optional"
+    }
+  }
+}

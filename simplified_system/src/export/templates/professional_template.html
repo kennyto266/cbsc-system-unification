@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - 量化交易報告</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --light-bg: #ecf0f1;
+            --dark-text: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: var(--dark-text);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+        }
+
+        .header .subtitle {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .metric-icon {
+            font-size: 2rem;
+            opacity: 0.6;
+        }
+
+        .section-header {
+            border-left: 4px solid var(--secondary-color);
+            padding-left: 1rem;
+            margin: 2rem 0 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .data-table-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+            margin-bottom: 1rem;
+        }
+
+        .positive { color: var(--success-color); }
+        .negative { color: var(--danger-color); }
+        .neutral { color: #7f8c8d; }
+
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table thead th {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            font-weight: 500;
+        }
+
+        .table tbody tr:hover {
+            background-color: var(--light-bg);
+        }
+
+        .footer {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .badge {
+            font-weight: normal;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .metric-value {
+                font-size: 2rem;
+            }
+
+            .chart-wrapper {
+                height: 300px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .alert-custom {
+            border-radius: 8px;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-chart-line me-3"></i>{{title}}</h1>
+                    <div class="subtitle">生成時間: {{generation_time}}</div>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="badge bg-light text-dark me-2">版本 {{version}}</div>
+                    <div class="badge bg-success">在線</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+        <!-- Summary Section -->
+        {% if summary %}
+        <div class="section-header">
+            <h3><i class="fas fa-tachometer-alt me-2"></i>策略摘要</h3>
+        </div>
+
+        <div class="summary-grid">
+            {% for key, value in summary.items() %}
+            <div class="metric-card">
+                <div class="row align-items-center">
+                    <div class="col-8">
+                        <div class="metric-value {{get_value_class(value, key)}}">
+                            {{format_value(value, key)}}
+                        </div>
+                        <div class="metric-label">
+                            <i class="{{get_metric_icon(key)}} me-2"></i>
+                            {{translate_key(key)}}
+                        </div>
+                    </div>
+                    <div class="col-4 text-end">
+                        <i class="{{get_metric_icon(key)}} metric-icon"></i>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Charts Section -->
+        {% if charts %}
+        <div class="section-header">
+            <h3><i class="fas fa-chart-area me-2"></i>圖表分析</h3>
+        </div>
+
+        <div class="row">
+            {% for chart in charts %}
+            <div class="col-lg-6 mb-4">
+                <div class="chart-container">
+                    <h5 class="mb-3">{{chart.title}}</h5>
+                    <div class="chart-wrapper">
+                        <canvas id="{{chart.id}}"></canvas>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Performance Metrics -->
+        {% if performance_metrics %}
+        <div class="section-header">
+            <h3><i class="fas fa-chart-bar me-2"></i>性能指標</h3>
+        </div>
+
+        <div class="data-table-container">
+            <div class="table-responsive">
+                <table class="table table-hover" id="performanceTable">
+                    <thead>
+                        <tr>
+                            <th>指標</th>
+                            <th>數值</th>
+                            <th>描述</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for key, value in performance_metrics.items() %}
+                        <tr>
+                            <td>
+                                <i class="{{get_metric_icon(key)}} me-2"></i>
+                                {{translate_key(key)}}
+                            </td>
+                            <td class="{{get_value_class(value, key)}} fw-bold">
+                                {{format_value(value, key)}}
+                            </td>
+                            <td class="text-muted">{{get_description(key)}}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Trades Table -->
+        {% if trades and trades|length > 0 %}
+        <div class="section-header">
+            <h3><i class="fas fa-exchange-alt me-2"></i>交易記錄</h3>
+        </div>
+
+        <div class="data-table-container">
+            <div class="table-responsive">
+                <table class="table table-hover" id="tradesTable">
+                    <thead>
+                        <tr>
+                            {% for column in trades_columns %}
+                            <th>{{translate_key(column)}}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trade in trades[:100] %}
+                        <tr>
+                            {% for column in trades_columns %}
+                            <td>{{trade[column]}}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if trades|length > 100 %}
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-info-circle me-2"></i>
+                顯示前100條交易記錄，共 {{trades|length}} 條
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Additional Data Sections -->
+        {% for key, value in additional_data.items() %}
+        <div class="section-header">
+            <h3><i class="fas fa-table me-2"></i>{{translate_key(key)}}</h3>
+        </div>
+
+        <div class="data-table-container">
+            <div class="table-responsive">
+                {{render_data_table(value)}}
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Loading Indicator -->
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">載入中...</span>
+            </div>
+            <p class="mt-2">數據載入中，請稍候...</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3">量化交易報告</h5>
+                    <p>由簡化系統量化交易平台生成</p>
+                    <div>
+                        <a href="#" class="me-3"><i class="fas fa-globe me-1"></i>官網</a>
+                        <a href="#" class="me-3"><i class="fas fa-book me-1"></i>文檔</a>
+                        <a href="#"><i class="fas fa-envelope me-1"></i>聯繫</a>
+                    </div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-1">
+                        <i class="fas fa-calendar me-2"></i>
+                        生成時間: {{generation_time}}
+                    </p>
+                    <p class="mb-1">
+                        <i class="fas fa-code me-2"></i>
+                        版本: {{version}}
+                    </p>
+                    <p class="mb-0">
+                        <i class="fas fa-copyright me-2"></i>
+                        2024 簡化系統. 保留所有權利.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+
+    <script>
+        // Initialize DataTables
+        $(document).ready(function() {
+            // Performance Table
+            $('#performanceTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[1, 'desc']],
+                language: {
+                    search: "搜索:",
+                    lengthMenu: "顯示 _MENU_ 條記錄",
+                    info: "顯示第 _START_ 至 _END_ 條記錄，共 _TOTAL_ 條",
+                    paginate: {
+                        first: "首頁",
+                        last: "末頁",
+                        next: "下一頁",
+                        previous: "上一頁"
+                    }
+                }
+            });
+
+            // Trades Table
+            $('#tradesTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[0, 'desc']],
+                language: {
+                    search: "搜索:",
+                    lengthMenu: "顯示 _MENU_ 條記錄",
+                    info: "顯示第 _START_ 至 _END_ 條記錄，共 _TOTAL_ 條",
+                    paginate: {
+                        first: "首頁",
+                        last: "末頁",
+                        next: "下一頁",
+                        previous: "上一頁"
+                    }
+                }
+            });
+
+            // Initialize Charts
+            initializeCharts();
+        });
+
+        function initializeCharts() {
+            {% for chart in charts %}
+            initChart('{{chart.id}}', {{chart.data|tojson}});
+            {% endfor %}
+        }
+
+        function initChart(chartId, chartData) {
+            const ctx = document.getElementById(chartId);
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: chartData.type || 'line',
+                data: chartData.data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: chartData.showLegend !== false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: chartData.scales || {}
+                }
+            });
+        }
+
+        // Utility Functions
+        function formatNumber(num, decimals = 2) {
+            if (num === null || num === undefined) return '-';
+            return parseFloat(num).toLocaleString('zh-HK', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        }
+
+        function formatPercent(num, decimals = 2) {
+            if (num === null || num === undefined) return '-';
+            return (parseFloat(num) * 100).toFixed(decimals) + '%';
+        }
+
+        // Auto-refresh functionality (if needed)
+        let autoRefresh = false;
+        let refreshInterval;
+
+        function toggleAutoRefresh() {
+            autoRefresh = !autoRefresh;
+            if (autoRefresh) {
+                refreshInterval = setInterval(() => {
+                    // Refresh data logic here
+                    console.log('Auto-refreshing data...');
+                }, 60000); // Refresh every minute
+            } else {
+                clearInterval(refreshInterval);
+            }
+        }
+
+        // Export functionality
+        function exportToCSV(tableId, filename) {
+            const table = document.getElementById(tableId);
+            if (!table) return;
+
+            const csv = tableToCSV(table);
+            downloadCSV(csv, filename);
+        }
+
+        function tableToCSV(table) {
+            let csv = [];
+            const rows = table.querySelectorAll('tr');
+
+            for (let row of rows) {
+                const cols = row.querySelectorAll('td, th');
+                const rowData = Array.from(cols).map(col => {
+                    const text = col.textContent.trim();
+                    return text.includes(',') ? `"${text}"` : text;
+                });
+                csv.push(rowData.join(','));
+            }
+
+            return csv.join('\n');
+        }
+
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+    </script>
+</body>
+</html>

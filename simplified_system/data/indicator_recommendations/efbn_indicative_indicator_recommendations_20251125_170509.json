@@ -1,0 +1,278 @@
+{
+  "data_source": "efbn_indicative",
+  "data_characteristics": {
+    "type": "yield_rate",
+    "length": 8704,
+    "has_date_column": true,
+    "numeric_columns": 14
+  },
+  "total_indicators_evaluated": 10,
+  "suitable_indicators_count": 10,
+  "indicators_by_category": {
+    "trend": [
+      {
+        "name": "SMA",
+        "suitability_score": 1,
+        "recommended_params": {
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16
+        },
+        "reasons": [
+          "Suitable for yield_rate data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": []
+      },
+      {
+        "name": "EMA",
+        "suitability_score": 1,
+        "recommended_params": {
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16
+        },
+        "reasons": [
+          "Suitable for yield_rate data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": []
+      },
+      {
+        "name": "MACD",
+        "suitability_score": 1,
+        "recommended_params": {
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16
+        },
+        "reasons": [
+          "Suitable for yield_rate data",
+          "Sufficient data length (8704 records)",
+          "Strong trend improves indicator performance"
+        ],
+        "limitations": []
+      }
+    ],
+    "momentum": [
+      {
+        "name": "RSI",
+        "suitability_score": 1,
+        "recommended_params": {
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16
+        },
+        "reasons": [
+          "Suitable for yield_rate data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": []
+      },
+      {
+        "name": "Stochastic",
+        "suitability_score": 1,
+        "recommended_params": {
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16
+        },
+        "reasons": [
+          "Suitable for yield_rate data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": []
+      },
+      {
+        "name": "CCI",
+        "suitability_score": 0.85,
+        "recommended_params": {
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16
+        },
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for yield_rate data"
+        ]
+      }
+    ],
+    "volatility": [
+      {
+        "name": "Bollinger_Bands",
+        "suitability_score": 1,
+        "recommended_params": {
+          "period_range": [
+            10,
+            20
+          ],
+          "std_range": [
+            1.8,
+            2.2
+          ],
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16
+        },
+        "reasons": [
+          "Suitable for yield_rate data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": []
+      },
+      {
+        "name": "ATR",
+        "suitability_score": 0.6,
+        "recommended_params": {
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16
+        },
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for yield_rate data"
+        ]
+      }
+    ],
+    "custom": [
+      {
+        "name": "Rate_Spread",
+        "suitability_score": 1,
+        "recommended_params": {
+          "tenor_pairs": [
+            [
+              "2y",
+              "10y"
+            ],
+            [
+              "5y",
+              "15y"
+            ]
+          ],
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16
+        },
+        "reasons": [
+          "Suitable for yield_rate data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": []
+      },
+      {
+        "name": "Yield_Curve",
+        "suitability_score": 1,
+        "recommended_params": {
+          "rsi_period": 12,
+          "macd_fast": 12,
+          "macd_slow": 26,
+          "sma_period": 16
+        },
+        "reasons": [
+          "Suitable for yield_rate data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": []
+      }
+    ]
+  },
+  "top_recommendations": [
+    {
+      "name": "SMA",
+      "suitability_score": 1,
+      "category": "trend",
+      "recommended_params": {
+        "rsi_period": 12,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "sma_period": 16
+      },
+      "reasons": [
+        "Suitable for yield_rate data",
+        "Sufficient data length (8704 records)"
+      ]
+    },
+    {
+      "name": "EMA",
+      "suitability_score": 1,
+      "category": "trend",
+      "recommended_params": {
+        "rsi_period": 12,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "sma_period": 16
+      },
+      "reasons": [
+        "Suitable for yield_rate data",
+        "Sufficient data length (8704 records)"
+      ]
+    },
+    {
+      "name": "MACD",
+      "suitability_score": 1,
+      "category": "trend",
+      "recommended_params": {
+        "rsi_period": 12,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "sma_period": 16
+      },
+      "reasons": [
+        "Suitable for yield_rate data",
+        "Sufficient data length (8704 records)",
+        "Strong trend improves indicator performance"
+      ]
+    },
+    {
+      "name": "RSI",
+      "suitability_score": 1,
+      "category": "momentum",
+      "recommended_params": {
+        "rsi_period": 12,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "sma_period": 16
+      },
+      "reasons": [
+        "Suitable for yield_rate data",
+        "Sufficient data length (8704 records)"
+      ]
+    },
+    {
+      "name": "Stochastic",
+      "suitability_score": 1,
+      "category": "momentum",
+      "recommended_params": {
+        "rsi_period": 12,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "sma_period": 16
+      },
+      "reasons": [
+        "Suitable for yield_rate data",
+        "Sufficient data length (8704 records)"
+      ]
+    }
+  ],
+  "not_recommended": [],
+  "summary": {
+    "highly_suitable_count": 9,
+    "moderately_suitable_count": 1,
+    "not_suitable_count": 0,
+    "best_indicator": "SMA",
+    "best_score": 1
+  }
+}

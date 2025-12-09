@@ -1,0 +1,61 @@
+# 動態資產配置系統 - 額外依賴
+# Dynamic Asset Allocation System - Additional Dependencies
+
+# 機器學習和統計模型
+scikit-learn>=1.3.0
+scipy>=1.11.0
+hmmlearn>=0.3.0
+
+# 數據處理和時間序列
+statsmodels>=0.14.0
+arch>=6.2.0  # 用於GARCH模型
+
+# 金融分析
+yfinance>=0.2.0
+ta-lib>=0.4.0  # 技術分析庫（可選）
+
+# 可視化
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.15.0  # 交互式圖表
+
+# 性能優化
+numba>=0.58.0
+joblib>=1.3.0
+
+# 高級統計
+pykalman>=0.9.5  # 卡爾曼濾波
+filterpy>=1.4.5
+
+# 時間序列分析
+pmdarima>=2.0.0
+prophet>=1.1.0
+
+# 風險管理
+pyfolio>=0.9.0
+empyrical>=0.5.0
+
+# 數據儲存
+hdf5storage>=0.1.18
+tables>=3.8.0
+
+# 並行處理
+multiprocessing-logging>=0.3.4
+concurrent-futures>=3.1.1
+
+# 配置管理
+hydra-core>=1.3.0
+omegaconf>=2.3.0
+
+# 單元測試
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# 代碼質量
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# 文檔生成
+sphinx>=7.1.0
+sphinx-rtd-theme>=1.3.0

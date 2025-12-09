@@ -1,0 +1,337 @@
+# 數據驗證配置文件
+# Data Validation Configuration File
+
+# 全局設置
+global_settings:
+  # 質量閾值
+  quality_thresholds:
+    minimum_acceptable: 70.0      # 最低可接受質量評分
+    good_quality: 85.0           # 良好質量評分
+    excellent_quality: 95.0      # 優秀質量評分
+
+  # 自動修復設置
+  auto_fix:
+    enabled: true                # 啟用自動修復
+    max_attempts: 3              # 最大修復嘗試次數
+    retry_on_failure: true       # 失敗時重試
+
+  # 異常檢測設置
+  anomaly_detection:
+    enabled: true                # 啟用異常檢測
+    outlier_threshold: 3.0       # 異常值檢測閾值（標準差倍數）
+    sensitivity: "medium"        # 檢測靈敏度：low, medium, high
+
+# 政府數據驗證規則
+government_data_validation:
+  # HIBOR利率驗證
+  hibor_rates:
+    # 利率範圍驗證（單位：%）
+    rate_ranges:
+      overnight: [0.0, 5.0]
+      one_week: [0.0, 5.0]
+      one_month: [0.0, 6.0]
+      three_month: [0.0, 6.0]
+      six_month: [0.0, 7.0]
+      one_year: [0.0, 8.0]
+
+    # 必要字段
+    required_fields:
+      - "end_of_day"
+      - "ir_overnight"
+
+    # 數據完整性
+    completeness:
+      min_records: 30            # 最少記錄數
+      ideal_records: 365         # 理想記錄數
+      missing_data_threshold: 0.05  # 缺失數據閾值（5%）
+
+    # 時間一致性
+    temporal:
+      max_gap_days: 7            # 最大時間間隔
+      require_chronological: true # 要求按時間順序
+
+  # 匯率數據驗證
+  exchange_rates:
+    # 匯率範圍（相對港幣）
+    currency_ranges:
+      usd: [7.0, 8.5]            # USD/HKD範圍
+      cny: [1.0, 1.6]            # CNY/HKD範圍
+      eur: [8.0, 12.0]           # EUR/HKD範圍
+      jpy: [0.05, 0.08]          # JPY/HKD範圍
+
+    # 允許的日變化
+    daily_change_limits:
+      usd: 0.05                  # 5%日變化限制
+      cny: 0.05                  # 5%日變化限制
+      eur: 0.05                  # 5%日變化限制
+
+    # 必要貨幣
+    required_currencies:
+      - "usd"
+      - "cny"
+
+  # 貨幣基礎數據驗證
+  monetary_base:
+    # 數值範圍（單位：港幣）
+    value_ranges:
+      monetary_base: [1000000, 10000000000000]      # 100萬 - 1萬億
+      deposits: [1000000, 10000000000000]          # 100萬 - 1萬億
+      certificates_of_indebtedness: [0, 1000000000000]  # 0 - 1萬億
+
+    # 必要字段
+    required_fields:
+      - "end_of_day"
+
+    # 數據合理性
+    reasonableness:
+      allow_negative: false      # 不允許負值
+      zero_tolerance: 0.1        # 零值容忍度（10%）
+
+  # 流動性數據驗證
+  liquidity:
+    # 數值範圍
+    value_ranges:
+      interbank_liquidity: [0, 10000000000000]      # 0 - 1萬億
+
+    # 變化限制
+    change_limits:
+      daily_max_change_pct: 50   # 最大日變化百分比
+
+# 股票數據驗證規則
+stock_data_validation:
+  # OHLCV數據邏輯驗證
+  ohlc_logic:
+    # 邏輯關係檢查
+    logical_conditions:
+      - condition: "high >= low"
+        severity: "critical"
+      - condition: "high >= open"
+        severity: "critical"
+      - condition: "high >= close"
+        severity: "critical"
+      - condition: "low <= open"
+        severity: "critical"
+      - condition: "low <= close"
+        severity: "critical"
+      - condition: "open > 0"
+        severity: "critical"
+      - condition: "high > 0"
+        severity: "critical"
+      - condition: "low > 0"
+        severity: "critical"
+      - condition: "close > 0"
+        severity: "critical"
+
+  # 價格範圍驗證
+  price_ranges:
+    # 價格範圍（單位：港幣）
+    min_price: 0.01              # 最低價格（1分）
+    max_price: 10000.0           # 最高價格（1萬）
+
+    # 特殊股票調整
+    special_stocks:
+      pattern: "^0[0-9]{3}.HK$"  # 港股代號模式
+      adjustments:
+        min_multiplier: 0.1      # 最小價格調整倍數
+        max_multiplier: 10.0     # 最大價格調整倍數
+
+  # 異常跳變檢測
+  price_spike_detection:
+    # 價格跳變閾值
+    max_daily_change_pct: 20.0   # 最大日變化百分比
+    extreme_change_pct: 50.0     # 極端變化百分比
+
+    # 檢測窗口
+    window_size: 5               # 移動窗口大小
+
+    # 價格字段
+    price_fields:
+      - "open"
+      - "high"
+      - "low"
+      - "close"
+
+  # 成交量異常檢測
+  volume_anomaly_detection:
+    # 成交量倍數
+    volume_multiplier: 5.0       # 超過平均值倍數
+    extreme_multiplier: 10.0     # 極端倍數
+
+    # 最小成交量
+    min_avg_volume: 1000         # 最小平均成交量
+
+    # 檢測窗口
+    window_days: 20              # 移動窗口天數
+
+  # 數據完整性驗證
+  data_completeness:
+    # 必要字段
+    required_fields:
+      - "close"
+
+    # 可選字段
+    optional_fields:
+      - "open"
+      - "high"
+      - "low"
+      - "volume"
+
+    # 完整性要求
+    min_completeness_rate: 0.98  # 最小完整性率
+    missing_value_threshold: 0.02 # 缺失值閾值
+
+  # 交易日驗證
+  trading_day_validation:
+    # 連續缺失天數
+    max_consecutive_missing_days: 3
+
+    # 日期設置
+    exclude_weekends: true       # 排除週末
+    exclude_holidays: true       # 排除假日
+
+    # 港股交易日曆（可擴展）
+    holidays:
+      - pattern: "01-01"         # 元旦
+      - pattern: "12-25"         # 聖誕節
+      - pattern: " Lunar.*"      # 農曆新年（需要更復雜的邏輯）
+
+  # 除權除息處理
+  corporate_actions:
+    # 除權除息檢測
+    enable_detection: true
+
+    # 價格跳變閾值（除權除息會導致大額跳變）
+    ex_dividend_threshold: 0.1   # 除息閾值
+    ex_split_threshold: 0.5      # 除權閾值
+
+    # 處理策略
+    handling_strategy: "flag"    # 標記而非修復
+
+# 自動修復規則
+auto_fix_rules:
+  # 通用修復規則
+  general:
+    # 數據單位修復
+    unit_corrections:
+      - pattern: "ir_.*"         # HIBOR利率
+        correction: "divide_by_100"  # 百分比轉小數
+        condition: "value > 100"
+
+      - pattern: "usd"           # USD匯率
+        correction: "multiply_by_rate"  # 匯率轉換
+        condition: "value < 1"
+        rate: 7.8
+
+      - pattern: "monetary_.*"   # 貨幣基礎
+        correction: "set_zero"    # 設置為零
+        condition: "value < 0"
+
+  # 股票數據修復
+  stock_data:
+    # OHLC修復
+    ohlc_repair:
+      method: "close_based"      # 基於收盤價修復
+      volatility_factor: 0.002   # 波動因子
+
+    # 價格異常修復
+    price_spike_repair:
+      method: "moving_average"   # 移動平均修復
+      window_size: 5             # 窗口大小
+      max_correction_pct: 0.3    # 最大修正百分比
+
+  # 政府數據修復
+  government_data:
+    # 缺失字段填充
+    missing_fields:
+      - field: "end_of_day"
+        default_method: "current_date"
+
+      - field: "ir_overnight"
+        default_method: "previous_value"
+        fallback: 3.0
+
+    # 數據範圍修復
+    range_corrections:
+      - field_pattern: "ir_.*"
+        min_value: 0.0
+        max_value: 10.0
+
+      - field_pattern: "usd"
+        min_value: 7.0
+        max_value: 8.5
+
+# 報告設置
+reporting:
+  # 質量報告
+  quality_report:
+    output_directory: "data_quality_reports"
+    include_fix_suggestions: true
+    include_data_samples: true
+    max_sample_records: 10
+
+  # 異常報告
+  anomaly_report:
+    output_directory: "anomaly_reports"
+    include_visualizations: true
+    alert_threshold: 5           # 異常數量超過此值時發出警報
+
+  # 趨勢報告
+  trend_report:
+    output_directory: "trend_reports"
+    analysis_period_days: 30
+    include_predictions: false
+
+# 監控設置
+monitoring:
+  # 實時監控
+  real_time:
+    enabled: true
+    check_interval_minutes: 60
+    alert_channels:
+      - type: "log"
+        level: "warning"
+      - type: "email"
+        recipients: ["admin@example.com"]
+
+  # 定期監控
+  periodic:
+    enabled: true
+    schedule: "0 9 * * 1-5"      # 工作日9點
+    generate_reports: true
+    send_summary: true
+
+# 集成設置
+integration:
+  # VectorBT集成
+  vectorbt:
+    enabled: true
+    pre_validation: true         # 回測前驗證
+    post_analysis: true          # 分析後驗證
+
+  # Telegram集成
+  telegram:
+    enabled: false
+    bot_token: "YOUR_BOT_TOKEN"
+    chat_id: "YOUR_CHAT_ID"
+    alert_levels:
+      - "critical"
+      - "high"
+
+# 性能設置
+performance:
+  # 緩存設置
+  cache:
+    enabled: true
+    ttl_seconds: 3600            # 緩存1小時
+    max_size_mb: 100             # 最大緩存大小
+
+  # 並行處理
+  parallel:
+    enabled: true
+    max_workers: 4               # 最大工作線程數
+    chunk_size: 50               # 數據塊大小
+
+  # 內存管理
+  memory:
+    max_memory_mb: 1024          # 最大內存使用
+    gc_threshold: 0.8            # 垃圾回收閾值

@@ -1,0 +1,11 @@
+{
+  "timestamp": "20251129_015543",
+  "market_analysis": {
+    "volatility": 0.3014232979187087,
+    "trend": -0.06289054543207956,
+    "market_type": "Sideways Market",
+    "recommendation": "Use mean reversion and range-bound strategies"
+  },
+  "optimization_results": {},
+  "portfolio_suggestion": null
+}

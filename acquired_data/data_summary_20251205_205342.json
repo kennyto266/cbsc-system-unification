@@ -1,0 +1,31 @@
+{
+  "acquisition_timestamp": "2025-12-05T20:53:42.180155",
+  "data_source": "acheng_sharpe_results.csv (enhanced)",
+  "base_data_info": {
+    "original_records": 3740,
+    "date_range": "2010-09-01 to 2024-12-31",
+    "assets": [
+      "HSIF",
+      "USDCNH"
+    ]
+  },
+  "enhanced_dataset": {
+    "total_records": 3740,
+    "date_range": "2010-09-01 to 2024-12-31",
+    "indicators": [
+      "Bull_Price",
+      "Bear_Price",
+      "Bull_Bear_Ratio",
+      "Fear_Greed_Index",
+      "RSI_Signal",
+      "Realized_Volatility"
+    ]
+  },
+  "quality_assessment": {
+    "completeness": 0.983957219251337,
+    "price_quality": 1.0,
+    "continuity": 0.7142857142857143,
+    "overall_score": 0.899414311179017,
+    "rating": "Good"
+  }
+}

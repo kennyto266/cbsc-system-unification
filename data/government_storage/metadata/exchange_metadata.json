@@ -1,0 +1,17 @@
+{
+  "data_type": "exchange",
+  "last_updated": "2025-11-29T16:38:16.989666",
+  "storage_stats": {
+    "data_type": "exchange",
+    "total_records": 910,
+    "years_stored": [
+      2025
+    ],
+    "date_range": {
+      "start": "2025-06-02",
+      "end": "2025-11-28"
+    },
+    "partitions_created": 1,
+    "storage_size_mb": 0.009687423706054688
+  }
+}

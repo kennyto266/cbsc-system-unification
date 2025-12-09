@@ -1,0 +1,131 @@
+{
+  "stock_info": {
+    "symbol": "0700.HK",
+    "company": "Tencent Holdings Limited",
+    "data_period": "2024-11-25 至 2025-11-21",
+    "total_days": 245,
+    "price_range": {
+      "min": 366.0,
+      "max": 677.5,
+      "current": 610.0
+    }
+  },
+  "nonprice_data_sources": {
+    "total_sources": 0,
+    "sources": []
+  },
+  "enhanced_backtest_summary": {
+    "total_strategies": 6,
+    "successful_strategies": 2,
+    "success_rate": 0.3333333333333333,
+    "best_strategy": {
+      "name": "MACD_Fast_8_21",
+      "type": "MACD",
+      "description": "快速MACD策略",
+      "sharpe_ratio": 3.3689489036397418,
+      "total_return": 1.2013648851469059,
+      "max_drawdown": -0.06500770332970537,
+      "trade_count": 0
+    },
+    "max_sharpe": 3.3689489036397418
+  },
+  "detailed_results": [
+    {
+      "strategy_name": "RSI_Basic_14",
+      "strategy_type": "RSI",
+      "description": "基礎RSI策略",
+      "parameters": {
+        "strategy": "RSI",
+        "period": 14,
+        "oversold": 30,
+        "overbought": 70,
+        "condition_type": "moderate"
+      },
+      "success": false,
+      "error": "Trade frequency too low"
+    },
+    {
+      "strategy_name": "RSI_Relaxed_21",
+      "strategy_type": "RSI",
+      "description": "放寬RSI策略",
+      "parameters": {
+        "strategy": "RSI",
+        "period": 21,
+        "oversold": 25,
+        "overbought": 75,
+        "condition_type": "relaxed"
+      },
+      "success": false,
+      "error": "Trade frequency too low"
+    },
+    {
+      "strategy_name": "MACD_Standard",
+      "strategy_type": "MACD",
+      "description": "標準MACD策略",
+      "parameters": {
+        "strategy": "MACD",
+        "fast": 12,
+        "slow": 26,
+        "signal": 9,
+        "condition_type": "standard"
+      },
+      "success": true,
+      "sharpe_ratio": 2.089229758336241,
+      "total_return": 0.6203345633315769,
+      "max_drawdown": -0.1133103329971462,
+      "trade_count": 0,
+      "annual_return": 0,
+      "trade_frequency": 0.8204081632653061
+    },
+    {
+      "strategy_name": "MACD_Fast_8_21",
+      "strategy_type": "MACD",
+      "description": "快速MACD策略",
+      "parameters": {
+        "strategy": "MACD",
+        "fast": 8,
+        "slow": 21,
+        "signal": 8,
+        "condition_type": "aggressive"
+      },
+      "success": true,
+      "sharpe_ratio": 3.3689489036397418,
+      "total_return": 1.2013648851469059,
+      "max_drawdown": -0.06500770332970537,
+      "trade_count": 0,
+      "annual_return": 0,
+      "trade_frequency": 0.8040816326530612
+    },
+    {
+      "strategy_name": "KDJ_Standard",
+      "strategy_type": "KDJ",
+      "description": "標準KDJ策略",
+      "parameters": {
+        "strategy": "KDJ",
+        "k_period": 9,
+        "d_period": 3,
+        "condition_type": "standard"
+      },
+      "success": false,
+      "error": "Trade frequency too low"
+    },
+    {
+      "strategy_name": "Bollinger_Standard",
+      "strategy_type": "BOLLINGER_BANDS",
+      "description": "標準布林帶策略",
+      "parameters": {
+        "strategy": "BOLLINGER_BANDS",
+        "period": 20,
+        "std_dev": 2.0,
+        "condition_type": "moderate"
+      },
+      "success": false,
+      "error": "Trade frequency too low"
+    }
+  ],
+  "data_quality": {
+    "stock_data_quality": 245,
+    "nonprice_indicators": 0
+  },
+  "generated_at": "2025-11-24T09:34:31.453548"
+}

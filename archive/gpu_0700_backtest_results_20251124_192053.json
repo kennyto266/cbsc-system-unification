@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "data_info": {
+    "symbol": "0700.HK",
+    "company_name": "Tencent Holdings Limited",
+    "total_records": 246,
+    "date_range": "2024-11-25 00:00:00+00:00 至 2025-11-24 00:00:00+00:00",
+    "price_range": "366.00 - 677.50"
+  },
+  "performance": {
+    "rsi_calculation_time": 0.05947279930114746,
+    "macd_calculation_time": 0.03269505500793457,
+    "total_computation_time": 0.5314080715179443,
+    "gpu_utilization": 8.5
+  },
+  "indicators": {
+    "hibor_rsi_length": 246,
+    "hibor_rsi_range": [
+      35.515419006347656,
+      64.13214111328125
+    ],
+    "macd_length": 246,
+    "signal_length": 246,
+    "histogram_length": 246
+  },
+  "timestamp": "2025-11-24T19:20:53.275905"
+}

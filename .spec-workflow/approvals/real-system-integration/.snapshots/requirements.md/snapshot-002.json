@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1758856919093_umrqqyezm",
+  "approvalId": "approval_1758856858945_d97plv4rf",
+  "approvalTitle": "真实系统集成需求文档",
+  "version": 2,
+  "timestamp": "2025-09-26T03:21:59.093Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# 真实系统集成需求文档\r\n\r\n## 介绍\r\n\r\n将现有的港股量化交易AI Agent演示系统扩展为真实可用的量化交易系统，集成真实数据源、回测引擎和Telegram Bot输出功能。该系统将基于用户现有的三个项目：\r\n1. 港股回测系统 (StockBacktest项目)\r\n2. 原始数据源 (黑人RAW DATA项目) \r\n3. Telegram Bot项目 (CURSOR CLI项目)\r\n\r\n## 与产品愿景的一致性\r\n\r\n此扩展将实现从概念验证到生产级量化交易系统的转变，提供：\r\n- 真实市场数据集成\r\n- 经过验证的回测策略\r\n- 实时交易信号输出\r\n- 用户友好的Telegram界面\r\n\r\n## 需求\r\n\r\n### 需求1: 真实数据源集成\r\n\r\n**用户故事:** 作为量化交易员，我希望系统能够接入真实的市场数据源，以便进行基于真实数据的策略分析和交易决策\r\n\r\n#### 验收标准\r\n\r\n1. WHEN 系统启动 THEN 系统 SHALL 自动连接到黑人RAW DATA项目中的真实数据源\r\n2. IF 数据源连接失败 THEN 系统 SHALL 提供备用数据源和错误恢复机制\r\n3. WHEN 接收到新的市场数据 THEN 系统 SHALL 实时更新所有AI Agent的分析结果\r\n4. WHEN 数据格式发生变化 THEN 系统 SHALL 自动适配新的数据格式而不影响系统运行\r\n\r\n### 需求2: 回测引擎集成\r\n\r\n**用户故事:** 作为策略开发者，我希望系统能够使用经过验证的回测引擎，以便确保策略的可靠性和盈利能力\r\n\r\n#### 验收标准\r\n\r\n1. WHEN 策略参数发生变化 THEN 系统 SHALL 自动调用StockBacktest项目进行回测验证\r\n2. IF 回测结果显示策略失效 THEN 系统 SHALL 自动停用该策略并发送告警\r\n3. WHEN 回测完成 THEN 系统 SHALL 更新策略的绩效指标(夏普比率、最大回撤等)\r\n4. WHEN 市场条件变化 THEN 系统 SHALL 定期重新评估策略的有效性\r\n\r\n### 需求3: AI Agent真实化\r\n\r\n**用户故事:** 作为系统管理员，我希望AI Agent能够基于真实数据进行分析和决策，而不是使用模拟数据\r\n\r\n#### 验收标准\r\n\r\n1. WHEN 量化分析师Agent接收到市场数据 THEN 它 SHALL 使用真实的数学模型进行分析\r\n2. IF 数据科学家Agent检测到异常模式 THEN 它 SHALL 触发真实的风险管理流程\r\n3. WHEN 投资组合经理Agent需要调整仓位 THEN 它 SHALL 基于真实的绩效数据进行决策\r\n4. WHEN 风险分析师Agent计算风险指标 THEN 它 SHALL 使用真实的历史数据和统计模型\r\n\r\n### 需求4: Telegram Bot集成\r\n\r\n**用户故事:** 作为用户，我希望能够通过Telegram Bot接收交易信号和系统状态，以便随时了解系统运行情况\r\n\r\n#### 验收标准\r\n\r\n1. WHEN AI Agent生成交易信号 THEN 系统 SHALL 自动通过Telegram Bot发送给用户\r\n2. IF 系统发生异常 THEN 系统 SHALL 立即通过Telegram Bot发送告警信息\r\n3. WHEN 用户发送查询命令 THEN 系统 SHALL 返回当前策略状态和绩效指标\r\n4. WHEN 用户发送控制命令 THEN 系统 SHALL 执行相应的Agent控制操作\r\n\r\n### 需求5: 实时监控和告警\r\n\r\n**用户故事:** 作为风险管理员，我希望系统能够实时监控交易风险和市场异常，以便及时采取风险控制措施\r\n\r\n#### 验收标准\r\n\r\n1. WHEN 检测到市场异常波动 THEN 系统 SHALL 立即触发风险控制机制\r\n2. IF 单个策略亏损超过阈值 THEN 系统 SHALL 自动暂停该策略\r\n3. WHEN 系统性能下降 THEN 系统 SHALL 发送性能告警并自动优化\r\n4. WHEN 数据质量出现问题 THEN 系统 SHALL 自动切换到备用数据源\r\n\r\n### 需求6: 策略管理和优化\r\n\r\n**用户故事:** 作为策略研究员，我希望系统能够自动管理和优化多个交易策略，以便最大化投资回报\r\n\r\n#### 验收标准\r\n\r\n1. WHEN 新策略通过回测验证 THEN 系统 SHALL 自动将其加入生产环境\r\n2. IF 策略表现不佳 THEN 系统 SHALL 自动调整参数或停用策略\r\n3. WHEN 市场环境变化 THEN 系统 SHALL 自动重新平衡策略权重\r\n4. WHEN 发现更优策略 THEN 系统 SHALL 逐步替换现有策略\r\n\r\n## 非功能性需求\r\n\r\n### 代码架构和模块化\r\n- **单一职责原则**: 每个模块应该专注于特定的功能领域\r\n- **模块化设计**: 数据层、业务层、展示层应该完全分离\r\n- **依赖管理**: 最小化模块间的相互依赖\r\n- **清晰接口**: 定义组件间的清洁契约\r\n\r\n### 性能\r\n- 数据处理延迟 < 100ms\r\n- 交易信号生成时间 < 1秒\r\n- 系统响应时间 < 500ms\r\n- 支持1000+并发用户\r\n\r\n### 安全\r\n- 所有API接口需要身份验证\r\n- 交易数据加密传输\r\n- 敏感配置信息加密存储\r\n- 定期安全审计和漏洞扫描\r\n\r\n### 可靠性\r\n- 系统可用性 > 99.9%\r\n- 数据备份和恢复机制\r\n- 故障自动恢复能力\r\n- 多级容错设计\r\n\r\n### 可用性\r\n- 直观的Web管理界面\r\n- 简洁的Telegram Bot交互\r\n- 详细的操作日志和审计跟踪\r\n- 多语言支持(中文/英文)\r\n",
+  "fileStats": {
+    "size": 4930,
+    "lines": 117,
+    "lastModified": "2025-09-26T03:21:17.237Z"
+  },
+  "comments": []
+}

@@ -1,0 +1,18 @@
+{
+  "data_type": "hibor",
+  "last_updated": "2025-11-29T16:37:16.229586",
+  "storage_stats": {
+    "data_type": "hibor",
+    "total_records": 1827,
+    "years_stored": [
+      2024,
+      2025
+    ],
+    "date_range": {
+      "start": "2024-11-29",
+      "end": "2025-11-28"
+    },
+    "partitions_created": 2,
+    "storage_size_mb": 0.021147727966308594
+  }
+}

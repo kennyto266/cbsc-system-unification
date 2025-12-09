@@ -1,0 +1,145 @@
+{
+  "test_timestamp": "2025-11-29T01:33:04.695375",
+  "simplified_system_path": "C:\\Users\\Penguin8n\\CODEX--\\simplified_system",
+  "overall_status": "failed",
+  "test_results": {
+    "directory_structure": {
+      "status": "passed",
+      "details": {
+        "status": "passed",
+        "missing_dirs": [],
+        "existing_dirs": [
+          "src/api",
+          "src/indicators",
+          "src/backtest",
+          "src/telegram",
+          "src/data",
+          "src/strategies",
+          "src/risk",
+          "src/utils",
+          "config"
+        ]
+      }
+    },
+    "core_modules": {
+      "status": "passed",
+      "details": {
+        "status": "passed",
+        "modules": {
+          "api": {
+            "status": "passed",
+            "existing_files": [
+              "stock_api.py",
+              "government_data.py",
+              "daily_tasks_api.py"
+            ],
+            "missing_files": []
+          },
+          "indicators": {
+            "status": "passed",
+            "existing_files": [
+              "core_indicators.py",
+              "technical_analyzer.py"
+            ],
+            "missing_files": []
+          },
+          "backtest": {
+            "status": "passed",
+            "existing_files": [
+              "vectorbt_engine.py",
+              "strategy_builder.py"
+            ],
+            "missing_files": []
+          },
+          "telegram": {
+            "status": "passed",
+            "existing_files": [
+              "telegram_bot.py"
+            ],
+            "missing_files": []
+          }
+        },
+        "missing_files": []
+      }
+    },
+    "configuration_files": {
+      "status": "passed",
+      "details": {
+        "status": "passed",
+        "existing_files": [
+          "requirements.txt",
+          "integration_test.py",
+          "test_backtest_simple.py"
+        ],
+        "missing_files": []
+      }
+    },
+    "python_imports": {
+      "status": "failed",
+      "details": {
+        "status": "failed",
+        "successful_imports": [
+          "stock_api",
+          "government_data",
+          "core_indicators"
+        ],
+        "failed_imports": [
+          "vectorbt_engine"
+        ],
+        "import_errors": {
+          "vectorbt_engine": "attempted relative import with no known parent package"
+        }
+      }
+    },
+    "dependencies": {
+      "status": "passed",
+      "details": {
+        "status": "passed",
+        "available_packages": [
+          "requests",
+          "pandas",
+          "numpy",
+          "vectorbt",
+          "matplotlib",
+          "plotly",
+          "python-telegram-bot"
+        ],
+        "missing_packages": [],
+        "package_errors": {},
+        "requirements_exists": true,
+        "requirements_content": "# 簡化系統 - 核心依賴\n# Simplified System - Core Dependencies\n\n# HTTP requests and API handling\nrequests>=2.31.0\naiohttp>=3.8.0\n\n# Telegram Bot\npython-telegram-bot>=20.0\n\n# Data processing\npandas>=2.0.0\nnumpy>=1.24.0\n\n# Environment configuration\npython-dotenv>=1.0.0\n\n# FastAPI (for daily tasks API)\nfastapi>=0.104.0\nuvicorn[standard]>=0.24.0\n\n# Date and time handling\npython-dateutil>=2.8.0\n\n# Async utilities\nasyncio-throttle>=1.0.2\n\n# Optional: For enhanced features\n# beautifulsoup4>=4.12.0  # For web scraping\n# playwright>=1.40.0       # For browser automation\n# lxml>=4.9.0              # For XML/HTML parsing\n# cryptography>=41.0.0       # For security features\n\n# Development and testing\npytest>=7.4.0\npytest-asyncio>=0.21.0\nblack>=23.0.0\nflake8>=6.0.0\n\n# Logging and monitoring\nstructlog>=23.1.0\n\n# Configuration management\npydantic>=2.5.0\npydantic-settings>=2.1.0\n\n# JSON handling enhancement\norjson>=3.9.0\n\n# Rate limiting\nslowapi>=0.1.9\n\n# Time zone handling\npytz>=2023.3\n\n# VectorBT for high-performance backtesting\nvectorbt>=0.25.0\n\n# GPU acceleration (optional, requires CUDA)\n# cuPY-cuda11x>=13.0.0    # Uncomment for GPU acceleration with CUDA 11.x\n# Note: Install manually with: pip install cupy-cuda11x\n\n# Dashboard and visualization\ndash>=2.14.0\ndash-bootstrap-components>=1.5.0\nplotly>=5.17.0\nwebsockets>=12.0\n\n# Optional: For enhanced backtesting features\n# jupyter>=1.0.0              # For notebook support\n# ipywidgets>=7.0.0           # For interactive widgets\n\n# Enhanced Reporting System\njinja2>=3.1.0                # Template engine for reports\nweasyprint>=60.0              # PDF export (optional, requires system dependencies)\n# pdfkit>=0.6.1               # Alternative PDF export (requires wkhtmltopdf)\n# reportlab>=4.0.0            # Basic PDF generation\nPyPDF2>=3.0.0                # PDF manipulation\n\n# Additional reporting dependencies\nmarkdown>=3.5.0               # Markdown support\nbeautifulsoup4>=4.12.0       # HTML parsing for templates"
+      }
+    },
+    "basic_functionality": {
+      "status": "failed",
+      "details": {
+        "status": "failed",
+        "functionality_tests": {
+          "python_basics": {
+            "success": false,
+            "output": "Python版本: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]\n",
+            "error": "Traceback (most recent call last):\n  File \"<string>\", line 4, in <module>\n    print('基\\u7840\\u8bed法\\u6d4b\\u8bd5通\\u8fc7')\n    ~~~~~^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeError: 'cp950' codec can't encode character '\\u7840' in position 1: illegal multibyte sequence\n"
+          },
+          "directory_structure": {
+            "success": false,
+            "output": "",
+            "error": "Traceback (most recent call last):\n  File \"<string>\", line 18, in <module>\n    print('所有核心目\\u5f55\\u7ed3构正确')\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeError: 'cp950' codec can't encode character '\\u5f55' in position 5: illegal multibyte sequence\n"
+          },
+          "config_reading": {
+            "success": false,
+            "output": "",
+            "error": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    print('requirements.txt \\u8bfb取成功')\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeError: 'cp950' codec can't encode character '\\u8bfb' in position 17: illegal multibyte sequence\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"<string>\", line 13, in <module>\n    print(f'\\u8bfb取\\u9519\\u8bef: {e}')\n    ~~~~~^^^^^^^^^^^^^^^^^^\nUnicodeEncodeError: 'cp950' codec can't encode character '\\u8bfb' in position 0: illegal multibyte sequence\n"
+          }
+        },
+        "errors": {
+          "python_basics": "Traceback (most recent call last):\n  File \"<string>\", line 4, in <module>\n    print('基\\u7840\\u8bed法\\u6d4b\\u8bd5通\\u8fc7')\n    ~~~~~^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeError: 'cp950' codec can't encode character '\\u7840' in position 1: illegal multibyte sequence\n",
+          "directory_structure": "Traceback (most recent call last):\n  File \"<string>\", line 18, in <module>\n    print('所有核心目\\u5f55\\u7ed3构正确')\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeError: 'cp950' codec can't encode character '\\u5f55' in position 5: illegal multibyte sequence\n"
+        }
+      }
+    }
+  },
+  "failed_tests": [
+    "python_imports",
+    "basic_functionality"
+  ]
+}

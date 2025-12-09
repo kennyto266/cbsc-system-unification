@@ -1,0 +1,154 @@
+{
+  "standards": {
+    "stock_api": {
+      "source_type": "DataSourceType.STOCK_API",
+      "quality_level": "DataQualityLevel.PRODUCTION",
+      "required_columns": [
+        "timestamp",
+        "close"
+      ],
+      "column_mappings": {
+        "timestamp": {
+          "standard_name": "timestamp",
+          "aliases": [
+            "date",
+            "datetime",
+            "time"
+          ],
+          "data_type": "datetime",
+          "required": true,
+          "validation_rules": null
+        },
+        "open": {
+          "standard_name": "open",
+          "aliases": [
+            "Open",
+            "open_price",
+            "opening"
+          ],
+          "data_type": "float",
+          "required": true,
+          "validation_rules": null
+        },
+        "high": {
+          "standard_name": "high",
+          "aliases": [
+            "High",
+            "high_price",
+            "maximum"
+          ],
+          "data_type": "float",
+          "required": true,
+          "validation_rules": null
+        },
+        "low": {
+          "standard_name": "low",
+          "aliases": [
+            "Low",
+            "low_price",
+            "minimum"
+          ],
+          "data_type": "float",
+          "required": true,
+          "validation_rules": null
+        },
+        "close": {
+          "standard_name": "close",
+          "aliases": [
+            "Close",
+            "price",
+            "closing",
+            "adj_close"
+          ],
+          "data_type": "float",
+          "required": true,
+          "validation_rules": null
+        },
+        "volume": {
+          "standard_name": "volume",
+          "aliases": [
+            "Volume",
+            "vol",
+            "trading_volume"
+          ],
+          "data_type": "int",
+          "required": true,
+          "validation_rules": null
+        }
+      },
+      "validation_schema": {
+        "timestamp": {
+          "type": "datetime",
+          "required": true
+        },
+        "close": {
+          "type": "float",
+          "min": 0,
+          "required": true
+        },
+        "volume": {
+          "type": "int",
+          "min": 0,
+          "required": false
+        }
+      },
+      "format_version": "1.0"
+    },
+    "government_data": {
+      "source_type": "DataSourceType.GOVERNMENT_DATA",
+      "quality_level": "DataQualityLevel.PRODUCTION",
+      "required_columns": [
+        "date",
+        "value"
+      ],
+      "column_mappings": {
+        "date": {
+          "standard_name": "date",
+          "aliases": [
+            "timestamp",
+            "datetime"
+          ],
+          "data_type": "date",
+          "required": true,
+          "validation_rules": null
+        },
+        "value": {
+          "standard_name": "value",
+          "aliases": [
+            "rate",
+            "price",
+            "amount",
+            "indicator"
+          ],
+          "data_type": "float",
+          "required": true,
+          "validation_rules": null
+        },
+        "series": {
+          "standard_name": "series",
+          "aliases": [
+            "category",
+            "type",
+            "name"
+          ],
+          "data_type": "str",
+          "required": false,
+          "validation_rules": null
+        }
+      },
+      "validation_schema": {
+        "date": {
+          "type": "date",
+          "required": true
+        },
+        "value": {
+          "type": "float",
+          "required": true
+        }
+      },
+      "format_version": "1.0"
+    }
+  },
+  "version": "1.0",
+  "created_at": "2025-11-28T16:50:35.136572"
+}

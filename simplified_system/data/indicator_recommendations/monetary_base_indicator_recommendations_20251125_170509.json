@@ -1,0 +1,242 @@
+{
+  "data_source": "monetary_base",
+  "data_characteristics": {
+    "type": "monetary_base",
+    "length": 8704,
+    "has_date_column": true,
+    "numeric_columns": 9
+  },
+  "total_indicators_evaluated": 10,
+  "suitable_indicators_count": 10,
+  "indicators_by_category": {
+    "trend": [
+      {
+        "name": "SMA",
+        "suitability_score": 1,
+        "recommended_params": {
+          "min_period": 20,
+          "max_period": 200,
+          "sma_period": 65,
+          "ema_period": 30,
+          "rsi_period": 36
+        },
+        "reasons": [
+          "Suitable for monetary_base data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "High volatility may reduce indicator effectiveness"
+        ]
+      },
+      {
+        "name": "EMA",
+        "suitability_score": 1,
+        "recommended_params": {
+          "sma_period": 65,
+          "ema_period": 30,
+          "rsi_period": 36
+        },
+        "reasons": [
+          "Suitable for monetary_base data",
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "High volatility may reduce indicator effectiveness"
+        ]
+      },
+      {
+        "name": "MACD",
+        "suitability_score": 0.65,
+        "recommended_params": {
+          "sma_period": 65,
+          "ema_period": 30,
+          "rsi_period": 36
+        },
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for monetary_base data",
+          "High volatility may reduce indicator effectiveness"
+        ]
+      }
+    ],
+    "custom": [
+      {
+        "name": "Rate_Spread",
+        "suitability_score": 1,
+        "recommended_params": {
+          "sma_period": 65,
+          "ema_period": 30,
+          "rsi_period": 36
+        },
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for monetary_base data"
+        ]
+      },
+      {
+        "name": "Yield_Curve",
+        "suitability_score": 1,
+        "recommended_params": {
+          "sma_period": 65,
+          "ema_period": 30,
+          "rsi_period": 36
+        },
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for monetary_base data"
+        ]
+      }
+    ],
+    "momentum": [
+      {
+        "name": "RSI",
+        "suitability_score": 0.7,
+        "recommended_params": {
+          "sma_period": 65,
+          "ema_period": 30,
+          "rsi_period": 36
+        },
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for monetary_base data"
+        ]
+      },
+      {
+        "name": "CCI",
+        "suitability_score": 0.65,
+        "recommended_params": {
+          "sma_period": 65,
+          "ema_period": 30,
+          "rsi_period": 36
+        },
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for monetary_base data"
+        ]
+      },
+      {
+        "name": "Stochastic",
+        "suitability_score": 0.6,
+        "recommended_params": {
+          "sma_period": 65,
+          "ema_period": 30,
+          "rsi_period": 36
+        },
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for monetary_base data"
+        ]
+      }
+    ],
+    "volatility": [
+      {
+        "name": "Bollinger_Bands",
+        "suitability_score": 0.7,
+        "recommended_params": {
+          "sma_period": 65,
+          "ema_period": 30,
+          "rsi_period": 36
+        },
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for monetary_base data"
+        ]
+      },
+      {
+        "name": "ATR",
+        "suitability_score": 0.6,
+        "recommended_params": {
+          "sma_period": 65,
+          "ema_period": 30,
+          "rsi_period": 36
+        },
+        "reasons": [
+          "Sufficient data length (8704 records)"
+        ],
+        "limitations": [
+          "Not optimized for monetary_base data"
+        ]
+      }
+    ]
+  },
+  "top_recommendations": [
+    {
+      "name": "SMA",
+      "suitability_score": 1,
+      "category": "trend",
+      "recommended_params": {
+        "min_period": 20,
+        "max_period": 200,
+        "sma_period": 65,
+        "ema_period": 30,
+        "rsi_period": 36
+      },
+      "reasons": [
+        "Suitable for monetary_base data",
+        "Sufficient data length (8704 records)"
+      ]
+    },
+    {
+      "name": "EMA",
+      "suitability_score": 1,
+      "category": "trend",
+      "recommended_params": {
+        "sma_period": 65,
+        "ema_period": 30,
+        "rsi_period": 36
+      },
+      "reasons": [
+        "Suitable for monetary_base data",
+        "Sufficient data length (8704 records)"
+      ]
+    },
+    {
+      "name": "Rate_Spread",
+      "suitability_score": 1,
+      "category": "custom",
+      "recommended_params": {
+        "sma_period": 65,
+        "ema_period": 30,
+        "rsi_period": 36
+      },
+      "reasons": [
+        "Sufficient data length (8704 records)"
+      ]
+    },
+    {
+      "name": "Yield_Curve",
+      "suitability_score": 1,
+      "category": "custom",
+      "recommended_params": {
+        "sma_period": 65,
+        "ema_period": 30,
+        "rsi_period": 36
+      },
+      "reasons": [
+        "Sufficient data length (8704 records)"
+      ]
+    }
+  ],
+  "not_recommended": [],
+  "summary": {
+    "highly_suitable_count": 4,
+    "moderately_suitable_count": 6,
+    "not_suitable_count": 0,
+    "best_indicator": "SMA",
+    "best_score": 1
+  }
+}

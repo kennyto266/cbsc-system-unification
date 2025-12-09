@@ -1,0 +1,17 @@
+{
+  "summary": {
+    "total_strategies": 1166,
+    "successful_strategies": 0,
+    "success_rate": 0.0,
+    "best_sharpe": 0.0,
+    "best_return": 0.0
+  },
+  "top_strategies": [],
+  "analysis": {
+    "signal_generation_stats": {
+      "avg_signals_per_strategy": 0,
+      "strategies_with_signals": 0,
+      "max_signals": 0
+    }
+  }
+}

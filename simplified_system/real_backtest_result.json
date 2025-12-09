@@ -1,0 +1,16 @@
+{
+  "test_time": "2025-11-27T06:29:45.742047",
+  "data_source": "REAL_API",
+  "total_time": 0.4372289180755615,
+  "data_fetch_time": 0.43692874908447266,
+  "calculation_time": 0.0003001689910888672,
+  "data_points": 246,
+  "trades_executed": 0,
+  "strategy": "RSI_MEAN_REVERSION_18_25_70",
+  "performance": {
+    "total_return": 0,
+    "avg_return": 0,
+    "win_rate": 0,
+    "sharpe_ratio": 0
+  }
+}

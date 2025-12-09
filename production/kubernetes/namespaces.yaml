@@ -1,0 +1,111 @@
+# 生产环境Kubernetes命名空间配置
+
+---
+# 生产环境命名空间
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+  labels:
+    name: production
+    environment: production
+    security-level: high
+  annotations:
+    description: "生产环境命名空间，包含核心业务服务"
+    contact: "ops-team@example.com"
+    last-updated: "2025-12-09"
+
+---
+# 测试环境命名空间
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging
+  labels:
+    name: staging
+    environment: staging
+    security-level: medium
+  annotations:
+    description: "测试环境命名空间，用于UAT和集成测试"
+    contact: "dev-team@example.com"
+    last-updated: "2025-12-09"
+
+---
+# 监控命名空间
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    name: monitoring
+    environment: production
+    security-level: high
+    purpose: infrastructure
+  annotations:
+    description: "监控系统命名空间，包含Prometheus、Grafana等"
+    contact: "ops-team@example.com"
+    last-updated: "2025-12-09"
+
+---
+# 日志系统命名空间
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: logging
+  labels:
+    name: logging
+    environment: production
+    security-level: high
+    purpose: infrastructure
+  annotations:
+    description: "日志系统命名空间，包含ELK Stack"
+    contact: "ops-team@example.com"
+    last-updated: "2025-12-09"
+
+---
+# 网络策略命名空间
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: networking
+  labels:
+    name: networking
+    environment: production
+    security-level: high
+    purpose: infrastructure
+  annotations:
+    description: "网络基础设施命名空间，包含Ingress、服务网格等"
+    contact: "ops-team@example.com"
+    last-updated: "2025-12-09"
+
+---
+# 安全命名空间
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: security
+  labels:
+    name: security
+    environment: production
+    security-level: critical
+    purpose: security
+  annotations:
+    description: "安全系统命名空间，包含认证、授权、密钥管理等"
+    contact: "security-team@example.com"
+    last-updated: "2025-12-09"
+
+---
+# CI/CD命名空间
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cicd
+  labels:
+    name: cicd
+    environment: production
+    security-level: medium
+    purpose: automation
+  annotations:
+    description: "CI/CD系统命名空间，包含Runner、部署工具等"
+    contact: "devops-team@example.com"
+    last-updated: "2025-12-09"

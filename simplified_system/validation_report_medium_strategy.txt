@@ -1,0 +1,46 @@
+================================================================================
+ANTI-OVERFITTING VALIDATION REPORT
+Strategy: medium_strategy
+Validation Level: standard
+Generated: 2025-11-28 16:54:59
+================================================================================
+
+VALIDATION SUMMARY:
+------------------------------
+Validation Score: 0.00/100
+Overfitting Risk: CRITICAL
+Final Decision: ❌ REJECTED
+
+PERFORMANCE COMPARISON:
+------------------------------
+Metric               In-Sample       Out-of-Sample  
+--------------------------------------------------
+Total Return         2928264834718032199680.00% 6644535158663389558865920.00%
+Sharpe Ratio         16.990          62.399         
+Max Drawdown         -47.91%         0.00%          
+Win Rate             85.77%          100.00%        
+Trades Count         612.000         327.000        
+
+WALK-FORWARD ANALYSIS:
+------------------------------
+Total Windows: 20
+Successful Windows: 0 (0.0%)
+Average Trades per Window: 0.0
+Performance Stability: 0.299
+Performance Degradation: 0.00%
+
+STATISTICAL TESTS:
+------------------------------
+Distribution Stability (KS Test): UNSTABLE
+  KS Statistic: 0.7762
+  P-Value: 0.0000
+
+Overfitting Indicators:
+  Trade Frequency: 0.0 trades/window
+  Success Window Ratio: 0.0%
+  Performance Degradation: 0.00%
+
+RECOMMENDATIONS:
+------------------------------
+CRITICAL: Strategy shows severe overfitting symptoms
+   Recommendation: Discard strategy completely

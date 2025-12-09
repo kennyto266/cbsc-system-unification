@@ -1,0 +1,98 @@
+{
+  "test_timestamp": "2025-11-24T09:10:45.495649",
+  "stock_symbol": "0700.HK",
+  "test_duration_days": 90,
+  "components_tested": [
+    "parameter_space",
+    "entry_conditions",
+    "data_integration",
+    "backtest_engine"
+  ],
+  "performance_metrics": {
+    "parameter_generation": {
+      "execution_time": 0.0011131763458251953,
+      "rsi_combinations": 4980,
+      "total_combinations": 7460,
+      "validation_test_passed": true,
+      "validation_message": "Valid parameters",
+      "invalid_validation_message": "RSI oversold must be less than overbought"
+    },
+    "entry_conditions": {
+      "execution_time": 0.0005521774291992188,
+      "condition_results": {
+        "strict": {
+          "entry_signals": 21,
+          "exit_signals": 13,
+          "frequency_validation": true,
+          "frequency_message": "Signal frequency normal: Entry21.00%, Exit13.00%"
+        },
+        "moderate": {
+          "entry_signals": 29,
+          "exit_signals": 24,
+          "frequency_validation": true,
+          "frequency_message": "Signal frequency normal: Entry29.00%, Exit24.00%"
+        },
+        "relaxed": {
+          "entry_signals": 41,
+          "exit_signals": 31,
+          "frequency_validation": true,
+          "frequency_message": "Signal frequency normal: Entry41.00%, Exit31.00%"
+        }
+      },
+      "all_conditions_tested": true
+    },
+    "data_integration": {
+      "stock_records": 60,
+      "government_sources": 0,
+      "data_quality": "passed"
+    },
+    "backtest_engine": {
+      "execution_time": 0.0030143260955810547,
+      "total_tested": 10,
+      "successful": 10,
+      "failed": 0,
+      "success_rate": 100.0,
+      "avg_sharpe": -2.1925445867246935,
+      "max_sharpe": -1.6466353114944428,
+      "strategies_per_second": 3317.49110179546
+    }
+  },
+  "sample_results": [
+    {
+      "strategy_name": "RSI_5_25_75_strict",
+      "sharpe_ratio": -1.6466353114944428,
+      "total_return": -0.06764833493209033,
+      "max_drawdown": -0.07217997247154102,
+      "trade_frequency": 0.1
+    },
+    {
+      "strategy_name": "RSI_5_30_75_strict",
+      "sharpe_ratio": -1.6466353114944428,
+      "total_return": -0.06764833493209033,
+      "max_drawdown": -0.07217997247154102,
+      "trade_frequency": 0.15
+    },
+    {
+      "strategy_name": "RSI_5_25_65_strict",
+      "sharpe_ratio": -1.710300633406486,
+      "total_return": -0.042837325309933005,
+      "max_drawdown": -0.06761713538219816,
+      "trade_frequency": 0.1
+    },
+    {
+      "strategy_name": "RSI_5_25_70_strict",
+      "sharpe_ratio": -1.710300633406486,
+      "total_return": -0.042837325309933005,
+      "max_drawdown": -0.06761713538219816,
+      "trade_frequency": 0.1
+    },
+    {
+      "strategy_name": "RSI_5_20_60_moderate",
+      "sharpe_ratio": -1.9746625689100907,
+      "total_return": -0.0495700332757989,
+      "max_drawdown": -0.06761713538219816,
+      "trade_frequency": 0.1
+    }
+  ],
+  "errors": []
+}

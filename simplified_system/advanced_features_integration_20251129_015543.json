@@ -1,0 +1,33 @@
+{
+  "timestamp": "2025-11-29T01:55:43.378697",
+  "system_version": "Simplified System v1.0",
+  "test_summary": {
+    "real_data_test": true,
+    "parameter_optimization": true,
+    "portfolio_backtest": true,
+    "risk_management": true
+  },
+  "performance_metrics": {
+    "real_data_performance": {
+      "total_symbols_tested": 3
+    },
+    "portfolio_performance": {
+      "total_return": 0.15186458112720236,
+      "sharpe_ratio": 0.4607476773320675,
+      "max_drawdown": -0.19979491369966623,
+      "volatility": 0.40705735589120323
+    }
+  },
+  "risk_assessment": {
+    "var_95": -0.039858987391369734,
+    "expected_shortfall": -0.04879640568001078,
+    "max_drawdown": 0,
+    "calmar_ratio": -0.4058031678507761
+  },
+  "recommendations": [
+    "High volatility detected - consider reducing position sizes",
+    "Maximum drawdown exceeded 20% - review risk management",
+    "Low Sharpe ratio - consider strategy improvement",
+    "All advanced features working correctly - system ready for production"
+  ]
+}

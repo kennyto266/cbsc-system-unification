@@ -1,0 +1,55 @@
+{
+  "timestamp": "20251127_141138",
+  "stock": "0700.HK",
+  "analysis_period": "2020-01-01 to 2023-12-31",
+  "data_points": 1461,
+  "price_range": {
+    "min": 388.7077601029797,
+    "max": 618.6502952565381,
+    "current": 598.8923521281298
+  },
+  "top_factors": [
+    {
+      "name": "momentum_10",
+      "ic_mean": 0.4949552563615402,
+      "sharpe_ratio": 22.552305220426693,
+      "hit_rate": 0.0,
+      "composite_score": 79.56
+    },
+    {
+      "name": "reversal_10",
+      "ic_mean": -0.4949552563615402,
+      "sharpe_ratio": -22.718697044003836,
+      "hit_rate": 0.0,
+      "composite_score": 79.56
+    },
+    {
+      "name": "momentum_5",
+      "ic_mean": 0.4783092285330044,
+      "sharpe_ratio": 19.797345783970346,
+      "hit_rate": 0.0,
+      "composite_score": 79.15
+    },
+    {
+      "name": "reversal_5",
+      "ic_mean": -0.4783092285330044,
+      "sharpe_ratio": -20.036734307626315,
+      "hit_rate": 0.0,
+      "composite_score": 79.15
+    },
+    {
+      "name": "reversal_30",
+      "ic_mean": -0.4849397562111079,
+      "sharpe_ratio": -23.390242034936538,
+      "hit_rate": 0.0,
+      "composite_score": 78.8
+    }
+  ],
+  "strategic_recommendations": [
+    "STRONG: momentum_10 shows excellent predictive power (Sharpe: 22.552)",
+    "CONSIDER: Implement factor-based position sizing based on IC scores",
+    "MONITOR: Regular factor validation to maintain effectiveness",
+    "RISK: Use stop-losses and position sizing to control downside",
+    "DIVERSIFY: Combine alpha factors with other strategies"
+  ]
+}

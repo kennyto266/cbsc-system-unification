@@ -1,0 +1,55 @@
+{
+  "test_timestamp": "20251125_180229",
+  "total_test_time_seconds": 0.002663135528564453,
+  "test_statistics": {
+    "total_tests": 8,
+    "passed_tests": 4,
+    "failed_tests": 4,
+    "warned_tests": 0,
+    "success_rate": 50.0
+  },
+  "readiness_level": "NEEDS_FIXES",
+  "detailed_results": {
+    "data_setup": {
+      "status": "PASS",
+      "records": 100
+    },
+    "core_indicators": {
+      "status": "PASS",
+      "calculation_time": 0.0019872188568115234,
+      "indicators_tested": 5,
+      "sma_latest": 81.1806501356681,
+      "rsi_latest": 48.12189733737535
+    },
+    "extended_indicators": {
+      "status": "FAIL",
+      "error": "'tuple' object has no attribute 'iloc'"
+    },
+    "vectorbt_engine": {
+      "status": "FAIL",
+      "error": "'NoneType' object is not callable"
+    },
+    "massive_optimizer": {
+      "status": "PASS",
+      "optimization_time": 1.669682264328003,
+      "combinations_tested": 0,
+      "best_score": 0
+    },
+    "composite_signal_generator": {
+      "status": "FAIL",
+      "error": "'NoneType' object has no attribute 'index'"
+    },
+    "end_to_end_workflow": {
+      "status": "FAIL",
+      "error": "'NoneType' object has no attribute 'index'"
+    },
+    "performance_benchmarks": {
+      "status": "PASS",
+      "core_indicators_time_ms": 0.8090972900390625,
+      "extended_indicators_time_ms": 0.5310535430908203,
+      "core_performance": "PASS",
+      "extended_performance": "PASS",
+      "iterations": 5
+    }
+  }
+}

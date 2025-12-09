@@ -1,0 +1,42 @@
+{
+  "test_timestamp": "2025-11-23 19:36:58",
+  "total_tests": 4,
+  "passed_tests": 1,
+  "success_rate": 25.0,
+  "data_sources_status": {
+    "central_api": {
+      "status": "[ERROR] Invalid Structure"
+    },
+    "government_data": {
+      "status": "[OK] 0/3 compatible",
+      "compatible_sources": []
+    },
+    "backward_compatibility": {
+      "status": "[OK] 0/3 compatible",
+      "compatible_files": []
+    }
+  },
+  "test_results": [
+    {
+      "test_name": "Central API Compatibility",
+      "success": false,
+      "execution_time": 0.45951008796691895
+    },
+    {
+      "test_name": "Government Data Compatibility",
+      "success": false,
+      "execution_time": 0.00023627281188964844
+    },
+    {
+      "test_name": "Refactored System Integration",
+      "success": true,
+      "execution_time": 0.43167543411254883
+    },
+    {
+      "test_name": "Backward Compatibility",
+      "success": false,
+      "execution_time": 0.00018596649169921875
+    }
+  ],
+  "ready_for_production": false
+}

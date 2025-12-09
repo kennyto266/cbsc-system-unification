@@ -1,0 +1,42 @@
+{
+  "fetch_session": {
+    "start_time": "2025-11-27 00:40:01",
+    "limit_per_source": 1000,
+    "end_time": "2025-11-27 00:40:15"
+  },
+  "data_sources": {
+    "monetary_base": {
+      "success": true,
+      "data": [],
+      "source": {
+        "provider": "香港金融管理局",
+        "name": "貨幣基礎每日數字",
+        "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-monetary-base",
+        "frequency": "每日",
+        "format": "JSON"
+      },
+      "metadata": {
+        "total_records_available": 0,
+        "records_returned": 0,
+        "request_limit": 1000,
+        "fetch_time": "2025-11-27 00:40:01",
+        "response_time_ms": 1764175201768.7976
+      }
+    },
+    "hibor_rates": {
+      "success": false,
+      "error": "Fetch failed"
+    },
+    "exchange_rates": {
+      "success": false,
+      "error": "Fetch failed"
+    }
+  },
+  "summary": {
+    "total_sources": 3,
+    "successful_sources": 1,
+    "failed_sources": 2,
+    "total_records": 0,
+    "success_rate": "33.3%"
+  }
+}

@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>量化交易系统 - 前端界面</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .search-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .search-input {
+            flex: 1;
+            max-width: 400px;
+            padding: 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .search-btn {
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e1e8ed;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .tab.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .tab:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .chart-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #e1e8ed;
+        }
+        
+        .metrics-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #e1e8ed;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #e1e8ed;
+            transition: transform 0.2s;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-size: 18px;
+        }
+        
+        .error {
+            color: #e74c3c;
+            background: #fdf2f2;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .success {
+            color: #27ae60;
+            background: #f0f9f0;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #27ae60;
+        }
+        
+        .indicator-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .indicator-label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .indicator-value {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            .search-section {
+                flex-direction: column;
+            }
+            .search-input {
+                max-width: none;
+            }
+            .tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 量化交易系统</h1>
+            <p>智能分析 · 策略回测 · 风险评估</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="search-section">
+                <input type="text" id="stockInput" class="search-input" placeholder="输入股票代码 (如: 0700.HK, 2800.HK)" />
+                <button onclick="analyzeStock()" class="search-btn">🔍 分析股票</button>
+            </div>
+            
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('analysis')">技术分析</div>
+                <div class="tab" onclick="switchTab('backtest')">策略回测</div>
+                <div class="tab" onclick="switchTab('risk')">风险评估</div>
+                <div class="tab" onclick="switchTab('portfolio')">投资组合</div>
+            </div>
+            
+            <div id="loading" class="loading" style="display: none;">
+                <div>⏳ 正在分析中...</div>
+            </div>
+            
+            <div id="error" class="error" style="display: none;"></div>
+            
+            <!-- 技术分析标签页 -->
+            <div id="analysis" class="tab-content active">
+                <div id="analysisResults" style="display: none;">
+                    <div class="results-grid">
+                        <div class="chart-container">
+                            <h3>📊 价格走势图</h3>
+                            <canvas id="priceChart" width="400" height="300"></canvas>
+                        </div>
+                        <div class="metrics-container">
+                            <h3>📈 技术指标</h3>
+                            <div id="indicatorsList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 策略回测标签页 -->
+            <div id="backtest" class="tab-content">
+                <div id="backtestResults" style="display: none;">
+                    <h3>🔄 策略回测结果</h3>
+                    <div class="metrics-grid" id="backtestMetrics"></div>
+                </div>
+            </div>
+            
+            <!-- 风险评估标签页 -->
+            <div id="risk" class="tab-content">
+                <div id="riskResults" style="display: none;">
+                    <h3>⚠️ 风险评估</h3>
+                    <div class="metrics-grid" id="riskMetrics"></div>
+                    <div id="riskRecommendation"></div>
+                </div>
+            </div>
+            
+            <!-- 投资组合标签页 -->
+            <div id="portfolio" class="tab-content">
+                <div id="portfolioResults" style="display: none;">
+                    <h3>💼 投资组合管理</h3>
+                    <div class="metrics-grid" id="portfolioMetrics"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let priceChart = null;
+        let currentData = null;
+        
+        function switchTab(tabName) {
+            // 隐藏所有标签页内容
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的标签页
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        async function analyzeStock() {
+            const symbol = document.getElementById('stockInput').value.trim();
+            if (!symbol) {
+                showError('请输入股票代码');
+                return;
+            }
+            
+            showLoading(true);
+            hideError();
+            hideAllResults();
+            
+            try {
+                // 模拟API调用
+                const mockData = generateMockData(symbol);
+                currentData = mockData;
+                
+                displayAnalysisResults(mockData);
+                displayBacktestResults(mockData);
+                displayRiskResults(mockData);
+                displayPortfolioResults(mockData);
+                
+            } catch (error) {
+                showError('分析失败: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function generateMockData(symbol) {
+            // 生成模拟数据
+            const data = [];
+            const basePrice = 100 + Math.random() * 200;
+            let currentPrice = basePrice;
+            
+            for (let i = 0; i < 50; i++) {
+                const change = (Math.random() - 0.5) * 10;
+                currentPrice += change;
+                
+                data.push({
+                    timestamp: new Date(Date.now() - (49 - i) * 24 * 60 * 60 * 1000).toISOString(),
+                    open: currentPrice - Math.random() * 2,
+                    high: currentPrice + Math.random() * 3,
+                    low: currentPrice - Math.random() * 3,
+                    close: currentPrice,
+                    volume: Math.floor(Math.random() * 1000000) + 100000
+                });
+            }
+            
+            // 计算技术指标
+            const indicators = calculateIndicators(data);
+            const backtest = calculateBacktest(data);
+            const risk = calculateRisk(data);
+            const portfolio = calculatePortfolio(data);
+            
+            return {
+                symbol: symbol,
+                price_data: data,
+                indicators: indicators,
+                backtest: backtest,
+                risk: risk,
+                portfolio: portfolio
+            };
+        }
+        
+        function calculateIndicators(data) {
+            const prices = data.map(d => d.close);
+            const indicators = {};
+            
+            // SMA
+            if (prices.length >= 20) {
+                indicators.sma_20 = prices.slice(-20).reduce((a, b) => a + b) / 20;
+            }
+            if (prices.length >= 50) {
+                indicators.sma_50 = prices.slice(-50).reduce((a, b) => a + b) / 50;
+            }
+            
+            // RSI
+            if (prices.length >= 14) {
+                const gains = [];
+                const losses = [];
+                for (let i = 1; i < 14; i++) {
+                    const change = prices[i] - prices[i-1];
+                    if (change > 0) {
+                        gains.push(change);
+                        losses.push(0);
+                    } else {
+                        gains.push(0);
+                        losses.push(-change);
+                    }
+                }
+                const avgGain = gains.reduce((a, b) => a + b) / 14;
+                const avgLoss = losses.reduce((a, b) => a + b) / 14;
+                const rs = avgGain / avgLoss;
+                indicators.rsi = 100 - (100 / (1 + rs));
+            }
+            
+            // MACD
+            if (prices.length >= 26) {
+                const ema12 = calculateEMA(prices, 12);
+                const ema26 = calculateEMA(prices, 26);
+                indicators.macd = ema12 - ema26;
+            }
+            
+            return indicators;
+        }
+        
+        function calculateEMA(prices, period) {
+            const multiplier = 2 / (period + 1);
+            let ema = prices[0];
+            for (let i = 1; i < prices.length; i++) {
+                ema = (prices[i] * multiplier) + (ema * (1 - multiplier));
+            }
+            return ema;
+        }
+        
+        function calculateBacktest(data) {
+            const prices = data.map(d => d.close);
+            const initialPrice = prices[0];
+            const finalPrice = prices[prices.length - 1];
+            const totalReturn = ((finalPrice - initialPrice) / initialPrice) * 100;
+            
+            // 计算波动率
+            const returns = [];
+            for (let i = 1; i < prices.length; i++) {
+                returns.push((prices[i] - prices[i-1]) / prices[i-1]);
+            }
+            const volatility = Math.sqrt(returns.reduce((a, b) => a + b * b, 0) / returns.length) * Math.sqrt(252) * 100;
+            
+            // 计算夏普比率
+            const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+            const sharpeRatio = (avgReturn * 252) / (volatility / 100);
+            
+            return {
+                total_return: totalReturn,
+                volatility: volatility,
+                sharpe_ratio: sharpeRatio,
+                max_drawdown: -Math.random() * 20
+            };
+        }
+        
+        function calculateRisk(data) {
+            const prices = data.map(d => d.close);
+            const returns = [];
+            for (let i = 1; i < prices.length; i++) {
+                returns.push((prices[i] - prices[i-1]) / prices[i-1]);
+            }
+            
+            const volatility = Math.sqrt(returns.reduce((a, b) => a + b * b, 0) / returns.length) * Math.sqrt(252) * 100;
+            const riskScore = Math.min(volatility / 2, 50) + Math.random() * 30;
+            
+            let riskLevel = 'LOW';
+            if (riskScore > 60) riskLevel = 'HIGH';
+            else if (riskScore > 30) riskLevel = 'MEDIUM';
+            
+            return {
+                risk_level: riskLevel,
+                risk_score: riskScore,
+                volatility: volatility,
+                recommendation: riskLevel === 'LOW' ? '建议买入' : riskLevel === 'MEDIUM' ? '谨慎观察' : '建议避免'
+            };
+        }
+        
+        function calculatePortfolio(data) {
+            const prices = data.map(d => d.close);
+            const initialPrice = prices[0];
+            const finalPrice = prices[prices.length - 1];
+            const totalReturn = ((finalPrice - initialPrice) / initialPrice) * 100;
+            
+            return {
+                total_value: 100000 * (1 + totalReturn / 100),
+                total_return: totalReturn,
+                daily_pnl: totalReturn / prices.length,
+                positions: Math.floor(Math.random() * 10) + 1
+            };
+        }
+        
+        function displayAnalysisResults(data) {
+            displayChart(data.price_data);
+            displayIndicators(data.indicators);
+            document.getElementById('analysisResults').style.display = 'block';
+        }
+        
+        function displayChart(priceData) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            if (priceChart) {
+                priceChart.destroy();
+            }
+            
+            const recentData = priceData.slice(-30);
+            const labels = recentData.map(item => new Date(item.timestamp).toLocaleDateString());
+            const prices = recentData.map(item => item.close);
+            
+            priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '收盘价',
+                        data: prices,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+        
+        function displayIndicators(indicators) {
+            const container = document.getElementById('indicatorsList');
+            container.innerHTML = '';
+            
+            const indicatorItems = [
+                { label: 'SMA(20)', value: indicators.sma_20 },
+                { label: 'SMA(50)', value: indicators.sma_50 },
+                { label: 'RSI', value: indicators.rsi },
+                { label: 'MACD', value: indicators.macd }
+            ];
+            
+            indicatorItems.forEach(item => {
+                if (item.value !== null && item.value !== undefined) {
+                    const div = document.createElement('div');
+                    div.className = 'indicator-item';
+                    div.innerHTML = `
+                        <span class="indicator-label">${item.label}</span>
+                        <span class="indicator-value">${item.value.toFixed(2)}</span>
+                    `;
+                    container.appendChild(div);
+                }
+            });
+        }
+        
+        function displayBacktestResults(data) {
+            const container = document.getElementById('backtestMetrics');
+            container.innerHTML = `
+                <div class="metric-card">
+                    <div class="metric-value">${data.backtest.total_return.toFixed(2)}%</div>
+                    <div class="metric-label">总收益率</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${data.backtest.volatility.toFixed(2)}%</div>
+                    <div class="metric-label">波动率</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${data.backtest.sharpe_ratio.toFixed(2)}</div>
+                    <div class="metric-label">夏普比率</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${data.backtest.max_drawdown.toFixed(2)}%</div>
+                    <div class="metric-label">最大回撤</div>
+                </div>
+            `;
+            
+            document.getElementById('backtestResults').style.display = 'block';
+        }
+        
+        function displayRiskResults(data) {
+            const container = document.getElementById('riskMetrics');
+            const riskColor = data.risk.risk_level === 'LOW' ? '#28a745' : 
+                             data.risk.risk_level === 'MEDIUM' ? '#ffc107' : '#dc3545';
+            
+            container.innerHTML = `
+                <div class="metric-card">
+                    <div class="metric-value" style="color: ${riskColor};">${data.risk.risk_level}</div>
+                    <div class="metric-label">风险等级</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${data.risk.risk_score.toFixed(0)}</div>
+                    <div class="metric-label">风险评分</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${data.risk.volatility.toFixed(2)}%</div>
+                    <div class="metric-label">波动率</div>
+                </div>
+            `;
+            
+            const recDiv = document.getElementById('riskRecommendation');
+            recDiv.innerHTML = `
+                <div class="success">
+                    <h4>投资建议</h4>
+                    <p>${data.risk.recommendation}</p>
+                </div>
+            `;
+            
+            document.getElementById('riskResults').style.display = 'block';
+        }
+        
+        function displayPortfolioResults(data) {
+            const container = document.getElementById('portfolioMetrics');
+            container.innerHTML = `
+                <div class="metric-card">
+                    <div class="metric-value">¥${data.portfolio.total_value.toFixed(0)}</div>
+                    <div class="metric-label">总价值</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${data.portfolio.total_return.toFixed(2)}%</div>
+                    <div class="metric-label">总收益率</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${data.portfolio.daily_pnl.toFixed(2)}%</div>
+                    <div class="metric-label">日收益</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${data.portfolio.positions}</div>
+                    <div class="metric-label">持仓数量</div>
+                </div>
+            `;
+            
+            document.getElementById('portfolioResults').style.display = 'block';
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+        
+        function hideAllResults() {
+            document.getElementById('analysisResults').style.display = 'none';
+            document.getElementById('backtestResults').style.display = 'none';
+            document.getElementById('riskResults').style.display = 'none';
+            document.getElementById('portfolioResults').style.display = 'none';
+        }
+        
+        // 回车键搜索
+        document.getElementById('stockInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                analyzeStock();
+            }
+        });
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('量化交易系统前端界面已加载');
+        });
+    </script>
+</body>
+</html>

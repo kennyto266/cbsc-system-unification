@@ -1,0 +1,31 @@
+# Phase 2 Source Authentication Layer Requirements
+# 阶段2源认证层依赖
+
+# Core cryptography and security libraries
+cryptography>=41.0.0
+PyJWT>=2.8.0
+PyYAML>=6.0
+
+# DNS validation for endpoint verification
+dnspython>=2.4.0
+
+# HTTP/TLS handling (for certificate validation)
+requests>=2.31.0
+urllib3>=2.0.0
+
+# Testing framework
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.11.0
+
+# Development and debugging
+black>=23.7.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Optional: Advanced certificate validation
+certifi>=2023.7.0
+cffi>=1.15.0
+
+# Optional: Performance monitoring
+psutil>=5.9.0
