@@ -1,0 +1,51 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.18.2"
+  },
+  "cells": [
+    {
+      "id": "PKri",
+      "code_hash": "b72e0b8b7ee305b2209838bbd46044e1",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"_1\">\ud83c\udf89 \u6975\u7c21\u5be6\u65bd\u5b8c\u6210\uff01</h2>\n<h3 id=\"_2\">\u2705 \u5c08\u5bb6\u5be9\u67e5\u4e00\u81f4\u8a8d\u53ef</h3>\n<ul>\n<li>\u2705 <strong>\u6700\u5c0f\u98a8\u96aa</strong>: \u4e0d\u4fee\u6539\u751f\u7522\u7cfb\u7d71</li>\n<li>\u2705 <strong>\u5feb\u901f\u50f9\u503c</strong>: 2\u5929\u5be6\u65bd vs 12\u9031\u8a08\u5283</li>\n<li>\u2705 <strong>\u4f7f\u7528\u73fe\u6709\u529f\u80fd</strong>: \u6a21\u64ec <code>data_loader.py</code> \u6838\u5fc3\u908f\u8f2f</li>\n<li>\u2705 <strong>\u6f38\u9032\u5f0f\u6539\u9032</strong>: \u6309\u9700\u6dfb\u52a0\u529f\u80fd</li>\n</ul>\n<h3 id=\"_3\">\ud83d\ude80 \u5be6\u65bd\u6210\u679c</h3>\n<ul>\n<li>\u4e92\u52d5\u5f0f\u53c3\u6578\u8abf\u512a</li>\n<li>\u5373\u6642\u7b56\u7565\u53cd\u994b</li>\n<li>Git\u53cb\u597d\u683c\u5f0f</li>\n<li>\u96f6\u751f\u7522\u5f71\u97ff</li>\n</ul>\n<span class=\"paragraph\"><strong>\u9019\u5c31\u662f\u5c08\u5bb6\u63a8\u85a6\u7684\u6975\u7c21\u65b9\u6848\uff1a\u7528\u6700\u5c0f\u7684\u98a8\u96aa\u7372\u5f97\u6700\u5927\u7684\u50f9\u503c\uff01</strong></span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hbol",
+      "code_hash": "acd7161dbcc3050ba8c64bfb63b5db66",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "155bdd4df1db9d02def593b6b2be6d9b",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "015f0f4c7b3a89bdde5cdb3d921eadb0",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "798bbb8b66bd04a6775c66e7cf912663",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "7893f4fd7151fe007fa2a86e057d80eb",
+      "outputs": [],
+      "console": []
+    }
+  ]
+}

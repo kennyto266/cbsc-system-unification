@@ -1,0 +1,3185 @@
+{
+  "optimization_metadata": {
+    "timestamp": "2025-11-28T15:49:20.849726",
+    "total_strategies": 144,
+    "risk_constraints": {
+      "max_drawdown_limit": -0.15,
+      "min_sharpe_threshold": 0.8,
+      "min_trades_per_window": 8,
+      "max_volatility_limit": 0.35,
+      "min_win_rate": 0.42,
+      "correlation_limit": 0.7
+    },
+    "valid_strategies": 12
+  },
+  "results": [
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 30, 'overbought': 70}",
+      "params": {
+        "period": 25,
+        "oversold": 30,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": 0.818823037426601,
+      "walk_forward_return": 0.3139548617991041,
+      "walk_forward_drawdown": -0.06141568673950659,
+      "risk_adjusted_score": 0.7958710013989456,
+      "stability_score": 0.5755445398291984,
+      "trade_frequency": 14.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 25, 'overbought': 80}",
+      "params": {
+        "period": 20,
+        "oversold": 25,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.8346655317202105,
+      "walk_forward_return": -0.06731482373254663,
+      "walk_forward_drawdown": 0.1246995259523199,
+      "risk_adjusted_score": 0.608610429935297,
+      "stability_score": 0.7384508034691161,
+      "trade_frequency": 16.5,
+      "validation_passed": true,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 20, 'overbought': 65}",
+      "params": {
+        "period": 25,
+        "oversold": 20,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": 1.4856811999630168,
+      "walk_forward_return": 0.0051507375071532975,
+      "walk_forward_drawdown": -0.10491991826819924,
+      "risk_adjusted_score": 0.5846574437030101,
+      "stability_score": 0.5673362208371128,
+      "trade_frequency": 14.5,
+      "validation_passed": true,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 35, 'overbought': 70}",
+      "params": {
+        "period": 25,
+        "oversold": 35,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": 0.9289824677437819,
+      "walk_forward_return": 0.10667129477255247,
+      "walk_forward_drawdown": -0.16457387999147025,
+      "risk_adjusted_score": 0.5744250871389155,
+      "stability_score": 0.6262791571185188,
+      "trade_frequency": 13.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 20, 'overbought': 80}",
+      "params": {
+        "period": 14,
+        "oversold": 20,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.647022496202778,
+      "walk_forward_return": 0.10026496734190182,
+      "walk_forward_drawdown": -0.08452854433248698,
+      "risk_adjusted_score": 0.5364780792499684,
+      "stability_score": 0.8587412615189031,
+      "trade_frequency": 18.2,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 25, 'overbought': 80}",
+      "params": {
+        "period": 30,
+        "oversold": 25,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.9206724728923602,
+      "walk_forward_return": -0.0685837386473637,
+      "walk_forward_drawdown": -0.02120834314185159,
+      "risk_adjusted_score": 0.5341110491627138,
+      "stability_score": 0.5570266749688187,
+      "trade_frequency": 14.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 20, 'overbought': 80}",
+      "params": {
+        "period": 20,
+        "oversold": 20,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.9991703777656619,
+      "walk_forward_return": -0.017472329720207888,
+      "walk_forward_drawdown": -0.07516927012375449,
+      "risk_adjusted_score": 0.52344158070722,
+      "stability_score": 0.7276474937989871,
+      "trade_frequency": 17.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 30, 'overbought': 70}",
+      "params": {
+        "period": 14,
+        "oversold": 30,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": 0.8384938241038927,
+      "walk_forward_return": 0.0634950574835017,
+      "walk_forward_drawdown": -0.15893360472542006,
+      "risk_adjusted_score": 0.5166190128622578,
+      "stability_score": 0.8390860101548506,
+      "trade_frequency": 16.2,
+      "validation_passed": true,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 20, 'overbought': 75}",
+      "params": {
+        "period": 14,
+        "oversold": 20,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": 0.830995213713995,
+      "walk_forward_return": 0.08593943667956486,
+      "walk_forward_drawdown": -0.18864121458964006,
+      "risk_adjusted_score": 0.4979527462385318,
+      "stability_score": 0.8328543188211458,
+      "trade_frequency": 17.7,
+      "validation_passed": true,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 35, 'overbought': 80}",
+      "params": {
+        "period": 25,
+        "oversold": 35,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.834449035656818,
+      "walk_forward_return": -0.023870026070436277,
+      "walk_forward_drawdown": -0.080548082687415,
+      "risk_adjusted_score": 0.4937265191445388,
+      "stability_score": 0.6696351520337182,
+      "trade_frequency": 14.5,
+      "validation_passed": true,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 35, 'overbought': 80}",
+      "params": {
+        "period": 20,
+        "oversold": 35,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.7605033459295844,
+      "walk_forward_return": 0.05058639811124829,
+      "walk_forward_drawdown": -0.11544479955696049,
+      "risk_adjusted_score": 0.49232070613187484,
+      "stability_score": 0.7563873096413198,
+      "trade_frequency": 15.5,
+      "validation_passed": true,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 30, 'overbought': 65}",
+      "params": {
+        "period": 10,
+        "oversold": 30,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": 1.0690935285642902,
+      "walk_forward_return": -0.020127995917204766,
+      "walk_forward_drawdown": -0.18161966696855208,
+      "risk_adjusted_score": 0.4763163871758519,
+      "stability_score": 0.7484417466002168,
+      "trade_frequency": 16.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 30, 'overbought': 75}",
+      "params": {
+        "period": 30,
+        "oversold": 30,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": 0.49782272377010245,
+      "walk_forward_return": 0.03351380089384361,
+      "walk_forward_drawdown": 0.010322017937442265,
+      "risk_adjusted_score": 0.4667864010023535,
+      "stability_score": 0.639191612407035,
+      "trade_frequency": 13.5,
+      "validation_passed": true,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 30, 'signal': 12}",
+      "params": {
+        "fast": 10,
+        "slow": 30,
+        "signal": 12
+      },
+      "walk_forward_sharpe": 0.5960562625984124,
+      "walk_forward_return": 0.06829425705726132,
+      "walk_forward_drawdown": -0.09332622472798295,
+      "risk_adjusted_score": 0.4598099710281298,
+      "stability_score": 0.8334480927700664,
+      "trade_frequency": 9.359153929335399,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 20, 'signal': 9}",
+      "params": {
+        "fast": 10,
+        "slow": 20,
+        "signal": 9
+      },
+      "walk_forward_sharpe": 0.8792740671241932,
+      "walk_forward_return": -0.03638058703132799,
+      "walk_forward_drawdown": -0.16406599724251075,
+      "risk_adjusted_score": 0.4395864848825958,
+      "stability_score": 0.7968830153577473,
+      "trade_frequency": 6.7342276438342505,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 25, 'overbought': 70}",
+      "params": {
+        "period": 25,
+        "oversold": 25,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": 0.4824359705284837,
+      "walk_forward_return": -0.06843040840339909,
+      "walk_forward_drawdown": 0.031552496676387404,
+      "risk_adjusted_score": 0.42476228277354255,
+      "stability_score": 0.7134505354441197,
+      "trade_frequency": 14.5,
+      "validation_passed": true,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 30, 'signal': 8}",
+      "params": {
+        "fast": 12,
+        "slow": 30,
+        "signal": 8
+      },
+      "walk_forward_sharpe": 0.172050055635673,
+      "walk_forward_return": 0.04459341778334599,
+      "walk_forward_drawdown": 0.23683212126828568,
+      "risk_adjusted_score": 0.4055722888567653,
+      "stability_score": 0.9564605181329391,
+      "trade_frequency": 8.872286605121538,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 30, 'signal': 8}",
+      "params": {
+        "fast": 8,
+        "slow": 30,
+        "signal": 8
+      },
+      "walk_forward_sharpe": 0.5911282381018387,
+      "walk_forward_return": 0.028654453935880272,
+      "walk_forward_drawdown": -0.09635105651969707,
+      "risk_adjusted_score": 0.4055299775463891,
+      "stability_score": 0.8030382534488446,
+      "trade_frequency": 6.80487002779792,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 35, 'overbought': 80}",
+      "params": {
+        "period": 14,
+        "oversold": 35,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.409321967728093,
+      "walk_forward_return": 0.20974315843639646,
+      "walk_forward_drawdown": -0.21108343736866686,
+      "risk_adjusted_score": 0.39567760893915044,
+      "stability_score": 0.8618652858998525,
+      "trade_frequency": 16.7,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 20, 'overbought': 70}",
+      "params": {
+        "period": 10,
+        "oversold": 20,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": 0.31393982025606604,
+      "walk_forward_return": 0.1392272392306019,
+      "walk_forward_drawdown": -0.058738165823216816,
+      "risk_adjusted_score": 0.39504215515771823,
+      "stability_score": 0.8346009502137882,
+      "trade_frequency": 18.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 20, 'overbought': 75}",
+      "params": {
+        "period": 25,
+        "oversold": 20,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": 0.5227202371642041,
+      "walk_forward_return": 0.008240291100561185,
+      "walk_forward_drawdown": -0.1232114850511746,
+      "risk_adjusted_score": 0.3708960376539693,
+      "stability_score": 0.7267998634391123,
+      "trade_frequency": 15.5,
+      "validation_passed": true,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 20, 'overbought': 75}",
+      "params": {
+        "period": 20,
+        "oversold": 20,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": 1.2314187003887898,
+      "walk_forward_return": 0.06901428203502027,
+      "walk_forward_drawdown": -0.29886435901568265,
+      "risk_adjusted_score": 0.36735824067474854,
+      "stability_score": 0.6717587892568616,
+      "trade_frequency": 16.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 20, 'overbought': 80}",
+      "params": {
+        "period": 30,
+        "oversold": 20,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.36110220742099647,
+      "walk_forward_return": 0.05537362832207167,
+      "walk_forward_drawdown": 0.018162118377538825,
+      "risk_adjusted_score": 0.3658203662124331,
+      "stability_score": 0.6546917559891433,
+      "trade_frequency": 15.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 25, 'overbought': 65}",
+      "params": {
+        "period": 25,
+        "oversold": 25,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": 0.5910714212752668,
+      "walk_forward_return": -0.008488621405026577,
+      "walk_forward_drawdown": -0.15430875070437552,
+      "risk_adjusted_score": 0.36223594984699536,
+      "stability_score": 0.7153252226524467,
+      "trade_frequency": 14.0,
+      "validation_passed": true,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 35, 'overbought': 80}",
+      "params": {
+        "period": 10,
+        "oversold": 35,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.4594189414622588,
+      "walk_forward_return": 0.07087572166306509,
+      "walk_forward_drawdown": -0.07347018484879711,
+      "risk_adjusted_score": 0.3608644839667701,
+      "stability_score": 0.8331382692019352,
+      "trade_frequency": 17.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 35, 'overbought': 75}",
+      "params": {
+        "period": 30,
+        "oversold": 35,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": 0.32750377002077247,
+      "walk_forward_return": 0.09246999065749381,
+      "walk_forward_drawdown": -0.08245654573932477,
+      "risk_adjusted_score": 0.3308975350508048,
+      "stability_score": 0.64792604144404,
+      "trade_frequency": 13.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 30, 'overbought': 65}",
+      "params": {
+        "period": 25,
+        "oversold": 30,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": 0.42661725643786025,
+      "walk_forward_return": 0.06362764504064948,
+      "walk_forward_drawdown": -0.11819427764327425,
+      "risk_adjusted_score": 0.3229692771745759,
+      "stability_score": 0.7243545755801403,
+      "trade_frequency": 13.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 20, 'signal': 8}",
+      "params": {
+        "fast": 15,
+        "slow": 20,
+        "signal": 8
+      },
+      "walk_forward_sharpe": 0.5927798900004093,
+      "walk_forward_return": 0.009521641521002959,
+      "walk_forward_drawdown": -0.21339475385285722,
+      "risk_adjusted_score": 0.3193613307973949,
+      "stability_score": 0.8313628044929308,
+      "trade_frequency": 5.346380691521306,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 30, 'signal': 10}",
+      "params": {
+        "fast": 10,
+        "slow": 30,
+        "signal": 10
+      },
+      "walk_forward_sharpe": 0.6919227032795536,
+      "walk_forward_return": 0.13364487549291923,
+      "walk_forward_drawdown": -0.26234462227186106,
+      "risk_adjusted_score": 0.31859715558320967,
+      "stability_score": 0.7956868131779902,
+      "trade_frequency": 5.419871954527436,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": true,
+        "volatility_passed": false,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 30, 'signal': 8}",
+      "params": {
+        "fast": 10,
+        "slow": 30,
+        "signal": 8
+      },
+      "walk_forward_sharpe": 0.5199636558834633,
+      "walk_forward_return": -0.08204685024413734,
+      "walk_forward_drawdown": -0.17515289820306124,
+      "risk_adjusted_score": 0.30716185085289405,
+      "stability_score": 0.8415459961602659,
+      "trade_frequency": 7.488033430197081,
+      "validation_passed": true,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 30, 'overbought': 80}",
+      "params": {
+        "period": 30,
+        "oversold": 30,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.5096872861276661,
+      "walk_forward_return": -0.06783616241201368,
+      "walk_forward_drawdown": -0.17148331012323048,
+      "risk_adjusted_score": 0.30715663442775826,
+      "stability_score": 0.6257733981747178,
+      "trade_frequency": 14.0,
+      "validation_passed": true,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 30, 'overbought': 70}",
+      "params": {
+        "period": 20,
+        "oversold": 30,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": 0.47646760584534953,
+      "walk_forward_return": -0.07403424598132072,
+      "walk_forward_drawdown": -0.03395150436238675,
+      "risk_adjusted_score": 0.30296991839203485,
+      "stability_score": 0.7959106503653347,
+      "trade_frequency": 15.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 25, 'overbought': 75}",
+      "params": {
+        "period": 14,
+        "oversold": 25,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": 0.3514140343256383,
+      "walk_forward_return": 0.008524608412186607,
+      "walk_forward_drawdown": -0.0026527146310180577,
+      "risk_adjusted_score": 0.2979704080644587,
+      "stability_score": 0.9385894581416648,
+      "trade_frequency": 17.2,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 30, 'overbought': 80}",
+      "params": {
+        "period": 10,
+        "oversold": 30,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.28494639170585395,
+      "walk_forward_return": 0.039764592690184265,
+      "walk_forward_drawdown": -0.07418867532616671,
+      "risk_adjusted_score": 0.2887174015707372,
+      "stability_score": 0.8725874038189629,
+      "trade_frequency": 18.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 25, 'overbought': 70}",
+      "params": {
+        "period": 20,
+        "oversold": 25,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": 0.47786314366163285,
+      "walk_forward_return": 0.06051943229763862,
+      "walk_forward_drawdown": -0.1993124852235676,
+      "risk_adjusted_score": 0.27452933718910305,
+      "stability_score": 0.8001829986238483,
+      "trade_frequency": 15.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 26, 'signal': 12}",
+      "params": {
+        "fast": 15,
+        "slow": 26,
+        "signal": 12
+      },
+      "walk_forward_sharpe": 1.0621598724560584,
+      "walk_forward_return": -0.08969120373613759,
+      "walk_forward_drawdown": -0.4666508414932832,
+      "risk_adjusted_score": 0.2734255978463513,
+      "stability_score": 0.7264096200119443,
+      "trade_frequency": 7.644761604116974,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": true,
+        "volatility_passed": false,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 24, 'signal': 9}",
+      "params": {
+        "fast": 8,
+        "slow": 24,
+        "signal": 9
+      },
+      "walk_forward_sharpe": 0.49377225184028667,
+      "walk_forward_return": 0.13554323654112763,
+      "walk_forward_drawdown": -0.4044990703820283,
+      "risk_adjusted_score": 0.26936970924213866,
+      "stability_score": 0.7836346569573541,
+      "trade_frequency": 6.661457973383835,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": true,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 30, 'signal': 9}",
+      "params": {
+        "fast": 15,
+        "slow": 30,
+        "signal": 9
+      },
+      "walk_forward_sharpe": 0.4582784777382394,
+      "walk_forward_return": -0.02461351217138892,
+      "walk_forward_drawdown": -0.10925427760479954,
+      "risk_adjusted_score": 0.2662339757822257,
+      "stability_score": 0.8487490829864971,
+      "trade_frequency": 5.902368866089166,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 25, 'overbought': 65}",
+      "params": {
+        "period": 14,
+        "oversold": 25,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": 0.9310289547907231,
+      "walk_forward_return": 0.022313047066753636,
+      "walk_forward_drawdown": -0.4943694124907694,
+      "risk_adjusted_score": 0.26451685064886776,
+      "stability_score": 0.8373908251792949,
+      "trade_frequency": 16.2,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 20, 'overbought': 70}",
+      "params": {
+        "period": 30,
+        "oversold": 20,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": -0.1904731573232425,
+      "walk_forward_return": 0.08893250010971679,
+      "walk_forward_drawdown": 0.01935620767297852,
+      "risk_adjusted_score": 0.24106473259308567,
+      "stability_score": 0.6719436404095539,
+      "trade_frequency": 14.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 30, 'signal': 9}",
+      "params": {
+        "fast": 10,
+        "slow": 30,
+        "signal": 9
+      },
+      "walk_forward_sharpe": 0.1013501285570024,
+      "walk_forward_return": -0.03490919219339322,
+      "walk_forward_drawdown": 0.007689428209945656,
+      "risk_adjusted_score": 0.23958008533481667,
+      "stability_score": 0.9270274700649241,
+      "trade_frequency": 6.799071103433173,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 30, 'signal': 9}",
+      "params": {
+        "fast": 12,
+        "slow": 30,
+        "signal": 9
+      },
+      "walk_forward_sharpe": 0.608563467669771,
+      "walk_forward_return": 0.0771744946860746,
+      "walk_forward_drawdown": -0.5935120585295219,
+      "risk_adjusted_score": 0.2364165985689119,
+      "stability_score": 0.8728479238263466,
+      "trade_frequency": 9.445893178321606,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 25, 'overbought': 70}",
+      "params": {
+        "period": 30,
+        "oversold": 25,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": 0.06605185862079886,
+      "walk_forward_return": -0.02807520992140855,
+      "walk_forward_drawdown": 0.044640681656676534,
+      "risk_adjusted_score": 0.2357702123713979,
+      "stability_score": 0.7129662869227307,
+      "trade_frequency": 13.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 20, 'signal': 10}",
+      "params": {
+        "fast": 8,
+        "slow": 20,
+        "signal": 10
+      },
+      "walk_forward_sharpe": 0.06756138298779327,
+      "walk_forward_return": 0.08832872842925973,
+      "walk_forward_drawdown": -0.1227070543057554,
+      "risk_adjusted_score": 0.23470902608205124,
+      "stability_score": 0.8704079711367257,
+      "trade_frequency": 8.56687118301923,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 30, 'overbought': 75}",
+      "params": {
+        "period": 20,
+        "oversold": 30,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": -0.16288868065265658,
+      "walk_forward_return": 0.046980435497401093,
+      "walk_forward_drawdown": 0.0438929413373708,
+      "risk_adjusted_score": 0.23272087551145684,
+      "stability_score": 0.8571917413920902,
+      "trade_frequency": 15.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 20, 'overbought': 65}",
+      "params": {
+        "period": 10,
+        "oversold": 20,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": 0.11363313543783134,
+      "walk_forward_return": 0.06225356147584245,
+      "walk_forward_drawdown": -0.10227737542791689,
+      "risk_adjusted_score": 0.23126210227595997,
+      "stability_score": 0.893643290268414,
+      "trade_frequency": 17.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 35, 'overbought': 65}",
+      "params": {
+        "period": 20,
+        "oversold": 35,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": -0.21392751280882102,
+      "walk_forward_return": 0.11189466842555532,
+      "walk_forward_drawdown": -0.06439486449068138,
+      "risk_adjusted_score": 0.22381032662635905,
+      "stability_score": 0.8270471917233447,
+      "trade_frequency": 14.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 20, 'overbought': 70}",
+      "params": {
+        "period": 20,
+        "oversold": 20,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": -0.2048773648078531,
+      "walk_forward_return": 0.08139497745150806,
+      "walk_forward_drawdown": -0.013918113728078607,
+      "risk_adjusted_score": 0.22325756035062427,
+      "stability_score": 0.8387221133815217,
+      "trade_frequency": 16.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 20, 'signal': 12}",
+      "params": {
+        "fast": 15,
+        "slow": 20,
+        "signal": 12
+      },
+      "walk_forward_sharpe": 0.06996873538183661,
+      "walk_forward_return": 0.12456499842820783,
+      "walk_forward_drawdown": -0.2058951782194266,
+      "risk_adjusted_score": 0.22212340921087229,
+      "stability_score": 0.8801502112936247,
+      "trade_frequency": 9.438989314889323,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 24, 'signal': 12}",
+      "params": {
+        "fast": 15,
+        "slow": 24,
+        "signal": 12
+      },
+      "walk_forward_sharpe": 0.2501939794669355,
+      "walk_forward_return": 0.05532347354954536,
+      "walk_forward_drawdown": -0.1938744772261296,
+      "risk_adjusted_score": 0.2177915173771449,
+      "stability_score": 0.8731931789056624,
+      "trade_frequency": 4.234708905543563,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 20, 'signal': 10}",
+      "params": {
+        "fast": 10,
+        "slow": 20,
+        "signal": 10
+      },
+      "walk_forward_sharpe": -0.21624512263969778,
+      "walk_forward_return": 0.13919094745069338,
+      "walk_forward_drawdown": -0.09415190449189827,
+      "risk_adjusted_score": 0.21483430758126218,
+      "stability_score": 0.8731177192987082,
+      "trade_frequency": 8.520180478571715,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 20, 'signal': 8}",
+      "params": {
+        "fast": 8,
+        "slow": 20,
+        "signal": 8
+      },
+      "walk_forward_sharpe": 0.10223785799116153,
+      "walk_forward_return": 0.008745904362151112,
+      "walk_forward_drawdown": -0.033350265631736264,
+      "risk_adjusted_score": 0.21405197361445458,
+      "stability_score": 0.8911561666585338,
+      "trade_frequency": 8.187844545030414,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 30, 'overbought': 80}",
+      "params": {
+        "period": 20,
+        "oversold": 30,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.532560511142422,
+      "walk_forward_return": 0.060537469068384066,
+      "walk_forward_drawdown": -0.29453967143537046,
+      "risk_adjusted_score": 0.210645977451601,
+      "stability_score": 0.7910607584534682,
+      "trade_frequency": 16.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 30, 'overbought': 65}",
+      "params": {
+        "period": 20,
+        "oversold": 30,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": 0.555274978453109,
+      "walk_forward_return": 0.04449120956863177,
+      "walk_forward_drawdown": -0.3284340853053698,
+      "risk_adjusted_score": 0.21018184693298447,
+      "stability_score": 0.7926237670682713,
+      "trade_frequency": 14.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 30, 'signal': 12}",
+      "params": {
+        "fast": 12,
+        "slow": 30,
+        "signal": 12
+      },
+      "walk_forward_sharpe": 0.13856018371119463,
+      "walk_forward_return": -0.05489288021686369,
+      "walk_forward_drawdown": -0.0884153816443379,
+      "risk_adjusted_score": 0.19409296777213947,
+      "stability_score": 0.9586090093091797,
+      "trade_frequency": 5.793018927090912,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 35, 'overbought': 70}",
+      "params": {
+        "period": 14,
+        "oversold": 35,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": -0.272667268064286,
+      "walk_forward_return": 0.05530381426109038,
+      "walk_forward_drawdown": -0.011524951360884765,
+      "risk_adjusted_score": 0.18955651946633503,
+      "stability_score": 0.9361208505689221,
+      "trade_frequency": 15.7,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 20, 'overbought': 75}",
+      "params": {
+        "period": 30,
+        "oversold": 20,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": -0.13359803163538173,
+      "walk_forward_return": -0.010620898337071707,
+      "walk_forward_drawdown": 0.03185450883373166,
+      "risk_adjusted_score": 0.18920766664978067,
+      "stability_score": 0.7075266952817459,
+      "trade_frequency": 14.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 20, 'signal': 9}",
+      "params": {
+        "fast": 8,
+        "slow": 20,
+        "signal": 9
+      },
+      "walk_forward_sharpe": 0.6190295193021572,
+      "walk_forward_return": -0.025494283330149796,
+      "walk_forward_drawdown": -0.2909276813211416,
+      "risk_adjusted_score": 0.1890193702430823,
+      "stability_score": 0.7994414301173683,
+      "trade_frequency": 8.892801437307904,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 26, 'signal': 8}",
+      "params": {
+        "fast": 10,
+        "slow": 26,
+        "signal": 8
+      },
+      "walk_forward_sharpe": 0.5473940546995486,
+      "walk_forward_return": -0.09278807174545264,
+      "walk_forward_drawdown": -0.24218097678789266,
+      "risk_adjusted_score": 0.1879186998113024,
+      "stability_score": 0.8333938558571465,
+      "trade_frequency": 8.925166042141626,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": true,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 35, 'overbought': 75}",
+      "params": {
+        "period": 25,
+        "oversold": 35,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": 0.2839001229993479,
+      "walk_forward_return": -0.029777497378785246,
+      "walk_forward_drawdown": -0.17453137921154233,
+      "risk_adjusted_score": 0.18759854013897947,
+      "stability_score": 0.7594241470405135,
+      "trade_frequency": 14.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 20, 'signal': 12}",
+      "params": {
+        "fast": 10,
+        "slow": 20,
+        "signal": 12
+      },
+      "walk_forward_sharpe": 0.020064503173376345,
+      "walk_forward_return": 0.021000520344301103,
+      "walk_forward_drawdown": -0.07855363102783458,
+      "risk_adjusted_score": 0.18649894617582122,
+      "stability_score": 0.9452112982452258,
+      "trade_frequency": 5.1820544745688375,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 30, 'overbought': 65}",
+      "params": {
+        "period": 14,
+        "oversold": 30,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": 0.33780053263664855,
+      "walk_forward_return": 0.09365515882765557,
+      "walk_forward_drawdown": -0.24357122445204463,
+      "risk_adjusted_score": 0.18445410020356057,
+      "stability_score": 0.9124815249513402,
+      "trade_frequency": 15.7,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 24, 'signal': 8}",
+      "params": {
+        "fast": 12,
+        "slow": 24,
+        "signal": 8
+      },
+      "walk_forward_sharpe": 0.3010821175788138,
+      "walk_forward_return": -0.06826817003029119,
+      "walk_forward_drawdown": -0.17001026308547273,
+      "risk_adjusted_score": 0.18198154640101105,
+      "stability_score": 0.927063590393434,
+      "trade_frequency": 9.10486736260906,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 25, 'overbought': 80}",
+      "params": {
+        "period": 10,
+        "oversold": 25,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": -0.10812184805083765,
+      "walk_forward_return": 0.0531773513759254,
+      "walk_forward_drawdown": -0.06630722147440335,
+      "risk_adjusted_score": 0.1811980437904698,
+      "stability_score": 0.8975872415328853,
+      "trade_frequency": 18.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 25, 'overbought': 80}",
+      "params": {
+        "period": 25,
+        "oversold": 25,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": -0.28032388628485383,
+      "walk_forward_return": 0.06705883947761758,
+      "walk_forward_drawdown": -0.014159447499366803,
+      "risk_adjusted_score": 0.1811179484852374,
+      "stability_score": 0.7475930724599852,
+      "trade_frequency": 15.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 30, 'overbought': 75}",
+      "params": {
+        "period": 25,
+        "oversold": 30,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": 0.5443052258367683,
+      "walk_forward_return": 0.0013548066519740824,
+      "walk_forward_drawdown": -0.2727390257445086,
+      "risk_adjusted_score": 0.18100826122971983,
+      "stability_score": 0.7254975268098806,
+      "trade_frequency": 14.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": true,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 35, 'overbought': 80}",
+      "params": {
+        "period": 30,
+        "oversold": 35,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.4448337650232357,
+      "walk_forward_return": 0.07222216314427092,
+      "walk_forward_drawdown": -0.26521535495129805,
+      "risk_adjusted_score": 0.1805100208751595,
+      "stability_score": 0.6351203181147037,
+      "trade_frequency": 13.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 30, 'overbought': 65}",
+      "params": {
+        "period": 30,
+        "oversold": 30,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": -0.509213832566131,
+      "walk_forward_return": 0.13309549667995865,
+      "walk_forward_drawdown": -0.04042034974140485,
+      "risk_adjusted_score": 0.17823244875856414,
+      "stability_score": 0.604099195678992,
+      "trade_frequency": 12.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 25, 'overbought': 75}",
+      "params": {
+        "period": 20,
+        "oversold": 25,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": 0.025410472221275713,
+      "walk_forward_return": -0.033743996925217776,
+      "walk_forward_drawdown": -0.08237793391563963,
+      "risk_adjusted_score": 0.17445456064216158,
+      "stability_score": 0.8845169223213815,
+      "trade_frequency": 16.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 20, 'signal': 9}",
+      "params": {
+        "fast": 15,
+        "slow": 20,
+        "signal": 9
+      },
+      "walk_forward_sharpe": -0.09858164119446901,
+      "walk_forward_return": -0.04167705207969582,
+      "walk_forward_drawdown": 0.01230572744456701,
+      "risk_adjusted_score": 0.17133654425233757,
+      "stability_score": 0.90301070910769,
+      "trade_frequency": 3.0324241610322202,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 20, 'overbought': 80}",
+      "params": {
+        "period": 25,
+        "oversold": 20,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": -0.037181871525441224,
+      "walk_forward_return": 0.019537831550734543,
+      "walk_forward_drawdown": -0.08675402461156705,
+      "risk_adjusted_score": 0.16381468490886464,
+      "stability_score": 0.8039570775621816,
+      "trade_frequency": 16.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 25, 'overbought': 65}",
+      "params": {
+        "period": 30,
+        "oversold": 25,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": -0.052432354975800684,
+      "walk_forward_return": -0.08895274744655099,
+      "walk_forward_drawdown": -0.02797066209760527,
+      "risk_adjusted_score": 0.16344579594817782,
+      "stability_score": 0.6949436916885162,
+      "trade_frequency": 13.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 30, 'overbought': 70}",
+      "params": {
+        "period": 30,
+        "oversold": 30,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": 0.08282038760085543,
+      "walk_forward_return": 0.02576747957646903,
+      "walk_forward_drawdown": -0.17269240714594075,
+      "risk_adjusted_score": 0.16077821389303312,
+      "stability_score": 0.7109407755410343,
+      "trade_frequency": 13.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 30, 'overbought': 70}",
+      "params": {
+        "period": 10,
+        "oversold": 30,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": 0.06986378216066086,
+      "walk_forward_return": -0.05432831967169253,
+      "walk_forward_drawdown": -0.1332781304092652,
+      "risk_adjusted_score": 0.15544920718239705,
+      "stability_score": 0.9035799297493258,
+      "trade_frequency": 17.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 35, 'overbought': 75}",
+      "params": {
+        "period": 14,
+        "oversold": 35,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": 0.1672733397843759,
+      "walk_forward_return": -0.11890784114742811,
+      "walk_forward_drawdown": -0.17277237480707683,
+      "risk_adjusted_score": 0.1456964474087257,
+      "stability_score": 0.9324851629867946,
+      "trade_frequency": 16.2,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 20, 'overbought': 70}",
+      "params": {
+        "period": 25,
+        "oversold": 20,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": 0.200150430945611,
+      "walk_forward_return": -0.03928681673122119,
+      "walk_forward_drawdown": -0.19647261805173794,
+      "risk_adjusted_score": 0.14483870826367193,
+      "stability_score": 0.770212655931991,
+      "trade_frequency": 15.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 20, 'signal': 8}",
+      "params": {
+        "fast": 10,
+        "slow": 20,
+        "signal": 8
+      },
+      "walk_forward_sharpe": 0.06453326428144615,
+      "walk_forward_return": 0.023445548908625005,
+      "walk_forward_drawdown": -0.21034858521767524,
+      "risk_adjusted_score": 0.13879394616609725,
+      "stability_score": 0.9369848285391061,
+      "trade_frequency": 8.558176324892072,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 20, 'overbought': 70}",
+      "params": {
+        "period": 14,
+        "oversold": 20,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": 0.09468858179008552,
+      "walk_forward_return": 0.09816588453417693,
+      "walk_forward_drawdown": -0.22924599704235604,
+      "risk_adjusted_score": 0.1379205839220193,
+      "stability_score": 0.95149660819026,
+      "trade_frequency": 17.2,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 26, 'signal': 8}",
+      "params": {
+        "fast": 12,
+        "slow": 26,
+        "signal": 8
+      },
+      "walk_forward_sharpe": 0.0726948787098223,
+      "walk_forward_return": 0.12788350797498335,
+      "walk_forward_drawdown": -0.32995882619888783,
+      "risk_adjusted_score": 0.13378354893668284,
+      "stability_score": 0.9452563508900352,
+      "trade_frequency": 7.247005324679991,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 20, 'overbought': 75}",
+      "params": {
+        "period": 10,
+        "oversold": 20,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": 0.440428820921263,
+      "walk_forward_return": -0.010210578945121403,
+      "walk_forward_drawdown": -0.23561012313749546,
+      "risk_adjusted_score": 0.13376353694902438,
+      "stability_score": 0.8565250035314156,
+      "trade_frequency": 18.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 30, 'signal': 8}",
+      "params": {
+        "fast": 15,
+        "slow": 30,
+        "signal": 8
+      },
+      "walk_forward_sharpe": -0.07843999592273711,
+      "walk_forward_return": -0.041624801917037144,
+      "walk_forward_drawdown": -0.07405607861783389,
+      "risk_adjusted_score": 0.13369746820542236,
+      "stability_score": 0.9063850667071982,
+      "trade_frequency": 9.727492222286186,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 20, 'overbought': 65}",
+      "params": {
+        "period": 14,
+        "oversold": 20,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": 0.03157805959141699,
+      "walk_forward_return": -0.03794131424169788,
+      "walk_forward_drawdown": -0.14024838823157232,
+      "risk_adjusted_score": 0.13356322809733623,
+      "stability_score": 0.9820898853208645,
+      "trade_frequency": 16.7,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 24, 'signal': 10}",
+      "params": {
+        "fast": 8,
+        "slow": 24,
+        "signal": 10
+      },
+      "walk_forward_sharpe": 0.28620438333514076,
+      "walk_forward_return": 0.04744718902312931,
+      "walk_forward_drawdown": -0.2268370159270372,
+      "risk_adjusted_score": 0.13319049713495493,
+      "stability_score": 0.8475946508808779,
+      "trade_frequency": 9.140403785691758,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 24, 'signal': 12}",
+      "params": {
+        "fast": 10,
+        "slow": 24,
+        "signal": 12
+      },
+      "walk_forward_sharpe": 0.03349999831491373,
+      "walk_forward_return": 0.11988752595126122,
+      "walk_forward_drawdown": -0.2673331783480816,
+      "risk_adjusted_score": 0.13223065983188242,
+      "stability_score": 0.9100097138526495,
+      "trade_frequency": 8.74880113270409,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 26, 'signal': 12}",
+      "params": {
+        "fast": 8,
+        "slow": 26,
+        "signal": 12
+      },
+      "walk_forward_sharpe": -0.17912187958959216,
+      "walk_forward_return": -0.07444782646259332,
+      "walk_forward_drawdown": -0.02098329506277427,
+      "risk_adjusted_score": 0.13104709194339723,
+      "stability_score": 0.856441522358648,
+      "trade_frequency": 9.297022012921978,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 20, 'signal': 12}",
+      "params": {
+        "fast": 12,
+        "slow": 20,
+        "signal": 12
+      },
+      "walk_forward_sharpe": 0.0577683097174059,
+      "walk_forward_return": 0.0066671380662028734,
+      "walk_forward_drawdown": -0.16453210093716342,
+      "risk_adjusted_score": 0.12994491994860938,
+      "stability_score": 0.9881495690250314,
+      "trade_frequency": 7.280179648042535,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 25, 'overbought': 70}",
+      "params": {
+        "period": 14,
+        "oversold": 25,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": -0.5010002201238734,
+      "walk_forward_return": 0.08664268782814179,
+      "walk_forward_drawdown": -0.054901005919269476,
+      "risk_adjusted_score": 0.12450208171299236,
+      "stability_score": 0.8876190673699739,
+      "trade_frequency": 16.7,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 26, 'signal': 9}",
+      "params": {
+        "fast": 10,
+        "slow": 26,
+        "signal": 9
+      },
+      "walk_forward_sharpe": 0.020893680928012002,
+      "walk_forward_return": 0.0842689787184077,
+      "walk_forward_drawdown": -0.23332274374465106,
+      "risk_adjusted_score": 0.11954908572841405,
+      "stability_score": 0.9239836158280843,
+      "trade_frequency": 5.781011033922571,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 26, 'signal': 9}",
+      "params": {
+        "fast": 12,
+        "slow": 26,
+        "signal": 9
+      },
+      "walk_forward_sharpe": 0.36648753525618355,
+      "walk_forward_return": 0.02283879464405332,
+      "walk_forward_drawdown": -0.3180545583803328,
+      "risk_adjusted_score": 0.11592943938040356,
+      "stability_score": 0.9313058125759516,
+      "trade_frequency": 8.15510964937306,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 35, 'overbought': 65}",
+      "params": {
+        "period": 30,
+        "oversold": 35,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": -0.11889576951388503,
+      "walk_forward_return": 0.04607439008012745,
+      "walk_forward_drawdown": -0.20497467004287304,
+      "risk_adjusted_score": 0.11548305938028765,
+      "stability_score": 0.6981592417209767,
+      "trade_frequency": 12.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 25, 'overbought': 70}",
+      "params": {
+        "period": 10,
+        "oversold": 25,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": -0.12214798124364042,
+      "walk_forward_return": -0.08092277760014685,
+      "walk_forward_drawdown": -0.108273543970487,
+      "risk_adjusted_score": 0.11402294140602949,
+      "stability_score": 0.8860010772593444,
+      "trade_frequency": 17.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 30, 'signal': 12}",
+      "params": {
+        "fast": 15,
+        "slow": 30,
+        "signal": 12
+      },
+      "walk_forward_sharpe": 0.12110254238053454,
+      "walk_forward_return": -0.00218272316257956,
+      "walk_forward_drawdown": -0.21159091212815256,
+      "risk_adjusted_score": 0.1117951184211037,
+      "stability_score": 0.9124220018823843,
+      "trade_frequency": 7.167695121240307,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 35, 'overbought': 70}",
+      "params": {
+        "period": 20,
+        "oversold": 35,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": -0.23646772319009982,
+      "walk_forward_return": 0.055958569520237374,
+      "walk_forward_drawdown": -0.16249657770860287,
+      "risk_adjusted_score": 0.10482250505090614,
+      "stability_score": 0.8419358562949043,
+      "trade_frequency": 14.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 26, 'signal': 8}",
+      "params": {
+        "fast": 8,
+        "slow": 26,
+        "signal": 8
+      },
+      "walk_forward_sharpe": -0.055698902995077626,
+      "walk_forward_return": -0.03952983180755069,
+      "walk_forward_drawdown": -0.16306028185865634,
+      "risk_adjusted_score": 0.10101870906295285,
+      "stability_score": 0.8886513500094146,
+      "trade_frequency": 5.638611005974353,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 24, 'signal': 9}",
+      "params": {
+        "fast": 12,
+        "slow": 24,
+        "signal": 9
+      },
+      "walk_forward_sharpe": 0.32905249138024856,
+      "walk_forward_return": -0.046392787179641314,
+      "walk_forward_drawdown": -0.2686038462046565,
+      "risk_adjusted_score": 0.10070691803099092,
+      "stability_score": 0.9296936557100781,
+      "trade_frequency": 6.9559322851244625,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 30, 'signal': 10}",
+      "params": {
+        "fast": 8,
+        "slow": 30,
+        "signal": 10
+      },
+      "walk_forward_sharpe": -0.23780313967883623,
+      "walk_forward_return": 0.029363113620285368,
+      "walk_forward_drawdown": -0.14709802286382412,
+      "risk_adjusted_score": 0.09741428079713377,
+      "stability_score": 0.8616895499578767,
+      "trade_frequency": 9.578824865294326,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 25, 'overbought': 65}",
+      "params": {
+        "period": 10,
+        "oversold": 25,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": 0.33083871964573147,
+      "walk_forward_return": -0.050962334025081775,
+      "walk_forward_drawdown": -0.2889628890625453,
+      "risk_adjusted_score": 0.0959390581520325,
+      "stability_score": 0.8612061020506842,
+      "trade_frequency": 17.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 20, 'overbought': 65}",
+      "params": {
+        "period": 30,
+        "oversold": 20,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": 0.2694980710893252,
+      "walk_forward_return": -0.12688569399932054,
+      "walk_forward_drawdown": -0.25941437577220655,
+      "risk_adjusted_score": 0.09523299284957164,
+      "stability_score": 0.6461217568186722,
+      "trade_frequency": 13.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 20, 'overbought': 65}",
+      "params": {
+        "period": 20,
+        "oversold": 20,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": -0.3809654580573754,
+      "walk_forward_return": 0.022396617272106754,
+      "walk_forward_drawdown": -0.042861262258197516,
+      "risk_adjusted_score": 0.09475392495070131,
+      "stability_score": 0.8290402178997353,
+      "trade_frequency": 15.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 30, 'overbought': 80}",
+      "params": {
+        "period": 25,
+        "oversold": 30,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.1609746518209828,
+      "walk_forward_return": 0.0072386044944993365,
+      "walk_forward_drawdown": -0.24415952902200766,
+      "risk_adjusted_score": 0.0872764829217581,
+      "stability_score": 0.787424689865003,
+      "trade_frequency": 15.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 24, 'signal': 8}",
+      "params": {
+        "fast": 8,
+        "slow": 24,
+        "signal": 8
+      },
+      "walk_forward_sharpe": 0.27425652915728893,
+      "walk_forward_return": 0.01581975789956309,
+      "walk_forward_drawdown": -0.3477331024850209,
+      "risk_adjusted_score": 0.08635137038239449,
+      "stability_score": 0.8601284369517086,
+      "trade_frequency": 8.702023041619675,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 26, 'signal': 9}",
+      "params": {
+        "fast": 15,
+        "slow": 26,
+        "signal": 9
+      },
+      "walk_forward_sharpe": 0.16071264592321527,
+      "walk_forward_return": 0.044235920115589564,
+      "walk_forward_drawdown": -0.6361432266689552,
+      "risk_adjusted_score": 0.0833987157279164,
+      "stability_score": 0.8918025856409342,
+      "trade_frequency": 5.536757293816432,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 24, 'signal': 10}",
+      "params": {
+        "fast": 10,
+        "slow": 24,
+        "signal": 10
+      },
+      "walk_forward_sharpe": 0.23709090174234204,
+      "walk_forward_return": -0.043904880280901476,
+      "walk_forward_drawdown": -0.42303498105309634,
+      "risk_adjusted_score": 0.07952680684558461,
+      "stability_score": 0.9014054451715315,
+      "trade_frequency": 9.137359457332245,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 26, 'signal': 9}",
+      "params": {
+        "fast": 8,
+        "slow": 26,
+        "signal": 9
+      },
+      "walk_forward_sharpe": -0.09598922648492164,
+      "walk_forward_return": -0.023823473168238476,
+      "walk_forward_drawdown": -0.19442659087087993,
+      "risk_adjusted_score": 0.07843333256252016,
+      "stability_score": 0.8871717489742114,
+      "trade_frequency": 5.109645119148995,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 26, 'signal': 10}",
+      "params": {
+        "fast": 15,
+        "slow": 26,
+        "signal": 10
+      },
+      "walk_forward_sharpe": -0.2655539850375871,
+      "walk_forward_return": 0.02558335010328891,
+      "walk_forward_drawdown": -0.1292111311833939,
+      "risk_adjusted_score": 0.0765377219579049,
+      "stability_score": 0.8805465524593058,
+      "trade_frequency": 7.425850015436713,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 25, 'overbought': 65}",
+      "params": {
+        "period": 20,
+        "oversold": 25,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": 0.21291022790689312,
+      "walk_forward_return": -0.09129975732995996,
+      "walk_forward_drawdown": -0.3074764456471326,
+      "risk_adjusted_score": 0.07375099654274148,
+      "stability_score": 0.8340817095721977,
+      "trade_frequency": 15.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 30, 'signal': 10}",
+      "params": {
+        "fast": 15,
+        "slow": 30,
+        "signal": 10
+      },
+      "walk_forward_sharpe": -0.2268822919693716,
+      "walk_forward_return": -0.13829867000763735,
+      "walk_forward_drawdown": -0.13843918092291896,
+      "risk_adjusted_score": 0.07359869143618294,
+      "stability_score": 0.8494200613358922,
+      "trade_frequency": 9.978119762921631,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 26, 'signal': 8}",
+      "params": {
+        "fast": 15,
+        "slow": 26,
+        "signal": 8
+      },
+      "walk_forward_sharpe": 0.2556096692567766,
+      "walk_forward_return": -0.09016431686728231,
+      "walk_forward_drawdown": -0.324393563841877,
+      "risk_adjusted_score": 0.07275161609952294,
+      "stability_score": 0.8606769495014431,
+      "trade_frequency": 5.932478146531835,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 35, 'overbought': 75}",
+      "params": {
+        "period": 10,
+        "oversold": 35,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": -0.00483949459983195,
+      "walk_forward_return": 0.049306297704609627,
+      "walk_forward_drawdown": -0.26123064003671503,
+      "risk_adjusted_score": 0.06919712568616529,
+      "stability_score": 0.9160913183318248,
+      "trade_frequency": 17.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 24, 'signal': 10}",
+      "params": {
+        "fast": 12,
+        "slow": 24,
+        "signal": 10
+      },
+      "walk_forward_sharpe": 0.24145674558642394,
+      "walk_forward_return": -0.04914356278013262,
+      "walk_forward_drawdown": -0.3045386427558661,
+      "risk_adjusted_score": 0.0676457019786485,
+      "stability_score": 0.9433760214755518,
+      "trade_frequency": 9.45749566824107,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 30, 'overbought': 75}",
+      "params": {
+        "period": 14,
+        "oversold": 30,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": 0.02272216963307123,
+      "walk_forward_return": -0.027653982040801425,
+      "walk_forward_drawdown": -0.22705297837585892,
+      "risk_adjusted_score": 0.06761767447201719,
+      "stability_score": 0.986994977714221,
+      "trade_frequency": 16.7,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 25, 'overbought': 75}",
+      "params": {
+        "period": 10,
+        "oversold": 25,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": 0.23324284306073573,
+      "walk_forward_return": -0.015828704339388697,
+      "walk_forward_drawdown": -0.3181192292906763,
+      "risk_adjusted_score": 0.06703153080015671,
+      "stability_score": 0.889183291376748,
+      "trade_frequency": 18.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 25, 'overbought': 75}",
+      "params": {
+        "period": 25,
+        "oversold": 25,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": -0.36862574295869915,
+      "walk_forward_return": 0.029365653883449992,
+      "walk_forward_drawdown": -0.137065516758206,
+      "risk_adjusted_score": 0.06551759845196878,
+      "stability_score": 0.7454404915457333,
+      "trade_frequency": 15.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 25, 'overbought': 80}",
+      "params": {
+        "period": 14,
+        "oversold": 25,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": 0.07816251757841926,
+      "walk_forward_return": -0.013870266370523548,
+      "walk_forward_drawdown": -0.23122425528476676,
+      "risk_adjusted_score": 0.06537513226752596,
+      "stability_score": 0.9823494916134222,
+      "trade_frequency": 17.7,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 26, 'signal': 10}",
+      "params": {
+        "fast": 8,
+        "slow": 26,
+        "signal": 10
+      },
+      "walk_forward_sharpe": 0.14353797744874905,
+      "walk_forward_return": -0.018262298337099366,
+      "walk_forward_drawdown": -0.44221265122459863,
+      "risk_adjusted_score": 0.06004878852035921,
+      "stability_score": 0.8811006820906199,
+      "trade_frequency": 6.519042730647354,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 35, 'overbought': 70}",
+      "params": {
+        "period": 30,
+        "oversold": 35,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": -0.11867383915501398,
+      "walk_forward_return": -0.011975070099412462,
+      "walk_forward_drawdown": -0.22265863690996318,
+      "risk_adjusted_score": 0.05832406184208886,
+      "stability_score": 0.7095626701076935,
+      "trade_frequency": 12.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 20, 'signal': 9}",
+      "params": {
+        "fast": 12,
+        "slow": 20,
+        "signal": 9
+      },
+      "walk_forward_sharpe": 0.13204839090243214,
+      "walk_forward_return": -0.11235393066560603,
+      "walk_forward_drawdown": -0.5506298742195616,
+      "risk_adjusted_score": 0.05741440358250521,
+      "stability_score": 0.9405406246277259,
+      "trade_frequency": 9.630983377282707,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 26, 'signal': 12}",
+      "params": {
+        "fast": 10,
+        "slow": 26,
+        "signal": 12
+      },
+      "walk_forward_sharpe": -0.43269244159506853,
+      "walk_forward_return": 0.047370995940849925,
+      "walk_forward_drawdown": -0.1446762285037193,
+      "risk_adjusted_score": 0.05705166623495457,
+      "stability_score": 0.8676498166427608,
+      "trade_frequency": 8.055767978751465,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 20, 'oversold': 35, 'overbought': 75}",
+      "params": {
+        "period": 20,
+        "oversold": 35,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": -0.2115889367834104,
+      "walk_forward_return": -0.04171358222191424,
+      "walk_forward_drawdown": -0.18925220512969249,
+      "risk_adjusted_score": 0.05605089144617196,
+      "stability_score": 0.8508306497954603,
+      "trade_frequency": 15.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 35, 'overbought': 65}",
+      "params": {
+        "period": 10,
+        "oversold": 35,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": 0.03547022611714137,
+      "walk_forward_return": 0.016326378820881962,
+      "walk_forward_drawdown": -0.3574226388440913,
+      "risk_adjusted_score": 0.053915225596584807,
+      "stability_score": 0.9219795027068493,
+      "trade_frequency": 16.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 26, 'signal': 10}",
+      "params": {
+        "fast": 10,
+        "slow": 26,
+        "signal": 10
+      },
+      "walk_forward_sharpe": 0.07691301375530714,
+      "walk_forward_return": 0.01031462198309099,
+      "walk_forward_drawdown": -0.2925098207218866,
+      "risk_adjusted_score": 0.05125399694399975,
+      "stability_score": 0.9392985126019741,
+      "trade_frequency": 4.049421991441417,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 30, 'signal': 9}",
+      "params": {
+        "fast": 8,
+        "slow": 30,
+        "signal": 9
+      },
+      "walk_forward_sharpe": -0.048836727147470844,
+      "walk_forward_return": 0.00040368820219437336,
+      "walk_forward_drawdown": -0.22568442434854444,
+      "risk_adjusted_score": 0.04637306976639147,
+      "stability_score": 0.9028370938524679,
+      "trade_frequency": 7.369665971397945,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 24, 'signal': 12}",
+      "params": {
+        "fast": 8,
+        "slow": 24,
+        "signal": 12
+      },
+      "walk_forward_sharpe": -0.6924063895069006,
+      "walk_forward_return": -0.04383526228914989,
+      "walk_forward_drawdown": 0.04056472748500781,
+      "risk_adjusted_score": 0.046297717843029884,
+      "stability_score": 0.7810982920969111,
+      "trade_frequency": 8.716196076301038,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 35, 'overbought': 65}",
+      "params": {
+        "period": 14,
+        "oversold": 35,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": -0.20509308922637712,
+      "walk_forward_return": -0.0007035887395077101,
+      "walk_forward_drawdown": -0.19935428539992106,
+      "risk_adjusted_score": 0.043437198914848985,
+      "stability_score": 0.9655832888824346,
+      "trade_frequency": 15.2,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 20, 'signal': 10}",
+      "params": {
+        "fast": 15,
+        "slow": 20,
+        "signal": 10
+      },
+      "walk_forward_sharpe": -0.43780790314716095,
+      "walk_forward_return": -0.04253709520308543,
+      "walk_forward_drawdown": -0.08607336787025378,
+      "risk_adjusted_score": 0.03389175105150336,
+      "stability_score": 0.8461863177411114,
+      "trade_frequency": 5.787180855136603,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 20, 'signal': 12}",
+      "params": {
+        "fast": 8,
+        "slow": 20,
+        "signal": 12
+      },
+      "walk_forward_sharpe": -0.037574566423875286,
+      "walk_forward_return": -0.00861600539560736,
+      "walk_forward_drawdown": -0.31696420243625667,
+      "risk_adjusted_score": 0.028547121980663472,
+      "stability_score": 0.9019766815752628,
+      "trade_frequency": 4.145591600059932,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 20, 'signal': 10}",
+      "params": {
+        "fast": 12,
+        "slow": 20,
+        "signal": 10
+      },
+      "walk_forward_sharpe": -0.43683652495736086,
+      "walk_forward_return": 0.1077169327342775,
+      "walk_forward_drawdown": -0.4805073659032732,
+      "risk_adjusted_score": 0.018156441510196564,
+      "stability_score": 0.8912882682623473,
+      "trade_frequency": 7.103608824117581,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 8, 'slow': 30, 'signal': 12}",
+      "params": {
+        "fast": 8,
+        "slow": 30,
+        "signal": 12
+      },
+      "walk_forward_sharpe": -0.4604195900899497,
+      "walk_forward_return": 0.10196433478015465,
+      "walk_forward_drawdown": -0.35162053702766094,
+      "risk_adjusted_score": 0.0167675081757229,
+      "stability_score": 0.8003864011694013,
+      "trade_frequency": 5.344339302599603,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 26, 'signal': 10}",
+      "params": {
+        "fast": 12,
+        "slow": 26,
+        "signal": 10
+      },
+      "walk_forward_sharpe": -0.1472945666320848,
+      "walk_forward_return": -0.02183006885663164,
+      "walk_forward_drawdown": -0.2662577545727466,
+      "risk_adjusted_score": 0.015088799349894419,
+      "stability_score": 0.968174215942442,
+      "trade_frequency": 9.478979590347434,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 30, 'oversold': 25, 'overbought': 75}",
+      "params": {
+        "period": 30,
+        "oversold": 25,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": -0.3117060678404592,
+      "walk_forward_return": -0.21809505050518044,
+      "walk_forward_drawdown": -0.21030817816717923,
+      "risk_adjusted_score": 0.006278133845585576,
+      "stability_score": 0.6086839718581967,
+      "trade_frequency": 14.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 26, 'signal': 12}",
+      "params": {
+        "fast": 12,
+        "slow": 26,
+        "signal": 12
+      },
+      "walk_forward_sharpe": -0.16554870576787575,
+      "walk_forward_return": -0.12811526988413507,
+      "walk_forward_drawdown": -0.5538195084362969,
+      "risk_adjusted_score": 0.0012550866839769713,
+      "stability_score": 0.929703459077309,
+      "trade_frequency": 3.792666320885287,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": false,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 24, 'signal': 8}",
+      "params": {
+        "fast": 15,
+        "slow": 24,
+        "signal": 8
+      },
+      "walk_forward_sharpe": -0.11536513815529056,
+      "walk_forward_return": -0.02903855414730961,
+      "walk_forward_drawdown": -0.3138590886358304,
+      "risk_adjusted_score": 0.0009778506119643043,
+      "stability_score": 0.9044262922583485,
+      "trade_frequency": 5.428672413273594,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 24, 'signal': 8}",
+      "params": {
+        "fast": 10,
+        "slow": 24,
+        "signal": 8
+      },
+      "walk_forward_sharpe": -0.15578135235984794,
+      "walk_forward_return": -0.04038331053084656,
+      "walk_forward_drawdown": -0.543584358646471,
+      "risk_adjusted_score": 0.0003262369052563691,
+      "stability_score": 0.916130893318632,
+      "trade_frequency": 8.20762404800874,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 25, 'oversold': 35, 'overbought': 65}",
+      "params": {
+        "period": 25,
+        "oversold": 35,
+        "overbought": 65
+      },
+      "walk_forward_sharpe": -0.5941036181710327,
+      "walk_forward_return": 0.07646951427808851,
+      "walk_forward_drawdown": -0.23663182389473203,
+      "risk_adjusted_score": -0.01131975943853226,
+      "stability_score": 0.6921595588787984,
+      "trade_frequency": 13.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 20, 'signal': 8}",
+      "params": {
+        "fast": 12,
+        "slow": 20,
+        "signal": 8
+      },
+      "walk_forward_sharpe": -0.5731462151123211,
+      "walk_forward_return": 0.07350546921097525,
+      "walk_forward_drawdown": -0.40248877689986623,
+      "risk_adjusted_score": -0.02280175211036295,
+      "stability_score": 0.879973807744288,
+      "trade_frequency": 5.805959917345479,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 24, 'signal': 10}",
+      "params": {
+        "fast": 15,
+        "slow": 24,
+        "signal": 10
+      },
+      "walk_forward_sharpe": -0.2667229183349752,
+      "walk_forward_return": -0.004336882811984584,
+      "walk_forward_drawdown": -0.31151569958524994,
+      "risk_adjusted_score": -0.027317366621042272,
+      "stability_score": 0.8874338860068427,
+      "trade_frequency": 6.167076612928854,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 24, 'signal': 12}",
+      "params": {
+        "fast": 12,
+        "slow": 24,
+        "signal": 12
+      },
+      "walk_forward_sharpe": -0.4562719929237086,
+      "walk_forward_return": -0.037572369935740646,
+      "walk_forward_drawdown": -0.2537299235869939,
+      "risk_adjusted_score": -0.04217687648596234,
+      "stability_score": 0.911430544534135,
+      "trade_frequency": 4.067773300399829,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 35, 'overbought': 70}",
+      "params": {
+        "period": 10,
+        "oversold": 35,
+        "overbought": 70
+      },
+      "walk_forward_sharpe": -0.4664054867334462,
+      "walk_forward_return": -0.028988315629603148,
+      "walk_forward_drawdown": -0.2856709519256528,
+      "risk_adjusted_score": -0.05019555204542841,
+      "stability_score": 0.8459363136678913,
+      "trade_frequency": 16.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 10, 'slow': 24, 'signal': 9}",
+      "params": {
+        "fast": 10,
+        "slow": 24,
+        "signal": 9
+      },
+      "walk_forward_sharpe": -0.6285743461431187,
+      "walk_forward_return": -0.021545301300845657,
+      "walk_forward_drawdown": -0.17062853117920468,
+      "risk_adjusted_score": -0.05109062846077406,
+      "stability_score": 0.8436113974314207,
+      "trade_frequency": 6.989227794099216,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": false,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 12, 'slow': 30, 'signal': 10}",
+      "params": {
+        "fast": 12,
+        "slow": 30,
+        "signal": 10
+      },
+      "walk_forward_sharpe": -0.4520113354551627,
+      "walk_forward_return": -0.0353810447170582,
+      "walk_forward_drawdown": -0.321985932636379,
+      "risk_adjusted_score": -0.06276344547040029,
+      "stability_score": 0.9128710958517868,
+      "trade_frequency": 6.6318663998825045,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": false
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 30, 'overbought': 75}",
+      "params": {
+        "period": 10,
+        "oversold": 30,
+        "overbought": 75
+      },
+      "walk_forward_sharpe": -0.7606416594622922,
+      "walk_forward_return": 0.04066476962535666,
+      "walk_forward_drawdown": -0.33938232586781164,
+      "risk_adjusted_score": -0.07597069616494365,
+      "stability_score": 0.793004800214499,
+      "trade_frequency": 17.5,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": false,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "MACD_{'fast': 15, 'slow': 24, 'signal': 9}",
+      "params": {
+        "fast": 15,
+        "slow": 24,
+        "signal": 9
+      },
+      "walk_forward_sharpe": -0.8409934277983974,
+      "walk_forward_return": -0.041839446180788956,
+      "walk_forward_drawdown": -0.12230366976672472,
+      "risk_adjusted_score": -0.07791645114935261,
+      "stability_score": 0.7792212799733376,
+      "trade_frequency": 6.16552558622865,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 10, 'oversold': 20, 'overbought': 80}",
+      "params": {
+        "period": 10,
+        "oversold": 20,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": -1.0740235260929285,
+      "walk_forward_return": -0.009929731517769262,
+      "walk_forward_drawdown": -0.06595563811237162,
+      "risk_adjusted_score": -0.1225931145866262,
+      "stability_score": 0.7510195018119221,
+      "trade_frequency": 19.0,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    },
+    {
+      "strategy_name": "RSI_{'period': 14, 'oversold': 30, 'overbought': 80}",
+      "params": {
+        "period": 14,
+        "oversold": 30,
+        "overbought": 80
+      },
+      "walk_forward_sharpe": -1.0944845028304655,
+      "walk_forward_return": -0.0847636211099089,
+      "walk_forward_drawdown": -0.13853784673334804,
+      "risk_adjusted_score": -0.1684187982279456,
+      "stability_score": 0.7893313758249528,
+      "trade_frequency": 17.2,
+      "validation_passed": false,
+      "risk_metrics": {
+        "min_trades_passed": true,
+        "drawdown_passed": true,
+        "sharpe_passed": false,
+        "volatility_passed": true,
+        "win_rate_passed": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "order_id": "7377013",
+  "order_status": "SUBMITTING",
+  "symbol": "00700",
+  "side": "BUY",
+  "price": 510.0,
+  "quantity": 1000,
+  "timestamp": "2025-11-21T14:51:47.327013"
+}

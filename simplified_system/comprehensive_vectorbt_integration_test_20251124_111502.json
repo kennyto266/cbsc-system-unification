@@ -1,0 +1,131 @@
+{
+  "test_time": "2025-11-24T11:14:57.776130",
+  "phases": {
+    "core_engine": {
+      "status": "FAILED",
+      "tests": {
+        "engine_initialization": true,
+        "strategy_backtesting": {
+          "RSI_MEAN_REVERSION": {
+            "success": false,
+            "error": "'dict' object has no attribute 'columns'"
+          },
+          "MACD_CROSSOVER": {
+            "success": false,
+            "error": "'dict' object has no attribute 'columns'"
+          },
+          "BOLLINGER_BANDS": {
+            "success": false,
+            "error": "'dict' object has no attribute 'columns'"
+          }
+        }
+      },
+      "performance": {},
+      "error": "No successful backtest results for optimization"
+    },
+    "advanced_optimization": {
+      "status": "FAILED",
+      "tests": {},
+      "performance": {},
+      "error": "AdvancedOptimizer.__init__() missing 1 required positional argument: 'engine'"
+    },
+    "distributed_computing": {
+      "status": "PARTIAL",
+      "tests": {
+        "parallel_parameter_sweep": {
+          "success": true,
+          "execution_time": 5.7220458984375e-05,
+          "total_tasks": 0,
+          "successful_tasks": 0,
+          "workers_used": 2
+        },
+        "scalability": {
+          "success": true,
+          "results": {
+            "1": {
+              "execution_time": 5.4836273193359375e-06,
+              "success_rate": 0
+            },
+            "2": {
+              "execution_time": 3.0994415283203125e-06,
+              "success_rate": 0
+            }
+          }
+        }
+      },
+      "performance": {
+        "speedup": 1.7692307692307692,
+        "max_workers_tested": 2,
+        "parallel_efficiency": 0
+      }
+    },
+    "risk_management": {
+      "status": "FAILED",
+      "tests": {},
+      "performance": {},
+      "error": "'close'"
+    },
+    "enhanced_indicators": {
+      "status": "FAILED",
+      "tests": {},
+      "performance": {},
+      "error": "'dict' object has no attribute 'columns'"
+    },
+    "system_integration": {
+      "status": "FAILED",
+      "tests": {},
+      "performance": {},
+      "error": "'dict' object has no attribute 'columns'"
+    },
+    "performance_benchmark": {
+      "status": "PASSED",
+      "tests": {
+        "performance_scaling": {
+          "success": true,
+          "data_sizes_tested": [
+            100,
+            500,
+            1000
+          ],
+          "results": {
+            "100": {
+              "data_points": 100,
+              "engine_time": 3.7190306186676025,
+              "indicators_time": 0.0013580322265625,
+              "risk_time": 0.0028884410858154297,
+              "total_time": 3.7232770919799805,
+              "records_per_second": 26.85806012542074
+            },
+            "500": {
+              "data_points": 500,
+              "engine_time": 0.1888110637664795,
+              "indicators_time": 0.0014085769653320312,
+              "risk_time": 0.0019228458404541016,
+              "total_time": 0.19214248657226562,
+              "records_per_second": 2602.2355019952747
+            },
+            "1000": {
+              "data_points": 1000,
+              "engine_time": 0.01710653305053711,
+              "indicators_time": 0.0013461112976074219,
+              "risk_time": 0.0023207664489746094,
+              "total_time": 0.02077341079711914,
+              "records_per_second": 48138.459772753355
+            }
+          }
+        }
+      },
+      "performance": {
+        "total_records_processed": 1600,
+        "total_execution_time": 3.9361929893493652,
+        "average_records_per_second": 406.48413437281,
+        "performance_target_met": false,
+        "performance_achievement_ratio": 0.40648413437281
+      }
+    }
+  },
+  "overall_status": "PARTIAL",
+  "performance_metrics": {},
+  "errors": [],
+  "success_rate": 0.14285714285714285
+}

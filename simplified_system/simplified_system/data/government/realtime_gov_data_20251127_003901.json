@@ -1,0 +1,26 @@
+{
+  "fetch_time": "2025-11-27 00:38:34",
+  "days_back": 365,
+  "data_sources": {
+    "hibor_rates": {
+      "success": false,
+      "error": "Failed to fetch data"
+    },
+    "exchange_rates": {
+      "success": false,
+      "error": "Failed to fetch data"
+    },
+    "monetary_base": {
+      "success": true,
+      "record_count": 0,
+      "last_updated": "2025-11-27 00:39:01",
+      "data": []
+    }
+  },
+  "summary": {
+    "total_sources": 3,
+    "successful_sources": 1,
+    "total_records": 0,
+    "max_records_per_source": 1000
+  }
+}

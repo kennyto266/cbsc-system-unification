@@ -1,0 +1,69 @@
+{
+  "test_session": {
+    "session_id": "real_data_integration_20251128_170500",
+    "start_time": "2025-11-28T17:05:00.427607",
+    "environment": "simplified_system"
+  },
+  "test_results": {
+    "government_data": {
+      "test_name": "government_data_integration",
+      "start_time": "2025-11-28T17:05:00.427630",
+      "data_sources": {
+        "hibor": {
+          "status": "success",
+          "records": 0,
+          "source": "Local file: data/government/hibor_rates_20251124_174050.json",
+          "latest_rate": null
+        },
+        "exchange_rates": {
+          "status": "failed",
+          "error": "No exchange rate data retrieved"
+        },
+        "monetary_base": {
+          "status": "failed",
+          "error": "No monetary base data retrieved"
+        }
+      },
+      "data_quality": {},
+      "errors": [
+        "Exchange rate data retrieval failed",
+        "Monetary base data retrieval failed"
+      ],
+      "integration_score": 0.3333333333333333,
+      "success_rate": "1/3",
+      "end_time": "2025-11-28T17:05:01.235758",
+      "duration_seconds": 0.808128
+    },
+    "data_standardization": {
+      "test_name": "data_standardization",
+      "start_time": "2025-11-28T17:05:01.235789",
+      "standardization_results": {},
+      "errors": [
+        "No HIBOR data available for standardization",
+        "Stock data retrieval failed: 'dict' object has no attribute 'to_dict'"
+      ],
+      "standardization_success_rate": 0,
+      "end_time": "2025-11-28T17:05:14.926760"
+    },
+    "alpha_signals": {
+      "test_name": "alpha_signal_generation",
+      "start_time": "2025-11-28T17:05:14.926792",
+      "signal_results": {
+        "status": "failed",
+        "error": "No alpha signals generated"
+      },
+      "performance_metrics": {},
+      "errors": [
+        "Alpha signal generation failed"
+      ],
+      "end_time": "2025-11-28T17:05:29.053511"
+    }
+  },
+  "overall_score": 0.13333333333333333,
+  "recommendations": [
+    "修復失敗的數據源: exchange_rates, monetary_base",
+    "改進數據標準化流程，處理更多數據格式",
+    "增強Alpha信號生成算法，提高可靠性",
+    "❌ 系統需要重大改進才能滿足生產要求"
+  ]
+}

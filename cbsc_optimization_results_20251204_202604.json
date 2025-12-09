@@ -1,0 +1,75 @@
+{
+  "sentiment_momentum": {
+    "total_return": 0.006243899999999994,
+    "annual_return": 0.04768069090909086,
+    "sharpe_ratio": 2.2643663147976483,
+    "max_drawdown": -0.005284061949257651,
+    "total_trades": 2,
+    "win_rate": 0.5,
+    "parameters": {
+      "sentiment_short_window": 10,
+      "sentiment_long_window": 15,
+      "momentum_threshold": 0.05,
+      "volume_multiplier": 1.3,
+      "volume_ma_window": 10,
+      "min_volume_threshold": 200000000,
+      "position_size": 0.3
+    },
+    "composite_score": 2.5268053147976484
+  },
+  "volume_reversal": {
+    "total_return": 0.0,
+    "annual_return": 0.0,
+    "sharpe_ratio": 0,
+    "max_drawdown": 0.0,
+    "total_trades": 0,
+    "win_rate": 0,
+    "parameters": {
+      "ratio_short_window": 5,
+      "ratio_long_window": 20,
+      "volume_spike_multiplier": 2.0,
+      "volume_spike_window": 15,
+      "extreme_bull_threshold": 0.7,
+      "extreme_bear_threshold": 0.2,
+      "position_size": 0.35
+    },
+    "composite_score": -0.5
+  },
+  "risk_adjusted_bollinger": {
+    "total_return": 0.0,
+    "annual_return": 0.0,
+    "sharpe_ratio": 0,
+    "max_drawdown": 0.0,
+    "total_trades": 5,
+    "win_rate": 0.0,
+    "parameters": {
+      "rsi_period": 7,
+      "rsi_overbought": 80,
+      "rsi_oversold": 25,
+      "bb_period": 25,
+      "bb_std_multiplier": 2.0,
+      "risk_threshold_bull": 0.5,
+      "risk_threshold_bear": 0.3,
+      "position_size": 0.1
+    },
+    "composite_score": 0.5
+  },
+  "time_decay_momentum": {
+    "total_return": 0.0,
+    "annual_return": 0.0,
+    "sharpe_ratio": 0,
+    "max_drawdown": 0.0,
+    "total_trades": 5,
+    "win_rate": 0.0,
+    "parameters": {
+      "decay_half_life": 90,
+      "momentum_strength_threshold": 0.1,
+      "bull_threshold": 0.55,
+      "bear_threshold": 0.35,
+      "time_decay_threshold": 0.8,
+      "min_turnover_threshold": 2000000,
+      "position_size": 0.2
+    },
+    "composite_score": 0.5
+  }
+}

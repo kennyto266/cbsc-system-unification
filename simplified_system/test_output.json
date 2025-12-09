@@ -1,0 +1,9 @@
+{
+  "strategy": "RSI_MEAN_REVERSION",
+  "symbol": "0700.HK",
+  "summary": {
+    "total_return": 0.156,
+    "sharpe_ratio": 1.23,
+    "max_drawdown": -0.085
+  }
+}

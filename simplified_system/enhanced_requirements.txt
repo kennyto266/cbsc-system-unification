@@ -1,0 +1,54 @@
+# Enhanced Requirements for Data Cleaning Tools Package
+# 數據清理工具包增強依賴
+
+# Core data cleaning and analysis tools (數據清理和分析核心工具)
+pandas-profiling>=3.6.0              # 使用 ydata-profiling 替代舊版 pandas-profiling
+missingno>=0.5.2                     # 缺失值可視化工具
+sweetviz>=2.3.1                      # 智能數據比較和分析工具
+
+# Enhanced data processing (增強數據處理)
+scikit-learn>=1.3.0                  # 機器學習預處理工具
+scipy>=1.11.0                        # 科學計算和統計分析
+
+# Visualization and reporting (可視化和報告生成)
+plotly>=5.17.0                       # 交互式圖表
+seaborn>=0.12.0                      # 統計可視化
+matplotlib>=3.7.0                    # 基礎繪圖庫
+svglib>=1.5.1                        # SVG圖形處理
+reportlab>=4.0.4                     # PDF報告生成
+jinja2>=3.1.0                        # 模板引擎
+
+# Jupyter and interactive tools (Jupyter和交互式工具)
+jupyterlab>=4.0.0                    # JupyterLab開發環境
+ipywidgets>=8.0.0                    # 交互式組件
+nbconvert>=7.11.0                    # Notebook轉換工具
+notebook>=7.0.0                      # 經典Jupyter Notebook
+
+# Performance optimization (性能優化)
+numba>=0.58.0                        # 數值計算加速
+swifter>=1.4.0                       # 並行處理pandas操作
+
+# Data validation and quality (數據驗證和質量)
+great-expectations>=0.18.0           # 數據質量檢查
+pydantic>=2.5.0                      # 數據驗證框架
+
+# Optional GPU acceleration (可選GPU加速)
+# cuml>=23.0.0                       # GPU機器學習工具 (需要CUDA環境)
+
+# Export and sharing tools (導出和分享工具)
+weasyprint>=60.0                     # HTML轉PDF
+openpyxl>=3.1.0                      # Excel文件處理
+
+# Web integration (Web集成)
+dash>=2.14.0                         # Web應用框架
+streamlit>=1.28.0                    # 快速Web應用
+
+# Development and testing (開發和測試)
+pytest>=7.4.0                        # 測試框架
+pytest-asyncio>=0.21.0              # 異步測試
+black>=23.0.0                        # 代碼格式化
+flake8>=6.0.0                        # 代碼檢查
+
+# Documentation (文檔)
+mkdocs>=1.5.0                        # 文檔生成
+mkdocs-material>=9.4.0               # 文檔主題

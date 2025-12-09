@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/agent-dashboard/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-26T02:07:07.017Z",
+      "trigger": "initial",
+      "approvalId": "approval_1758852427011_a6ny20sie",
+      "approvalTitle": "Agent仪表板功能需求文档审批"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-09-26T02:07:24.608Z",
+      "trigger": "approved",
+      "approvalId": "approval_1758852427011_a6ny20sie",
+      "approvalTitle": "Agent仪表板功能需求文档审批"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "metadata": {
+    "success": true,
+    "record_count": 8484,
+    "collection_time_ms": 493.8,
+    "date_range": {
+      "start": "1991-06-10",
+      "end": "2025-10-31",
+      "days": 12562,
+      "years": 34.4
+    },
+    "years_of_data": 34.392881587953454,
+    "data_shape": [
+      8484,
+      14
+    ],
+    "columns": [
+      "end_of_day",
+      "efb_7d",
+      "efb_30d",
+      "efb_91d",
+      "efb_182d",
+      "efb_273d",
+      "efb_364d",
+      "efn_2y",
+      "efn_3y",
+      "efn_4y",
+      "efn_5y",
+      "efn_7y",
+      "efn_10y",
+      "efn_15y"
+    ],
+    "sample_data": {
+      "end_of_day": {

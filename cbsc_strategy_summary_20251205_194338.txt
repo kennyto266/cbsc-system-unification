@@ -1,0 +1,72 @@
+CBSC Strategy Analysis Report
+==================================================
+
+EXECUTIVE SUMMARY
+--------------------
+• Trading costs are the primary cause of poor performance
+• RSI Aggressive strategy outperforms all others significantly
+• MACD strategies have critical cost control issues
+• Data quality validation is needed before implementation
+
+TOP RECOMMENDATION: Prioritize RSI Aggressive strategy with strict cost controls
+
+ROOT CAUSE ANALYSIS
+--------------------
+• Found 5 trading cost issues
+
+• Found 4 data quality issues
+
+• Found 2 risk management issues
+
+CRITICAL TRADING COST ISSUES:
+  • RSI Conservative: 314,000 HKD total cost (157 trades) - HIGH
+  • MACD Standard: 1,218,000 HKD total cost (609 trades) - CRITICAL
+  • MACD Sensitive: 1,218,000 HKD total cost (609 trades) - CRITICAL
+  • Bollinger Breakout: 516,000 HKD total cost (258 trades) - CRITICAL
+  • Bollinger Wide: 516,000 HKD total cost (258 trades) - CRITICAL
+
+STRATEGY RANKINGS
+--------------------
+
+CONSERVATIVE Profile:
+  1. RSI Aggressive (Score: 1.00)
+     Return: 631.3%, Sharpe: 0.63, DD: -39.0%
+  2. MACD Standard (Score: 0.40)
+     Return: -192.3%, Sharpe: -0.41, DD: -0.0%
+  3. MACD Sensitive (Score: 0.40)
+     Return: -192.3%, Sharpe: -0.41, DD: -0.0%
+
+MODERATE Profile:
+  1. RSI Aggressive (Score: 1.00)
+     Return: 631.3%, Sharpe: 0.63, DD: -39.0%
+  2. MACD Standard (Score: 0.20)
+     Return: -192.3%, Sharpe: -0.41, DD: -0.0%
+  3. MACD Sensitive (Score: 0.20)
+     Return: -192.3%, Sharpe: -0.41, DD: -0.0%
+
+AGGRESSIVE Profile:
+  1. RSI Aggressive (Score: 1.00)
+     Return: 631.3%, Sharpe: 0.63, DD: -39.0%
+  2. RSI Conservative (Score: 0.00)
+     Return: -67.7%, Sharpe: -0.16, DD: -77.2%
+  3. MACD Standard (Score: 0.00)
+     Return: -192.3%, Sharpe: -0.41, DD: -0.0%
+
+RECOMMENDATIONS
+--------------------
+• URGENT: Reduce trading frequency for high-cost strategies
+• Implement maximum trade cost limits (e.g., 5% of initial capital)
+• Fix data quality issues before live trading
+
+Strategy Recommendations:
+• conservative: RSI Aggressive (631.3% return, MEDIUM risk, HIGH confidence)
+• moderate: RSI Aggressive (631.3% return, MEDIUM risk, HIGH confidence)
+• aggressive: RSI Aggressive (631.3% return, MEDIUM risk, HIGH confidence)
+
+Implementation Tips:
+1. Start with paper trading to validate strategy performance
+2. Implement strict position sizing (max 20% per trade)
+3. Set maximum drawdown limit (30% recommended)
+4. Monitor trading costs and implement cost controls
+5. Use trailing stops to protect profits
+6. Diversify across multiple strategies

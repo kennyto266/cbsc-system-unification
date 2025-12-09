@@ -1,0 +1,21 @@
+{
+  "safety": {
+    "max_gpu_memory_usage": 0.8,
+    "max_gpu_temperature": 85.0,
+    "enable_memory_check": true,
+    "enable_temperature_check": true,
+    "enable_driver_validation": true,
+    "auto_fallback_to_cpu": true,
+    "performance_monitoring": true
+  },
+  "performance": {
+    "auto_benchmark": true,
+    "benchmark_data_size": 10000,
+    "enable_profiling": false
+  },
+  "optimization": {
+    "auto_select_mode": true,
+    "prefer_gpu": true,
+    "min_speedup_threshold": 1.5
+  }
+}

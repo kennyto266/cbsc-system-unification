@@ -1,0 +1,56 @@
+{
+  "metadata": {
+    "success": true,
+    "record_count": 10000,
+    "collection_time_ms": 1549.94,
+    "date_range": {
+      "start": "1991-12-13",
+      "end": "2025-10-31",
+      "days": 12376,
+      "years": 33.9
+    },
+    "years_of_data": 33.883641341546884,
+    "data_shape": [
+      10000,
+      36
+    ],
+    "columns": [
+      "end_of_day",
+      "usd",
+      "gbp",
+      "jpy",
+      "cad",
+      "aud",
+      "sgd",
+      "twd",
+      "chf",
+      "cny",
+      "krw",
+      "thb",
+      "myr",
+      "dem",
+      "nlg",
+      "bef",
+      "frf",
+      "itl",
+      "eur",
+      "php",
+      "inr",
+      "idr",
+      "zar",
+      "special_drawing_rights",
+      "neeri_1983_trade_wgt",
+      "neeri_1983_import_wgt",
+      "neeri_1983_export_wgt",
+      "neeri_2000_trade_wgt",
+      "neeri_2000_import_wgt",
+      "neeri_2000_export_wgt",
+      "neeri_2010_trade_wgt",
+      "neeri_2010_import_wgt",
+      "neeri_2010_export_wgt",
+      "neeri_2020_trade_wgt",
+      "neeri_2020_import_wgt",
+      "neeri_2020_export_wgt"
+    ],
+    "sample_data": {
+      "end_of_day": {

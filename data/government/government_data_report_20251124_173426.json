@@ -1,0 +1,51 @@
+{
+  "collection_time": "2025-11-24T17:34:26.335045",
+  "total_sources": 6,
+  "successful_collections": 6,
+  "total_records": 2200,
+  "average_quality_score": 0.667,
+  "sources": [
+    {
+      "name": "hibor_rates",
+      "success": true,
+      "record_count": 100,
+      "quality_score": 0.667,
+      "error_message": null
+    },
+    {
+      "name": "exchange_rates",
+      "success": true,
+      "record_count": 100,
+      "quality_score": 0.667,
+      "error_message": null
+    },
+    {
+      "name": "monetary_base",
+      "success": true,
+      "record_count": 500,
+      "quality_score": 0.667,
+      "error_message": null
+    },
+    {
+      "name": "interbank_liquidity",
+      "success": true,
+      "record_count": 500,
+      "quality_score": 0.667,
+      "error_message": null
+    },
+    {
+      "name": "efbn_indicative",
+      "success": true,
+      "record_count": 500,
+      "quality_score": 0.667,
+      "error_message": null
+    },
+    {
+      "name": "rmb_liquidity",
+      "success": true,
+      "record_count": 500,
+      "quality_score": 0.667,
+      "error_message": null
+    }
+  ]
+}

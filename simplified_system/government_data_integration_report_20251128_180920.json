@@ -1,0 +1,528 @@
+{
+  "test_info": {
+    "timestamp": "2025-11-28T18:09:20.877076",
+    "total_execution_time": 57.6809184551239,
+    "total_data_sources": 8
+  },
+  "results_summary": {
+    "successful_sources": 8,
+    "failed_sources": 0,
+    "success_rate": 100.0,
+    "total_records_collected": 660,
+    "status_distribution": {
+      "success": 8
+    }
+  },
+  "detailed_results": {
+    "hkd_forward_exchange_daily": {
+      "status": "success",
+      "status_code": 200,
+      "record_count": 100,
+      "execution_time": 0.3251047134399414,
+      "params_used": {
+        "lang": "en",
+        "limit": "5",
+        "from": "2025-10-29"
+      },
+      "data_sample": {
+        "records_sample": [
+          {
+            "end_of_day": "2025-10-31",
+            "hkd_fer_spot": 7.7692,
+            "hkd_fer_1w": -11.5,
+            "hkd_fer_1m": -43,
+            "hkd_fer_3m": -94.5,
+            "hkd_fer_6m": -205.5,
+            "hkd_fer_9m": -308,
+            "hkd_fer_12m": -403
+          },
+          {
+            "end_of_day": "2025-10-30",
+            "hkd_fer_spot": 7.7685,
+            "hkd_fer_1w": -11,
+            "hkd_fer_1m": -45.5,
+            "hkd_fer_3m": -101,
+            "hkd_fer_6m": -214.5,
+            "hkd_fer_9m": -310,
+            "hkd_fer_12m": -409
+          }
+        ]
+      },
+      "source_info": {
+        "name": "hkd_forward_exchange_daily",
+        "title": "港元遠期匯率",
+        "data_type": "forward_exchange_rates",
+        "api_endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hkd-fer-daily"
+      }
+    },
+    "monetary_base_daily": {
+      "status": "success",
+      "status_code": 200,
+      "record_count": 100,
+      "execution_time": 13.842137098312378,
+      "params_used": {
+        "lang": "en",
+        "limit": "5",
+        "from": "2025-10-29"
+      },
+      "data_sample": {
+        "records_sample": [
+          {
+            "end_of_date": "2025-11-27",
+            "cert_of_indebt": 626855,
+            "gov_notes_coins_circulation": 13171,
+            "aggr_balance_bf_disc_win": 53995,
+            "aggr_balance_af_disc_win": 53995,
+            "outstanding_efbn": 1331883,
+            "ow_lb_bf_disc_win": 1156865,
+            "ow_lb_af_disc_win": 1156865,
+            "mb_bf_disc_win_total": 2025904
+          },
+          {
+            "end_of_date": "2025-11-26",
+            "cert_of_indebt": 625445,
+            "gov_notes_coins_circulation": 13171,
+            "aggr_balance_bf_disc_win": 53991,
+            "aggr_balance_af_disc_win": 54229,
+            "outstanding_efbn": 1331799,
+            "ow_lb_bf_disc_win": 1156408,
+            "ow_lb_af_disc_win": 1156169,
+            "mb_bf_disc_win_total": 2024406
+          }
+        ]
+      },
+      "source_info": {
+        "name": "monetary_base_daily",
+        "title": "貨幣基礎",
+        "data_type": "monetary_base",
+        "api_endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-monetary-base"
+      }
+    },
+    "market_operation_daily": {
+      "status": "success",
+      "status_code": 200,
+      "record_count": 100,
+      "execution_time": 0.37558627128601074,
+      "params_used": {
+        "lang": "en",
+        "limit": "5",
+        "from": "2025-10-29"
+      },
+      "data_sample": {
+        "records_sample": [
+          {
+            "end_of_date": "2025-11-27",
+            "cert_of_indebt": 626855,
+            "gov_notes_coins_circulation": 13171,
+            "aggr_balance_bf_disc_win": 53995,
+            "aggr_balance_af_disc_win": 53995,
+            "outstanding_efbn": 1331883,
+            "ow_lb_bf_disc_win": 1156865,
+            "ow_lb_af_disc_win": 1156865,
+            "mb_bf_disc_win_total": 2025904
+          },
+          {
+            "end_of_date": "2025-11-26",
+            "cert_of_indebt": 625445,
+            "gov_notes_coins_circulation": 13171,
+            "aggr_balance_bf_disc_win": 53991,
+            "aggr_balance_af_disc_win": 54229,
+            "outstanding_efbn": 1331799,
+            "ow_lb_bf_disc_win": 1156408,
+            "ow_lb_af_disc_win": 1156169,
+            "mb_bf_disc_win_total": 2024406
+          }
+        ]
+      },
+      "source_info": {
+        "name": "market_operation_daily",
+        "title": "市場操作",
+        "data_type": "market_operations",
+        "api_endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-monetary-base"
+      }
+    },
+    "efbn_yield_daily": {
+      "status": "success",
+      "status_code": 200,
+      "record_count": 7,
+      "execution_time": 0.2481546401977539,
+      "params_used": {
+        "lang": "en",
+        "limit": "5",
+        "from": "2025-10-29",
+        "segment": "IndicativePrice"
+      },
+      "data_sample": {
+        "records_sample": [
+          {
+            "end_of_date": "2025-11-28",
+            "term": "1W",
+            "issue_no": "Q2536",
+            "yield": 2.72,
+            "price": null
+          },
+          {
+            "end_of_date": "2025-11-28",
+            "term": "1M",
+            "issue_no": "Q2539",
+            "yield": 2.66,
+            "price": null
+          }
+        ]
+      },
+      "source_info": {
+        "name": "efbn_yield_daily",
+        "title": "外匯基金票據及債券收益率",
+        "data_type": "efbn_yields",
+        "api_endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/efbn-indicative-price"
+      }
+    },
+    "hk_interbank_ir_daily": {
+      "status": "success",
+      "status_code": 200,
+      "record_count": 100,
+      "execution_time": 13.71569037437439,
+      "params_used": {
+        "lang": "en",
+        "limit": "5",
+        "from": "2025-10-29"
+      },
+      "data_sample": {
+        "records_sample": [
+          {
+            "end_of_day": "2025-10-31",
+            "ir_overnight": 3.85667,
+            "ir_1w": 3.44077,
+            "ir_1m": 3.42911,
+            "ir_3m": 3.54899,
+            "ir_6m": 3.44756,
+            "ir_9m": null,
+            "ir_12m": 3.40077
+          },
+          {
+            "end_of_day": "2025-10-30",
+            "ir_overnight": 3.07464,
+            "ir_1w": 3.49958,
+            "ir_1m": 3.41536,
+            "ir_3m": 3.541,
+            "ir_6m": 3.44542,
+            "ir_9m": null,
+            "ir_12m": 3.37387
+          }
+        ]
+      },
+      "source_info": {
+        "name": "hk_interbank_ir_daily",
+        "title": "香港銀行同業拆息",
+        "data_type": "hibor_rates",
+        "api_endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily"
+      }
+    },
+    "discount_window_rates_daily": {
+      "status": "success",
+      "status_code": 200,
+      "record_count": 100,
+      "execution_time": 14.243185043334961,
+      "params_used": {
+        "lang": "en",
+        "limit": "5",
+        "from": "2025-10-29"
+      },
+      "data_sample": {
+        "records_sample": [
+          {
+            "end_of_date": "2025-11-27",
+            "cu_weakside": 7.85,
+            "cu_strongside": 7.75,
+            "disc_win_base_rate": 4.25,
+            "hibor_overnight": 3.13,
+            "hibor_fixing_1m": 3.2428,
+            "twi": 104.1,
+            "opening_balance": 54229,
+            "closing_balance": 53995,
+            "market_activities": "+0",
+            "interest_payment": "+3",
+            "discount_window_reversal": "-238",
+            "discount_window_activities": "+0",
+            "intraday_movements_of_aggregate_balance_at_0930": 89504,
+            "intraday_movements_of_aggregate_balance_at_1000": 115063,
+            "intraday_movements_of_aggregate_balance_at_1100": 153475,
+            "intraday_movements_of_aggregate_balance_at_1200": 159284,
+            "intraday_movements_of_aggregate_balance_at_1500": 165629,
+            "intraday_movements_of_aggregate_balance_at_1600": 168258,
+            "forex_trans_t1": "+0",
+            "other_market_activities_t1": "+0",
+            "reversal_of_discount_window_t1": "-0",
+            "interest_payment_issuance_efbn_t1": "+1",
+            "forecast_aggregate_bal_t1": 53995,
+            "forex_trans_t2": "+0",
+            "other_market_activities_t2": "+0",
+            "reversal_of_discount_window_t2": "-0",
+            "interest_payment_issuance_efbn_t2": "+0",
+            "forecast_aggregate_bal_t2": 53995,
+            "forex_trans_t3": "+0",
+            "other_market_activities_t3": "+0",
+            "reversal_of_discount_window_t3": "-0",
+            "interest_payment_issuance_efbn_t3": "+0",
+            "forecast_aggregate_bal_t3": 53995,
+            "forex_trans_t4": null,
+            "other_market_activities_t4": null,
+            "reversal_of_discount_window_t4": null,
+            "interest_payment_issuance_efbn_t4": null,
+            "forecast_aggregate_bal_t4": null,
+            "forex_trans_u": "+0",
+            "other_market_activities_u": "+0",
+            "reversal_of_discount_window_u": "-0",
+            "interest_payment_issuance_efbn_u": "-684",
+            "forecast_aggregate_bal_u": 53311
+          },
+          {
+            "end_of_date": "2025-11-26",
+            "cu_weakside": 7.85,
+            "cu_strongside": 7.75,
+            "disc_win_base_rate": 4.25,
+            "hibor_overnight": 1.31,
+            "hibor_fixing_1m": 2.97768,
+            "twi": 104.1,
+            "opening_balance": 54339,
+            "closing_balance": 54229,
+            "market_activities": "+0",
+            "interest_payment": "-239",
+            "discount_window_reversal": "-108",
+            "discount_window_activities": "+238",
+            "intraday_movements_of_aggregate_balance_at_0930": 97422,
+            "intraday_movements_of_aggregate_balance_at_1000": 134423,
+            "intraday_movements_of_aggregate_balance_at_1100": 177034,
+            "intraday_movements_of_aggregate_balance_at_1200": 218424,
+            "intraday_movements_of_aggregate_balance_at_1500": 240805,
+            "intraday_movements_of_aggregate_balance_at_1600": 244807,
+            "forex_trans_t1": "+0",
+            "other_market_activities_t1": "+0",
+            "reversal_of_discount_window_t1": "-238",
+            "interest_payment_issuance_efbn_t1": "+3",
+            "forecast_aggregate_bal_t1": 53995,
+            "forex_trans_t2": "+0",
+            "other_market_activities_t2": "+0",
+            "reversal_of_discount_window_t2": "-0",
+            "interest_payment_issuance_efbn_t2": "+1",
+            "forecast_aggregate_bal_t2": 53995,
+            "forex_trans_t3": "+0",
+            "other_market_activities_t3": "+0",
+            "reversal_of_discount_window_t3": "-0",
+            "interest_payment_issuance_efbn_t3": "+0",
+            "forecast_aggregate_bal_t3": 53995,
+            "forex_trans_t4": null,
+            "other_market_activities_t4": null,
+            "reversal_of_discount_window_t4": null,
+            "interest_payment_issuance_efbn_t4": null,
+            "forecast_aggregate_bal_t4": null,
+            "forex_trans_u": "+0",
+            "other_market_activities_u": "+0",
+            "reversal_of_discount_window_u": "-0",
+            "interest_payment_issuance_efbn_u": "-684",
+            "forecast_aggregate_bal_u": 53311
+          }
+        ]
+      },
+      "source_info": {
+        "name": "discount_window_rates_daily",
+        "title": "貼現窗利率",
+        "data_type": "discount_window_rates",
+        "api_endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-interbank-liquidity"
+      }
+    },
+    "exchange_rates_daily": {
+      "status": "success",
+      "status_code": 200,
+      "record_count": 100,
+      "execution_time": 14.659892082214355,
+      "params_used": {
+        "lang": "en",
+        "limit": "5",
+        "from": "2025-10-29"
+      },
+      "data_sample": {
+        "records_sample": [
+          {
+            "end_of_day": "2025-10-31",
+            "usd": 7.771,
+            "gbp": 10.2095,
+            "jpy": 0.050345,
+            "cad": 5.548,
+            "aud": 5.079,
+            "sgd": 5.975,
+            "twd": 0.255,
+            "chf": 9.681,
+            "cny": 1.09195,
+            "krw": 0.00545,
+            "thb": 0.24075,
+            "myr": 1.853,
+            "dem": null,
+            "nlg": null,
+            "bef": null,
+            "frf": null,
+            "itl": null,
+            "eur": 8.9845,
+            "php": 0.1415,
+            "inr": 0.0875,
+            "idr": 0.0004672,
+            "zar": 0.449,
+            "special_drawing_rights": 10.55604869,
+            "neeri_1983_trade_wgt": null,
+            "neeri_1983_import_wgt": null,
+            "neeri_1983_export_wgt": null,
+            "neeri_2000_trade_wgt": null,
+            "neeri_2000_import_wgt": null,
+            "neeri_2000_export_wgt": null,
+            "neeri_2010_trade_wgt": null,
+            "neeri_2010_import_wgt": null,
+            "neeri_2010_export_wgt": null,
+            "neeri_2020_trade_wgt": 104.3,
+            "neeri_2020_import_wgt": 104.8,
+            "neeri_2020_export_wgt": 103.8
+          },
+          {
+            "end_of_day": "2025-10-30",
+            "usd": 7.771,
+            "gbp": 10.252,
+            "jpy": 0.050595,
+            "cad": 5.574,
+            "aud": 5.1145,
+            "sgd": 5.9835,
+            "twd": 0.255,
+            "chf": 9.7235,
+            "cny": 1.0938,
+            "krw": 0.005439,
+            "thb": 0.2397,
+            "myr": 1.8502,
+            "dem": null,
+            "nlg": null,
+            "bef": null,
+            "frf": null,
+            "itl": null,
+            "eur": 9.0265,
+            "php": 0.1415,
+            "inr": 0.0875,
+            "idr": 0.0004667,
+            "zar": 0.452,
+            "special_drawing_rights": 10.56863771,
+            "neeri_1983_trade_wgt": null,
+            "neeri_1983_import_wgt": null,
+            "neeri_1983_export_wgt": null,
+            "neeri_2000_trade_wgt": null,
+            "neeri_2000_import_wgt": null,
+            "neeri_2000_export_wgt": null,
+            "neeri_2010_trade_wgt": null,
+            "neeri_2010_import_wgt": null,
+            "neeri_2010_export_wgt": null,
+            "neeri_2020_trade_wgt": 104.2,
+            "neeri_2020_import_wgt": 104.7,
+            "neeri_2020_export_wgt": 103.6
+          }
+        ]
+      },
+      "source_info": {
+        "name": "exchange_rates_daily",
+        "title": "匯率及港匯指數",
+        "data_type": "exchange_rates",
+        "api_endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/er-eeri-daily"
+      }
+    },
+    "institutional_bond_daily": {
+      "status": "success",
+      "status_code": 200,
+      "record_count": 53,
+      "execution_time": 0.26012587547302246,
+      "params_used": {
+        "lang": "en",
+        "limit": "5",
+        "from": "2025-10-29",
+        "segment": "Bills"
+      },
+      "data_sample": {
+        "records_sample": [
+          {
+            "end_of_date": "2025-11-28",
+            "issue_no": "H2552",
+            "maturity": "2025-12-03",
+            "yield": 2.3
+          },
+          {
+            "end_of_date": "2025-11-28",
+            "issue_no": "Q2536",
+            "maturity": "2025-12-03",
+            "yield": 2.3
+          }
+        ]
+      },
+      "source_info": {
+        "name": "institutional_bond_daily",
+        "title": "機構債券",
+        "data_type": "institutional_bonds",
+        "api_endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/efbn-closing"
+      }
+    }
+  },
+  "data_sources_config": [
+    {
+      "name": "hkd_forward_exchange_daily",
+      "title": "港元遠期匯率",
+      "data_type": "forward_exchange_rates",
+      "endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hkd-fer-daily",
+      "extra_params": {}
+    },
+    {
+      "name": "monetary_base_daily",
+      "title": "貨幣基礎",
+      "data_type": "monetary_base",
+      "endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-monetary-base",
+      "extra_params": {}
+    },
+    {
+      "name": "market_operation_daily",
+      "title": "市場操作",
+      "data_type": "market_operations",
+      "endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-monetary-base",
+      "extra_params": {}
+    },
+    {
+      "name": "efbn_yield_daily",
+      "title": "外匯基金票據及債券收益率",
+      "data_type": "efbn_yields",
+      "endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/efbn-indicative-price",
+      "extra_params": {
+        "segment": "IndicativePrice"
+      }
+    },
+    {
+      "name": "hk_interbank_ir_daily",
+      "title": "香港銀行同業拆息",
+      "data_type": "hibor_rates",
+      "endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily",
+      "extra_params": {}
+    },
+    {
+      "name": "discount_window_rates_daily",
+      "title": "貼現窗利率",
+      "data_type": "discount_window_rates",
+      "endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-interbank-liquidity",
+      "extra_params": {}
+    },
+    {
+      "name": "exchange_rates_daily",
+      "title": "匯率及港匯指數",
+      "data_type": "exchange_rates",
+      "endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/er-eeri-daily",
+      "extra_params": {}
+    },
+    {
+      "name": "institutional_bond_daily",
+      "title": "機構債券",
+      "data_type": "institutional_bonds",
+      "endpoint": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/efbn-closing",
+      "extra_params": {
+        "segment": "Bills"
+      }
+    }
+  ]
+}

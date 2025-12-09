@@ -1,0 +1,748 @@
+{
+  "test_info": {
+    "symbol": "0700.HK",
+    "company": "Tencent Holdings Limited",
+    "test_date": "2025-11-25T18:20:19.424968",
+    "data_period": {
+      "start": "2022-11-27",
+      "end": "2025-11-25",
+      "total_days": 1095
+    },
+    "price_info": {
+      "start_price": 405.32223832635754,
+      "end_price": 2758.6111637725253,
+      "min_price": 296.13563780561816,
+      "max_price": 2830.019283252619,
+      "total_return": 580.5970417915598
+    }
+  },
+  "strategy_results": {
+    "rsi_strategies": [
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 25,
+        "oversold": 35,
+        "overbought": 70,
+        "total_return": 0.24647962804185397,
+        "sharpe_ratio": 0.27872500078255014,
+        "max_drawdown": -0.10740018647225591,
+        "win_rate": 0.5454545454545454,
+        "trades_count": 44
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 20,
+        "oversold": 35,
+        "overbought": 70,
+        "total_return": 0.23044638769001158,
+        "sharpe_ratio": 0.2541883705015431,
+        "max_drawdown": -0.11942455327641639,
+        "win_rate": 0.5660377358490566,
+        "trades_count": 53
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 14,
+        "oversold": 30,
+        "overbought": 70,
+        "total_return": 0.24156612373524777,
+        "sharpe_ratio": 0.24795260613412046,
+        "max_drawdown": -0.1382695240024534,
+        "win_rate": 0.6896551724137931,
+        "trades_count": 58
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 25,
+        "oversold": 25,
+        "overbought": 70,
+        "total_return": 0.2133360944268261,
+        "sharpe_ratio": 0.24142187475756816,
+        "max_drawdown": -0.1074001864722559,
+        "win_rate": 0.6551724137931034,
+        "trades_count": 29
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 14,
+        "oversold": 30,
+        "overbought": 65,
+        "total_return": 0.2362912378192401,
+        "sharpe_ratio": 0.22942381671348128,
+        "max_drawdown": -0.1383775139742939,
+        "win_rate": 0.6025641025641025,
+        "trades_count": 78
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 20,
+        "oversold": 30,
+        "overbought": 70,
+        "total_return": 0.20938582817806828,
+        "sharpe_ratio": 0.2179602685304235,
+        "max_drawdown": -0.0829234662531975,
+        "win_rate": 0.6216216216216216,
+        "trades_count": 37
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 10,
+        "oversold": 30,
+        "overbought": 65,
+        "total_return": 0.23198814196640183,
+        "sharpe_ratio": 0.20494415444689526,
+        "max_drawdown": -0.20469273515360956,
+        "win_rate": 0.5904761904761905,
+        "trades_count": 105
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 30,
+        "oversold": 30,
+        "overbought": 70,
+        "total_return": 0.1982044128017877,
+        "sharpe_ratio": 0.20447801748572925,
+        "max_drawdown": -0.07232409341688563,
+        "win_rate": 0.625,
+        "trades_count": 24
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 30,
+        "oversold": 30,
+        "overbought": 65,
+        "total_return": 0.2021523276804542,
+        "sharpe_ratio": 0.20289417768656356,
+        "max_drawdown": -0.17473882746248184,
+        "win_rate": 0.5945945945945946,
+        "trades_count": 37
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 25,
+        "oversold": 20,
+        "overbought": 70,
+        "total_return": 0.19740130581247795,
+        "sharpe_ratio": 0.1983511207321786,
+        "max_drawdown": -0.10740018647225581,
+        "win_rate": 0.6296296296296297,
+        "trades_count": 27
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 10,
+        "oversold": 30,
+        "overbought": 70,
+        "total_return": 0.20791024689603566,
+        "sharpe_ratio": 0.1770826208058691,
+        "max_drawdown": -0.11637735112845643,
+        "win_rate": 0.5930232558139535,
+        "trades_count": 86
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 7,
+        "oversold": 35,
+        "overbought": 75,
+        "total_return": 0.2080541599983332,
+        "sharpe_ratio": 0.16902151520266237,
+        "max_drawdown": -0.14186507799244136,
+        "win_rate": 0.5602836879432624,
+        "trades_count": 141
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 10,
+        "oversold": 25,
+        "overbought": 65,
+        "total_return": 0.2056805535366033,
+        "sharpe_ratio": 0.16701807188419998,
+        "max_drawdown": -0.19030520687306568,
+        "win_rate": 0.5714285714285714,
+        "trades_count": 91
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 30,
+        "oversold": 25,
+        "overbought": 65,
+        "total_return": 0.18208215502110847,
+        "sharpe_ratio": 0.15841772162179515,
+        "max_drawdown": -0.1747388274624818,
+        "win_rate": 0.6333333333333333,
+        "trades_count": 30
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 14,
+        "oversold": 25,
+        "overbought": 70,
+        "total_return": 0.18971092519220845,
+        "sharpe_ratio": 0.15793361106757586,
+        "max_drawdown": -0.10151721764285489,
+        "win_rate": 0.717391304347826,
+        "trades_count": 46
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 30,
+        "oversold": 25,
+        "overbought": 70,
+        "total_return": 0.17820015136802825,
+        "sharpe_ratio": 0.15709057813963295,
+        "max_drawdown": -0.07232409341688563,
+        "win_rate": 0.7058823529411765,
+        "trades_count": 17
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 10,
+        "oversold": 35,
+        "overbought": 65,
+        "total_return": 0.19602561426776455,
+        "sharpe_ratio": 0.1502747245146306,
+        "max_drawdown": -0.2643280839605534,
+        "win_rate": 0.5950413223140496,
+        "trades_count": 121
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 14,
+        "oversold": 25,
+        "overbought": 65,
+        "total_return": 0.18465634993967361,
+        "sharpe_ratio": 0.142023277496057,
+        "max_drawdown": -0.12415819181222376,
+        "win_rate": 0.6060606060606061,
+        "trades_count": 66
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 10,
+        "oversold": 25,
+        "overbought": 70,
+        "total_return": 0.18211681224109078,
+        "sharpe_ratio": 0.13297068955855296,
+        "max_drawdown": -0.13526569122323842,
+        "win_rate": 0.5694444444444444,
+        "trades_count": 72
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 10,
+        "oversold": 35,
+        "overbought": 70,
+        "total_return": 0.1726505684691535,
+        "sharpe_ratio": 0.11571519329292167,
+        "max_drawdown": -0.1882583340964677,
+        "win_rate": 0.5980392156862745,
+        "trades_count": 102
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 25,
+        "oversold": 30,
+        "overbought": 70,
+        "total_return": 0.1667878425852014,
+        "sharpe_ratio": 0.10988451014663331,
+        "max_drawdown": -0.10740018647225591,
+        "win_rate": 0.6111111111111112,
+        "trades_count": 36
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 14,
+        "oversold": 20,
+        "overbought": 70,
+        "total_return": 0.1615255740124717,
+        "sharpe_ratio": 0.09564303063273229,
+        "max_drawdown": -0.12272676388177516,
+        "win_rate": 0.717948717948718,
+        "trades_count": 39
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 7,
+        "oversold": 30,
+        "overbought": 75,
+        "total_return": 0.15599135061897784,
+        "sharpe_ratio": 0.09053591077378519,
+        "max_drawdown": -0.1460944015924983,
+        "win_rate": 0.5581395348837209,
+        "trades_count": 129
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 14,
+        "oversold": 20,
+        "overbought": 65,
+        "total_return": 0.15659074631839132,
+        "sharpe_ratio": 0.08377021466304216,
+        "max_drawdown": -0.1323703120415659,
+        "win_rate": 0.5932203389830508,
+        "trades_count": 59
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 20,
+        "oversold": 35,
+        "overbought": 65,
+        "total_return": 0.1424521933436902,
+        "sharpe_ratio": 0.05640011848797537,
+        "max_drawdown": -0.13250751231883454,
+        "win_rate": 0.5294117647058824,
+        "trades_count": 68
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 30,
+        "oversold": 20,
+        "overbought": 65,
+        "total_return": 0.1457021662013307,
+        "sharpe_ratio": 0.052908452937338965,
+        "max_drawdown": -0.17473882746248187,
+        "win_rate": 0.6071428571428571,
+        "trades_count": 28
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 20,
+        "oversold": 25,
+        "overbought": 70,
+        "total_return": 0.14392800855803234,
+        "sharpe_ratio": 0.04657518019626751,
+        "max_drawdown": -0.04573062291030335,
+        "win_rate": 0.6129032258064516,
+        "trades_count": 31
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 14,
+        "oversold": 30,
+        "overbought": 80,
+        "total_return": 0.14060616045695884,
+        "sharpe_ratio": 0.042742690727872595,
+        "max_drawdown": -0.13826952400245343,
+        "win_rate": 0.6086956521739131,
+        "trades_count": 46
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 30,
+        "oversold": 20,
+        "overbought": 70,
+        "total_return": 0.141939635842808,
+        "sharpe_ratio": 0.038606623517144216,
+        "max_drawdown": -0.07232409341688556,
+        "win_rate": 0.6666666666666666,
+        "trades_count": 15
+      },
+      {
+        "strategy": "RSI_MEAN_REVERSION",
+        "period": 20,
+        "oversold": 30,
+        "overbought": 65,
+        "total_return": 0.12289775956406257,
+        "sharpe_ratio": 0.012067243380453473,
+        "max_drawdown": -0.11565091420524402,
+        "win_rate": 0.5576923076923077,
+        "trades_count": 52
+      }
+    ],
+    "macd_strategies": [
+      {
+        "strategy": "MACD_CROSSOVER",
+        "fast": 8,
+        "slow": 30,
+        "signal": 12,
+        "total_return": 0.25566711762488903,
+        "sharpe_ratio": 0.24941072630127467,
+        "max_drawdown": -0.14587109483435656,
+        "win_rate": 0.5,
+        "trades_count": 80
+      },
+      {
+        "strategy": "MACD_CROSSOVER",
+        "fast": 12,
+        "slow": 30,
+        "signal": 8,
+        "total_return": 0.25566711762488903,
+        "sharpe_ratio": 0.24941072630127467,
+        "max_drawdown": -0.14587109483435656,
+        "win_rate": 0.5,
+        "trades_count": 80
+      },
+      {
+        "strategy": "MACD_CROSSOVER",
+        "fast": 15,
+        "slow": 35,
+        "signal": 6,
+        "total_return": 0.23871325072741434,
+        "sharpe_ratio": 0.24224581537716716,
+        "max_drawdown": -0.10293435673771412,
+        "win_rate": 0.5,
+        "trades_count": 82
+      },
+      {
+        "strategy": "MACD_CROSSOVER",
+        "fast": 15,
+        "slow": 30,
+        "signal": 6,
+        "total_return": 0.2132724406018529,
+        "sharpe_ratio": 0.18270609178240974,
+        "max_drawdown": -0.10293435673771394,
+        "win_rate": 0.4880952380952381,
+        "trades_count": 84
+      },
+      {
+        "strategy": "MACD_CROSSOVER",
+        "fast": 12,
+        "slow": 26,
+        "signal": 9,
+        "total_return": 0.18487324580414222,
+        "sharpe_ratio": 0.13442526053242423,
+        "max_drawdown": -0.14587109483435656,
+        "win_rate": 0.5,
+        "trades_count": 82
+      },
+      {
+        "strategy": "MACD_CROSSOVER",
+        "fast": 12,
+        "slow": 35,
+        "signal": 6,
+        "total_return": 0.15545248779659415,
+        "sharpe_ratio": 0.08586646518882611,
+        "max_drawdown": -0.1310829214948259,
+        "win_rate": 0.5,
+        "trades_count": 90
+      },
+      {
+        "strategy": "MACD_CROSSOVER",
+        "fast": 15,
+        "slow": 26,
+        "signal": 6,
+        "total_return": 0.15123164081802853,
+        "sharpe_ratio": 0.0809503179629922,
+        "max_drawdown": -0.1497231514248803,
+        "win_rate": 0.5212765957446809,
+        "trades_count": 94
+      },
+      {
+        "strategy": "MACD_CROSSOVER",
+        "fast": 8,
+        "slow": 35,
+        "signal": 12,
+        "total_return": 0.12608117755578951,
+        "sharpe_ratio": 0.028783478033098532,
+        "max_drawdown": -0.14587109483435662,
+        "win_rate": 0.5125,
+        "trades_count": 80
+      },
+      {
+        "strategy": "MACD_CROSSOVER",
+        "fast": 12,
+        "slow": 35,
+        "signal": 8,
+        "total_return": 0.12608117755578951,
+        "sharpe_ratio": 0.028783478033098532,
+        "max_drawdown": -0.14587109483435662,
+        "win_rate": 0.5125,
+        "trades_count": 80
+      },
+      {
+        "strategy": "MACD_CROSSOVER",
+        "fast": 10,
+        "slow": 30,
+        "signal": 9,
+        "total_return": 0.122102966356324,
+        "sharpe_ratio": 0.02725840803490789,
+        "max_drawdown": -0.11484504838991545,
+        "win_rate": 0.4883720930232558,
+        "trades_count": 86
+      },
+      {
+        "strategy": "MACD_CROSSOVER",
+        "fast": 10,
+        "slow": 35,
+        "signal": 8,
+        "total_return": 0.11322675836807128,
+        "sharpe_ratio": 0.01252923668077871,
+        "max_drawdown": -0.12705315725581884,
+        "win_rate": 0.46511627906976744,
+        "trades_count": 86
+      },
+      {
+        "strategy": "MACD_CROSSOVER",
+        "fast": 12,
+        "slow": 30,
+        "signal": 9,
+        "total_return": 0.11190896971291697,
+        "sharpe_ratio": 0.002432303659645308,
+        "max_drawdown": -0.17199360292089788,
+        "win_rate": 0.5128205128205128,
+        "trades_count": 78
+      }
+    ],
+    "ma_strategies": [
+      {
+        "strategy": "DUAL_MOVING_AVERAGE",
+        "short_period": 15,
+        "long_period": 40,
+        "total_return": 0.18368381337634054,
+        "sharpe_ratio": 0.14113077867427595,
+        "max_drawdown": -0.09784496278212464,
+        "win_rate": 0.6,
+        "trades_count": 35
+      },
+      {
+        "strategy": "DUAL_MOVING_AVERAGE",
+        "short_period": 10,
+        "long_period": 60,
+        "total_return": 0.16371743245794979,
+        "sharpe_ratio": 0.11172945942322138,
+        "max_drawdown": -0.0943544550893444,
+        "win_rate": 0.6206896551724138,
+        "trades_count": 29
+      },
+      {
+        "strategy": "DUAL_MOVING_AVERAGE",
+        "short_period": 10,
+        "long_period": 40,
+        "total_return": 0.15503050781022965,
+        "sharpe_ratio": 0.08349742705925758,
+        "max_drawdown": -0.09639583586462463,
+        "win_rate": 0.6060606060606061,
+        "trades_count": 33
+      }
+    ],
+    "bb_strategies": []
+  },
+  "top_strategies": [
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 25,
+      "oversold": 35,
+      "overbought": 70,
+      "total_return": 0.24647962804185397,
+      "sharpe_ratio": 0.27872500078255014,
+      "max_drawdown": -0.10740018647225591,
+      "win_rate": 0.5454545454545454,
+      "trades_count": 44
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 20,
+      "oversold": 35,
+      "overbought": 70,
+      "total_return": 0.23044638769001158,
+      "sharpe_ratio": 0.2541883705015431,
+      "max_drawdown": -0.11942455327641639,
+      "win_rate": 0.5660377358490566,
+      "trades_count": 53
+    },
+    {
+      "strategy": "MACD_CROSSOVER",
+      "fast": 8,
+      "slow": 30,
+      "signal": 12,
+      "total_return": 0.25566711762488903,
+      "sharpe_ratio": 0.24941072630127467,
+      "max_drawdown": -0.14587109483435656,
+      "win_rate": 0.5,
+      "trades_count": 80
+    },
+    {
+      "strategy": "MACD_CROSSOVER",
+      "fast": 12,
+      "slow": 30,
+      "signal": 8,
+      "total_return": 0.25566711762488903,
+      "sharpe_ratio": 0.24941072630127467,
+      "max_drawdown": -0.14587109483435656,
+      "win_rate": 0.5,
+      "trades_count": 80
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 14,
+      "oversold": 30,
+      "overbought": 70,
+      "total_return": 0.24156612373524777,
+      "sharpe_ratio": 0.24795260613412046,
+      "max_drawdown": -0.1382695240024534,
+      "win_rate": 0.6896551724137931,
+      "trades_count": 58
+    },
+    {
+      "strategy": "MACD_CROSSOVER",
+      "fast": 15,
+      "slow": 35,
+      "signal": 6,
+      "total_return": 0.23871325072741434,
+      "sharpe_ratio": 0.24224581537716716,
+      "max_drawdown": -0.10293435673771412,
+      "win_rate": 0.5,
+      "trades_count": 82
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 25,
+      "oversold": 25,
+      "overbought": 70,
+      "total_return": 0.2133360944268261,
+      "sharpe_ratio": 0.24142187475756816,
+      "max_drawdown": -0.1074001864722559,
+      "win_rate": 0.6551724137931034,
+      "trades_count": 29
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 14,
+      "oversold": 30,
+      "overbought": 65,
+      "total_return": 0.2362912378192401,
+      "sharpe_ratio": 0.22942381671348128,
+      "max_drawdown": -0.1383775139742939,
+      "win_rate": 0.6025641025641025,
+      "trades_count": 78
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 20,
+      "oversold": 30,
+      "overbought": 70,
+      "total_return": 0.20938582817806828,
+      "sharpe_ratio": 0.2179602685304235,
+      "max_drawdown": -0.0829234662531975,
+      "win_rate": 0.6216216216216216,
+      "trades_count": 37
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 10,
+      "oversold": 30,
+      "overbought": 65,
+      "total_return": 0.23198814196640183,
+      "sharpe_ratio": 0.20494415444689526,
+      "max_drawdown": -0.20469273515360956,
+      "win_rate": 0.5904761904761905,
+      "trades_count": 105
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 30,
+      "oversold": 30,
+      "overbought": 70,
+      "total_return": 0.1982044128017877,
+      "sharpe_ratio": 0.20447801748572925,
+      "max_drawdown": -0.07232409341688563,
+      "win_rate": 0.625,
+      "trades_count": 24
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 30,
+      "oversold": 30,
+      "overbought": 65,
+      "total_return": 0.2021523276804542,
+      "sharpe_ratio": 0.20289417768656356,
+      "max_drawdown": -0.17473882746248184,
+      "win_rate": 0.5945945945945946,
+      "trades_count": 37
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 25,
+      "oversold": 20,
+      "overbought": 70,
+      "total_return": 0.19740130581247795,
+      "sharpe_ratio": 0.1983511207321786,
+      "max_drawdown": -0.10740018647225581,
+      "win_rate": 0.6296296296296297,
+      "trades_count": 27
+    },
+    {
+      "strategy": "MACD_CROSSOVER",
+      "fast": 15,
+      "slow": 30,
+      "signal": 6,
+      "total_return": 0.2132724406018529,
+      "sharpe_ratio": 0.18270609178240974,
+      "max_drawdown": -0.10293435673771394,
+      "win_rate": 0.4880952380952381,
+      "trades_count": 84
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 10,
+      "oversold": 30,
+      "overbought": 70,
+      "total_return": 0.20791024689603566,
+      "sharpe_ratio": 0.1770826208058691,
+      "max_drawdown": -0.11637735112845643,
+      "win_rate": 0.5930232558139535,
+      "trades_count": 86
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 7,
+      "oversold": 35,
+      "overbought": 75,
+      "total_return": 0.2080541599983332,
+      "sharpe_ratio": 0.16902151520266237,
+      "max_drawdown": -0.14186507799244136,
+      "win_rate": 0.5602836879432624,
+      "trades_count": 141
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 10,
+      "oversold": 25,
+      "overbought": 65,
+      "total_return": 0.2056805535366033,
+      "sharpe_ratio": 0.16701807188419998,
+      "max_drawdown": -0.19030520687306568,
+      "win_rate": 0.5714285714285714,
+      "trades_count": 91
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 30,
+      "oversold": 25,
+      "overbought": 65,
+      "total_return": 0.18208215502110847,
+      "sharpe_ratio": 0.15841772162179515,
+      "max_drawdown": -0.1747388274624818,
+      "win_rate": 0.6333333333333333,
+      "trades_count": 30
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 14,
+      "oversold": 25,
+      "overbought": 70,
+      "total_return": 0.18971092519220845,
+      "sharpe_ratio": 0.15793361106757586,
+      "max_drawdown": -0.10151721764285489,
+      "win_rate": 0.717391304347826,
+      "trades_count": 46
+    },
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "period": 30,
+      "oversold": 25,
+      "overbought": 70,
+      "total_return": 0.17820015136802825,
+      "sharpe_ratio": 0.15709057813963295,
+      "max_drawdown": -0.07232409341688563,
+      "win_rate": 0.7058823529411765,
+      "trades_count": 17
+    }
+  ],
+  "summary": {
+    "total_strategies_tested": 45,
+    "best_sharpe_ratio": 0.27872500078255014,
+    "best_max_drawdown": -0.10740018647225591,
+    "best_total_return": 0.24647962804185397
+  }
+}

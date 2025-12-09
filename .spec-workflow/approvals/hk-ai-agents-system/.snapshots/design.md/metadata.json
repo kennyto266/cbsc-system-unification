@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/hk-ai-agents-system/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-28T07:28:51.763Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759044531746_2ao0c2edc",
+      "approvalTitle": "港股AI代理系统设计文档"
+    }
+  ]
+}

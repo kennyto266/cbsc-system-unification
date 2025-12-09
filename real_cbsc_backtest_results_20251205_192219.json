@@ -1,0 +1,105 @@
+{
+  "RSI Conservative": {
+    "metrics": {
+      "final_equity": 323241.9383070173,
+      "total_return": -0.6767580616929827,
+      "annual_return": -0.07327232213773516,
+      "sharpe_ratio": -0.16377441769323242,
+      "max_drawdown": -0.7719628593882819,
+      "win_rate": 0.4847621760182284,
+      "total_trades": 157,
+      "trading_costs": 314000.0,
+      "calmar_ratio": -0.09491690078949853,
+      "sortino_ratio": -0.23933152807965288,
+      "years_tested": 14.841269841269842
+    },
+    "execution_time": 0.002103567123413086
+  },
+  "RSI Aggressive": {
+    "metrics": {
+      "final_equity": 7313007.7731003715,
+      "total_return": 6.313007773100371,
+      "annual_return": 0.14346404594160167,
+      "sharpe_ratio": 0.6330207105840393,
+      "max_drawdown": -0.3901424250899829,
+      "win_rate": 0.5148741418764302,
+      "total_trades": 33,
+      "trading_costs": 66000.0,
+      "calmar_ratio": 0.36772223863762815,
+      "sortino_ratio": 0.9408843423492789,
+      "years_tested": 14.841269841269842
+    },
+    "execution_time": 0.0010218620300292969
+  },
+  "MACD Standard": {
+    "metrics": {
+      "final_equity": -923338.3934828179,
+      "total_return": -1.9233383934828179,
+      "annual_return": NaN,
+      "sharpe_ratio": -0.40548430842552907,
+      "max_drawdown": -0.0,
+      "win_rate": 0.4869762174405436,
+      "total_trades": 609,
+      "trading_costs": 1218000.0,
+      "calmar_ratio": 0,
+      "sortino_ratio": -0.569055115955417,
+      "years_tested": 14.841269841269842
+    },
+    "execution_time": 0.0016570091247558594
+  },
+  "MACD Sensitive": {
+    "metrics": {
+      "final_equity": -923338.3934828179,
+      "total_return": -1.9233383934828179,
+      "annual_return": NaN,
+      "sharpe_ratio": -0.40548430842552907,
+      "max_drawdown": -0.0,
+      "win_rate": 0.4869762174405436,
+      "total_trades": 609,
+      "trading_costs": 1218000.0,
+      "calmar_ratio": 0,
+      "sortino_ratio": -0.569055115955417,
+      "years_tested": 14.841269841269842
+    },
+    "execution_time": 0.0010118484497070312
+  },
+  "Bollinger Breakout": {
+    "metrics": {
+      "final_equity": 548676.4741649276,
+      "total_return": -0.4513235258350724,
+      "annual_return": -0.03963744453259921,
+      "sharpe_ratio": -0.05795252976117739,
+      "max_drawdown": -0.5805049651488484,
+      "win_rate": 0.4732142857142857,
+      "total_trades": 258,
+      "trading_costs": 516000.0,
+      "calmar_ratio": -0.0682809741729525,
+      "sortino_ratio": -0.057194805390386766,
+      "years_tested": 14.841269841269842
+    },
+    "execution_time": 0.0009546279907226562
+  },
+  "Bollinger Wide": {
+    "metrics": {
+      "final_equity": 548676.4741649276,
+      "total_return": -0.4513235258350724,
+      "annual_return": -0.03963744453259921,
+      "sharpe_ratio": -0.05795252976117739,
+      "max_drawdown": -0.5805049651488484,
+      "win_rate": 0.4732142857142857,
+      "total_trades": 258,
+      "trading_costs": 516000.0,
+      "calmar_ratio": -0.0682809741729525,
+      "sortino_ratio": -0.057194805390386766,
+      "years_tested": 14.841269841269842
+    },
+    "execution_time": 0.0008985996246337891
+  },
+  "market_benchmark": {
+    "hsif_total_return": 0.39813461404607775,
+    "hsif_annual_return": 0.02283844686629144,
+    "outperforming_strategies": [
+      "RSI Aggressive"
+    ]
+  }
+}

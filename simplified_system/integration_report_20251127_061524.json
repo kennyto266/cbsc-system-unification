@@ -1,0 +1,47 @@
+{
+  "test_timestamp": "2025-11-27T06:15:24.386322",
+  "system_components": {
+    "advanced_signals": true,
+    "data_extension": true,
+    "real_data_api": true,
+    "multi_stock_analysis": true
+  },
+  "performance_metrics": {
+    "small_dataset": {
+      "success": true,
+      "time": 0.035094499588012695,
+      "throughput": 1424.724688682514,
+      "quality": 0.0
+    },
+    "medium_dataset": {
+      "success": true,
+      "time": 0.09446477890014648,
+      "throughput": 2117.191214848541,
+      "quality": 0.0
+    },
+    "large_dataset": {
+      "success": true,
+      "time": 0.2273697853088379,
+      "throughput": 2199.060879266991,
+      "quality": 0.0
+    }
+  },
+  "batch_analysis": {
+    "symbols_tested": 2,
+    "successful_symbols": 2,
+    "success_rate": 1.0,
+    "average_quality": 0.0
+  },
+  "data_quality": {
+    "stock_data_available": true,
+    "extension_successful": true,
+    "extension_ratio": 83.33333333333333,
+    "signal_generation": true
+  },
+  "recommendations": [
+    "Data extension system is working efficiently",
+    "Multi-stock analysis system is fully functional",
+    "Performance benchmarks show excellent system throughput",
+    "Advanced technical analysis is generating high-quality signals"
+  ]
+}

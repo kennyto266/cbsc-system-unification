@@ -1,0 +1,37 @@
+uid=50_0 RootWebArea "cbsc_marimo_production.py" url="http://127.0.0.1:3040/"
+  uid=50_1 button
+  uid=50_2 button
+  uid=50_3 button
+  uid=50_4 button
+  uid=50_5 button
+  uid=50_6 button
+  uid=50_7 button
+  uid=50_8 button
+  uid=50_9 button
+  uid=50_10 button
+  uid=50_11 button
+  uid=50_12 button
+  uid=50_13 button
+  uid=50_14 button
+  uid=50_15 button
+  uid=50_16 separator orientation="horizontal" value="10" valuemax="75" valuemin="10" valuetext=""
+  uid=50_17 generic
+    uid=50_18 listbox "Suggestions" orientation="vertical"
+      uid=50_19 combobox autocomplete="list" expandable expanded haspopup="listbox" value="C:\Users\Penguin8n\CODEX--\cbsc_marimo_production.py"
+  uid=50_20 StaticText "Notebook already connected"
+  uid=50_21 StaticText "another browser tab is already connected to the kernel"
+  uid=50_22 button "Take over session"
+  uid=50_23 button "Save"
+  uid=50_24 button
+  uid=50_25 button
+  uid=50_26 StaticText "Minimap"
+  uid=50_27 button
+  uid=50_28 contentinfo
+    uid=50_29 StaticText "0"
+    uid=50_30 StaticText "on startup:"
+    uid=50_31 StaticText "lazy"
+    uid=50_32 StaticText "on cell change:"
+    uid=50_33 StaticText "autorun"
+    uid=50_34 button "on module change: off" haspopup="menu"
+  uid=50_35 region "Notifications (F8)"
+    uid=50_36 list

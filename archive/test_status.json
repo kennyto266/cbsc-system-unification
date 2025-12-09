@@ -1,0 +1,33 @@
+{
+  "timestamp": "2025-11-24T15:11:47.394272",
+  "gpu_status": {
+    "available": false,
+    "error": "cannot import name 'detect_gpu_environment' from 'utils.gpu_config' (C:\\Users\\Penguin8n\\CODEX--\\src\\utils\\gpu_config.py)",
+    "gpu_enabled": false
+  },
+  "memory_status": {
+    "cpu_memory_total": 134864097280,
+    "cpu_memory_used": 25696460800,
+    "cpu_memory_free": 109167636480,
+    "cpu_memory_percent": 19.1,
+    "cpu_memory_available_gb": 101.67028427124023,
+    "cpu_memory_used_gb": 23.93169403076172
+  },
+  "data_sources_status": {
+    "error": "'list' object has no attribute 'keys'",
+    "total_sources": 0,
+    "healthy_sources": 0
+  },
+  "vectorbt_status": {
+    "available": false,
+    "error": "cannot import name '__version__' from 'telegram' (C:\\Users\\Penguin8n\\CODEX--\\src\\telegram\\__init__.py)"
+  },
+  "system_performance": {
+    "cpu_usage_percent": 2.1,
+    "cpu_cores": 32,
+    "cpu_frequency_mhz": 4300.0,
+    "disk_usage_percent": 67.4,
+    "disk_free_gb": 607.0346031188965,
+    "disk_total_gb": 1862.0165977478027
+  }
+}

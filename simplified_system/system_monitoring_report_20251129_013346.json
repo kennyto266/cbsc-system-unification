@@ -1,0 +1,44 @@
+{
+  "timestamp": "2025-11-29T01:33:46.800921",
+  "performance_summary": {
+    "monitoring_duration_seconds": 12,
+    "total_data_points": 6,
+    "recent_performance": {
+      "avg_cpu_usage": 20.369844829542632,
+      "avg_memory_usage": 43.69798264115388,
+      "avg_response_time": 0.27546851754686924,
+      "total_errors": 4,
+      "avg_data_health": 92.39558255171262
+    },
+    "active_alerts": 2,
+    "system_status": "EXCELLENT"
+  },
+  "sharpe_monitoring": {
+    "total_calculations": 10,
+    "anomalies_detected": 1,
+    "anomaly_rate": 0.1,
+    "average_sharpe": 1.195896041779097,
+    "max_abs_sharpe": 2.071059080056658,
+    "last_calculation": "2025-11-29T01:33:43.803315",
+    "safety_rate": 0.9
+  },
+  "alerts": [
+    {
+      "timestamp": "2025-11-29T01:33:34.798736",
+      "type": "DATA_SOURCE_UNHEALTHY",
+      "message": "數據源健康度: 87.6%"
+    },
+    {
+      "timestamp": "2025-11-29T01:33:40.799817",
+      "type": "DATA_SOURCE_UNHEALTHY",
+      "message": "數據源健康度: 89.5%"
+    }
+  ],
+  "monitoring_thresholds": {
+    "cpu_usage": 80.0,
+    "memory_usage": 85.0,
+    "response_time": 1.0,
+    "error_rate": 5.0,
+    "data_source_health": 90.0
+  }
+}

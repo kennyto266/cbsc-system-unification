@@ -1,0 +1,1382 @@
+{
+  "summary": {
+    "total_files": 18,
+    "passed_files": 18,
+    "failed_files": 0,
+    "error_files": 0,
+    "average_score": 0.875,
+    "validation_timestamp": "2025-11-28T17:35:45.133416"
+  },
+  "overall_status": "GOOD",
+  "detailed_results": [
+    {
+      "file_path": "data\\government\\efbn_indicative_20251123_132049.json",
+      "validation_timestamp": "2025-11-28T17:35:45.133924",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "end_of_day": 0.0,
+            "efb_7d": 0.0,
+            "efb_30d": 0.0,
+            "efb_91d": 0.0,
+            "efb_182d": 0.0,
+            "efb_273d": 0.0,
+            "efb_364d": 0.0,
+            "efn_2y": 0.0,
+            "efn_3y": 1.0,
+            "efn_4y": 1.0,
+            "efn_5y": 1.0,
+            "efn_7y": 1.0,
+            "efn_10y": 1.0,
+            "efn_15y": 1.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 1.0,
+          "missing_rate_acceptable": false,
+          "data_completeness": 0.625,
+          "completeness_acceptable": false
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": false,
+          "interval_reasonable": false,
+          "time_span_adequate": false
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\efbn_indicative_20251123_132502.json",
+      "validation_timestamp": "2025-11-28T17:35:45.134305",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "end_of_day": 0.0,
+            "efb_7d": 0.0,
+            "efb_30d": 0.0,
+            "efb_91d": 0.0,
+            "efb_182d": 0.0,
+            "efb_273d": 0.0,
+            "efb_364d": 0.0,
+            "efn_2y": 0.0,
+            "efn_3y": 1.0,
+            "efn_4y": 1.0,
+            "efn_5y": 1.0,
+            "efn_7y": 1.0,
+            "efn_10y": 1.0,
+            "efn_15y": 1.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 1.0,
+          "missing_rate_acceptable": false,
+          "data_completeness": 0.625,
+          "completeness_acceptable": false
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": false,
+          "interval_reasonable": false,
+          "time_span_adequate": false
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\exchange_rates_20251123_131647.json",
+      "validation_timestamp": "2025-11-28T17:35:45.135443",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "gbp": 0.0,
+            "jpy": 0.0,
+            "cad": 0.0,
+            "aud": 0.0,
+            "sgd": 0.0,
+            "twd": 0.0,
+            "chf": 0.0,
+            "krw": 0.0,
+            "thb": 0.0,
+            "myr": 0.0,
+            "dem": 1.0,
+            "nlg": 1.0,
+            "bef": 1.0,
+            "frf": 1.0,
+            "itl": 1.0,
+            "eur": 0.0,
+            "php": 0.0,
+            "inr": 0.0,
+            "idr": 0.0,
+            "zar": 0.0,
+            "special_drawing_rights": 0.2,
+            "neeri_1983_trade_wgt": 1.0,
+            "neeri_1983_import_wgt": 1.0,
+            "neeri_1983_export_wgt": 1.0,
+            "neeri_2000_trade_wgt": 1.0,
+            "neeri_2000_import_wgt": 1.0,
+            "neeri_2000_export_wgt": 1.0,
+            "neeri_2010_trade_wgt": 1.0,
+            "neeri_2010_import_wgt": 1.0,
+            "neeri_2010_export_wgt": 1.0,
+            "neeri_2020_trade_wgt": 0.0,
+            "neeri_2020_import_wgt": 0.0,
+            "neeri_2020_export_wgt": 0.0,
+            "date": 0.0,
+            "hkd_usd_rate": 0.0,
+            "hkd_cny_rate": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 1.0,
+          "missing_rate_acceptable": false,
+          "data_completeness": 0.6263157894736842,
+          "completeness_acceptable": false
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": true,
+          "avg_interval_days": 1.2222222222222223,
+          "interval_reasonable": true,
+          "time_span_days": 121,
+          "time_span_adequate": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\exchange_rates_20251123_131828.json",
+      "validation_timestamp": "2025-11-28T17:35:45.136422",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "gbp": 0.0,
+            "jpy": 0.0,
+            "cad": 0.0,
+            "aud": 0.0,
+            "sgd": 0.0,
+            "twd": 0.0,
+            "chf": 0.0,
+            "krw": 0.0,
+            "thb": 0.0,
+            "myr": 0.0,
+            "dem": 1.0,
+            "nlg": 1.0,
+            "bef": 1.0,
+            "frf": 1.0,
+            "itl": 1.0,
+            "eur": 0.0,
+            "php": 0.0,
+            "inr": 0.0,
+            "idr": 0.0,
+            "zar": 0.0,
+            "special_drawing_rights": 0.2,
+            "neeri_1983_trade_wgt": 1.0,
+            "neeri_1983_import_wgt": 1.0,
+            "neeri_1983_export_wgt": 1.0,
+            "neeri_2000_trade_wgt": 1.0,
+            "neeri_2000_import_wgt": 1.0,
+            "neeri_2000_export_wgt": 1.0,
+            "neeri_2010_trade_wgt": 1.0,
+            "neeri_2010_import_wgt": 1.0,
+            "neeri_2010_export_wgt": 1.0,
+            "neeri_2020_trade_wgt": 0.0,
+            "neeri_2020_import_wgt": 0.0,
+            "neeri_2020_export_wgt": 0.0,
+            "date": 0.0,
+            "hkd_usd_rate": 0.0,
+            "hkd_cny_rate": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 1.0,
+          "missing_rate_acceptable": false,
+          "data_completeness": 0.6263157894736842,
+          "completeness_acceptable": false
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": true,
+          "avg_interval_days": 1.2222222222222223,
+          "interval_reasonable": true,
+          "time_span_days": 121,
+          "time_span_adequate": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\exchange_rates_20251123_132447.json",
+      "validation_timestamp": "2025-11-28T17:35:45.137346",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "gbp": 0.0,
+            "jpy": 0.0,
+            "cad": 0.0,
+            "aud": 0.0,
+            "sgd": 0.0,
+            "twd": 0.0,
+            "chf": 0.0,
+            "krw": 0.0,
+            "thb": 0.0,
+            "myr": 0.0,
+            "dem": 1.0,
+            "nlg": 1.0,
+            "bef": 1.0,
+            "frf": 1.0,
+            "itl": 1.0,
+            "eur": 0.0,
+            "php": 0.0,
+            "inr": 0.0,
+            "idr": 0.0,
+            "zar": 0.0,
+            "special_drawing_rights": 0.2,
+            "neeri_1983_trade_wgt": 1.0,
+            "neeri_1983_import_wgt": 1.0,
+            "neeri_1983_export_wgt": 1.0,
+            "neeri_2000_trade_wgt": 1.0,
+            "neeri_2000_import_wgt": 1.0,
+            "neeri_2000_export_wgt": 1.0,
+            "neeri_2010_trade_wgt": 1.0,
+            "neeri_2010_import_wgt": 1.0,
+            "neeri_2010_export_wgt": 1.0,
+            "neeri_2020_trade_wgt": 0.0,
+            "neeri_2020_import_wgt": 0.0,
+            "neeri_2020_export_wgt": 0.0,
+            "date": 0.0,
+            "hkd_usd_rate": 0.0,
+            "hkd_cny_rate": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 1.0,
+          "missing_rate_acceptable": false,
+          "data_completeness": 0.6263157894736842,
+          "completeness_acceptable": false
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": true,
+          "avg_interval_days": 1.2222222222222223,
+          "interval_reasonable": true,
+          "time_span_days": 121,
+          "time_span_adequate": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\hibor_rates_20251123_131633.json",
+      "validation_timestamp": "2025-11-28T17:35:45.137915",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "ir_1w": 0.0,
+            "ir_1m": 0.0,
+            "ir_3m": 0.0,
+            "ir_6m": 0.0,
+            "ir_9m": 1.0,
+            "ir_12m": 0.0,
+            "date": 0.0,
+            "hibor_overnight": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 1.0,
+          "missing_rate_acceptable": false,
+          "data_completeness": 0.9,
+          "completeness_acceptable": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": true,
+          "avg_interval_days": 1.494949494949495,
+          "interval_reasonable": true,
+          "time_span_days": 148,
+          "time_span_adequate": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\hibor_rates_20251123_131814.json",
+      "validation_timestamp": "2025-11-28T17:35:45.138464",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "ir_1w": 0.0,
+            "ir_1m": 0.0,
+            "ir_3m": 0.0,
+            "ir_6m": 0.0,
+            "ir_9m": 1.0,
+            "ir_12m": 0.0,
+            "date": 0.0,
+            "hibor_overnight": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 1.0,
+          "missing_rate_acceptable": false,
+          "data_completeness": 0.9,
+          "completeness_acceptable": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": true,
+          "avg_interval_days": 1.494949494949495,
+          "interval_reasonable": true,
+          "time_span_days": 148,
+          "time_span_adequate": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\hibor_rates_20251123_132433.json",
+      "validation_timestamp": "2025-11-28T17:35:45.139006",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "ir_1w": 0.0,
+            "ir_1m": 0.0,
+            "ir_3m": 0.0,
+            "ir_6m": 0.0,
+            "ir_9m": 1.0,
+            "ir_12m": 0.0,
+            "date": 0.0,
+            "hibor_overnight": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 1.0,
+          "missing_rate_acceptable": false,
+          "data_completeness": 0.9,
+          "completeness_acceptable": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": true,
+          "avg_interval_days": 1.494949494949495,
+          "interval_reasonable": true,
+          "time_span_days": 148,
+          "time_span_adequate": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\hibor_rates_20251124_174050.json",
+      "validation_timestamp": "2025-11-28T17:35:45.139539",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "ir_1w": 0.0,
+            "ir_1m": 0.0,
+            "ir_3m": 0.0,
+            "ir_6m": 0.0,
+            "ir_9m": 1.0,
+            "ir_12m": 0.0,
+            "date": 0.0,
+            "hibor_overnight": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 1.0,
+          "missing_rate_acceptable": false,
+          "data_completeness": 0.9,
+          "completeness_acceptable": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 3,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": true,
+          "avg_interval_days": 1.494949494949495,
+          "interval_reasonable": true,
+          "time_span_days": 148,
+          "time_span_adequate": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\interbank_liquidity_20251123_131648.json",
+      "validation_timestamp": "2025-11-28T17:35:45.140395",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "end_of_date": 0.0,
+            "cu_weakside": 0.0,
+            "cu_strongside": 0.0,
+            "disc_win_base_rate": 0.0,
+            "hibor_overnight": 0.0,
+            "hibor_fixing_1m": 0.0,
+            "twi": 0.0,
+            "opening_balance": 0.0,
+            "closing_balance": 0.0,
+            "market_activities": 0.0,
+            "interest_payment": 0.0,
+            "discount_window_reversal": 0.0,
+            "discount_window_activities": 0.0,
+            "intraday_movements_of_aggregate_balance_at_0930": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1000": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1100": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1200": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1500": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1600": 0.0,
+            "forex_trans_t1": 0.0,
+            "other_market_activities_t1": 0.0,
+            "reversal_of_discount_window_t1": 0.0,
+            "interest_payment_issuance_efbn_t1": 0.0,
+            "forecast_aggregate_bal_t1": 0.0,
+            "forex_trans_t2": 0.0,
+            "other_market_activities_t2": 0.0,
+            "reversal_of_discount_window_t2": 0.0,
+            "interest_payment_issuance_efbn_t2": 0.0,
+            "forecast_aggregate_bal_t2": 0.0,
+            "forex_trans_t3": 0.0,
+            "other_market_activities_t3": 0.0,
+            "reversal_of_discount_window_t3": 0.0,
+            "interest_payment_issuance_efbn_t3": 0.0,
+            "forecast_aggregate_bal_t3": 0.0,
+            "forex_trans_t4": 0.97,
+            "other_market_activities_t4": 0.97,
+            "reversal_of_discount_window_t4": 0.97,
+            "interest_payment_issuance_efbn_t4": 0.97,
+            "forecast_aggregate_bal_t4": 0.97,
+            "forex_trans_u": 0.0,
+            "other_market_activities_u": 0.0,
+            "reversal_of_discount_window_u": 0.0,
+            "interest_payment_issuance_efbn_u": 0.0,
+            "forecast_aggregate_bal_u": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 0.97,
+          "missing_rate_acceptable": false,
+          "data_completeness": 0.8945652173913043,
+          "completeness_acceptable": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": false,
+          "interval_reasonable": false,
+          "time_span_adequate": false
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\interbank_liquidity_20251123_131841.json",
+      "validation_timestamp": "2025-11-28T17:35:45.141202",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "end_of_date": 0.0,
+            "cu_weakside": 0.0,
+            "cu_strongside": 0.0,
+            "disc_win_base_rate": 0.0,
+            "hibor_overnight": 0.0,
+            "hibor_fixing_1m": 0.0,
+            "twi": 0.0,
+            "opening_balance": 0.0,
+            "closing_balance": 0.0,
+            "market_activities": 0.0,
+            "interest_payment": 0.0,
+            "discount_window_reversal": 0.0,
+            "discount_window_activities": 0.0,
+            "intraday_movements_of_aggregate_balance_at_0930": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1000": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1100": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1200": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1500": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1600": 0.0,
+            "forex_trans_t1": 0.0,
+            "other_market_activities_t1": 0.0,
+            "reversal_of_discount_window_t1": 0.0,
+            "interest_payment_issuance_efbn_t1": 0.0,
+            "forecast_aggregate_bal_t1": 0.0,
+            "forex_trans_t2": 0.0,
+            "other_market_activities_t2": 0.0,
+            "reversal_of_discount_window_t2": 0.0,
+            "interest_payment_issuance_efbn_t2": 0.0,
+            "forecast_aggregate_bal_t2": 0.0,
+            "forex_trans_t3": 0.0,
+            "other_market_activities_t3": 0.0,
+            "reversal_of_discount_window_t3": 0.0,
+            "interest_payment_issuance_efbn_t3": 0.0,
+            "forecast_aggregate_bal_t3": 0.0,
+            "forex_trans_t4": 0.97,
+            "other_market_activities_t4": 0.97,
+            "reversal_of_discount_window_t4": 0.97,
+            "interest_payment_issuance_efbn_t4": 0.97,
+            "forecast_aggregate_bal_t4": 0.97,
+            "forex_trans_u": 0.0,
+            "other_market_activities_u": 0.0,
+            "reversal_of_discount_window_u": 0.0,
+            "interest_payment_issuance_efbn_u": 0.0,
+            "forecast_aggregate_bal_u": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 0.97,
+          "missing_rate_acceptable": false,
+          "data_completeness": 0.8945652173913043,
+          "completeness_acceptable": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": false,
+          "interval_reasonable": false,
+          "time_span_adequate": false
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\interbank_liquidity_20251123_132501.json",
+      "validation_timestamp": "2025-11-28T17:35:45.141963",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "end_of_date": 0.0,
+            "cu_weakside": 0.0,
+            "cu_strongside": 0.0,
+            "disc_win_base_rate": 0.0,
+            "hibor_overnight": 0.0,
+            "hibor_fixing_1m": 0.0,
+            "twi": 0.0,
+            "opening_balance": 0.0,
+            "closing_balance": 0.0,
+            "market_activities": 0.0,
+            "interest_payment": 0.0,
+            "discount_window_reversal": 0.0,
+            "discount_window_activities": 0.0,
+            "intraday_movements_of_aggregate_balance_at_0930": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1000": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1100": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1200": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1500": 0.0,
+            "intraday_movements_of_aggregate_balance_at_1600": 0.0,
+            "forex_trans_t1": 0.0,
+            "other_market_activities_t1": 0.0,
+            "reversal_of_discount_window_t1": 0.0,
+            "interest_payment_issuance_efbn_t1": 0.0,
+            "forecast_aggregate_bal_t1": 0.0,
+            "forex_trans_t2": 0.0,
+            "other_market_activities_t2": 0.0,
+            "reversal_of_discount_window_t2": 0.0,
+            "interest_payment_issuance_efbn_t2": 0.0,
+            "forecast_aggregate_bal_t2": 0.0,
+            "forex_trans_t3": 0.0,
+            "other_market_activities_t3": 0.0,
+            "reversal_of_discount_window_t3": 0.0,
+            "interest_payment_issuance_efbn_t3": 0.0,
+            "forecast_aggregate_bal_t3": 0.0,
+            "forex_trans_t4": 0.97,
+            "other_market_activities_t4": 0.97,
+            "reversal_of_discount_window_t4": 0.97,
+            "interest_payment_issuance_efbn_t4": 0.97,
+            "forecast_aggregate_bal_t4": 0.97,
+            "forex_trans_u": 0.0,
+            "other_market_activities_u": 0.0,
+            "reversal_of_discount_window_u": 0.0,
+            "interest_payment_issuance_efbn_u": 0.0,
+            "forecast_aggregate_bal_u": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 0.97,
+          "missing_rate_acceptable": false,
+          "data_completeness": 0.8945652173913043,
+          "completeness_acceptable": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": false,
+          "interval_reasonable": false,
+          "time_span_adequate": false
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\monetary_base_20251123_131516.json",
+      "validation_timestamp": "2025-11-28T17:35:45.142253",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "end_of_date": 0.0,
+            "cert_of_indebt": 0.0,
+            "gov_notes_coins_circulation": 0.0,
+            "aggr_balance_bf_disc_win": 0.0,
+            "aggr_balance_af_disc_win": 0.0,
+            "outstanding_efbn": 0.0,
+            "ow_lb_bf_disc_win": 0.0,
+            "ow_lb_af_disc_win": 0.0,
+            "mb_bf_disc_win_total": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 0.0,
+          "missing_rate_acceptable": true,
+          "data_completeness": 1.0,
+          "completeness_acceptable": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": false,
+          "interval_reasonable": false,
+          "time_span_adequate": false
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\monetary_base_20251123_131620.json",
+      "validation_timestamp": "2025-11-28T17:35:45.142519",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "end_of_date": 0.0,
+            "cert_of_indebt": 0.0,
+            "gov_notes_coins_circulation": 0.0,
+            "aggr_balance_bf_disc_win": 0.0,
+            "aggr_balance_af_disc_win": 0.0,
+            "outstanding_efbn": 0.0,
+            "ow_lb_bf_disc_win": 0.0,
+            "ow_lb_af_disc_win": 0.0,
+            "mb_bf_disc_win_total": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 0.0,
+          "missing_rate_acceptable": true,
+          "data_completeness": 1.0,
+          "completeness_acceptable": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": false,
+          "interval_reasonable": false,
+          "time_span_adequate": false
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\monetary_base_20251123_131813.json",
+      "validation_timestamp": "2025-11-28T17:35:45.142784",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "end_of_date": 0.0,
+            "cert_of_indebt": 0.0,
+            "gov_notes_coins_circulation": 0.0,
+            "aggr_balance_bf_disc_win": 0.0,
+            "aggr_balance_af_disc_win": 0.0,
+            "outstanding_efbn": 0.0,
+            "ow_lb_bf_disc_win": 0.0,
+            "ow_lb_af_disc_win": 0.0,
+            "mb_bf_disc_win_total": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 0.0,
+          "missing_rate_acceptable": true,
+          "data_completeness": 1.0,
+          "completeness_acceptable": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": false,
+          "interval_reasonable": false,
+          "time_span_adequate": false
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\monetary_base_20251123_132434.json",
+      "validation_timestamp": "2025-11-28T17:35:45.143044",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "end_of_date": 0.0,
+            "cert_of_indebt": 0.0,
+            "gov_notes_coins_circulation": 0.0,
+            "aggr_balance_bf_disc_win": 0.0,
+            "aggr_balance_af_disc_win": 0.0,
+            "outstanding_efbn": 0.0,
+            "ow_lb_bf_disc_win": 0.0,
+            "ow_lb_af_disc_win": 0.0,
+            "mb_bf_disc_win_total": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 0.0,
+          "missing_rate_acceptable": true,
+          "data_completeness": 1.0,
+          "completeness_acceptable": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": false,
+          "interval_reasonable": false,
+          "time_span_adequate": false
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\rmb_liquidity_20251123_132337.json",
+      "validation_timestamp": "2025-11-28T17:35:45.143359",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "end_of_date": 0.0,
+            "intraday_repo_at_0900": 0.0,
+            "overnight_repo_at_0900": 0.0,
+            "plp_fac_at_0900": 0.0,
+            "intraday_repo_at_1100": 0.0,
+            "overnight_repo_at_1100": 0.0,
+            "plp_fac_at_1100": 0.0,
+            "intraday_repo_at_1400": 0.0,
+            "overnight_repo_at_1400": 0.0,
+            "plp_fac_at_1400": 0.0,
+            "intraday_repo_at_1600": 0.0,
+            "overnight_repo_at_1600": 0.0,
+            "plp_fac_at_1600": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 0.0,
+          "missing_rate_acceptable": true,
+          "data_completeness": 1.0,
+          "completeness_acceptable": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": false,
+          "interval_reasonable": false,
+          "time_span_adequate": false
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    },
+    {
+      "file_path": "data\\government\\rmb_liquidity_20251123_132515.json",
+      "validation_timestamp": "2025-11-28T17:35:45.143674",
+      "structure_validation": {
+        "checks": {
+          "has_source": true,
+          "has_collection_time": true,
+          "has_record_count": true,
+          "has_data": true,
+          "data_is_list": true,
+          "data_not_empty": true,
+          "record_count_match": true
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "quality_validation": {
+        "metrics": {
+          "record_count": 100,
+          "record_count_adequate": true,
+          "field_missing_rates": {
+            "end_of_date": 0.0,
+            "intraday_repo_at_0900": 0.0,
+            "overnight_repo_at_0900": 0.0,
+            "plp_fac_at_0900": 0.0,
+            "intraday_repo_at_1100": 0.0,
+            "overnight_repo_at_1100": 0.0,
+            "plp_fac_at_1100": 0.0,
+            "intraday_repo_at_1400": 0.0,
+            "overnight_repo_at_1400": 0.0,
+            "plp_fac_at_1400": 0.0,
+            "intraday_repo_at_1600": 0.0,
+            "overnight_repo_at_1600": 0.0,
+            "plp_fac_at_1600": 0.0,
+            "data_type": 0.0,
+            "source": 0.0
+          },
+          "max_missing_rate": 0.0,
+          "missing_rate_acceptable": true,
+          "data_completeness": 1.0,
+          "completeness_acceptable": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "authenticity_validation": {
+        "checks": {
+          "has_source": true,
+          "source_recognized": false,
+          "collection_time_valid": true,
+          "data_fresh_days": 5,
+          "data_fresh": true
+        },
+        "score": 0.75,
+        "passed": true
+      },
+      "temporal_validation": {
+        "checks": {
+          "date_sequence_ordered": false,
+          "interval_reasonable": false,
+          "time_span_adequate": false
+        },
+        "score": 1.0,
+        "passed": true
+      },
+      "overall_score": 0.875,
+      "status": "PASS"
+    }
+  ],
+  "recommendations": [
+    "數據質量良好，建議繼續保持現有數據管理標準"
+  ]
+}

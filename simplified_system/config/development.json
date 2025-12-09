@@ -1,0 +1,35 @@
+{
+  "system": {
+    "debug": true,
+    "log_level": "DEBUG",
+    "database": {
+      "echo": true
+    },
+    "monitoring": {
+      "enabled": false
+    }
+  },
+  "data_source": {
+    "cache": {
+      "timeout": 60,
+      "max_size": 100
+    }
+  },
+  "performance": {
+    "gpu": {
+      "enabled": false
+    },
+    "optimization": {
+      "max_workers": 4
+    }
+  },
+  "api": {
+    "server": {
+      "debug": true,
+      "reload": true
+    },
+    "security": {
+      "api_key_required": false
+    }
+  }
+}

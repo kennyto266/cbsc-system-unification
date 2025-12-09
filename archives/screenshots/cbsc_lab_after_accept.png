@@ -1,0 +1,2042 @@
+uid=6_0 RootWebArea "cbsc_minimal_lab.py" url="http://127.0.0.1:3011/"
+  uid=6_1 ignored
+    uid=6_2 ignored
+      uid=6_3 generic
+        uid=6_4 generic
+          uid=6_5 ignored
+            uid=6_6 ignored
+              uid=6_7 button
+              uid=6_8 button
+              uid=6_9 button
+              uid=6_10 button
+              uid=6_11 button
+              uid=6_12 button
+              uid=6_13 button
+              uid=6_14 button
+              uid=6_15 button
+              uid=6_16 button
+              uid=6_17 button
+              uid=6_18 button
+              uid=6_19 button
+              uid=6_20 button
+              uid=6_21 ignored
+              uid=6_22 generic
+            uid=6_23 generic
+              uid=6_24 ignored
+                uid=6_25 generic
+                  uid=6_26 ignored
+                    uid=6_27 ignored
+                    uid=6_28 button
+                uid=6_29 separator orientation="horizontal" value="10" valuemax="75" valuemin="10" valuetext=""
+            uid=6_30 generic
+              uid=6_31 ignored
+                uid=6_32 generic
+                  uid=6_33 generic
+                  uid=6_34 generic
+                    uid=6_35 generic
+                      uid=6_36 ignored
+                        uid=6_37 generic
+                          uid=6_38 LabelText
+                          uid=6_39 listbox "Suggestions" orientation="vertical"
+                            uid=6_40 ignored
+                              uid=6_41 ignored
+                                uid=6_42 ignored
+                                  uid=6_43 combobox autocomplete="list" expandable expanded haspopup="listbox" value="C:\Users\Penguin8n\CODEX--\cbsc_minimal_lab.py"
+                                    uid=6_44 ignored
+                                    uid=6_45 generic
+                                      uid=6_46 StaticText "C:\Users\Penguin8n\CODEX--\cbsc_minimal_lab.py"
+                                        uid=6_47 InlineTextBox "C:\Users\Penguin8n\CODEX--\cbsc_minimal_lab.py"
+                    uid=6_48 ignored
+                      uid=6_49 ignored
+                        uid=6_50 ignored
+                          uid=6_51 ignored
+                            uid=6_52 ignored
+                              uid=6_53 ignored
+                                uid=6_54 StaticText "Reconnected"
+                                  uid=6_55 InlineTextBox "Reconnected"
+                              uid=6_56 button
+                            uid=6_57 ignored
+                              uid=6_58 ignored
+                                uid=6_59 StaticText "You have reconnected to an existing session."
+                                  uid=6_60 InlineTextBox "You have reconnected to an existing session."
+                              uid=6_61 button "Restart"
+                                uid=6_62 StaticText "Restart"
+                                  uid=6_63 InlineTextBox "Restart"
+                        uid=6_64 ignored
+                          uid=6_65 ignored
+                            uid=6_66 generic
+                              uid=6_67 generic
+                                uid=6_68 generic
+                                  uid=6_69 ignored
+                                  uid=6_70 ignored
+                                  uid=6_71 ignored
+                                uid=6_72 generic
+                                  uid=6_73 generic
+                                    uid=6_74 toolbar orientation="horizontal"
+                                      uid=6_75 button
+                                      uid=6_76 button disableable disabled
+                                      uid=6_77 button
+                                        uid=6_78 button haspopup="dialog"
+                                          uid=6_79 button
+                                  uid=6_80 ignored
+                                    uid=6_81 generic
+                                      uid=6_82 ignored
+                                        uid=6_83 generic
+                                          uid=6_84 generic
+                                          uid=6_85 generic
+                                            uid=6_86 textbox autocomplete="list" focusable focused multiline value="
+"
+                                              uid=6_87 generic
+                                                uid=6_88 LineBreak "
+"
+                                                  uid=6_89 InlineTextBox "
+"
+                                      uid=6_90 generic
+                                    uid=6_91 generic
+                                      uid=6_92 ignored
+                                        uid=6_93 ignored
+                                          uid=6_94 image "Fix generated"
+                                          uid=6_95 paragraph
+                                            uid=6_96 StaticText "Showing fix"
+                                              uid=6_97 InlineTextBox "Showing fix"
+                                        uid=6_98 ignored
+                                          uid=6_99 LabelText
+                                            uid=6_100 StaticText "Show prompt"
+                                              uid=6_101 InlineTextBox "Show prompt"
+                                          uid=6_102 switch
+                                            uid=6_103 ignored
+                                        uid=6_104 ignored
+                                          uid=6_105 ignored
+                                            uid=6_106 button "Accept"
+                                              uid=6_107 StaticText "Accept"
+                                                uid=6_108 InlineTextBox "Accept"
+                                            uid=6_109 button
+                                          uid=6_110 button "Reject"
+                                            uid=6_111 StaticText "Reject"
+                                              uid=6_112 InlineTextBox "Reject"
+                                  uid=6_113 generic
+                                    uid=6_114 ignored
+                                      uid=6_115 generic
+                                    uid=6_116 ignored
+                            uid=6_117 generic
+                              uid=6_118 generic
+                                uid=6_119 generic
+                                  uid=6_120 ignored
+                                  uid=6_121 ignored
+                                  uid=6_122 ignored
+                                uid=6_123 generic
+                                  uid=6_124 generic
+                                    uid=6_125 toolbar orientation="horizontal"
+                                      uid=6_126 button
+                                      uid=6_127 button disableable disabled
+                                      uid=6_128 button
+                                        uid=6_129 button haspopup="dialog"
+                                          uid=6_130 button
+                                  uid=6_131 ignored
+                                    uid=6_132 generic
+                                      uid=6_133 ignored
+                                        uid=6_134 generic
+                                          uid=6_135 generic
+                                          uid=6_136 generic
+                                            uid=6_137 textbox multiline value="import marimo as mo
+import pandas as pd
+from pathlib import Path
+
+
+sentiment_path = "CODEX--/warrant_sentiment_daily.csv"
+data_exists = Path(sentiment_path).exists()
+
+
+if data_exists:
+    status = mo.md("✅ **CBSC數據文件已找到**")
+else:
+    status = mo.md("❌ **CBSC數據文件未找到**")"
+                                              uid=6_138 generic
+                                                uid=6_139 StaticText "import"
+                                                  uid=6_140 InlineTextBox "import"
+                                                uid=6_141 StaticText " "
+                                                  uid=6_142 InlineTextBox " "
+                                                uid=6_143 StaticText "marimo"
+                                                  uid=6_144 InlineTextBox "marimo"
+                                                uid=6_145 StaticText " "
+                                                  uid=6_146 InlineTextBox " "
+                                                uid=6_147 StaticText "as"
+                                                  uid=6_148 InlineTextBox "as"
+                                                uid=6_149 StaticText " "
+                                                  uid=6_150 InlineTextBox " "
+                                                uid=6_151 StaticText "mo"
+                                                  uid=6_152 InlineTextBox "mo"
+                                              uid=6_153 generic
+                                                uid=6_154 StaticText "import"
+                                                  uid=6_155 InlineTextBox "import"
+                                                uid=6_156 StaticText " "
+                                                  uid=6_157 InlineTextBox " "
+                                                uid=6_158 StaticText "pandas"
+                                                  uid=6_159 InlineTextBox "pandas"
+                                                uid=6_160 StaticText " "
+                                                  uid=6_161 InlineTextBox " "
+                                                uid=6_162 StaticText "as"
+                                                  uid=6_163 InlineTextBox "as"
+                                                uid=6_164 StaticText " "
+                                                  uid=6_165 InlineTextBox " "
+                                                uid=6_166 StaticText "pd"
+                                                  uid=6_167 InlineTextBox "pd"
+                                              uid=6_168 generic
+                                                uid=6_169 StaticText "from"
+                                                  uid=6_170 InlineTextBox "from"
+                                                uid=6_171 StaticText " "
+                                                  uid=6_172 InlineTextBox " "
+                                                uid=6_173 StaticText "pathlib"
+                                                  uid=6_174 InlineTextBox "pathlib"
+                                                uid=6_175 StaticText " "
+                                                  uid=6_176 InlineTextBox " "
+                                                uid=6_177 StaticText "import"
+                                                  uid=6_178 InlineTextBox "import"
+                                                uid=6_179 StaticText " "
+                                                  uid=6_180 InlineTextBox " "
+                                                uid=6_181 StaticText "Path"
+                                                  uid=6_182 InlineTextBox "Path"
+                                              uid=6_183 generic
+                                                uid=6_184 LineBreak "
+"
+                                                  uid=6_185 InlineTextBox "
+"
+                                              uid=6_186 generic
+                                                uid=6_187 StaticText "sentiment_path"
+                                                  uid=6_188 InlineTextBox "sentiment_path"
+                                                uid=6_189 StaticText " "
+                                                  uid=6_190 InlineTextBox " "
+                                                uid=6_191 StaticText "="
+                                                  uid=6_192 InlineTextBox "="
+                                                uid=6_193 StaticText " "
+                                                  uid=6_194 InlineTextBox " "
+                                                uid=6_195 StaticText ""CODEX--/warrant_sentiment_daily.csv""
+                                                  uid=6_196 InlineTextBox ""CODEX--/warrant_sentiment_daily.csv""
+                                              uid=6_197 generic
+                                                uid=6_198 StaticText "data_exists"
+                                                  uid=6_199 InlineTextBox "data_exists"
+                                                uid=6_200 StaticText " "
+                                                  uid=6_201 InlineTextBox " "
+                                                uid=6_202 StaticText "="
+                                                  uid=6_203 InlineTextBox "="
+                                                uid=6_204 StaticText " "
+                                                  uid=6_205 InlineTextBox " "
+                                                uid=6_206 StaticText "Path"
+                                                  uid=6_207 InlineTextBox "Path"
+                                                uid=6_208 StaticText "("
+                                                  uid=6_209 InlineTextBox "("
+                                                uid=6_210 StaticText "sentiment_path"
+                                                  uid=6_211 InlineTextBox "sentiment_path"
+                                                uid=6_212 StaticText ")"
+                                                  uid=6_213 InlineTextBox ")"
+                                                uid=6_214 StaticText "."
+                                                  uid=6_215 InlineTextBox "."
+                                                uid=6_216 StaticText "exists"
+                                                  uid=6_217 InlineTextBox "exists"
+                                                uid=6_218 StaticText "()"
+                                                  uid=6_219 InlineTextBox "()"
+                                              uid=6_220 generic
+                                                uid=6_221 LineBreak "
+"
+                                                  uid=6_222 InlineTextBox "
+"
+                                              uid=6_223 generic
+                                                uid=6_224 StaticText "if"
+                                                  uid=6_225 InlineTextBox "if"
+                                                uid=6_226 StaticText " "
+                                                  uid=6_227 InlineTextBox " "
+                                                uid=6_228 StaticText "data_exists"
+                                                  uid=6_229 InlineTextBox "data_exists"
+                                                uid=6_230 StaticText ":"
+                                                  uid=6_231 InlineTextBox ":"
+                                              uid=6_232 generic
+                                                uid=6_233 StaticText "    "
+                                                  uid=6_234 InlineTextBox "    "
+                                                uid=6_235 StaticText "status"
+                                                  uid=6_236 InlineTextBox "status"
+                                                uid=6_237 StaticText " "
+                                                  uid=6_238 InlineTextBox " "
+                                                uid=6_239 StaticText "="
+                                                  uid=6_240 InlineTextBox "="
+                                                uid=6_241 StaticText " "
+                                                  uid=6_242 InlineTextBox " "
+                                                uid=6_243 StaticText "mo"
+                                                  uid=6_244 InlineTextBox "mo"
+                                                uid=6_245 StaticText "."
+                                                  uid=6_246 InlineTextBox "."
+                                                uid=6_247 StaticText "md"
+                                                  uid=6_248 InlineTextBox "md"
+                                                uid=6_249 StaticText "("
+                                                  uid=6_250 InlineTextBox "("
+                                                uid=6_251 StaticText ""✅ **CBSC數據文件已找到**""
+                                                  uid=6_252 InlineTextBox ""✅ **CBSC數據文件已找到**""
+                                                uid=6_253 StaticText ")"
+                                                  uid=6_254 InlineTextBox ")"
+                                              uid=6_255 generic
+                                                uid=6_256 StaticText "else"
+                                                  uid=6_257 InlineTextBox "else"
+                                                uid=6_258 StaticText ":"
+                                                  uid=6_259 InlineTextBox ":"
+                                              uid=6_260 generic
+                                                uid=6_261 StaticText "    "
+                                                  uid=6_262 InlineTextBox "    "
+                                                uid=6_263 StaticText "status"
+                                                  uid=6_264 InlineTextBox "status"
+                                                uid=6_265 StaticText " "
+                                                  uid=6_266 InlineTextBox " "
+                                                uid=6_267 StaticText "="
+                                                  uid=6_268 InlineTextBox "="
+                                                uid=6_269 StaticText " "
+                                                  uid=6_270 InlineTextBox " "
+                                                uid=6_271 StaticText "mo"
+                                                  uid=6_272 InlineTextBox "mo"
+                                                uid=6_273 StaticText "."
+                                                  uid=6_274 InlineTextBox "."
+                                                uid=6_275 StaticText "md"
+                                                  uid=6_276 InlineTextBox "md"
+                                                uid=6_277 StaticText "("
+                                                  uid=6_278 InlineTextBox "("
+                                                uid=6_279 StaticText ""❌ **CBSC數據文件未找到**""
+                                                  uid=6_280 InlineTextBox ""❌ **CBSC數據文件未找到**""
+                                                uid=6_281 StaticText ")"
+                                                  uid=6_282 InlineTextBox ")"
+                                      uid=6_283 generic
+                                    uid=6_284 generic
+                                      uid=6_285 ignored
+                                        uid=6_286 ignored
+                                          uid=6_287 image "Fix generated"
+                                          uid=6_288 paragraph
+                                            uid=6_289 StaticText "Showing fix"
+                                              uid=6_290 InlineTextBox "Showing fix"
+                                        uid=6_291 ignored
+                                          uid=6_292 LabelText
+                                            uid=6_293 StaticText "Show prompt"
+                                              uid=6_294 InlineTextBox "Show prompt"
+                                          uid=6_295 switch
+                                            uid=6_296 ignored
+                                        uid=6_297 ignored
+                                          uid=6_298 ignored
+                                            uid=6_299 button "Accept"
+                                              uid=6_300 StaticText "Accept"
+                                                uid=6_301 InlineTextBox "Accept"
+                                            uid=6_302 button
+                                          uid=6_303 button "Reject"
+                                            uid=6_304 StaticText "Reject"
+                                              uid=6_305 InlineTextBox "Reject"
+                                  uid=6_306 generic
+                                    uid=6_307 ignored
+                                      uid=6_308 generic
+                                    uid=6_309 ignored
+                            uid=6_310 generic
+                              uid=6_311 generic
+                                uid=6_312 generic
+                                  uid=6_313 ignored
+                                  uid=6_314 ignored
+                                  uid=6_315 ignored
+                                uid=6_316 generic
+                                  uid=6_317 generic
+                                    uid=6_318 toolbar orientation="horizontal"
+                                      uid=6_319 button
+                                      uid=6_320 button disableable disabled
+                                      uid=6_321 button
+                                        uid=6_322 button haspopup="dialog"
+                                          uid=6_323 button
+                                  uid=6_324 ignored
+                                    uid=6_325 generic
+                                      uid=6_326 ignored
+                                        uid=6_327 generic
+                                          uid=6_328 generic
+                                          uid=6_329 generic
+                                            uid=6_330 textbox multiline value="import marimo as mo
+
+
+if not data_exists:
+    return mo.md("⚠️ 請確保CBSC數據文件存在後再繼續"), None, None, None
+
+
+rsi_period = mo.ui.slider(5, 50, value=14, label="RSI 週期")
+sentiment_threshold = mo.ui.slider(0.1, 1.0, value=0.7, step=0.05, label="情緒閾值")
+ma_short = mo.ui.slider(5, 30, value=10, label="短期均線週期")
+ma_long = mo.ui.slider(20, 100, value=30, label="長期均線週期")"
+                                              uid=6_331 generic
+                                                uid=6_332 StaticText "import"
+                                                  uid=6_333 InlineTextBox "import"
+                                                uid=6_334 StaticText " "
+                                                  uid=6_335 InlineTextBox " "
+                                                uid=6_336 StaticText "marimo"
+                                                  uid=6_337 InlineTextBox "marimo"
+                                                uid=6_338 StaticText " "
+                                                  uid=6_339 InlineTextBox " "
+                                                uid=6_340 StaticText "as"
+                                                  uid=6_341 InlineTextBox "as"
+                                                uid=6_342 StaticText " "
+                                                  uid=6_343 InlineTextBox " "
+                                                uid=6_344 StaticText "mo"
+                                                  uid=6_345 InlineTextBox "mo"
+                                              uid=6_346 generic
+                                                uid=6_347 LineBreak "
+"
+                                                  uid=6_348 InlineTextBox "
+"
+                                              uid=6_349 generic
+                                                uid=6_350 StaticText "if"
+                                                  uid=6_351 InlineTextBox "if"
+                                                uid=6_352 StaticText " "
+                                                  uid=6_353 InlineTextBox " "
+                                                uid=6_354 StaticText "not"
+                                                  uid=6_355 InlineTextBox "not"
+                                                uid=6_356 StaticText " "
+                                                  uid=6_357 InlineTextBox " "
+                                                uid=6_358 StaticText "data_exists"
+                                                  uid=6_359 InlineTextBox "data_exists"
+                                                uid=6_360 StaticText ":"
+                                                  uid=6_361 InlineTextBox ":"
+                                              uid=6_362 generic
+                                                uid=6_363 StaticText "    "
+                                                  uid=6_364 InlineTextBox "    "
+                                                uid=6_365 StaticText "return"
+                                                  uid=6_366 InlineTextBox "return"
+                                                uid=6_367 StaticText " "
+                                                  uid=6_368 InlineTextBox " "
+                                                uid=6_369 StaticText "mo"
+                                                  uid=6_370 InlineTextBox "mo"
+                                                uid=6_371 StaticText "."
+                                                  uid=6_372 InlineTextBox "."
+                                                uid=6_373 StaticText "md"
+                                                  uid=6_374 InlineTextBox "md"
+                                                uid=6_375 StaticText "("
+                                                  uid=6_376 InlineTextBox "("
+                                                uid=6_377 StaticText ""⚠️ 請確保CBSC數據文件存在後再繼續""
+                                                  uid=6_378 InlineTextBox ""⚠️ 請確保CBSC數據文件存在後再繼續""
+                                                uid=6_379 StaticText "), "
+                                                  uid=6_380 InlineTextBox "), "
+                                                uid=6_381 StaticText "None"
+                                                  uid=6_382 InlineTextBox "None"
+                                                uid=6_383 StaticText ", "
+                                                  uid=6_384 InlineTextBox ", "
+                                                uid=6_385 StaticText "None"
+                                                  uid=6_386 InlineTextBox "None"
+                                                uid=6_387 StaticText ", "
+                                                  uid=6_388 InlineTextBox ", "
+                                                uid=6_389 StaticText "None"
+                                                  uid=6_390 InlineTextBox "None"
+                                              uid=6_391 generic
+                                                uid=6_392 LineBreak "
+"
+                                                  uid=6_393 InlineTextBox "
+"
+                                              uid=6_394 generic
+                                                uid=6_395 StaticText "rsi_period"
+                                                  uid=6_396 InlineTextBox "rsi_period"
+                                                uid=6_397 StaticText " "
+                                                  uid=6_398 InlineTextBox " "
+                                                uid=6_399 StaticText "="
+                                                  uid=6_400 InlineTextBox "="
+                                                uid=6_401 StaticText " "
+                                                  uid=6_402 InlineTextBox " "
+                                                uid=6_403 StaticText "mo"
+                                                  uid=6_404 InlineTextBox "mo"
+                                                uid=6_405 StaticText "."
+                                                  uid=6_406 InlineTextBox "."
+                                                uid=6_407 StaticText "ui"
+                                                  uid=6_408 InlineTextBox "ui"
+                                                uid=6_409 StaticText "."
+                                                  uid=6_410 InlineTextBox "."
+                                                uid=6_411 StaticText "slider"
+                                                  uid=6_412 InlineTextBox "slider"
+                                                uid=6_413 StaticText "("
+                                                  uid=6_414 InlineTextBox "("
+                                                uid=6_415 StaticText "5"
+                                                  uid=6_416 InlineTextBox "5"
+                                                uid=6_417 StaticText ", "
+                                                  uid=6_418 InlineTextBox ", "
+                                                uid=6_419 StaticText "50"
+                                                  uid=6_420 InlineTextBox "50"
+                                                uid=6_421 StaticText ", "
+                                                  uid=6_422 InlineTextBox ", "
+                                                uid=6_423 StaticText "value"
+                                                  uid=6_424 InlineTextBox "value"
+                                                uid=6_425 StaticText "="
+                                                  uid=6_426 InlineTextBox "="
+                                                uid=6_427 StaticText "14"
+                                                  uid=6_428 InlineTextBox "14"
+                                                uid=6_429 StaticText ", "
+                                                  uid=6_430 InlineTextBox ", "
+                                                uid=6_431 StaticText "label"
+                                                  uid=6_432 InlineTextBox "label"
+                                                uid=6_433 StaticText "="
+                                                  uid=6_434 InlineTextBox "="
+                                                uid=6_435 StaticText ""RSI 週期""
+                                                  uid=6_436 InlineTextBox ""RSI 週期""
+                                                uid=6_437 StaticText ")"
+                                                  uid=6_438 InlineTextBox ")"
+                                              uid=6_439 generic
+                                                uid=6_440 StaticText "sentiment_threshold"
+                                                  uid=6_441 InlineTextBox "sentiment_threshold"
+                                                uid=6_442 StaticText " "
+                                                  uid=6_443 InlineTextBox " "
+                                                uid=6_444 StaticText "="
+                                                  uid=6_445 InlineTextBox "="
+                                                uid=6_446 StaticText " "
+                                                  uid=6_447 InlineTextBox " "
+                                                uid=6_448 StaticText "mo"
+                                                  uid=6_449 InlineTextBox "mo"
+                                                uid=6_450 StaticText "."
+                                                  uid=6_451 InlineTextBox "."
+                                                uid=6_452 StaticText "ui"
+                                                  uid=6_453 InlineTextBox "ui"
+                                                uid=6_454 StaticText "."
+                                                  uid=6_455 InlineTextBox "."
+                                                uid=6_456 StaticText "slider"
+                                                  uid=6_457 InlineTextBox "slider"
+                                                uid=6_458 StaticText "("
+                                                  uid=6_459 InlineTextBox "("
+                                                uid=6_460 StaticText "0.1"
+                                                  uid=6_461 InlineTextBox "0.1"
+                                                uid=6_462 StaticText ", "
+                                                  uid=6_463 InlineTextBox ", "
+                                                uid=6_464 StaticText "1.0"
+                                                  uid=6_465 InlineTextBox "1.0"
+                                                uid=6_466 StaticText ", "
+                                                  uid=6_467 InlineTextBox ", "
+                                                uid=6_468 StaticText "value"
+                                                  uid=6_469 InlineTextBox "value"
+                                                uid=6_470 StaticText "="
+                                                  uid=6_471 InlineTextBox "="
+                                                uid=6_472 StaticText "0.7"
+                                                  uid=6_473 InlineTextBox "0.7"
+                                                uid=6_474 StaticText ", "
+                                                  uid=6_475 InlineTextBox ", "
+                                                uid=6_476 StaticText "step"
+                                                  uid=6_477 InlineTextBox "step"
+                                                uid=6_478 StaticText "="
+                                                  uid=6_479 InlineTextBox "="
+                                                uid=6_480 StaticText "0.05"
+                                                  uid=6_481 InlineTextBox "0.05"
+                                                uid=6_482 StaticText ", "
+                                                  uid=6_483 InlineTextBox ", "
+                                                uid=6_484 StaticText "label"
+                                                  uid=6_485 InlineTextBox "label"
+                                                uid=6_486 StaticText "="
+                                                  uid=6_487 InlineTextBox "="
+                                                uid=6_488 StaticText ""情緒閾值""
+                                                  uid=6_489 InlineTextBox ""情緒閾值""
+                                                uid=6_490 StaticText ")"
+                                                  uid=6_491 InlineTextBox ")"
+                                              uid=6_492 generic
+                                                uid=6_493 StaticText "ma_short"
+                                                  uid=6_494 InlineTextBox "ma_short"
+                                                uid=6_495 StaticText " "
+                                                  uid=6_496 InlineTextBox " "
+                                                uid=6_497 StaticText "="
+                                                  uid=6_498 InlineTextBox "="
+                                                uid=6_499 StaticText " "
+                                                  uid=6_500 InlineTextBox " "
+                                                uid=6_501 StaticText "mo"
+                                                  uid=6_502 InlineTextBox "mo"
+                                                uid=6_503 StaticText "."
+                                                  uid=6_504 InlineTextBox "."
+                                                uid=6_505 StaticText "ui"
+                                                  uid=6_506 InlineTextBox "ui"
+                                                uid=6_507 StaticText "."
+                                                  uid=6_508 InlineTextBox "."
+                                                uid=6_509 StaticText "slider"
+                                                  uid=6_510 InlineTextBox "slider"
+                                                uid=6_511 StaticText "("
+                                                  uid=6_512 InlineTextBox "("
+                                                uid=6_513 StaticText "5"
+                                                  uid=6_514 InlineTextBox "5"
+                                                uid=6_515 StaticText ", "
+                                                  uid=6_516 InlineTextBox ", "
+                                                uid=6_517 StaticText "30"
+                                                  uid=6_518 InlineTextBox "30"
+                                                uid=6_519 StaticText ", "
+                                                  uid=6_520 InlineTextBox ", "
+                                                uid=6_521 StaticText "value"
+                                                  uid=6_522 InlineTextBox "value"
+                                                uid=6_523 StaticText "="
+                                                  uid=6_524 InlineTextBox "="
+                                                uid=6_525 StaticText "10"
+                                                  uid=6_526 InlineTextBox "10"
+                                                uid=6_527 StaticText ", "
+                                                  uid=6_528 InlineTextBox ", "
+                                                uid=6_529 StaticText "label"
+                                                  uid=6_530 InlineTextBox "label"
+                                                uid=6_531 StaticText "="
+                                                  uid=6_532 InlineTextBox "="
+                                                uid=6_533 StaticText ""短期均線週期""
+                                                  uid=6_534 InlineTextBox ""短期均線週期""
+                                                uid=6_535 StaticText ")"
+                                                  uid=6_536 InlineTextBox ")"
+                                              uid=6_537 generic
+                                                uid=6_538 StaticText "ma_long"
+                                                  uid=6_539 InlineTextBox "ma_long"
+                                                uid=6_540 StaticText " "
+                                                  uid=6_541 InlineTextBox " "
+                                                uid=6_542 StaticText "="
+                                                  uid=6_543 InlineTextBox "="
+                                                uid=6_544 StaticText " "
+                                                  uid=6_545 InlineTextBox " "
+                                                uid=6_546 StaticText "mo"
+                                                  uid=6_547 InlineTextBox "mo"
+                                                uid=6_548 StaticText "."
+                                                  uid=6_549 InlineTextBox "."
+                                                uid=6_550 StaticText "ui"
+                                                  uid=6_551 InlineTextBox "ui"
+                                                uid=6_552 StaticText "."
+                                                  uid=6_553 InlineTextBox "."
+                                                uid=6_554 StaticText "slider"
+                                                  uid=6_555 InlineTextBox "slider"
+                                                uid=6_556 StaticText "("
+                                                  uid=6_557 InlineTextBox "("
+                                                uid=6_558 StaticText "20"
+                                                  uid=6_559 InlineTextBox "20"
+                                                uid=6_560 StaticText ", "
+                                                  uid=6_561 InlineTextBox ", "
+                                                uid=6_562 StaticText "100"
+                                                  uid=6_563 InlineTextBox "100"
+                                                uid=6_564 StaticText ", "
+                                                  uid=6_565 InlineTextBox ", "
+                                                uid=6_566 StaticText "value"
+                                                  uid=6_567 InlineTextBox "value"
+                                                uid=6_568 StaticText "="
+                                                  uid=6_569 InlineTextBox "="
+                                                uid=6_570 StaticText "30"
+                                                  uid=6_571 InlineTextBox "30"
+                                                uid=6_572 StaticText ", "
+                                                  uid=6_573 InlineTextBox ", "
+                                                uid=6_574 StaticText "label"
+                                                  uid=6_575 InlineTextBox "label"
+                                                uid=6_576 StaticText "="
+                                                  uid=6_577 InlineTextBox "="
+                                                uid=6_578 StaticText ""長期均線週期""
+                                                  uid=6_579 InlineTextBox ""長期均線週期""
+                                                uid=6_580 StaticText ")"
+                                                  uid=6_581 InlineTextBox ")"
+                                      uid=6_582 generic
+                                    uid=6_583 generic
+                                      uid=6_584 ignored
+                                        uid=6_585 ignored
+                                          uid=6_586 image "Fix generated"
+                                          uid=6_587 paragraph
+                                            uid=6_588 StaticText "Showing fix"
+                                              uid=6_589 InlineTextBox "Showing fix"
+                                        uid=6_590 ignored
+                                          uid=6_591 LabelText
+                                            uid=6_592 StaticText "Show prompt"
+                                              uid=6_593 InlineTextBox "Show prompt"
+                                          uid=6_594 switch
+                                            uid=6_595 ignored
+                                        uid=6_596 ignored
+                                          uid=6_597 ignored
+                                            uid=6_598 button "Accept"
+                                              uid=6_599 StaticText "Accept"
+                                                uid=6_600 InlineTextBox "Accept"
+                                            uid=6_601 button
+                                          uid=6_602 button "Reject"
+                                            uid=6_603 StaticText "Reject"
+                                              uid=6_604 InlineTextBox "Reject"
+                                  uid=6_605 generic
+                                    uid=6_606 ignored
+                                      uid=6_607 generic
+                                    uid=6_608 ignored
+                            uid=6_609 generic
+                              uid=6_610 generic
+                                uid=6_611 generic
+                                  uid=6_612 ignored
+                                  uid=6_613 ignored
+                                  uid=6_614 ignored
+                                uid=6_615 generic
+                                  uid=6_616 generic
+                                    uid=6_617 toolbar orientation="horizontal"
+                                      uid=6_618 button
+                                      uid=6_619 button disableable disabled
+                                      uid=6_620 button
+                                        uid=6_621 button haspopup="dialog"
+                                          uid=6_622 button
+                                  uid=6_623 ignored
+                                    uid=6_624 generic
+                                      uid=6_625 ignored
+                                        uid=6_626 generic
+                                          uid=6_627 generic
+                                          uid=6_628 generic
+                                            uid=6_629 textbox multiline value="import marimo as mo
+import pandas as pd
+import numpy as np
+
+
+try:
+    # 模擬現有data_loader的核心功能
+    df = pd.read_csv(sentiment_path)
+    df['Date'] = pd.to_datetime(df['Date'])
+
+
+    # 過濾無效數據
+    df = df.dropna(subset=['Date', 'Afternoon_Close', 'Bull_Ratio', 'Bull_Bear_Ratio'])
+
+
+    # 計算關鍵指標
+    df['Total_Turnover'] = df['Bull_Turnover_HKD'] + df['Bear_Turnover_HKD']
+    df['Sentiment_Strength'] = (df['Bull_Turnover_HKD'] - df['Bear_Turnover_HKD']) / df['Total_Turnover']
+    df['Sentiment_Score'] = (df['Sentiment_Strength'] + 1) * 50
+
+
+    # 分組處理重複日期
+    df = df.loc[df.groupby('Date')['Total_Turnover'].idxmax()]
+    df = df.sort_values('Date').reset_index(drop=True)
+
+
+    success_msg = mo.md(f"""
+    ✅ **數據加載成功！**
+
+
+    - 情緒記錄: {len(df)} 條"
+                                              uid=6_630 generic
+                                                uid=6_631 StaticText "import"
+                                                  uid=6_632 InlineTextBox "import"
+                                                uid=6_633 StaticText " "
+                                                  uid=6_634 InlineTextBox " "
+                                                uid=6_635 StaticText "marimo"
+                                                  uid=6_636 InlineTextBox "marimo"
+                                                uid=6_637 StaticText " "
+                                                  uid=6_638 InlineTextBox " "
+                                                uid=6_639 StaticText "as"
+                                                  uid=6_640 InlineTextBox "as"
+                                                uid=6_641 StaticText " "
+                                                  uid=6_642 InlineTextBox " "
+                                                uid=6_643 StaticText "mo"
+                                                  uid=6_644 InlineTextBox "mo"
+                                              uid=6_645 generic
+                                                uid=6_646 StaticText "import"
+                                                  uid=6_647 InlineTextBox "import"
+                                                uid=6_648 StaticText " "
+                                                  uid=6_649 InlineTextBox " "
+                                                uid=6_650 StaticText "pandas"
+                                                  uid=6_651 InlineTextBox "pandas"
+                                                uid=6_652 StaticText " "
+                                                  uid=6_653 InlineTextBox " "
+                                                uid=6_654 StaticText "as"
+                                                  uid=6_655 InlineTextBox "as"
+                                                uid=6_656 StaticText " "
+                                                  uid=6_657 InlineTextBox " "
+                                                uid=6_658 StaticText "pd"
+                                                  uid=6_659 InlineTextBox "pd"
+                                              uid=6_660 generic
+                                                uid=6_661 StaticText "import"
+                                                  uid=6_662 InlineTextBox "import"
+                                                uid=6_663 StaticText " "
+                                                  uid=6_664 InlineTextBox " "
+                                                uid=6_665 StaticText "numpy"
+                                                  uid=6_666 InlineTextBox "numpy"
+                                                uid=6_667 StaticText " "
+                                                  uid=6_668 InlineTextBox " "
+                                                uid=6_669 StaticText "as"
+                                                  uid=6_670 InlineTextBox "as"
+                                                uid=6_671 StaticText " "
+                                                  uid=6_672 InlineTextBox " "
+                                                uid=6_673 StaticText "np"
+                                                  uid=6_674 InlineTextBox "np"
+                                              uid=6_675 generic
+                                                uid=6_676 LineBreak "
+"
+                                                  uid=6_677 InlineTextBox "
+"
+                                              uid=6_678 generic
+                                                uid=6_679 StaticText "try"
+                                                  uid=6_680 InlineTextBox "try"
+                                                uid=6_681 StaticText ":"
+                                                  uid=6_682 InlineTextBox ":"
+                                              uid=6_683 generic
+                                                uid=6_684 StaticText "    "
+                                                  uid=6_685 InlineTextBox "    "
+                                                uid=6_686 StaticText "# 模擬現有data_loader的核心功能"
+                                                  uid=6_687 InlineTextBox "# 模擬現有data_loader的核心功能"
+                                              uid=6_688 generic
+                                                uid=6_689 StaticText "    "
+                                                  uid=6_690 InlineTextBox "    "
+                                                uid=6_691 StaticText "df"
+                                                  uid=6_692 InlineTextBox "df"
+                                                uid=6_693 StaticText " "
+                                                  uid=6_694 InlineTextBox " "
+                                                uid=6_695 StaticText "="
+                                                  uid=6_696 InlineTextBox "="
+                                                uid=6_697 StaticText " "
+                                                  uid=6_698 InlineTextBox " "
+                                                uid=6_699 StaticText "pd"
+                                                  uid=6_700 InlineTextBox "pd"
+                                                uid=6_701 StaticText "."
+                                                  uid=6_702 InlineTextBox "."
+                                                uid=6_703 StaticText "read_csv"
+                                                  uid=6_704 InlineTextBox "read_csv"
+                                                uid=6_705 StaticText "("
+                                                  uid=6_706 InlineTextBox "("
+                                                uid=6_707 StaticText "sentiment_path"
+                                                  uid=6_708 InlineTextBox "sentiment_path"
+                                                uid=6_709 StaticText ")"
+                                                  uid=6_710 InlineTextBox ")"
+                                              uid=6_711 generic
+                                                uid=6_712 StaticText "    "
+                                                  uid=6_713 InlineTextBox "    "
+                                                uid=6_714 StaticText "df"
+                                                  uid=6_715 InlineTextBox "df"
+                                                uid=6_716 StaticText "["
+                                                  uid=6_717 InlineTextBox "["
+                                                uid=6_718 StaticText "'Date'"
+                                                  uid=6_719 InlineTextBox "'Date'"
+                                                uid=6_720 StaticText "] "
+                                                  uid=6_721 InlineTextBox "] "
+                                                uid=6_722 StaticText "="
+                                                  uid=6_723 InlineTextBox "="
+                                                uid=6_724 StaticText " "
+                                                  uid=6_725 InlineTextBox " "
+                                                uid=6_726 StaticText "pd"
+                                                  uid=6_727 InlineTextBox "pd"
+                                                uid=6_728 StaticText "."
+                                                  uid=6_729 InlineTextBox "."
+                                                uid=6_730 StaticText "to_datetime"
+                                                  uid=6_731 InlineTextBox "to_datetime"
+                                                uid=6_732 StaticText "("
+                                                  uid=6_733 InlineTextBox "("
+                                                uid=6_734 StaticText "df"
+                                                  uid=6_735 InlineTextBox "df"
+                                                uid=6_736 StaticText "["
+                                                  uid=6_737 InlineTextBox "["
+                                                uid=6_738 StaticText "'Date'"
+                                                  uid=6_739 InlineTextBox "'Date'"
+                                                uid=6_740 StaticText "])"
+                                                  uid=6_741 InlineTextBox "])"
+                                              uid=6_742 generic
+                                                uid=6_743 LineBreak "
+"
+                                                  uid=6_744 InlineTextBox "
+"
+                                              uid=6_745 generic
+                                                uid=6_746 StaticText "    "
+                                                  uid=6_747 InlineTextBox "    "
+                                                uid=6_748 StaticText "# 過濾無效數據"
+                                                  uid=6_749 InlineTextBox "# 過濾無效數據"
+                                              uid=6_750 generic
+                                                uid=6_751 StaticText "    "
+                                                  uid=6_752 InlineTextBox "    "
+                                                uid=6_753 StaticText "df"
+                                                  uid=6_754 InlineTextBox "df"
+                                                uid=6_755 StaticText " "
+                                                  uid=6_756 InlineTextBox " "
+                                                uid=6_757 StaticText "="
+                                                  uid=6_758 InlineTextBox "="
+                                                uid=6_759 StaticText " "
+                                                  uid=6_760 InlineTextBox " "
+                                                uid=6_761 StaticText "df"
+                                                  uid=6_762 InlineTextBox "df"
+                                                uid=6_763 StaticText "."
+                                                  uid=6_764 InlineTextBox "."
+                                                uid=6_765 StaticText "dropna"
+                                                  uid=6_766 InlineTextBox "dropna"
+                                                uid=6_767 StaticText "("
+                                                  uid=6_768 InlineTextBox "("
+                                                uid=6_769 StaticText "subset"
+                                                  uid=6_770 InlineTextBox "subset"
+                                                uid=6_771 StaticText "="
+                                                  uid=6_772 InlineTextBox "="
+                                                uid=6_773 StaticText "["
+                                                  uid=6_774 InlineTextBox "["
+                                                uid=6_775 StaticText "'Date'"
+                                                  uid=6_776 InlineTextBox "'Date'"
+                                                uid=6_777 StaticText ", "
+                                                  uid=6_778 InlineTextBox ", "
+                                                uid=6_779 StaticText "'Afternoon_Close'"
+                                                  uid=6_780 InlineTextBox "'Afternoon_Close'"
+                                                uid=6_781 StaticText ", "
+                                                  uid=6_782 InlineTextBox ", "
+                                                uid=6_783 StaticText "'Bull_Ratio'"
+                                                  uid=6_784 InlineTextBox "'Bull_Ratio'"
+                                                uid=6_785 StaticText ", "
+                                                  uid=6_786 InlineTextBox ", "
+                                                uid=6_787 StaticText "'Bull_Bear_Ratio'"
+                                                  uid=6_788 InlineTextBox "'Bull_Bear_Ratio'"
+                                                uid=6_789 StaticText "])"
+                                                  uid=6_790 InlineTextBox "])"
+                                              uid=6_791 generic
+                                                uid=6_792 LineBreak "
+"
+                                                  uid=6_793 InlineTextBox "
+"
+                                              uid=6_794 generic
+                                                uid=6_795 StaticText "    "
+                                                  uid=6_796 InlineTextBox "    "
+                                                uid=6_797 StaticText "# 計算關鍵指標"
+                                                  uid=6_798 InlineTextBox "# 計算關鍵指標"
+                                              uid=6_799 generic
+                                                uid=6_800 StaticText "    "
+                                                  uid=6_801 InlineTextBox "    "
+                                                uid=6_802 StaticText "df"
+                                                  uid=6_803 InlineTextBox "df"
+                                                uid=6_804 StaticText "["
+                                                  uid=6_805 InlineTextBox "["
+                                                uid=6_806 StaticText "'Total_Turnover'"
+                                                  uid=6_807 InlineTextBox "'Total_Turnover'"
+                                                uid=6_808 StaticText "] "
+                                                  uid=6_809 InlineTextBox "] "
+                                                uid=6_810 StaticText "="
+                                                  uid=6_811 InlineTextBox "="
+                                                uid=6_812 StaticText " "
+                                                  uid=6_813 InlineTextBox " "
+                                                uid=6_814 StaticText "df"
+                                                  uid=6_815 InlineTextBox "df"
+                                                uid=6_816 StaticText "["
+                                                  uid=6_817 InlineTextBox "["
+                                                uid=6_818 StaticText "'Bull_Turnover_HKD'"
+                                                  uid=6_819 InlineTextBox "'Bull_Turnover_HKD'"
+                                                uid=6_820 StaticText "] "
+                                                  uid=6_821 InlineTextBox "] "
+                                                uid=6_822 StaticText "+"
+                                                  uid=6_823 InlineTextBox "+"
+                                                uid=6_824 StaticText " "
+                                                  uid=6_825 InlineTextBox " "
+                                                uid=6_826 StaticText "df"
+                                                  uid=6_827 InlineTextBox "df"
+                                                uid=6_828 StaticText "["
+                                                  uid=6_829 InlineTextBox "["
+                                                uid=6_830 StaticText "'Bear_Turnover_HKD'"
+                                                  uid=6_831 InlineTextBox "'Bear_Turnover_HKD'"
+                                                uid=6_832 StaticText "]"
+                                                  uid=6_833 InlineTextBox "]"
+                                              uid=6_834 generic
+                                                uid=6_835 StaticText "    "
+                                                  uid=6_836 InlineTextBox "    "
+                                                uid=6_837 StaticText "df"
+                                                  uid=6_838 InlineTextBox "df"
+                                                uid=6_839 StaticText "["
+                                                  uid=6_840 InlineTextBox "["
+                                                uid=6_841 StaticText "'Sentiment_Strength'"
+                                                  uid=6_842 InlineTextBox "'Sentiment_Strength'"
+                                                uid=6_843 StaticText "] "
+                                                  uid=6_844 InlineTextBox "] "
+                                                uid=6_845 StaticText "="
+                                                  uid=6_846 InlineTextBox "="
+                                                uid=6_847 StaticText " ("
+                                                  uid=6_848 InlineTextBox " ("
+                                                uid=6_849 StaticText "df"
+                                                  uid=6_850 InlineTextBox "df"
+                                                uid=6_851 StaticText "["
+                                                  uid=6_852 InlineTextBox "["
+                                                uid=6_853 StaticText "'Bull_Turnover_HKD'"
+                                                  uid=6_854 InlineTextBox "'Bull_Turnover_HKD'"
+                                                uid=6_855 StaticText "] "
+                                                  uid=6_856 InlineTextBox "] "
+                                                uid=6_857 StaticText "-"
+                                                  uid=6_858 InlineTextBox "-"
+                                                uid=6_859 StaticText " "
+                                                  uid=6_860 InlineTextBox " "
+                                                uid=6_861 StaticText "df"
+                                                  uid=6_862 InlineTextBox "df"
+                                                uid=6_863 StaticText "["
+                                                  uid=6_864 InlineTextBox "["
+                                                uid=6_865 StaticText "'Bear_Turnover_HKD'"
+                                                  uid=6_866 InlineTextBox "'Bear_Turnover_HKD'"
+                                                uid=6_867 StaticText "]) "
+                                                  uid=6_868 InlineTextBox "]) "
+                                                uid=6_869 StaticText "/"
+                                                  uid=6_870 InlineTextBox "/"
+                                                uid=6_871 StaticText " "
+                                                  uid=6_872 InlineTextBox " "
+                                                uid=6_873 StaticText "df"
+                                                  uid=6_874 InlineTextBox "df"
+                                                uid=6_875 StaticText "["
+                                                  uid=6_876 InlineTextBox "["
+                                                uid=6_877 StaticText "'Total_Turnover'"
+                                                  uid=6_878 InlineTextBox "'Total_Turnover'"
+                                                uid=6_879 StaticText "]"
+                                                  uid=6_880 InlineTextBox "]"
+                                              uid=6_881 generic
+                                                uid=6_882 StaticText "    "
+                                                  uid=6_883 InlineTextBox "    "
+                                                uid=6_884 StaticText "df"
+                                                  uid=6_885 InlineTextBox "df"
+                                                uid=6_886 StaticText "["
+                                                  uid=6_887 InlineTextBox "["
+                                                uid=6_888 StaticText "'Sentiment_Score'"
+                                                  uid=6_889 InlineTextBox "'Sentiment_Score'"
+                                                uid=6_890 StaticText "] "
+                                                  uid=6_891 InlineTextBox "] "
+                                                uid=6_892 StaticText "="
+                                                  uid=6_893 InlineTextBox "="
+                                                uid=6_894 StaticText " ("
+                                                  uid=6_895 InlineTextBox " ("
+                                                uid=6_896 StaticText "df"
+                                                  uid=6_897 InlineTextBox "df"
+                                                uid=6_898 StaticText "["
+                                                  uid=6_899 InlineTextBox "["
+                                                uid=6_900 StaticText "'Sentiment_Strength'"
+                                                  uid=6_901 InlineTextBox "'Sentiment_Strength'"
+                                                uid=6_902 StaticText "] "
+                                                  uid=6_903 InlineTextBox "] "
+                                                uid=6_904 StaticText "+"
+                                                  uid=6_905 InlineTextBox "+"
+                                                uid=6_906 StaticText " "
+                                                  uid=6_907 InlineTextBox " "
+                                                uid=6_908 StaticText "1"
+                                                  uid=6_909 InlineTextBox "1"
+                                                uid=6_910 StaticText ") "
+                                                  uid=6_911 InlineTextBox ") "
+                                                uid=6_912 StaticText "*"
+                                                  uid=6_913 InlineTextBox "*"
+                                                uid=6_914 StaticText " "
+                                                  uid=6_915 InlineTextBox " "
+                                                uid=6_916 StaticText "50"
+                                                  uid=6_917 InlineTextBox "50"
+                                              uid=6_918 generic
+                                                uid=6_919 LineBreak "
+"
+                                                  uid=6_920 InlineTextBox "
+"
+                                              uid=6_921 generic
+                                                uid=6_922 StaticText "    "
+                                                  uid=6_923 InlineTextBox "    "
+                                                uid=6_924 StaticText "# 分組處理重複日期"
+                                                  uid=6_925 InlineTextBox "# 分組處理重複日期"
+                                              uid=6_926 generic
+                                                uid=6_927 StaticText "    "
+                                                  uid=6_928 InlineTextBox "    "
+                                                uid=6_929 StaticText "df"
+                                                  uid=6_930 InlineTextBox "df"
+                                                uid=6_931 StaticText " "
+                                                  uid=6_932 InlineTextBox " "
+                                                uid=6_933 StaticText "="
+                                                  uid=6_934 InlineTextBox "="
+                                                uid=6_935 StaticText " "
+                                                  uid=6_936 InlineTextBox " "
+                                                uid=6_937 StaticText "df"
+                                                  uid=6_938 InlineTextBox "df"
+                                                uid=6_939 StaticText "."
+                                                  uid=6_940 InlineTextBox "."
+                                                uid=6_941 StaticText "loc"
+                                                  uid=6_942 InlineTextBox "loc"
+                                                uid=6_943 StaticText "["
+                                                  uid=6_944 InlineTextBox "["
+                                                uid=6_945 StaticText "df"
+                                                  uid=6_946 InlineTextBox "df"
+                                                uid=6_947 StaticText "."
+                                                  uid=6_948 InlineTextBox "."
+                                                uid=6_949 StaticText "groupby"
+                                                  uid=6_950 InlineTextBox "groupby"
+                                                uid=6_951 StaticText "("
+                                                  uid=6_952 InlineTextBox "("
+                                                uid=6_953 StaticText "'Date'"
+                                                  uid=6_954 InlineTextBox "'Date'"
+                                                uid=6_955 StaticText ")["
+                                                  uid=6_956 InlineTextBox ")["
+                                                uid=6_957 StaticText "'Total_Turnover'"
+                                                  uid=6_958 InlineTextBox "'Total_Turnover'"
+                                                uid=6_959 StaticText "]"
+                                                  uid=6_960 InlineTextBox "]"
+                                                uid=6_961 StaticText "."
+                                                  uid=6_962 InlineTextBox "."
+                                                uid=6_963 StaticText "idxmax"
+                                                  uid=6_964 InlineTextBox "idxmax"
+                                                uid=6_965 StaticText "()]"
+                                                  uid=6_966 InlineTextBox "()]"
+                                              uid=6_967 generic
+                                                uid=6_968 StaticText "    "
+                                                  uid=6_969 InlineTextBox "    "
+                                                uid=6_970 StaticText "df"
+                                                  uid=6_971 InlineTextBox "df"
+                                                uid=6_972 StaticText " "
+                                                  uid=6_973 InlineTextBox " "
+                                                uid=6_974 StaticText "="
+                                                  uid=6_975 InlineTextBox "="
+                                                uid=6_976 StaticText " "
+                                                  uid=6_977 InlineTextBox " "
+                                                uid=6_978 StaticText "df"
+                                                  uid=6_979 InlineTextBox "df"
+                                                uid=6_980 StaticText "."
+                                                  uid=6_981 InlineTextBox "."
+                                                uid=6_982 StaticText "sort_values"
+                                                  uid=6_983 InlineTextBox "sort_values"
+                                                uid=6_984 StaticText "("
+                                                  uid=6_985 InlineTextBox "("
+                                                uid=6_986 StaticText "'Date'"
+                                                  uid=6_987 InlineTextBox "'Date'"
+                                                uid=6_988 StaticText ")"
+                                                  uid=6_989 InlineTextBox ")"
+                                                uid=6_990 StaticText "."
+                                                  uid=6_991 InlineTextBox "."
+                                                uid=6_992 StaticText "reset_index"
+                                                  uid=6_993 InlineTextBox "reset_index"
+                                                uid=6_994 StaticText "("
+                                                  uid=6_995 InlineTextBox "("
+                                                uid=6_996 StaticText "drop"
+                                                  uid=6_997 InlineTextBox "drop"
+                                                uid=6_998 StaticText "="
+                                                  uid=6_999 InlineTextBox "="
+                                                uid=6_1000 StaticText "True"
+                                                  uid=6_1001 InlineTextBox "True"
+                                                uid=6_1002 StaticText ")"
+                                                  uid=6_1003 InlineTextBox ")"
+                                              uid=6_1004 generic
+                                                uid=6_1005 LineBreak "
+"
+                                                  uid=6_1006 InlineTextBox "
+"
+                                              uid=6_1007 generic
+                                                uid=6_1008 StaticText "    "
+                                                  uid=6_1009 InlineTextBox "    "
+                                                uid=6_1010 StaticText "success_msg"
+                                                  uid=6_1011 InlineTextBox "success_msg"
+                                                uid=6_1012 StaticText " "
+                                                  uid=6_1013 InlineTextBox " "
+                                                uid=6_1014 StaticText "="
+                                                  uid=6_1015 InlineTextBox "="
+                                                uid=6_1016 StaticText " "
+                                                  uid=6_1017 InlineTextBox " "
+                                                uid=6_1018 StaticText "mo"
+                                                  uid=6_1019 InlineTextBox "mo"
+                                                uid=6_1020 StaticText "."
+                                                  uid=6_1021 InlineTextBox "."
+                                                uid=6_1022 StaticText "md"
+                                                  uid=6_1023 InlineTextBox "md"
+                                                uid=6_1024 StaticText "("
+                                                  uid=6_1025 InlineTextBox "("
+                                                uid=6_1026 StaticText "f""""
+                                                  uid=6_1027 InlineTextBox "f""""
+                                              uid=6_1028 generic
+                                                uid=6_1029 StaticText "    ✅ **數據加載成功！**"
+                                                  uid=6_1030 InlineTextBox "    "
+                                                  uid=6_1031 InlineTextBox "✅ **數據加載成功！**"
+                                              uid=6_1032 generic
+                                                uid=6_1033 LineBreak "
+"
+                                                  uid=6_1034 InlineTextBox "
+"
+                                              uid=6_1035 generic
+                                                uid=6_1036 StaticText "    - 情緒記錄: "
+                                                  uid=6_1037 InlineTextBox "    "
+                                                  uid=6_1038 InlineTextBox "- 情緒記錄: "
+                                                uid=6_1039 StaticText "{"
+                                                  uid=6_1040 InlineTextBox "{"
+                                                uid=6_1041 StaticText "len"
+                                                  uid=6_1042 InlineTextBox "len"
+                                                uid=6_1043 StaticText "("
+                                                  uid=6_1044 InlineTextBox "("
+                                                uid=6_1045 StaticText "df"
+                                                  uid=6_1046 InlineTextBox "df"
+                                                uid=6_1047 StaticText ")}"
+                                                  uid=6_1048 InlineTextBox ")}"
+                                                uid=6_1049 StaticText " 條"
+                                                  uid=6_1050 InlineTextBox " 條"
+                                              uid=6_1051 ignored
+                                      uid=6_1052 generic
+                                    uid=6_1053 generic
+                                      uid=6_1054 ignored
+                                        uid=6_1055 ignored
+                                          uid=6_1056 image "Fix generated"
+                                          uid=6_1057 paragraph
+                                            uid=6_1058 StaticText "Showing fix"
+                                              uid=6_1059 InlineTextBox "Showing fix"
+                                        uid=6_1060 ignored
+                                          uid=6_1061 LabelText
+                                            uid=6_1062 StaticText "Show prompt"
+                                              uid=6_1063 InlineTextBox "Show prompt"
+                                          uid=6_1064 switch
+                                            uid=6_1065 ignored
+                                        uid=6_1066 ignored
+                                          uid=6_1067 ignored
+                                            uid=6_1068 button "Accept"
+                                              uid=6_1069 StaticText "Accept"
+                                                uid=6_1070 InlineTextBox "Accept"
+                                            uid=6_1071 button
+                                          uid=6_1072 button "Reject"
+                                            uid=6_1073 StaticText "Reject"
+                                              uid=6_1074 InlineTextBox "Reject"
+                                  uid=6_1075 generic
+                                    uid=6_1076 ignored
+                                      uid=6_1077 generic
+                                    uid=6_1078 ignored
+                            uid=6_1079 generic
+                              uid=6_1080 generic
+                                uid=6_1081 generic
+                                  uid=6_1082 ignored
+                                  uid=6_1083 ignored
+                                  uid=6_1084 ignored
+                                uid=6_1085 generic
+                                  uid=6_1086 generic
+                                    uid=6_1087 toolbar orientation="horizontal"
+                                      uid=6_1088 button
+                                      uid=6_1089 button disableable disabled
+                                      uid=6_1090 button
+                                        uid=6_1091 button haspopup="dialog"
+                                          uid=6_1092 button
+                                  uid=6_1093 ignored
+                                    uid=6_1094 generic
+                                      uid=6_1095 ignored
+                                        uid=6_1096 generic
+                                          uid=6_1097 generic
+                                          uid=6_1098 generic
+                                            uid=6_1099 textbox multiline value="import marimo as mo
+import pandas as pd
+import numpy as np
+
+
+if df.empty:
+    result = mo.md("⚠️ 無數據可處理")
+    return result
+
+
+# 計算技術指標
+df['MA_Short'] = df['Afternoon_Close'].rolling(ma_short.value).mean()
+df['MA_Long'] = df['Afternoon_Close'].rolling(ma_long.value).mean()
+
+
+# 計算RSI
+delta = df['Afternoon_Close'].diff()
+gain = (delta.where(delta > 0, 0)).rolling(window=rsi_period.value).mean()
+loss = (-delta.where(delta < 0, 0)).rolling(window=rsi_period.value).mean()
+rs = gain / loss
+df['RSI'] = 100 - (100 / (1 + rs))
+
+
+# 生成交易信號
+conditions = [
+    (df['RSI'] < 30) & (df['Sentiment_Strength'] > sentiment_threshold.value),
+    (df['RSI'] > 70) & (df['Sentiment_Strength'] < -sentiment_threshold.value),"
+                                              uid=6_1100 generic
+                                                uid=6_1101 StaticText "import"
+                                                  uid=6_1102 InlineTextBox "import"
+                                                uid=6_1103 StaticText " "
+                                                  uid=6_1104 InlineTextBox " "
+                                                uid=6_1105 StaticText "marimo"
+                                                  uid=6_1106 InlineTextBox "marimo"
+                                                uid=6_1107 StaticText " "
+                                                  uid=6_1108 InlineTextBox " "
+                                                uid=6_1109 StaticText "as"
+                                                  uid=6_1110 InlineTextBox "as"
+                                                uid=6_1111 StaticText " "
+                                                  uid=6_1112 InlineTextBox " "
+                                                uid=6_1113 StaticText "mo"
+                                                  uid=6_1114 InlineTextBox "mo"
+                                              uid=6_1115 generic
+                                                uid=6_1116 StaticText "import"
+                                                  uid=6_1117 InlineTextBox "import"
+                                                uid=6_1118 StaticText " "
+                                                  uid=6_1119 InlineTextBox " "
+                                                uid=6_1120 StaticText "pandas"
+                                                  uid=6_1121 InlineTextBox "pandas"
+                                                uid=6_1122 StaticText " "
+                                                  uid=6_1123 InlineTextBox " "
+                                                uid=6_1124 StaticText "as"
+                                                  uid=6_1125 InlineTextBox "as"
+                                                uid=6_1126 StaticText " "
+                                                  uid=6_1127 InlineTextBox " "
+                                                uid=6_1128 StaticText "pd"
+                                                  uid=6_1129 InlineTextBox "pd"
+                                              uid=6_1130 generic
+                                                uid=6_1131 StaticText "import"
+                                                  uid=6_1132 InlineTextBox "import"
+                                                uid=6_1133 StaticText " "
+                                                  uid=6_1134 InlineTextBox " "
+                                                uid=6_1135 StaticText "numpy"
+                                                  uid=6_1136 InlineTextBox "numpy"
+                                                uid=6_1137 StaticText " "
+                                                  uid=6_1138 InlineTextBox " "
+                                                uid=6_1139 StaticText "as"
+                                                  uid=6_1140 InlineTextBox "as"
+                                                uid=6_1141 StaticText " "
+                                                  uid=6_1142 InlineTextBox " "
+                                                uid=6_1143 StaticText "np"
+                                                  uid=6_1144 InlineTextBox "np"
+                                              uid=6_1145 generic
+                                                uid=6_1146 LineBreak "
+"
+                                                  uid=6_1147 InlineTextBox "
+"
+                                              uid=6_1148 generic
+                                                uid=6_1149 StaticText "if"
+                                                  uid=6_1150 InlineTextBox "if"
+                                                uid=6_1151 StaticText " "
+                                                  uid=6_1152 InlineTextBox " "
+                                                uid=6_1153 StaticText "df"
+                                                  uid=6_1154 InlineTextBox "df"
+                                                uid=6_1155 StaticText "."
+                                                  uid=6_1156 InlineTextBox "."
+                                                uid=6_1157 StaticText "empty"
+                                                  uid=6_1158 InlineTextBox "empty"
+                                                uid=6_1159 StaticText ":"
+                                                  uid=6_1160 InlineTextBox ":"
+                                              uid=6_1161 generic
+                                                uid=6_1162 StaticText "    "
+                                                  uid=6_1163 InlineTextBox "    "
+                                                uid=6_1164 StaticText "result"
+                                                  uid=6_1165 InlineTextBox "result"
+                                                uid=6_1166 StaticText " "
+                                                  uid=6_1167 InlineTextBox " "
+                                                uid=6_1168 StaticText "="
+                                                  uid=6_1169 InlineTextBox "="
+                                                uid=6_1170 StaticText " "
+                                                  uid=6_1171 InlineTextBox " "
+                                                uid=6_1172 StaticText "mo"
+                                                  uid=6_1173 InlineTextBox "mo"
+                                                uid=6_1174 StaticText "."
+                                                  uid=6_1175 InlineTextBox "."
+                                                uid=6_1176 StaticText "md"
+                                                  uid=6_1177 InlineTextBox "md"
+                                                uid=6_1178 StaticText "("
+                                                  uid=6_1179 InlineTextBox "("
+                                                uid=6_1180 StaticText ""⚠️ 無數據可處理""
+                                                  uid=6_1181 InlineTextBox ""⚠️ 無數據可處理""
+                                                uid=6_1182 StaticText ")"
+                                                  uid=6_1183 InlineTextBox ")"
+                                              uid=6_1184 generic
+                                                uid=6_1185 StaticText "    "
+                                                  uid=6_1186 InlineTextBox "    "
+                                                uid=6_1187 StaticText "return"
+                                                  uid=6_1188 InlineTextBox "return"
+                                                uid=6_1189 StaticText " "
+                                                  uid=6_1190 InlineTextBox " "
+                                                uid=6_1191 StaticText "result"
+                                                  uid=6_1192 InlineTextBox "result"
+                                              uid=6_1193 generic
+                                                uid=6_1194 LineBreak "
+"
+                                                  uid=6_1195 InlineTextBox "
+"
+                                              uid=6_1196 generic
+                                                uid=6_1197 StaticText "# 計算技術指標"
+                                                  uid=6_1198 InlineTextBox "# 計算技術指標"
+                                              uid=6_1199 generic
+                                                uid=6_1200 StaticText "df"
+                                                  uid=6_1201 InlineTextBox "df"
+                                                uid=6_1202 StaticText "["
+                                                  uid=6_1203 InlineTextBox "["
+                                                uid=6_1204 StaticText "'MA_Short'"
+                                                  uid=6_1205 InlineTextBox "'MA_Short'"
+                                                uid=6_1206 StaticText "] "
+                                                  uid=6_1207 InlineTextBox "] "
+                                                uid=6_1208 StaticText "="
+                                                  uid=6_1209 InlineTextBox "="
+                                                uid=6_1210 StaticText " "
+                                                  uid=6_1211 InlineTextBox " "
+                                                uid=6_1212 StaticText "df"
+                                                  uid=6_1213 InlineTextBox "df"
+                                                uid=6_1214 StaticText "["
+                                                  uid=6_1215 InlineTextBox "["
+                                                uid=6_1216 StaticText "'Afternoon_Close'"
+                                                  uid=6_1217 InlineTextBox "'Afternoon_Close'"
+                                                uid=6_1218 StaticText "]"
+                                                  uid=6_1219 InlineTextBox "]"
+                                                uid=6_1220 StaticText "."
+                                                  uid=6_1221 InlineTextBox "."
+                                                uid=6_1222 StaticText "rolling"
+                                                  uid=6_1223 InlineTextBox "rolling"
+                                                uid=6_1224 StaticText "("
+                                                  uid=6_1225 InlineTextBox "("
+                                                uid=6_1226 StaticText "ma_short"
+                                                  uid=6_1227 InlineTextBox "ma_short"
+                                                uid=6_1228 StaticText "."
+                                                  uid=6_1229 InlineTextBox "."
+                                                uid=6_1230 StaticText "value"
+                                                  uid=6_1231 InlineTextBox "value"
+                                                uid=6_1232 StaticText ")"
+                                                  uid=6_1233 InlineTextBox ")"
+                                                uid=6_1234 StaticText "."
+                                                  uid=6_1235 InlineTextBox "."
+                                                uid=6_1236 StaticText "mean"
+                                                  uid=6_1237 InlineTextBox "mean"
+                                                uid=6_1238 StaticText "()"
+                                                  uid=6_1239 InlineTextBox "()"
+                                              uid=6_1240 generic
+                                                uid=6_1241 StaticText "df"
+                                                  uid=6_1242 InlineTextBox "df"
+                                                uid=6_1243 StaticText "["
+                                                  uid=6_1244 InlineTextBox "["
+                                                uid=6_1245 StaticText "'MA_Long'"
+                                                  uid=6_1246 InlineTextBox "'MA_Long'"
+                                                uid=6_1247 StaticText "] "
+                                                  uid=6_1248 InlineTextBox "] "
+                                                uid=6_1249 StaticText "="
+                                                  uid=6_1250 InlineTextBox "="
+                                                uid=6_1251 StaticText " "
+                                                  uid=6_1252 InlineTextBox " "
+                                                uid=6_1253 StaticText "df"
+                                                  uid=6_1254 InlineTextBox "df"
+                                                uid=6_1255 StaticText "["
+                                                  uid=6_1256 InlineTextBox "["
+                                                uid=6_1257 StaticText "'Afternoon_Close'"
+                                                  uid=6_1258 InlineTextBox "'Afternoon_Close'"
+                                                uid=6_1259 StaticText "]"
+                                                  uid=6_1260 InlineTextBox "]"
+                                                uid=6_1261 StaticText "."
+                                                  uid=6_1262 InlineTextBox "."
+                                                uid=6_1263 StaticText "rolling"
+                                                  uid=6_1264 InlineTextBox "rolling"
+                                                uid=6_1265 StaticText "("
+                                                  uid=6_1266 InlineTextBox "("
+                                                uid=6_1267 StaticText "ma_long"
+                                                  uid=6_1268 InlineTextBox "ma_long"
+                                                uid=6_1269 StaticText "."
+                                                  uid=6_1270 InlineTextBox "."
+                                                uid=6_1271 StaticText "value"
+                                                  uid=6_1272 InlineTextBox "value"
+                                                uid=6_1273 StaticText ")"
+                                                  uid=6_1274 InlineTextBox ")"
+                                                uid=6_1275 StaticText "."
+                                                  uid=6_1276 InlineTextBox "."
+                                                uid=6_1277 StaticText "mean"
+                                                  uid=6_1278 InlineTextBox "mean"
+                                                uid=6_1279 StaticText "()"
+                                                  uid=6_1280 InlineTextBox "()"
+                                              uid=6_1281 generic
+                                                uid=6_1282 LineBreak "
+"
+                                                  uid=6_1283 InlineTextBox "
+"
+                                              uid=6_1284 generic
+                                                uid=6_1285 StaticText "# 計算RSI"
+                                                  uid=6_1286 InlineTextBox "# 計算RSI"
+                                              uid=6_1287 generic
+                                                uid=6_1288 StaticText "delta"
+                                                  uid=6_1289 InlineTextBox "delta"
+                                                uid=6_1290 StaticText " "
+                                                  uid=6_1291 InlineTextBox " "
+                                                uid=6_1292 StaticText "="
+                                                  uid=6_1293 InlineTextBox "="
+                                                uid=6_1294 StaticText " "
+                                                  uid=6_1295 InlineTextBox " "
+                                                uid=6_1296 StaticText "df"
+                                                  uid=6_1297 InlineTextBox "df"
+                                                uid=6_1298 StaticText "["
+                                                  uid=6_1299 InlineTextBox "["
+                                                uid=6_1300 StaticText "'Afternoon_Close'"
+                                                  uid=6_1301 InlineTextBox "'Afternoon_Close'"
+                                                uid=6_1302 StaticText "]"
+                                                  uid=6_1303 InlineTextBox "]"
+                                                uid=6_1304 StaticText "."
+                                                  uid=6_1305 InlineTextBox "."
+                                                uid=6_1306 StaticText "diff"
+                                                  uid=6_1307 InlineTextBox "diff"
+                                                uid=6_1308 StaticText "()"
+                                                  uid=6_1309 InlineTextBox "()"
+                                              uid=6_1310 generic
+                                                uid=6_1311 StaticText "gain"
+                                                  uid=6_1312 InlineTextBox "gain"
+                                                uid=6_1313 StaticText " "
+                                                  uid=6_1314 InlineTextBox " "
+                                                uid=6_1315 StaticText "="
+                                                  uid=6_1316 InlineTextBox "="
+                                                uid=6_1317 StaticText " ("
+                                                  uid=6_1318 InlineTextBox " ("
+                                                uid=6_1319 StaticText "delta"
+                                                  uid=6_1320 InlineTextBox "delta"
+                                                uid=6_1321 StaticText "."
+                                                  uid=6_1322 InlineTextBox "."
+                                                uid=6_1323 StaticText "where"
+                                                  uid=6_1324 InlineTextBox "where"
+                                                uid=6_1325 StaticText "("
+                                                  uid=6_1326 InlineTextBox "("
+                                                uid=6_1327 StaticText "delta"
+                                                  uid=6_1328 InlineTextBox "delta"
+                                                uid=6_1329 StaticText " "
+                                                  uid=6_1330 InlineTextBox " "
+                                                uid=6_1331 StaticText ">"
+                                                  uid=6_1332 InlineTextBox ">"
+                                                uid=6_1333 StaticText " "
+                                                  uid=6_1334 InlineTextBox " "
+                                                uid=6_1335 StaticText "0"
+                                                  uid=6_1336 InlineTextBox "0"
+                                                uid=6_1337 StaticText ", "
+                                                  uid=6_1338 InlineTextBox ", "
+                                                uid=6_1339 StaticText "0"
+                                                  uid=6_1340 InlineTextBox "0"
+                                                uid=6_1341 StaticText "))"
+                                                  uid=6_1342 InlineTextBox "))"
+                                                uid=6_1343 StaticText "."
+                                                  uid=6_1344 InlineTextBox "."
+                                                uid=6_1345 StaticText "rolling"
+                                                  uid=6_1346 InlineTextBox "rolling"
+                                                uid=6_1347 StaticText "("
+                                                  uid=6_1348 InlineTextBox "("
+                                                uid=6_1349 StaticText "window"
+                                                  uid=6_1350 InlineTextBox "window"
+                                                uid=6_1351 StaticText "="
+                                                  uid=6_1352 InlineTextBox "="
+                                                uid=6_1353 StaticText "rsi_period"
+                                                  uid=6_1354 InlineTextBox "rsi_period"
+                                                uid=6_1355 StaticText "."
+                                                  uid=6_1356 InlineTextBox "."
+                                                uid=6_1357 StaticText "value"
+                                                  uid=6_1358 InlineTextBox "value"
+                                                uid=6_1359 StaticText ")"
+                                                  uid=6_1360 InlineTextBox ")"
+                                                uid=6_1361 StaticText "."
+                                                  uid=6_1362 InlineTextBox "."
+                                                uid=6_1363 StaticText "mean"
+                                                  uid=6_1364 InlineTextBox "mean"
+                                                uid=6_1365 StaticText "()"
+                                                  uid=6_1366 InlineTextBox "()"
+                                              uid=6_1367 generic
+                                                uid=6_1368 StaticText "loss"
+                                                  uid=6_1369 InlineTextBox "loss"
+                                                uid=6_1370 StaticText " "
+                                                  uid=6_1371 InlineTextBox " "
+                                                uid=6_1372 StaticText "="
+                                                  uid=6_1373 InlineTextBox "="
+                                                uid=6_1374 StaticText " ("
+                                                  uid=6_1375 InlineTextBox " ("
+                                                uid=6_1376 StaticText "-"
+                                                  uid=6_1377 InlineTextBox "-"
+                                                uid=6_1378 StaticText "delta"
+                                                  uid=6_1379 InlineTextBox "delta"
+                                                uid=6_1380 StaticText "."
+                                                  uid=6_1381 InlineTextBox "."
+                                                uid=6_1382 StaticText "where"
+                                                  uid=6_1383 InlineTextBox "where"
+                                                uid=6_1384 StaticText "("
+                                                  uid=6_1385 InlineTextBox "("
+                                                uid=6_1386 StaticText "delta"
+                                                  uid=6_1387 InlineTextBox "delta"
+                                                uid=6_1388 StaticText " "
+                                                  uid=6_1389 InlineTextBox " "
+                                                uid=6_1390 StaticText "<"
+                                                  uid=6_1391 InlineTextBox "<"
+                                                uid=6_1392 StaticText " "
+                                                  uid=6_1393 InlineTextBox " "
+                                                uid=6_1394 StaticText "0"
+                                                  uid=6_1395 InlineTextBox "0"
+                                                uid=6_1396 StaticText ", "
+                                                  uid=6_1397 InlineTextBox ", "
+                                                uid=6_1398 StaticText "0"
+                                                  uid=6_1399 InlineTextBox "0"
+                                                uid=6_1400 StaticText "))"
+                                                  uid=6_1401 InlineTextBox "))"
+                                                uid=6_1402 StaticText "."
+                                                  uid=6_1403 InlineTextBox "."
+                                                uid=6_1404 StaticText "rolling"
+                                                  uid=6_1405 InlineTextBox "rolling"
+                                                uid=6_1406 StaticText "("
+                                                  uid=6_1407 InlineTextBox "("
+                                                uid=6_1408 StaticText "window"
+                                                  uid=6_1409 InlineTextBox "window"
+                                                uid=6_1410 StaticText "="
+                                                  uid=6_1411 InlineTextBox "="
+                                                uid=6_1412 StaticText "rsi_period"
+                                                  uid=6_1413 InlineTextBox "rsi_period"
+                                                uid=6_1414 StaticText "."
+                                                  uid=6_1415 InlineTextBox "."
+                                                uid=6_1416 StaticText "value"
+                                                  uid=6_1417 InlineTextBox "value"
+                                                uid=6_1418 StaticText ")"
+                                                  uid=6_1419 InlineTextBox ")"
+                                                uid=6_1420 StaticText "."
+                                                  uid=6_1421 InlineTextBox "."
+                                                uid=6_1422 StaticText "mean"
+                                                  uid=6_1423 InlineTextBox "mean"
+                                                uid=6_1424 StaticText "()"
+                                                  uid=6_1425 InlineTextBox "()"
+                                              uid=6_1426 generic
+                                                uid=6_1427 StaticText "rs"
+                                                  uid=6_1428 InlineTextBox "rs"
+                                                uid=6_1429 StaticText " "
+                                                  uid=6_1430 InlineTextBox " "
+                                                uid=6_1431 StaticText "="
+                                                  uid=6_1432 InlineTextBox "="
+                                                uid=6_1433 StaticText " "
+                                                  uid=6_1434 InlineTextBox " "
+                                                uid=6_1435 StaticText "gain"
+                                                  uid=6_1436 InlineTextBox "gain"
+                                                uid=6_1437 StaticText " "
+                                                  uid=6_1438 InlineTextBox " "
+                                                uid=6_1439 StaticText "/"
+                                                  uid=6_1440 InlineTextBox "/"
+                                                uid=6_1441 StaticText " "
+                                                  uid=6_1442 InlineTextBox " "
+                                                uid=6_1443 StaticText "loss"
+                                                  uid=6_1444 InlineTextBox "loss"
+                                              uid=6_1445 generic
+                                                uid=6_1446 StaticText "df"
+                                                  uid=6_1447 InlineTextBox "df"
+                                                uid=6_1448 StaticText "["
+                                                  uid=6_1449 InlineTextBox "["
+                                                uid=6_1450 StaticText "'RSI'"
+                                                  uid=6_1451 InlineTextBox "'RSI'"
+                                                uid=6_1452 StaticText "] "
+                                                  uid=6_1453 InlineTextBox "] "
+                                                uid=6_1454 StaticText "="
+                                                  uid=6_1455 InlineTextBox "="
+                                                uid=6_1456 StaticText " "
+                                                  uid=6_1457 InlineTextBox " "
+                                                uid=6_1458 StaticText "100"
+                                                  uid=6_1459 InlineTextBox "100"
+                                                uid=6_1460 StaticText " "
+                                                  uid=6_1461 InlineTextBox " "
+                                                uid=6_1462 StaticText "-"
+                                                  uid=6_1463 InlineTextBox "-"
+                                                uid=6_1464 StaticText " ("
+                                                  uid=6_1465 InlineTextBox " ("
+                                                uid=6_1466 StaticText "100"
+                                                  uid=6_1467 InlineTextBox "100"
+                                                uid=6_1468 StaticText " "
+                                                  uid=6_1469 InlineTextBox " "
+                                                uid=6_1470 StaticText "/"
+                                                  uid=6_1471 InlineTextBox "/"
+                                                uid=6_1472 StaticText " ("
+                                                  uid=6_1473 InlineTextBox " ("
+                                                uid=6_1474 StaticText "1"
+                                                  uid=6_1475 InlineTextBox "1"
+                                                uid=6_1476 StaticText " "
+                                                  uid=6_1477 InlineTextBox " "
+                                                uid=6_1478 StaticText "+"
+                                                  uid=6_1479 InlineTextBox "+"
+                                                uid=6_1480 StaticText " "
+                                                  uid=6_1481 InlineTextBox " "
+                                                uid=6_1482 StaticText "rs"
+                                                  uid=6_1483 InlineTextBox "rs"
+                                                uid=6_1484 StaticText "))"
+                                                  uid=6_1485 InlineTextBox "))"
+                                              uid=6_1486 generic
+                                                uid=6_1487 LineBreak "
+"
+                                                  uid=6_1488 InlineTextBox "
+"
+                                              uid=6_1489 generic
+                                                uid=6_1490 StaticText "# 生成交易信號"
+                                                  uid=6_1491 InlineTextBox "# 生成交易信號"
+                                              uid=6_1492 generic
+                                                uid=6_1493 StaticText "conditions"
+                                                  uid=6_1494 InlineTextBox "conditions"
+                                                uid=6_1495 StaticText " "
+                                                  uid=6_1496 InlineTextBox " "
+                                                uid=6_1497 StaticText "="
+                                                  uid=6_1498 InlineTextBox "="
+                                                uid=6_1499 StaticText " ["
+                                                  uid=6_1500 InlineTextBox " ["
+                                              uid=6_1501 generic
+                                                uid=6_1502 StaticText "    ("
+                                                  uid=6_1503 InlineTextBox "    "
+                                                  uid=6_1504 InlineTextBox "("
+                                                uid=6_1505 StaticText "df"
+                                                  uid=6_1506 InlineTextBox "df"
+                                                uid=6_1507 StaticText "["
+                                                  uid=6_1508 InlineTextBox "["
+                                                uid=6_1509 StaticText "'RSI'"
+                                                  uid=6_1510 InlineTextBox "'RSI'"
+                                                uid=6_1511 StaticText "] "
+                                                  uid=6_1512 InlineTextBox "] "
+                                                uid=6_1513 StaticText "<"
+                                                  uid=6_1514 InlineTextBox "<"
+                                                uid=6_1515 StaticText " "
+                                                  uid=6_1516 InlineTextBox " "
+                                                uid=6_1517 StaticText "30"
+                                                  uid=6_1518 InlineTextBox "30"
+                                                uid=6_1519 StaticText ") "
+                                                  uid=6_1520 InlineTextBox ") "
+                                                uid=6_1521 StaticText "&"
+                                                  uid=6_1522 InlineTextBox "&"
+                                                uid=6_1523 StaticText " ("
+                                                  uid=6_1524 InlineTextBox " ("
+                                                uid=6_1525 StaticText "df"
+                                                  uid=6_1526 InlineTextBox "df"
+                                                uid=6_1527 StaticText "["
+                                                  uid=6_1528 InlineTextBox "["
+                                                uid=6_1529 StaticText "'Sentiment_Strength'"
+                                                  uid=6_1530 InlineTextBox "'Sentiment_Strength'"
+                                                uid=6_1531 StaticText "] "
+                                                  uid=6_1532 InlineTextBox "] "
+                                                uid=6_1533 StaticText ">"
+                                                  uid=6_1534 InlineTextBox ">"
+                                                uid=6_1535 StaticText " "
+                                                  uid=6_1536 InlineTextBox " "
+                                                uid=6_1537 StaticText "sentiment_threshold"
+                                                  uid=6_1538 InlineTextBox "sentiment_threshold"
+                                                uid=6_1539 StaticText "."
+                                                  uid=6_1540 InlineTextBox "."
+                                                uid=6_1541 StaticText "value"
+                                                  uid=6_1542 InlineTextBox "value"
+                                                uid=6_1543 StaticText "),"
+                                                  uid=6_1544 InlineTextBox "),"
+                                              uid=6_1545 generic
+                                                uid=6_1546 StaticText "    ("
+                                                  uid=6_1547 InlineTextBox "    "
+                                                  uid=6_1548 InlineTextBox "("
+                                                uid=6_1549 StaticText "df"
+                                                  uid=6_1550 InlineTextBox "df"
+                                                uid=6_1551 StaticText "["
+                                                  uid=6_1552 InlineTextBox "["
+                                                uid=6_1553 StaticText "'RSI'"
+                                                  uid=6_1554 InlineTextBox "'RSI'"
+                                                uid=6_1555 StaticText "] "
+                                                  uid=6_1556 InlineTextBox "] "
+                                                uid=6_1557 StaticText ">"
+                                                  uid=6_1558 InlineTextBox ">"
+                                                uid=6_1559 StaticText " "
+                                                  uid=6_1560 InlineTextBox " "
+                                                uid=6_1561 StaticText "70"
+                                                  uid=6_1562 InlineTextBox "70"
+                                                uid=6_1563 StaticText ") "
+                                                  uid=6_1564 InlineTextBox ") "
+                                                uid=6_1565 StaticText "&"
+                                                  uid=6_1566 InlineTextBox "&"
+                                                uid=6_1567 StaticText " ("
+                                                  uid=6_1568 InlineTextBox " ("
+                                                uid=6_1569 StaticText "df"
+                                                  uid=6_1570 InlineTextBox "df"
+                                                uid=6_1571 StaticText "["
+                                                  uid=6_1572 InlineTextBox "["
+                                                uid=6_1573 StaticText "'Sentiment_Strength'"
+                                                  uid=6_1574 InlineTextBox "'Sentiment_Strength'"
+                                                uid=6_1575 StaticText "] "
+                                                  uid=6_1576 InlineTextBox "] "
+                                                uid=6_1577 StaticText "<"
+                                                  uid=6_1578 InlineTextBox "<"
+                                                uid=6_1579 StaticText " "
+                                                  uid=6_1580 InlineTextBox " "
+                                                uid=6_1581 StaticText "-"
+                                                  uid=6_1582 InlineTextBox "-"
+                                                uid=6_1583 StaticText "sentiment_threshold"
+                                                  uid=6_1584 InlineTextBox "sentiment_threshold"
+                                                uid=6_1585 StaticText "."
+                                                  uid=6_1586 InlineTextBox "."
+                                                uid=6_1587 StaticText "value"
+                                                  uid=6_1588 InlineTextBox "value"
+                                                uid=6_1589 StaticText "),"
+                                                  uid=6_1590 InlineTextBox "),"
+                                              uid=6_1591 ignored
+                                      uid=6_1592 generic
+                                    uid=6_1593 generic
+                                      uid=6_1594 ignored
+                                        uid=6_1595 ignored
+                                          uid=6_1596 image "Fix generated"
+                                          uid=6_1597 paragraph
+                                            uid=6_1598 StaticText "Showing fix"
+                                              uid=6_1599 InlineTextBox "Showing fix"
+                                        uid=6_1600 ignored
+                                          uid=6_1601 LabelText
+                                            uid=6_1602 StaticText "Show prompt"
+                                              uid=6_1603 InlineTextBox "Show prompt"
+                                          uid=6_1604 switch
+                                            uid=6_1605 ignored
+                                        uid=6_1606 ignored
+                                          uid=6_1607 ignored
+                                            uid=6_1608 button "Accept"
+                                              uid=6_1609 StaticText "Accept"
+                                                uid=6_1610 InlineTextBox "Accept"
+                                            uid=6_1611 button
+                                          uid=6_1612 button "Reject"
+                                            uid=6_1613 StaticText "Reject"
+                                              uid=6_1614 InlineTextBox "Reject"
+                                  uid=6_1615 generic
+                                    uid=6_1616 ignored
+                                      uid=6_1617 generic
+                                    uid=6_1618 ignored
+                            uid=6_1619 generic
+                              uid=6_1620 generic
+                                uid=6_1621 generic
+                                  uid=6_1622 ignored
+                                  uid=6_1623 ignored
+                                  uid=6_1624 ignored
+                                uid=6_1625 generic
+                                  uid=6_1626 generic
+                                    uid=6_1627 toolbar orientation="horizontal"
+                                      uid=6_1628 button
+                                      uid=6_1629 button disableable disabled
+                                      uid=6_1630 button
+                                        uid=6_1631 button haspopup="dialog"
+                                          uid=6_1632 button
+                                  uid=6_1633 ignored
+                                    uid=6_1634 generic
+                                      uid=6_1635 ignored
+                                        uid=6_1636 generic
+                                          uid=6_1637 generic
+                                          uid=6_1638 generic
+                                            uid=6_1639 textbox multiline value="import marimo as mo
+
+
+conclusion = mo.md("""
+## 🎉 極簡實施完成！
+
+
+### ✅ 專家審查一致認可
+- ✅ **最小風險**: 不修改生產系統
+- ✅ **快速價值**: 2天實施 vs 12週計劃
+- ✅ **使用現有功能**: 模擬 `data_loader.py` 核心邏輯
+- ✅ **漸進式改進**: 按需添加功能
+
+
+### 🚀 實施成果
+- 互動式參數調優
+- 即時策略反饋
+- Git友好格式
+- 零生產影響
+
+
+**這就是專家推薦的極簡方案：用最小的風險獲得最大的價值！**
+""")"
+                                              uid=6_1640 generic
+                                                uid=6_1641 StaticText "import"
+                                                  uid=6_1642 InlineTextBox "import"
+                                                uid=6_1643 StaticText " "
+                                                  uid=6_1644 InlineTextBox " "
+                                                uid=6_1645 StaticText "marimo"
+                                                  uid=6_1646 InlineTextBox "marimo"
+                                                uid=6_1647 StaticText " "
+                                                  uid=6_1648 InlineTextBox " "
+                                                uid=6_1649 StaticText "as"
+                                                  uid=6_1650 InlineTextBox "as"
+                                                uid=6_1651 StaticText " "
+                                                  uid=6_1652 InlineTextBox " "
+                                                uid=6_1653 StaticText "mo"
+                                                  uid=6_1654 InlineTextBox "mo"
+                                              uid=6_1655 generic
+                                                uid=6_1656 LineBreak "
+"
+                                                  uid=6_1657 InlineTextBox "
+"
+                                              uid=6_1658 generic
+                                                uid=6_1659 StaticText "conclusion"
+                                                  uid=6_1660 InlineTextBox "conclusion"
+                                                uid=6_1661 StaticText " "
+                                                  uid=6_1662 InlineTextBox " "
+                                                uid=6_1663 StaticText "="
+                                                  uid=6_1664 InlineTextBox "="
+                                                uid=6_1665 StaticText " "
+                                                  uid=6_1666 InlineTextBox " "
+                                                uid=6_1667 StaticText "mo"
+                                                  uid=6_1668 InlineTextBox "mo"
+                                                uid=6_1669 StaticText "."
+                                                  uid=6_1670 InlineTextBox "."
+                                                uid=6_1671 StaticText "md"
+                                                  uid=6_1672 InlineTextBox "md"
+                                                uid=6_1673 StaticText "("
+                                                  uid=6_1674 InlineTextBox "("
+                                                uid=6_1675 StaticText """""
+                                                  uid=6_1676 InlineTextBox """""
+                                              uid=6_1677 generic
+                                                uid=6_1678 StaticText "## 🎉 極簡實施完成！"
+                                                  uid=6_1679 InlineTextBox "## 🎉 極簡實施完成！"
+                                              uid=6_1680 generic
+                                                uid=6_1681 LineBreak "
+"
+                                                  uid=6_1682 InlineTextBox "
+"
+                                              uid=6_1683 generic
+                                                uid=6_1684 StaticText "### ✅ 專家審查一致認可"
+                                                  uid=6_1685 InlineTextBox "### ✅ 專家審查一致認可"
+                                              uid=6_1686 generic
+                                                uid=6_1687 StaticText "- ✅ **最小風險**: 不修改生產系統"
+                                                  uid=6_1688 InlineTextBox "- ✅ **最小風險**: 不修改生產系統"
+                                              uid=6_1689 generic
+                                                uid=6_1690 StaticText "- ✅ **快速價值**: 2天實施 vs 12週計劃"
+                                                  uid=6_1691 InlineTextBox "- ✅ **快速價值**: 2天實施 vs 12週計劃"
+                                              uid=6_1692 generic
+                                                uid=6_1693 StaticText "- ✅ **使用現有功能**: 模擬 `data_loader.py` 核心邏輯"
+                                                  uid=6_1694 InlineTextBox "- ✅ **使用現有功能**: 模擬 `data_loader.py` 核心邏輯"
+                                              uid=6_1695 generic
+                                                uid=6_1696 StaticText "- ✅ **漸進式改進**: 按需添加功能"
+                                                  uid=6_1697 InlineTextBox "- ✅ **漸進式改進**: 按需添加功能"
+                                              uid=6_1698 generic
+                                                uid=6_1699 LineBreak "
+"
+                                                  uid=6_1700 InlineTextBox "
+"
+                                              uid=6_1701 generic
+                                                uid=6_1702 StaticText "### 🚀 實施成果"
+                                                  uid=6_1703 InlineTextBox "### 🚀 實施成果"
+                                              uid=6_1704 generic
+                                                uid=6_1705 StaticText "- 互動式參數調優"
+                                                  uid=6_1706 InlineTextBox "- 互動式參數調優"
+                                              uid=6_1707 generic
+                                                uid=6_1708 StaticText "- 即時策略反饋"
+                                                  uid=6_1709 InlineTextBox "- 即時策略反饋"
+                                              uid=6_1710 generic
+                                                uid=6_1711 StaticText "- Git友好格式"
+                                                  uid=6_1712 InlineTextBox "- Git友好格式"
+                                              uid=6_1713 generic
+                                                uid=6_1714 StaticText "- 零生產影響"
+                                                  uid=6_1715 InlineTextBox "- 零生產影響"
+                                              uid=6_1716 generic
+                                                uid=6_1717 LineBreak "
+"
+                                                  uid=6_1718 InlineTextBox "
+"
+                                              uid=6_1719 generic
+                                                uid=6_1720 StaticText "**這就是專家推薦的極簡方案：用最小的風險獲得最大的價值！**"
+                                                  uid=6_1721 InlineTextBox "**這就是專家推薦的極簡方案：用最小的風險獲得最大的價值！**"
+                                              uid=6_1722 generic
+                                                uid=6_1723 StaticText """""
+                                                  uid=6_1724 InlineTextBox """""
+                                                uid=6_1725 StaticText ")"
+                                                  uid=6_1726 InlineTextBox ")"
+                                      uid=6_1727 generic
+                                    uid=6_1728 generic
+                                      uid=6_1729 ignored
+                                        uid=6_1730 ignored
+                                          uid=6_1731 image "Fix generated"
+                                          uid=6_1732 paragraph
+                                            uid=6_1733 StaticText "Showing fix"
+                                              uid=6_1734 InlineTextBox "Showing fix"
+                                        uid=6_1735 ignored
+                                          uid=6_1736 LabelText
+                                            uid=6_1737 StaticText "Show prompt"
+                                              uid=6_1738 InlineTextBox "Show prompt"
+                                          uid=6_1739 switch
+                                            uid=6_1740 ignored
+                                        uid=6_1741 ignored
+                                          uid=6_1742 ignored
+                                            uid=6_1743 button "Accept"
+                                              uid=6_1744 StaticText "Accept"
+                                                uid=6_1745 InlineTextBox "Accept"
+                                            uid=6_1746 button
+                                          uid=6_1747 button "Reject"
+                                            uid=6_1748 StaticText "Reject"
+                                              uid=6_1749 InlineTextBox "Reject"
+                                  uid=6_1750 generic
+                                    uid=6_1751 ignored
+                                      uid=6_1752 generic
+                                    uid=6_1753 ignored
+                          uid=6_1754 ignored
+                            uid=6_1755 ignored
+                              uid=6_1756 button "PYTHON"
+                                uid=6_1757 StaticText "PYTHON"
+                                  uid=6_1758 InlineTextBox "PYTHON"
+                              uid=6_1759 button "MARKDOWN"
+                                uid=6_1760 StaticText "MARKDOWN"
+                                  uid=6_1761 InlineTextBox "MARKDOWN"
+                              uid=6_1762 button "SQL"
+                                uid=6_1763 StaticText "SQL"
+                                  uid=6_1764 InlineTextBox "SQL"
+                              uid=6_1765 button "GENERATE WITH AI"
+                                uid=6_1766 button "GENERATE WITH AI" disableable disabled
+                                  uid=6_1767 StaticText "GENERATE WITH AI"
+                                    uid=6_1768 InlineTextBox "GENERATE WITH AI"
+                    uid=6_1769 generic
+                    uid=6_1770 generic
+                    uid=6_1771 generic
+                    uid=6_1772 generic
+                    uid=6_1773 generic
+                    uid=6_1774 generic
+                    uid=6_1775 ignored
+                      uid=6_1776 ignored
+                    uid=6_1777 status
+                  uid=6_1778 generic
+                    uid=6_1779 button "Config" haspopup="menu"
+                      uid=6_1780 image
+                    uid=6_1781 button "Config" haspopup="dialog"
+                      uid=6_1782 image
+                    uid=6_1783 button "Shutdown"
+                  uid=6_1784 generic
+                    uid=6_1785 button
+                    uid=6_1786 button
+                    uid=6_1787 button
+                    uid=6_1788 ignored
+                    uid=6_1789 ignored
+                      uid=6_1790 button
+                      uid=6_1791 button
+          uid=6_1792 generic
+            uid=6_1793 ignored
+              uid=6_1794 ignored
+                uid=6_1795 StaticText "Minimap"
+                  uid=6_1796 InlineTextBox "Minimap"
+              uid=6_1797 button
+            uid=6_1798 ignored
+              uid=6_1799 generic
+                uid=6_1800 button "empty Cell dependency connections for cell Hbol"
+                  uid=6_1801 ignored
+                    uid=6_1802 ignored
+                      uid=6_1803 ignored
+                        uid=6_1804 StaticText "empty"
+                          uid=6_1805 InlineTextBox "empty"
+                  uid=6_1806 image "Cell dependency connections for cell Hbol"
+                uid=6_1807 button "import marimo as mo Cell dependency connections for cell MJUe"
+                  uid=6_1808 ignored
+                    uid=6_1809 generic description="import marimo as mo import pandas as pd from pathlib import Path sentiment_path = "CODEX--/warrant_sentiment_daily.csv" data_exists = Path(sentiment_path).exists() if data_exists: status = mo.md("✅ **CBSC數據文件已找到**") else: status = mo.md("❌ **CBSC數據文件未找到**")"
+                      uid=6_1810 ignored
+                        uid=6_1811 StaticText "import marimo as mo"
+                          uid=6_1812 InlineTextBox "import marimo as mo"
+                          uid=6_1813 InlineTextBox "import marimo as "
+                          uid=6_1814 InlineTextBox "…"
+                  uid=6_1815 image "Cell dependency connections for cell MJUe"
+                uid=6_1816 button "import marimo as mo Cell dependency connections for cell vblA"
+                  uid=6_1817 ignored
+                    uid=6_1818 generic description="import marimo as mo if not data_exists: return mo.md("⚠️ 請確保CBSC數據文件存在後再繼續"), None, None, None rsi_period = mo.ui.slider(5, 50, value=14, label="RSI 週期") sentiment_threshold = mo.ui.slider(0.1, 1.0, value=0.7, step=0.05, label="情緒閾值") ma_short = mo.ui.slider(5, 30, value=10, label="短期均線週期") ma_long = mo.ui.slider(20, 100, value=30, label="長期均線週期")"
+                      uid=6_1819 ignored
+                        uid=6_1820 StaticText "import marimo as mo"
+                          uid=6_1821 InlineTextBox "import marimo as mo"
+                          uid=6_1822 InlineTextBox "import marimo as "
+                          uid=6_1823 InlineTextBox "…"
+                  uid=6_1824 image "Cell dependency connections for cell vblA"
+                uid=6_1825 button "import marimo as mo Cell dependency connections for cell bkHC"
+                  uid=6_1826 ignored
+                    uid=6_1827 generic description="import marimo as mo import pandas as pd import numpy as np try: # 模擬現有data_loader的核心功能 df = pd.read_csv(sentiment_path) df['Date'] = pd.to_datetime(df['Date']) # 過濾無效數據 df = df.dropna(subset=['Date', 'Afternoon_Close', 'Bull_Ratio', 'Bull_Bear_Ratio']) # 計算關鍵指標 df['Total_Turnover'] = df['Bull_Turnover_HKD'] + df['Bear_Turnover_HKD'] df['Sentiment_Strength'] = (df['Bull_Turnover_HKD'] - df['Bear_Turnover_HKD']) / df['Total_Turnover'] df['Sentiment_Score'] = (df['Sentiment_Strength'] + 1) * 50 # 分組處理重複日期 df = df.loc[df.groupby('Date')['Total_Turnover'].idxmax()] df = df.sort_values('Date').reset_index(drop=True) success_msg = mo.md(f""" ✅ **數據加載成功！** - 情緒記錄: {len(df)} 條 - 日期範圍: {df['Date'].min().strftime('%Y-%m-%d')} 至 {df['Date'].max().strftime('%Y-%m-%d')} - 平均情緒強度: {df['Sentiment_Strength'].mean():.3f} - 情緒波動率: {df['Sentiment_Strength'].std():.3f} """) except Exception as e: error_msg = mo.md(f"❌ **加載錯誤**: {str(e)}") df = pd.DataFrame() success_msg = error_msg"
+                      uid=6_1828 ignored
+                        uid=6_1829 StaticText "import marimo as mo"
+                          uid=6_1830 InlineTextBox "import marimo as mo"
+                          uid=6_1831 InlineTextBox "import marimo as "
+                          uid=6_1832 InlineTextBox "…"
+                  uid=6_1833 image "Cell dependency connections for cell bkHC"
+                uid=6_1834 button "import marimo as mo Cell dependency connections for cell lEQa"
+                  uid=6_1835 ignored
+                    uid=6_1836 generic description="import marimo as mo import pandas as pd import numpy as np if df.empty: result = mo.md("⚠️ 無數據可處理") return result # 計算技術指標 df['MA_Short'] = df['Afternoon_Close'].rolling(ma_short.value).mean() df['MA_Long'] = df['Afternoon_Close'].rolling(ma_long.value).mean() # 計算RSI delta = df['Afternoon_Close'].diff() gain = (delta.where(delta > 0, 0)).rolling(window=rsi_period.value).mean() loss = (-delta.where(delta < 0, 0)).rolling(window=rsi_period.value).mean() rs = gain / loss df['RSI'] = 100 - (100 / (1 + rs)) # 生成交易信號 conditions = [ (df['RSI'] < 30) & (df['Sentiment_Strength'] > sentiment_threshold.value), (df['RSI'] > 70) & (df['Sentiment_Strength'] < -sentiment_threshold.value), (df['MA_Short'] > df['MA_Long']), (df['MA_Short'] < df['MA_Long']), ] signals = ['強烈買入', '強烈賣出', '買入', '賣出'] df['Strategy_Signal'] = np.select(conditions, signals, default='持有') # 計算簡單回報 df['Returns'] = df['Afternoon_Close'].pct_change() df['Strategy_Return'] = np.where( df['Strategy_Signal'].str.contains('買入'), df['Returns'] * 1.5, np.where(df['Strategy_Signal'].str.contains('賣出'), df['Returns'] * -1.5, 0) ) # 性能統計 cumulative_return = (1 + df['Strategy_Return'].fillna(0)).cumprod().iloc[-1] - 1 sharpe_ratio = df['Strategy_Return'].mean() / df['Strategy_Return'].std() * np.sqrt(252) if df['Strategy_Return'].std() > 0 else 0 signal_counts = df['Strategy_Signal'].value_counts() result = mo.md(f""" ## 📊 策略性能摘要 **當前參數設置:** - RSI週期: {rsi_period.value} - 情緒閾值: {sentiment_threshold.value} - 短期均線: {ma_short.value} - 長期均線: {ma_long.value} **性能指標:** - 累計回報: {cumulative_return:.2%} - Sharpe比率: {sharpe_ratio:.3f} - 交易天數: {len(df)} **信號統計:** - 強烈買入: {signal_counts.get('強烈買入', 0)} 次 - 買入: {signal_counts.get('買入', 0)} 次 - 持有: {signal_counts.get('持有', 0)} 次 - 賣出: {signal_counts.get('賣出', 0)} 次 - 強烈賣出: {signal_counts.get('強烈賣出', 0)} 次 """)"
+                      uid=6_1837 ignored
+                        uid=6_1838 StaticText "import marimo as mo"
+                          uid=6_1839 InlineTextBox "import marimo as mo"
+                          uid=6_1840 InlineTextBox "import marimo as "
+                          uid=6_1841 InlineTextBox "…"
+                  uid=6_1842 image "Cell dependency connections for cell lEQa"
+                uid=6_1843 button "import marimo as mo Cell dependency connections for cell PKri"
+                  uid=6_1844 ignored
+                    uid=6_1845 generic description="import marimo as mo conclusion = mo.md(""" ## 🎉 極簡實施完成！ ### ✅ 專家審查一致認可 - ✅ **最小風險**: 不修改生產系統 - ✅ **快速價值**: 2天實施 vs 12週計劃 - ✅ **使用現有功能**: 模擬 `data_loader.py` 核心邏輯 - ✅ **漸進式改進**: 按需添加功能 ### 🚀 實施成果 - 互動式參數調優 - 即時策略反饋 - Git友好格式 - 零生產影響 **這就是專家推薦的極簡方案：用最小的風險獲得最大的價值！** """)"
+                      uid=6_1846 ignored
+                        uid=6_1847 StaticText "import marimo as mo"
+                          uid=6_1848 InlineTextBox "import marimo as mo"
+                          uid=6_1849 InlineTextBox "import marimo as "
+                          uid=6_1850 InlineTextBox "…"
+                  uid=6_1851 image "Cell dependency connections for cell PKri"
+          uid=6_1852 contentinfo
+            uid=6_1853 generic
+              uid=6_1854 ignored
+                uid=6_1855 StaticText "0"
+                  uid=6_1856 InlineTextBox "0"
+            uid=6_1857 ignored
+              uid=6_1858 ignored
+                uid=6_1859 generic
+                  uid=6_1860 ignored
+                    uid=6_1861 ignored
+                      uid=6_1862 StaticText "on startup:"
+                        uid=6_1863 InlineTextBox "on startup:"
+                    uid=6_1864 ignored
+                      uid=6_1865 StaticText "lazy"
+                        uid=6_1866 InlineTextBox "lazy"
+                uid=6_1867 ignored
+                uid=6_1868 generic
+                  uid=6_1869 ignored
+                    uid=6_1870 ignored
+                      uid=6_1871 StaticText "on cell change:"
+                        uid=6_1872 InlineTextBox "on cell change:"
+                    uid=6_1873 ignored
+                      uid=6_1874 StaticText "autorun"
+                        uid=6_1875 InlineTextBox "autorun"
+                uid=6_1876 ignored
+                uid=6_1877 ignored
+                  uid=6_1878 button "on module change: off" haspopup="menu"
+                    uid=6_1879 ignored
+                      uid=6_1880 StaticText "on module change:"
+                        uid=6_1881 InlineTextBox "on module change:"
+                    uid=6_1882 ignored
+                      uid=6_1883 StaticText "off"
+                        uid=6_1884 InlineTextBox "off"
+            uid=6_1885 ignored
+            uid=6_1886 ignored
+              uid=6_1887 ignored
+                uid=6_1888 generic
+                  uid=6_1889 ignored
+                    uid=6_1890 ignored
+                uid=6_1891 generic
+                  uid=6_1892 ignored
+                    uid=6_1893 ignored
+                uid=6_1894 generic
+                  uid=6_1895 ignored
+                    uid=6_1896 ignored
+              uid=6_1897 generic
+              uid=6_1898 generic
+              uid=6_1899 generic
+        uid=6_1900 region "Notifications (F8)"
+          uid=6_1901 list
+      uid=6_1902 generic

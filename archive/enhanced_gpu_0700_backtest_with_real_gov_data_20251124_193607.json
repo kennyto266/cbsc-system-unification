@@ -1,0 +1,109 @@
+{
+  "success": true,
+  "data_info": {
+    "symbol": "0700.HK",
+    "company_name": "Tencent Holdings Limited",
+    "total_records": 246,
+    "date_range": "2024-11-25 00:00:00+00:00 至 2025-11-24 00:00:00+00:00",
+    "price_range": "366.00 - 677.50",
+    "gov_data_sources": [
+      "hb",
+      "gd",
+      "tr",
+      "mb",
+      "pt",
+      "rt",
+      "ue",
+      "ts",
+      "cp"
+    ],
+    "gov_data_total_records": 2214
+  },
+  "performance": {
+    "total_computation_time": 0.5550014972686768,
+    "data_preparation_time": 0.45142650604248047,
+    "gpu_utilization": 8.5,
+    "gov_data_sources_count": 9
+  },
+  "indicators": {
+    "price_macd": {
+      "macd_length": 246,
+      "signal_length": 246,
+      "histogram_length": 246,
+      "calculation_time": 0.06090068817138672
+    },
+    "hb_rsi": {
+      "length": 246,
+      "range": [
+        43.58973693847656,
+        58.024696350097656
+      ],
+      "calculation_time": 0.026009082794189453
+    },
+    "gd_rsi": {
+      "length": 246,
+      "range": [
+        44.1175537109375,
+        55.555641174316406
+      ],
+      "calculation_time": 0.0021734237670898438
+    },
+    "tr_rsi": {
+      "length": 246,
+      "range": [
+        44.444393157958984,
+        52.80803298950195
+      ],
+      "calculation_time": 0.0017158985137939453
+    },
+    "mb_rsi": {
+      "length": 246,
+      "range": [
+        41.89189529418945,
+        55.71428680419922
+      ],
+      "calculation_time": 0.0016322135925292969
+    },
+    "pt_rsi": {
+      "length": 246,
+      "range": [
+        41.66666793823242,
+        56.79016876220703
+      ],
+      "calculation_time": 0.0017452239990234375
+    },
+    "rt_rsi": {
+      "length": 246,
+      "range": [
+        43.90241241455078,
+        55.58546829223633
+      ],
+      "calculation_time": 0.001580953598022461
+    },
+    "ue_rsi": {
+      "length": 246,
+      "range": [
+        44.444278717041016,
+        55.88242721557617
+      ],
+      "calculation_time": 0.0015904903411865234
+    },
+    "ts_rsi": {
+      "length": 246,
+      "range": [
+        40.63078308105469,
+        60.886573791503906
+      ],
+      "calculation_time": 0.0016040802001953125
+    },
+    "cp_rsi": {
+      "length": 246,
+      "range": [
+        43.58988571166992,
+        58.025047302246094
+      ],
+      "calculation_time": 0.001470327377319336
+    }
+  },
+  "timestamp": "2025-11-24T19:36:07.590968"
+}

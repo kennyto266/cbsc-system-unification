@@ -1,0 +1,24 @@
+{
+  "symbol": "0700.HK",
+  "data_type": "daily",
+  "last_updated": "2025-11-29T16:33:07.119580",
+  "storage_stats": {
+    "symbol": "0700.HK",
+    "total_records": 1230,
+    "years_stored": [
+      2020,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "date_range": {
+      "start": "2020-11-30",
+      "end": "2025-11-28"
+    },
+    "partitions_created": 3,
+    "storage_size_mb": 0.03409862518310547,
+    "compression_ratio": 2.655728548488445
+  }
+}

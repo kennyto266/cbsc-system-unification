@@ -1,0 +1,545 @@
+# 非价格信号配置文件 - Non-Price Signals Configuration
+# 用于定义信号转换规则和参数设置
+
+# 系统配置
+system:
+  name: "非价格信号转换系统"
+  version: "1.0.0"
+  description: "将非价格信号转换为技术指标并进行SR/MDD优化"
+  environment: "production"
+
+# 数据源配置
+data_sources:
+  hkma_endpoints:
+    hibor: "monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily"
+    monetary_base: "daily-monetary-statistics/daily-figures-monetary-base"
+    exchange_rate: "monthly-statistical-bulletin/er-ir/er-eeri-daily"
+    interbank_liquidity: "daily-monetary-statistics/daily-figures-interbank-liquidity"
+    efbn: "daily-monetary-statistics/efbn-indicative-price"
+    rmb_liquidity: "daily-monetary-statistics/usage-rmb-liquidity-fac"
+
+  backup_sources:
+    local_data_path: "data/real_data/"
+    mock_data_enabled: true
+    fallback_confidence_threshold: 0.5
+
+# 信号转换规则
+conversion_rules:
+  # HIBOR利率信号转换规则
+  hibor:
+    description: "香港银行同业拆息率信号转换"
+    enabled: true
+    weight: 1.0
+    indicators:
+      - "RSI"
+      - "MACD"
+      - "Bollinger"
+      - "Stochastic"
+
+    # RSI参数配置
+    rsi:
+      timeperiods: [14, 21, 30]
+      overbought: 70
+      oversold: 30
+      signal_threshold: 0.6
+
+    # MACD参数配置
+    macd:
+      fastperiod: 12
+      slowperiod: 26
+      signalperiod: 9
+      histogram_threshold: 0.1
+
+    # 布林带参数配置
+    bollinger:
+      timeperiod: 20
+      nbdevup: 2
+      nbdevdn: 2
+      width_threshold: 0.15
+
+    # 随机指标参数配置
+    stochastic:
+      fastk_period: 5
+      slowk_period: 3
+      slowd_period: 3
+      overbought: 80
+      oversold: 20
+
+  # 货币基础信号转换规则
+  monetary_base:
+    description: "货币基础统计信号转换"
+    enabled: true
+    weight: 0.9
+    indicators:
+      - "Rate_of_Change"
+      - "Moving_Average"
+      - "MACD"
+
+    # 变化率参数配置
+    roc:
+      timeperiods: [10, 20, 30]
+      threshold: 0.05  # 5%变化阈值
+      smoothing: true
+
+    # 移动平均线参数配置
+    moving_average:
+      periods: [5, 10, 20, 50]
+      types: ["SMA", "EMA", "WMA"]
+      crossover_signals: true
+
+    # MACD参数配置
+    macd:
+      fastperiod: 12
+      slowperiod: 26
+      signalperiod: 9
+      divergence_detection: true
+
+  # 汇率信号转换规则
+  exchange_rate:
+    description: "有效汇率指数信号转换"
+    enabled: true
+    weight: 0.8
+    indicators:
+      - "RSI"
+      - "Bollinger"
+      - "Williams_R"
+      - "ATR"
+
+    # RSI参数配置
+    rsi:
+      timeperiods: [14, 21]
+      overbought: 75
+      oversold: 25
+      momentum_filter: true
+
+    # 布林带参数配置
+    bollinger:
+      timeperiod: 20
+      nbdevup: 2.2
+      nbdevdn: 2.2
+      squeeze_detection: true
+
+    # Williams %R参数配置
+    williams_r:
+      timeperiod: 14
+      overbought: -20
+      oversold: -80
+      reversal_signals: true
+
+    # ATR参数配置
+    atr:
+      timeperiod: 14
+      multiplier: 2.0
+      volatility_filter: true
+
+  # 银行同业流动资金信号转换规则
+  interbank_liquidity:
+    description: "银行同业流动资金统计信号转换"
+    enabled: true
+    weight: 0.7
+    indicators:
+      - "Rate_of_Change"
+      - "Stochastic"
+      - "ATR"
+      - "Moving_Average"
+
+    # 变化率参数配置
+    roc:
+      timeperiods: [10, 15, 20]
+      threshold: 0.03  # 3%变化阈值
+
+    # 随机指标参数配置
+    stochastic:
+      fastk_period: 14
+      slowk_period: 5
+      slowd_period: 5
+      overbought: 75
+      oversold: 25
+
+    # ATR参数配置
+    atr:
+      timeperiod: 10
+      multiplier: 1.5
+      liquidity_squeeze_threshold: 0.05
+
+    # 移动平均线参数配置
+    moving_average:
+      periods: [10, 20]
+      types: ["EMA"]
+      trend_strength_filter: true
+
+  # 外汇基金票据及债券信号转换规则
+  efbn:
+    description: "外汇基金票据及债券价格信号转换"
+    enabled: true
+    weight: 0.6
+    indicators:
+      - "RSI"
+      - "MACD"
+      - "Moving_Average"
+      - "Bollinger"
+
+    # RSI参数配置
+    rsi:
+      timeperiods: [14]
+      overbought: 70
+      oversold: 30
+      yield_curve_context: true
+
+    # MACD参数配置
+    macd:
+      fastperiod: 10
+      slowperiod: 22
+      signalperiod: 8
+      spread_analysis: true
+
+    # 移动平均线参数配置
+    moving_average:
+      periods: [5, 15, 30]
+      types: ["SMA", "EMA"]
+      yield_crossover_signals: true
+
+    # 布林带参数配置
+    bollinger:
+      timeperiod: 15
+      nbdevup: 2
+      nbdevdn: 2
+      volatility_contractions: true
+
+  # 人民币流动资金信号转换规则
+  rmb_liquidity:
+    description: "人民币流动资金安排使用量信号转换"
+    enabled: true
+    weight: 0.5
+    indicators:
+      - "Rate_of_Change"
+      - "Bollinger"
+      - "Moving_Average"
+      - "ATR"
+
+    # 变化率参数配置
+    roc:
+      timeperiods: [5, 15, 25]
+      threshold: 0.08  # 8%变化阈值
+      trend_confirmation: true
+
+    # 布林带参数配置
+    bollinger:
+      timeperiod: 25
+      nbdevup: 2.5
+      nbdevdn: 2.5
+      expansion_bursts: true
+
+    # 移动平均线参数配置
+    moving_average:
+      periods: [7, 21, 35]
+      types: ["EMA"]
+      liquidity_cycle_detection: true
+
+    # ATR参数配置
+    atr:
+      timeperiod: 12
+      multiplier: 1.8
+      regime_change_detection: true
+
+# 信号预处理配置
+preprocessing:
+  # 缺失值处理
+  missing_values:
+    method: "forward_fill"  # forward_fill, backward_fill, interpolate, mean, drop
+    limit: 5  # 最大填充数量
+    interpolation_method: "linear"  # linear, cubic, polynomial
+
+  # 异常值处理
+  outliers:
+    method: "iqr"  # iqr, zscore, isolation_forest
+    threshold: 1.5  # IQR倍数或Z-score阈值
+    action: "clip"  # clip, remove, replace
+    replacement: "median"  # median, mean, fixed_value
+
+  # 平滑处理
+  smoothing:
+    method: "exponential"  # none, moving_average, exponential, savgol
+    alpha: 0.3  # 指数平滑参数
+    window_length: 7  # Savgol滤波器窗口长度
+    polyorder: 3  # Savgol多项式阶数
+
+  # 标准化处理
+  normalization:
+    method: "zscore"  # none, zscore, minmax, robust, custom
+    feature_range: [0, 1]  # MinMax范围
+    robust_quantile_range: [25, 75]  # Robust标准化分位数范围
+    custom_formula: "(value - mean) / (std + 1e-8)"
+
+  # 差分处理
+  differencing:
+    enabled: false  # 是否启用差分
+    periods: 1  # 差分阶数
+    seasonal_periods: null  # 季节性差分周期
+
+# 信号融合配置
+fusion:
+  # 默认融合方法
+  default_method: "weighted_average"  # weighted_average, pca_fusion, adaptive_weighting, ensemble_voting
+
+  # 融合方法配置
+  methods:
+    weighted_average:
+      enabled: true
+      weight_factors: ["signal_strength", "confidence", "recent_performance"]
+
+    pca_fusion:
+      enabled: true
+      n_components: 3  # 主成分数量
+      explained_variance_threshold: 0.8
+
+    adaptive_weighting:
+      enabled: true
+      lookback_period: 30  # 回看期间
+      rebalance_frequency: "daily"  # daily, weekly
+
+    ensemble_voting:
+      enabled: true
+      voting_strategy: "majority"  # majority, weighted, consensus
+      binary_threshold: 0.5
+
+  # 融合限制
+  min_signals_for_fusion: 2
+  max_signals_for_fusion: 10
+  quality_filter_threshold: 0.6
+
+  # 动态权重调整
+  dynamic_weighting:
+    enabled: true
+    adjustment_frequency: "daily"
+    performance_window: 60
+    min_performance_samples: 20
+
+# 质量阈值配置
+quality_thresholds:
+  # 数据质量阈值
+  min_completeness: 0.9      # 最小完整性
+  min_accuracy: 0.95         # 最小准确性
+  min_timeliness: 0.8        # 最小及时性
+  min_consistency: 0.9       # 最小一致性
+  min_overall_score: 0.85    # 最小综合质量分数
+
+  # 信号质量阈值
+  min_signal_confidence: 0.7    # 最小信号置信度
+  min_indicator_strength: 0.6   # 最小指标强度
+  max_signal_age_hours: 24      # 最大信号年龄（小时）
+
+  # 模型质量阈值
+  min_training_samples: 100     # 最小训练样本数
+  max_missing_ratio: 0.1        # 最大缺失比例
+  min_correlation_threshold: 0.3 # 最小相关性阈值
+
+# 缓存配置
+cache:
+  # 内存缓存
+  memory_cache:
+    enabled: true
+    ttl_seconds: 1800  # 30分钟
+    max_size_mb: 200
+
+  # 磁盘缓存
+  disk_cache:
+    enabled: true
+    ttl_seconds: 3600  # 1小时
+    base_path: "cache/non_price_signals"
+    max_size_gb: 5
+
+  # Redis缓存（可选）
+  redis_cache:
+    enabled: false
+    host: "localhost"
+    port: 6379
+    db: 0
+    ttl_seconds: 7200  # 2小时
+    key_prefix: "non_price_signals"
+
+# 更新频率配置
+update_frequency:
+  # 实时更新信号
+  real_time: ["hibor"]
+
+  # 每小时更新信号
+  hourly: ["exchange_rate"]
+
+  # 每日更新信号
+  daily: ["monetary_base", "interbank_liquidity", "efbn", "rmb_liquidity"]
+
+  # 每周更新信号
+  weekly: []
+
+  # 每月更新信号
+  monthly: []
+
+# 性能配置
+performance:
+  # 并行处理
+  parallel_processing:
+    enabled: true
+    max_workers: 8  # 最大工作进程数
+    chunk_size: 1000  # 数据块大小
+
+  # GPU加速
+  gpu_acceleration:
+    enabled: true
+    device: "cuda:0"  # GPU设备
+    memory_limit_gb: 4  # GPU内存限制
+
+  # 内存管理
+  memory_management:
+    max_memory_usage_gb: 8
+    garbage_collection_interval: 300  # 5分钟
+    memory_monitoring: true
+
+# 监控配置
+monitoring:
+  # 健康检查
+  health_checks:
+    enabled: true
+    interval_seconds: 60
+
+  # 性能监控
+  performance_monitoring:
+    enabled: true
+    metrics_collection_interval: 30
+    detailed_profiling: false
+
+  # 告警配置
+  alerts:
+    enabled: true
+    thresholds:
+      response_time_seconds: 10
+      error_rate_percent: 5
+      memory_usage_percent: 80
+      cache_hit_rate_percent: 70
+
+    # 通知渠道
+    notification_channels:
+      email:
+        enabled: false
+        smtp_server: "smtp.gmail.com"
+        smtp_port: 587
+        recipients: ["admin@example.com"]
+
+      webhook:
+        enabled: false
+        url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+
+# 安全配置
+security:
+  # API安全
+  api_security:
+    rate_limiting:
+      enabled: true
+      requests_per_minute: 60
+      burst_limit: 20
+
+    authentication:
+      enabled: false
+      api_key_header: "X-API-Key"
+
+    https_only: true
+    cors_origins: ["*"]
+
+# 优化配置
+optimization:
+  # SR/MDD优化参数
+  sr_mdd_optimization:
+    # 优化目标
+    objectives:
+      sortino_ratio:
+        weight: 0.7
+        target: 1.5
+        min_acceptable: 1.0
+
+      max_dd_duration:
+        weight: 0.3
+        target_days: 60
+        max_acceptable_days: 180
+
+      win_rate:
+        weight: 0.1
+        target: 0.55
+        min_acceptable: 0.45
+
+    # 搜索算法配置
+    search_algorithm: "bayesian"  # grid, random, bayesian, genetic, hybrid
+    max_iterations: 1000
+    convergence_threshold: 1e-6
+
+    # 参数空间配置
+    parameter_space:
+      rsi_period: [5, 50]
+      macd_fast: [5, 20]
+      macd_slow: [20, 40]
+      bollinger_period: [10, 30]
+      bollinger_std: [1.5, 3.0]
+      signal_weights: [0.1, 1.0]
+
+    # 约束条件
+    constraints:
+      macd_fast_lt_slow: true  # MACD快线必须小于慢线
+      bollinger_std_gt_0: true  # 布林带标准差必须大于0
+      weights_sum_to_one: false  # 权重是否归一化
+
+  # 参数验证配置
+  parameter_validation:
+    enable_cross_validation: true
+    cv_folds: 5
+    out_of_sample_ratio: 0.2
+    min_validation_period: "30d"
+
+# 回测配置
+backtesting:
+  # 向量化回测引擎
+  vectorbt:
+    init_cash: 1000000
+    freq: "1D"
+    fees: 0.001
+    slippage: 0.001
+
+  # 风险管理
+  risk_management:
+    max_position_size: 0.1  # 最大单个仓位10%
+    max_portfolio_risk: 0.15  # 最大组合风险15%
+    stop_loss_threshold: -0.05  # 止损阈值5%
+    sector_concentration: 0.3   # 行业集中度30%
+
+  # 回测周期
+  backtesting_periods:
+    in_sample: "2y"    # 样本内期间2年
+    out_of_sample: "6m"  # 样本外期间6个月
+    walk_forward: "1y"  # 前进分析期间1年
+
+# 日志配置
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/non_price_signals.log"
+  max_size_mb: 100
+  backup_count: 5
+  console_output: true
+
+# 开发和测试配置
+development:
+  debug_mode: false
+  mock_data_enabled: true
+  test_data_size: 1000
+  unit_test_coverage_threshold: 80
+
+# 部署配置
+deployment:
+  environment: "production"  # development, staging, production
+  auto_scaling: true
+  health_check_endpoint: "/health"
+  metrics_endpoint: "/metrics"
+
+# 版本控制
+versioning:
+  current_version: "1.0.0"
+  compatibility_check: true
+  migration_enabled: true

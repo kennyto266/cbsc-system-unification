@@ -1,0 +1,158 @@
+[
+  {
+    "strategy_id": "BAL_MB_KDJ_0",
+    "config": {
+      "k_period": 10,
+      "d_period": 2
+    },
+    "performance": {
+      "original": {
+        "total_return": 0.0,
+        "annual_return": 0.0,
+        "volatility": 0.0,
+        "sharpe_ratio": 0,
+        "max_drawdown": 0.0,
+        "final_value": 100000,
+        "trades": 0,
+        "win_rate": 0.0
+      },
+      "managed": {
+        "total_return": 0.0,
+        "annual_return": 0.0,
+        "volatility": 0.0,
+        "sharpe_ratio": 0,
+        "max_drawdown": 0.0,
+        "final_value": 100000,
+        "trades": 0,
+        "win_rate": 0.0
+      },
+      "sharpe_improvement": 0,
+      "drawdown_improvement": 0.0,
+      "return_stability": 1
+    },
+    "risk_stats": {
+      "stop_losses": 0,
+      "trailing_stops": 0,
+      "loss_halts": 0,
+      "total_adjustments": 244
+    },
+    "data_type": "BALANCED_RISK_REAL"
+  },
+  {
+    "strategy_id": "BAL_MB_KDJ_1",
+    "config": {
+      "k_period": 14,
+      "d_period": 3
+    },
+    "performance": {
+      "original": {
+        "total_return": 0.0,
+        "annual_return": 0.0,
+        "volatility": 0.0,
+        "sharpe_ratio": 0,
+        "max_drawdown": 0.0,
+        "final_value": 100000,
+        "trades": 0,
+        "win_rate": 0.0
+      },
+      "managed": {
+        "total_return": 0.0,
+        "annual_return": 0.0,
+        "volatility": 0.0,
+        "sharpe_ratio": 0,
+        "max_drawdown": 0.0,
+        "final_value": 100000,
+        "trades": 0,
+        "win_rate": 0.0
+      },
+      "sharpe_improvement": 0,
+      "drawdown_improvement": 0.0,
+      "return_stability": 1
+    },
+    "risk_stats": {
+      "stop_losses": 0,
+      "trailing_stops": 0,
+      "loss_halts": 0,
+      "total_adjustments": 244
+    },
+    "data_type": "BALANCED_RISK_REAL"
+  },
+  {
+    "strategy_id": "BAL_MB_KDJ_2",
+    "config": {
+      "k_period": 8,
+      "d_period": 2
+    },
+    "performance": {
+      "original": {
+        "total_return": 0.0,
+        "annual_return": 0.0,
+        "volatility": 0.0,
+        "sharpe_ratio": 0,
+        "max_drawdown": 0.0,
+        "final_value": 100000,
+        "trades": 0,
+        "win_rate": 0.0
+      },
+      "managed": {
+        "total_return": 0.0,
+        "annual_return": 0.0,
+        "volatility": 0.0,
+        "sharpe_ratio": 0,
+        "max_drawdown": 0.0,
+        "final_value": 100000,
+        "trades": 0,
+        "win_rate": 0.0
+      },
+      "sharpe_improvement": 0,
+      "drawdown_improvement": 0.0,
+      "return_stability": 1
+    },
+    "risk_stats": {
+      "stop_losses": 0,
+      "trailing_stops": 0,
+      "loss_halts": 0,
+      "total_adjustments": 244
+    },
+    "data_type": "BALANCED_RISK_REAL"
+  },
+  {
+    "strategy_id": "BAL_MB_KDJ_3",
+    "config": {
+      "k_period": 12,
+      "d_period": 4
+    },
+    "performance": {
+      "original": {
+        "total_return": 0.0,
+        "annual_return": 0.0,
+        "volatility": 0.0,
+        "sharpe_ratio": 0,
+        "max_drawdown": 0.0,
+        "final_value": 100000,
+        "trades": 0,
+        "win_rate": 0.0
+      },
+      "managed": {
+        "total_return": 0.0,
+        "annual_return": 0.0,
+        "volatility": 0.0,
+        "sharpe_ratio": 0,
+        "max_drawdown": 0.0,
+        "final_value": 100000,
+        "trades": 0,
+        "win_rate": 0.0
+      },
+      "sharpe_improvement": 0,
+      "drawdown_improvement": 0.0,
+      "return_stability": 1
+    },
+    "risk_stats": {
+      "stop_losses": 0,
+      "trailing_stops": 0,
+      "loss_halts": 0,
+      "total_adjustments": 244
+    },
+    "data_type": "BALANCED_RISK_REAL"
+  }
+]

@@ -1,0 +1,2281 @@
+{
+  "result": {
+    "records": [
+      {
+        "date": "2025-09-01 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8047
+      },
+      {
+        "date": "2025-09-01 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.072
+      },
+      {
+        "date": "2025-09-01 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.3968
+      },
+      {
+        "date": "2025-09-01 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8244
+      },
+      {
+        "date": "2025-09-01 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0519
+      },
+      {
+        "date": "2025-09-01 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1117
+      },
+      {
+        "date": "2025-09-01 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7382
+      },
+      {
+        "date": "2025-09-02 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8143
+      },
+      {
+        "date": "2025-09-02 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0761
+      },
+      {
+        "date": "2025-09-02 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4059
+      },
+      {
+        "date": "2025-09-02 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8109
+      },
+      {
+        "date": "2025-09-02 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0524
+      },
+      {
+        "date": "2025-09-02 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.107
+      },
+      {
+        "date": "2025-09-02 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7619
+      },
+      {
+        "date": "2025-09-03 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8356
+      },
+      {
+        "date": "2025-09-03 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0794
+      },
+      {
+        "date": "2025-09-03 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4227
+      },
+      {
+        "date": "2025-09-03 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8465
+      },
+      {
+        "date": "2025-09-03 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0519
+      },
+      {
+        "date": "2025-09-03 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1372
+      },
+      {
+        "date": "2025-09-03 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8788
+      },
+      {
+        "date": "2025-09-04 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7865
+      },
+      {
+        "date": "2025-09-04 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.077
+      },
+      {
+        "date": "2025-09-04 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4843
+      },
+      {
+        "date": "2025-09-04 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8265
+      },
+      {
+        "date": "2025-09-04 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0521
+      },
+      {
+        "date": "2025-09-04 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.111
+      },
+      {
+        "date": "2025-09-04 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8132
+      },
+      {
+        "date": "2025-09-05 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8266
+      },
+      {
+        "date": "2025-09-05 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0853
+      },
+      {
+        "date": "2025-09-05 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4554
+      },
+      {
+        "date": "2025-09-05 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.9345
+      },
+      {
+        "date": "2025-09-05 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0518
+      },
+      {
+        "date": "2025-09-05 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.0794
+      },
+      {
+        "date": "2025-09-05 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7307
+      },
+      {
+        "date": "2025-09-08 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8116
+      },
+      {
+        "date": "2025-09-08 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0764
+      },
+      {
+        "date": "2025-09-08 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4419
+      },
+      {
+        "date": "2025-09-08 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.785
+      },
+      {
+        "date": "2025-09-08 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0522
+      },
+      {
+        "date": "2025-09-08 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1513
+      },
+      {
+        "date": "2025-09-08 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7855
+      },
+      {
+        "date": "2025-09-09 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8107
+      },
+      {
+        "date": "2025-09-09 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0781
+      },
+      {
+        "date": "2025-09-09 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.5131
+      },
+      {
+        "date": "2025-09-09 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8107
+      },
+      {
+        "date": "2025-09-09 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0521
+      },
+      {
+        "date": "2025-09-09 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1672
+      },
+      {
+        "date": "2025-09-09 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8209
+      },
+      {
+        "date": "2025-09-10 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8273
+      },
+      {
+        "date": "2025-09-10 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.085
+      },
+      {
+        "date": "2025-09-10 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4958
+      },
+      {
+        "date": "2025-09-10 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8121
+      },
+      {
+        "date": "2025-09-10 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0515
+      },
+      {
+        "date": "2025-09-10 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.0865
+      },
+      {
+        "date": "2025-09-10 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7363
+      },
+      {
+        "date": "2025-09-11 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7593
+      },
+      {
+        "date": "2025-09-11 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.077
+      },
+      {
+        "date": "2025-09-11 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.5007
+      },
+      {
+        "date": "2025-09-11 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8563
+      },
+      {
+        "date": "2025-09-11 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0521
+      },
+      {
+        "date": "2025-09-11 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1295
+      },
+      {
+        "date": "2025-09-11 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8056
+      },
+      {
+        "date": "2025-09-12 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7533
+      },
+      {
+        "date": "2025-09-12 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0766
+      },
+      {
+        "date": "2025-09-12 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4875
+      },
+      {
+        "date": "2025-09-12 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8096
+      },
+      {
+        "date": "2025-09-12 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.052
+      },
+      {
+        "date": "2025-09-12 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1719
+      },
+      {
+        "date": "2025-09-12 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7629
+      },
+      {
+        "date": "2025-09-15 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8414
+      },
+      {
+        "date": "2025-09-15 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.08
+      },
+      {
+        "date": "2025-09-15 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.3949
+      },
+      {
+        "date": "2025-09-15 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.7929
+      },
+      {
+        "date": "2025-09-15 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0518
+      },
+      {
+        "date": "2025-09-15 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1227
+      },
+      {
+        "date": "2025-09-15 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8389
+      },
+      {
+        "date": "2025-09-16 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.788
+      },
+      {
+        "date": "2025-09-16 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0773
+      },
+      {
+        "date": "2025-09-16 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.3651
+      },
+      {
+        "date": "2025-09-16 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8462
+      },
+      {
+        "date": "2025-09-16 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0522
+      },
+      {
+        "date": "2025-09-16 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.0971
+      },
+      {
+        "date": "2025-09-16 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7673
+      },
+      {
+        "date": "2025-09-17 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.823
+      },
+      {
+        "date": "2025-09-17 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0814
+      },
+      {
+        "date": "2025-09-17 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.5414
+      },
+      {
+        "date": "2025-09-17 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.867
+      },
+      {
+        "date": "2025-09-17 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0524
+      },
+      {
+        "date": "2025-09-17 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1408
+      },
+      {
+        "date": "2025-09-17 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7696
+      },
+      {
+        "date": "2025-09-18 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8544
+      },
+      {
+        "date": "2025-09-18 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0765
+      },
+      {
+        "date": "2025-09-18 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4391
+      },
+      {
+        "date": "2025-09-18 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.79
+      },
+      {
+        "date": "2025-09-18 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0525
+      },
+      {
+        "date": "2025-09-18 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1056
+      },
+      {
+        "date": "2025-09-18 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7873
+      },
+      {
+        "date": "2025-09-19 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8377
+      },
+      {
+        "date": "2025-09-19 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0737
+      },
+      {
+        "date": "2025-09-19 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4869
+      },
+      {
+        "date": "2025-09-19 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8733
+      },
+      {
+        "date": "2025-09-19 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0523
+      },
+      {
+        "date": "2025-09-19 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1269
+      },
+      {
+        "date": "2025-09-19 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7746
+      },
+      {
+        "date": "2025-09-22 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8063
+      },
+      {
+        "date": "2025-09-22 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0783
+      },
+      {
+        "date": "2025-09-22 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4285
+      },
+      {
+        "date": "2025-09-22 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8837
+      },
+      {
+        "date": "2025-09-22 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.052
+      },
+      {
+        "date": "2025-09-22 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1179
+      },
+      {
+        "date": "2025-09-22 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7811
+      },
+      {
+        "date": "2025-09-23 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7389
+      },
+      {
+        "date": "2025-09-23 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0826
+      },
+      {
+        "date": "2025-09-23 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4466
+      },
+      {
+        "date": "2025-09-23 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.7812
+      },
+      {
+        "date": "2025-09-23 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0523
+      },
+      {
+        "date": "2025-09-23 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.11
+      },
+      {
+        "date": "2025-09-23 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8064
+      },
+      {
+        "date": "2025-09-24 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.838
+      },
+      {
+        "date": "2025-09-24 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0804
+      },
+      {
+        "date": "2025-09-24 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.3955
+      },
+      {
+        "date": "2025-09-24 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8807
+      },
+      {
+        "date": "2025-09-24 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0523
+      },
+      {
+        "date": "2025-09-24 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1221
+      },
+      {
+        "date": "2025-09-24 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8025
+      },
+      {
+        "date": "2025-09-25 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7778
+      },
+      {
+        "date": "2025-09-25 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0766
+      },
+      {
+        "date": "2025-09-25 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4941
+      },
+      {
+        "date": "2025-09-25 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8508
+      },
+      {
+        "date": "2025-09-25 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0517
+      },
+      {
+        "date": "2025-09-25 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1479
+      },
+      {
+        "date": "2025-09-25 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8042
+      },
+      {
+        "date": "2025-09-26 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8081
+      },
+      {
+        "date": "2025-09-26 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0768
+      },
+      {
+        "date": "2025-09-26 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.5212
+      },
+      {
+        "date": "2025-09-26 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.9301
+      },
+      {
+        "date": "2025-09-26 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0516
+      },
+      {
+        "date": "2025-09-26 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1171
+      },
+      {
+        "date": "2025-09-26 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.782
+      },
+      {
+        "date": "2025-09-29 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8008
+      },
+      {
+        "date": "2025-09-29 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0779
+      },
+      {
+        "date": "2025-09-29 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4901
+      },
+      {
+        "date": "2025-09-29 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8902
+      },
+      {
+        "date": "2025-09-29 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.052
+      },
+      {
+        "date": "2025-09-29 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1317
+      },
+      {
+        "date": "2025-09-29 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8441
+      },
+      {
+        "date": "2025-09-30 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8428
+      },
+      {
+        "date": "2025-09-30 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0768
+      },
+      {
+        "date": "2025-09-30 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.5329
+      },
+      {
+        "date": "2025-09-30 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.9092
+      },
+      {
+        "date": "2025-09-30 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.052
+      },
+      {
+        "date": "2025-09-30 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1012
+      },
+      {
+        "date": "2025-09-30 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7179
+      },
+      {
+        "date": "2025-10-01 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7743
+      },
+      {
+        "date": "2025-10-01 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0737
+      },
+      {
+        "date": "2025-10-01 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.3766
+      },
+      {
+        "date": "2025-10-01 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.9074
+      },
+      {
+        "date": "2025-10-01 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0519
+      },
+      {
+        "date": "2025-10-01 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1079
+      },
+      {
+        "date": "2025-10-01 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8108
+      },
+      {
+        "date": "2025-10-02 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7505
+      },
+      {
+        "date": "2025-10-02 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0793
+      },
+      {
+        "date": "2025-10-02 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4721
+      },
+      {
+        "date": "2025-10-02 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8018
+      },
+      {
+        "date": "2025-10-02 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0518
+      },
+      {
+        "date": "2025-10-02 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.0891
+      },
+      {
+        "date": "2025-10-02 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8168
+      },
+      {
+        "date": "2025-10-03 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.814
+      },
+      {
+        "date": "2025-10-03 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0804
+      },
+      {
+        "date": "2025-10-03 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4389
+      },
+      {
+        "date": "2025-10-03 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8504
+      },
+      {
+        "date": "2025-10-03 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0519
+      },
+      {
+        "date": "2025-10-03 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.0887
+      },
+      {
+        "date": "2025-10-03 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8103
+      },
+      {
+        "date": "2025-10-06 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8358
+      },
+      {
+        "date": "2025-10-06 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0795
+      },
+      {
+        "date": "2025-10-06 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4696
+      },
+      {
+        "date": "2025-10-06 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.86
+      },
+      {
+        "date": "2025-10-06 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0518
+      },
+      {
+        "date": "2025-10-06 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1249
+      },
+      {
+        "date": "2025-10-06 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8314
+      },
+      {
+        "date": "2025-10-07 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8129
+      },
+      {
+        "date": "2025-10-07 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0756
+      },
+      {
+        "date": "2025-10-07 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4922
+      },
+      {
+        "date": "2025-10-07 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.7758
+      },
+      {
+        "date": "2025-10-07 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0517
+      },
+      {
+        "date": "2025-10-07 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1067
+      },
+      {
+        "date": "2025-10-07 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8012
+      },
+      {
+        "date": "2025-10-08 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.824
+      },
+      {
+        "date": "2025-10-08 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0714
+      },
+      {
+        "date": "2025-10-08 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4674
+      },
+      {
+        "date": "2025-10-08 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.9481
+      },
+      {
+        "date": "2025-10-08 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.052
+      },
+      {
+        "date": "2025-10-08 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1196
+      },
+      {
+        "date": "2025-10-08 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7589
+      },
+      {
+        "date": "2025-10-09 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7017
+      },
+      {
+        "date": "2025-10-09 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0821
+      },
+      {
+        "date": "2025-10-09 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4067
+      },
+      {
+        "date": "2025-10-09 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8013
+      },
+      {
+        "date": "2025-10-09 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0525
+      },
+      {
+        "date": "2025-10-09 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1347
+      },
+      {
+        "date": "2025-10-09 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7437
+      },
+      {
+        "date": "2025-10-10 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7653
+      },
+      {
+        "date": "2025-10-10 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0765
+      },
+      {
+        "date": "2025-10-10 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.5107
+      },
+      {
+        "date": "2025-10-10 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8955
+      },
+      {
+        "date": "2025-10-10 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0521
+      },
+      {
+        "date": "2025-10-10 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1104
+      },
+      {
+        "date": "2025-10-10 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7753
+      },
+      {
+        "date": "2025-10-13 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7463
+      },
+      {
+        "date": "2025-10-13 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0861
+      },
+      {
+        "date": "2025-10-13 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4053
+      },
+      {
+        "date": "2025-10-13 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8304
+      },
+      {
+        "date": "2025-10-13 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0516
+      },
+      {
+        "date": "2025-10-13 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1165
+      },
+      {
+        "date": "2025-10-13 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7756
+      },
+      {
+        "date": "2025-10-14 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7828
+      },
+      {
+        "date": "2025-10-14 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0895
+      },
+      {
+        "date": "2025-10-14 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4316
+      },
+      {
+        "date": "2025-10-14 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.846
+      },
+      {
+        "date": "2025-10-14 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0521
+      },
+      {
+        "date": "2025-10-14 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.0979
+      },
+      {
+        "date": "2025-10-14 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7883
+      },
+      {
+        "date": "2025-10-15 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.901
+      },
+      {
+        "date": "2025-10-15 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.087
+      },
+      {
+        "date": "2025-10-15 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.3664
+      },
+      {
+        "date": "2025-10-15 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.841
+      },
+      {
+        "date": "2025-10-15 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0518
+      },
+      {
+        "date": "2025-10-15 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.0941
+      },
+      {
+        "date": "2025-10-15 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7316
+      },
+      {
+        "date": "2025-10-16 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7961
+      },
+      {
+        "date": "2025-10-16 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0771
+      },
+      {
+        "date": "2025-10-16 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4884
+      },
+      {
+        "date": "2025-10-16 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8374
+      },
+      {
+        "date": "2025-10-16 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.052
+      },
+      {
+        "date": "2025-10-16 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1274
+      },
+      {
+        "date": "2025-10-16 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8262
+      },
+      {
+        "date": "2025-10-17 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8156
+      },
+      {
+        "date": "2025-10-17 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0852
+      },
+      {
+        "date": "2025-10-17 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.3918
+      },
+      {
+        "date": "2025-10-17 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8329
+      },
+      {
+        "date": "2025-10-17 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0519
+      },
+      {
+        "date": "2025-10-17 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1265
+      },
+      {
+        "date": "2025-10-17 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7719
+      },
+      {
+        "date": "2025-10-20 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8249
+      },
+      {
+        "date": "2025-10-20 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0776
+      },
+      {
+        "date": "2025-10-20 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.465
+      },
+      {
+        "date": "2025-10-20 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.7923
+      },
+      {
+        "date": "2025-10-20 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0519
+      },
+      {
+        "date": "2025-10-20 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.0995
+      },
+      {
+        "date": "2025-10-20 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8146
+      },
+      {
+        "date": "2025-10-21 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8167
+      },
+      {
+        "date": "2025-10-21 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0817
+      },
+      {
+        "date": "2025-10-21 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.3675
+      },
+      {
+        "date": "2025-10-21 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.878
+      },
+      {
+        "date": "2025-10-21 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0517
+      },
+      {
+        "date": "2025-10-21 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1494
+      },
+      {
+        "date": "2025-10-21 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7433
+      },
+      {
+        "date": "2025-10-22 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.747
+      },
+      {
+        "date": "2025-10-22 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0823
+      },
+      {
+        "date": "2025-10-22 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4758
+      },
+      {
+        "date": "2025-10-22 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.7405
+      },
+      {
+        "date": "2025-10-22 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0518
+      },
+      {
+        "date": "2025-10-22 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1368
+      },
+      {
+        "date": "2025-10-22 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7912
+      },
+      {
+        "date": "2025-10-23 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7933
+      },
+      {
+        "date": "2025-10-23 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0781
+      },
+      {
+        "date": "2025-10-23 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4682
+      },
+      {
+        "date": "2025-10-23 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.7631
+      },
+      {
+        "date": "2025-10-23 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.052
+      },
+      {
+        "date": "2025-10-23 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.122
+      },
+      {
+        "date": "2025-10-23 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8074
+      },
+      {
+        "date": "2025-10-24 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7968
+      },
+      {
+        "date": "2025-10-24 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0865
+      },
+      {
+        "date": "2025-10-24 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4512
+      },
+      {
+        "date": "2025-10-24 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8998
+      },
+      {
+        "date": "2025-10-24 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0522
+      },
+      {
+        "date": "2025-10-24 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1733
+      },
+      {
+        "date": "2025-10-24 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7772
+      },
+      {
+        "date": "2025-10-27 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8269
+      },
+      {
+        "date": "2025-10-27 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.091
+      },
+      {
+        "date": "2025-10-27 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.3689
+      },
+      {
+        "date": "2025-10-27 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8544
+      },
+      {
+        "date": "2025-10-27 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0516
+      },
+      {
+        "date": "2025-10-27 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1225
+      },
+      {
+        "date": "2025-10-27 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7895
+      },
+      {
+        "date": "2025-10-28 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8068
+      },
+      {
+        "date": "2025-10-28 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0833
+      },
+      {
+        "date": "2025-10-28 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4591
+      },
+      {
+        "date": "2025-10-28 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.927
+      },
+      {
+        "date": "2025-10-28 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0521
+      },
+      {
+        "date": "2025-10-28 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1134
+      },
+      {
+        "date": "2025-10-28 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7502
+      },
+      {
+        "date": "2025-10-29 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8234
+      },
+      {
+        "date": "2025-10-29 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0845
+      },
+      {
+        "date": "2025-10-29 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4165
+      },
+      {
+        "date": "2025-10-29 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8238
+      },
+      {
+        "date": "2025-10-29 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0514
+      },
+      {
+        "date": "2025-10-29 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1467
+      },
+      {
+        "date": "2025-10-29 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8134
+      },
+      {
+        "date": "2025-10-30 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7945
+      },
+      {
+        "date": "2025-10-30 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.086
+      },
+      {
+        "date": "2025-10-30 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4444
+      },
+      {
+        "date": "2025-10-30 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.7755
+      },
+      {
+        "date": "2025-10-30 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0521
+      },
+      {
+        "date": "2025-10-30 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1151
+      },
+      {
+        "date": "2025-10-30 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.819
+      },
+      {
+        "date": "2025-10-31 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8463
+      },
+      {
+        "date": "2025-10-31 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0771
+      },
+      {
+        "date": "2025-10-31 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4032
+      },
+      {
+        "date": "2025-10-31 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.855
+      },
+      {
+        "date": "2025-10-31 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.052
+      },
+      {
+        "date": "2025-10-31 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1088
+      },
+      {
+        "date": "2025-10-31 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7454
+      },
+      {
+        "date": "2025-11-03 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7505
+      },
+      {
+        "date": "2025-11-03 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0818
+      },
+      {
+        "date": "2025-11-03 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4523
+      },
+      {
+        "date": "2025-11-03 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8775
+      },
+      {
+        "date": "2025-11-03 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0523
+      },
+      {
+        "date": "2025-11-03 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1413
+      },
+      {
+        "date": "2025-11-03 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7848
+      },
+      {
+        "date": "2025-11-04 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8352
+      },
+      {
+        "date": "2025-11-04 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0827
+      },
+      {
+        "date": "2025-11-04 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.5057
+      },
+      {
+        "date": "2025-11-04 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.9573
+      },
+      {
+        "date": "2025-11-04 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.052
+      },
+      {
+        "date": "2025-11-04 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1579
+      },
+      {
+        "date": "2025-11-04 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7898
+      },
+      {
+        "date": "2025-11-05 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8341
+      },
+      {
+        "date": "2025-11-05 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0732
+      },
+      {
+        "date": "2025-11-05 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4713
+      },
+      {
+        "date": "2025-11-05 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8984
+      },
+      {
+        "date": "2025-11-05 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0518
+      },
+      {
+        "date": "2025-11-05 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1172
+      },
+      {
+        "date": "2025-11-05 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8176
+      },
+      {
+        "date": "2025-11-06 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.9002
+      },
+      {
+        "date": "2025-11-06 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0869
+      },
+      {
+        "date": "2025-11-06 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4077
+      },
+      {
+        "date": "2025-11-06 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.877
+      },
+      {
+        "date": "2025-11-06 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0521
+      },
+      {
+        "date": "2025-11-06 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.0995
+      },
+      {
+        "date": "2025-11-06 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7472
+      },
+      {
+        "date": "2025-11-07 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8079
+      },
+      {
+        "date": "2025-11-07 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0777
+      },
+      {
+        "date": "2025-11-07 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4854
+      },
+      {
+        "date": "2025-11-07 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.9633
+      },
+      {
+        "date": "2025-11-07 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0523
+      },
+      {
+        "date": "2025-11-07 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1174
+      },
+      {
+        "date": "2025-11-07 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7885
+      },
+      {
+        "date": "2025-11-10 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8362
+      },
+      {
+        "date": "2025-11-10 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0769
+      },
+      {
+        "date": "2025-11-10 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4854
+      },
+      {
+        "date": "2025-11-10 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8477
+      },
+      {
+        "date": "2025-11-10 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0518
+      },
+      {
+        "date": "2025-11-10 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1071
+      },
+      {
+        "date": "2025-11-10 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7761
+      },
+      {
+        "date": "2025-11-11 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8575
+      },
+      {
+        "date": "2025-11-11 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0848
+      },
+      {
+        "date": "2025-11-11 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4612
+      },
+      {
+        "date": "2025-11-11 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8387
+      },
+      {
+        "date": "2025-11-11 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0521
+      },
+      {
+        "date": "2025-11-11 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1394
+      },
+      {
+        "date": "2025-11-11 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8002
+      },
+      {
+        "date": "2025-11-12 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8399
+      },
+      {
+        "date": "2025-11-12 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0753
+      },
+      {
+        "date": "2025-11-12 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.539
+      },
+      {
+        "date": "2025-11-12 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8239
+      },
+      {
+        "date": "2025-11-12 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0524
+      },
+      {
+        "date": "2025-11-12 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1196
+      },
+      {
+        "date": "2025-11-12 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7863
+      },
+      {
+        "date": "2025-11-13 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7767
+      },
+      {
+        "date": "2025-11-13 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.083
+      },
+      {
+        "date": "2025-11-13 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4199
+      },
+      {
+        "date": "2025-11-13 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8209
+      },
+      {
+        "date": "2025-11-13 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0523
+      },
+      {
+        "date": "2025-11-13 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1553
+      },
+      {
+        "date": "2025-11-13 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7653
+      },
+      {
+        "date": "2025-11-14 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8572
+      },
+      {
+        "date": "2025-11-14 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0798
+      },
+      {
+        "date": "2025-11-14 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4823
+      },
+      {
+        "date": "2025-11-14 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8742
+      },
+      {
+        "date": "2025-11-14 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0522
+      },
+      {
+        "date": "2025-11-14 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1535
+      },
+      {
+        "date": "2025-11-14 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7962
+      },
+      {
+        "date": "2025-11-17 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8135
+      },
+      {
+        "date": "2025-11-17 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.082
+      },
+      {
+        "date": "2025-11-17 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4795
+      },
+      {
+        "date": "2025-11-17 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.9448
+      },
+      {
+        "date": "2025-11-17 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0519
+      },
+      {
+        "date": "2025-11-17 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1355
+      },
+      {
+        "date": "2025-11-17 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7549
+      },
+      {
+        "date": "2025-11-18 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8478
+      },
+      {
+        "date": "2025-11-18 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0896
+      },
+      {
+        "date": "2025-11-18 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4578
+      },
+      {
+        "date": "2025-11-18 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8612
+      },
+      {
+        "date": "2025-11-18 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0516
+      },
+      {
+        "date": "2025-11-18 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1052
+      },
+      {
+        "date": "2025-11-18 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.788
+      },
+      {
+        "date": "2025-11-19 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7759
+      },
+      {
+        "date": "2025-11-19 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0825
+      },
+      {
+        "date": "2025-11-19 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4147
+      },
+      {
+        "date": "2025-11-19 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.886
+      },
+      {
+        "date": "2025-11-19 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0516
+      },
+      {
+        "date": "2025-11-19 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1609
+      },
+      {
+        "date": "2025-11-19 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7858
+      },
+      {
+        "date": "2025-11-20 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8426
+      },
+      {
+        "date": "2025-11-20 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0861
+      },
+      {
+        "date": "2025-11-20 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4948
+      },
+      {
+        "date": "2025-11-20 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8294
+      },
+      {
+        "date": "2025-11-20 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0522
+      },
+      {
+        "date": "2025-11-20 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1436
+      },
+      {
+        "date": "2025-11-20 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.8058
+      },
+      {
+        "date": "2025-11-21 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8285
+      },
+      {
+        "date": "2025-11-21 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0846
+      },
+      {
+        "date": "2025-11-21 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.5166
+      },
+      {
+        "date": "2025-11-21 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.873
+      },
+      {
+        "date": "2025-11-21 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.052
+      },
+      {
+        "date": "2025-11-21 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.0972
+      },
+      {
+        "date": "2025-11-21 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7763
+      },
+      {
+        "date": "2025-11-24 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.7532
+      },
+      {
+        "date": "2025-11-24 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0813
+      },
+      {
+        "date": "2025-11-24 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.365
+      },
+      {
+        "date": "2025-11-24 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8172
+      },
+      {
+        "date": "2025-11-24 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0522
+      },
+      {
+        "date": "2025-11-24 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1156
+      },
+      {
+        "date": "2025-11-24 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.748
+      },
+      {
+        "date": "2025-11-25 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8098
+      },
+      {
+        "date": "2025-11-25 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0775
+      },
+      {
+        "date": "2025-11-25 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4574
+      },
+      {
+        "date": "2025-11-25 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8407
+      },
+      {
+        "date": "2025-11-25 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.052
+      },
+      {
+        "date": "2025-11-25 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1617
+      },
+      {
+        "date": "2025-11-25 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7627
+      },
+      {
+        "date": "2025-11-26 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8561
+      },
+      {
+        "date": "2025-11-26 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0863
+      },
+      {
+        "date": "2025-11-26 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.3852
+      },
+      {
+        "date": "2025-11-26 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8826
+      },
+      {
+        "date": "2025-11-26 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0522
+      },
+      {
+        "date": "2025-11-26 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1048
+      },
+      {
+        "date": "2025-11-26 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7599
+      },
+      {
+        "date": "2025-11-27 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8257
+      },
+      {
+        "date": "2025-11-27 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0681
+      },
+      {
+        "date": "2025-11-27 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4747
+      },
+      {
+        "date": "2025-11-27 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8663
+      },
+      {
+        "date": "2025-11-27 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0521
+      },
+      {
+        "date": "2025-11-27 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1026
+      },
+      {
+        "date": "2025-11-27 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.7961
+      },
+      {
+        "date": "2025-11-28 16:36:07.996853",
+        "currency_pair": "usd_hkd",
+        "exchange_rate": 7.8329
+      },
+      {
+        "date": "2025-11-28 16:36:07.996853",
+        "currency_pair": "cny_hkd",
+        "exchange_rate": 1.0842
+      },
+      {
+        "date": "2025-11-28 16:36:07.996853",
+        "currency_pair": "eur_hkd",
+        "exchange_rate": 8.4378
+      },
+      {
+        "date": "2025-11-28 16:36:07.996853",
+        "currency_pair": "gbp_hkd",
+        "exchange_rate": 9.8683
+      },
+      {
+        "date": "2025-11-28 16:36:07.996853",
+        "currency_pair": "jpy_hkd",
+        "exchange_rate": 0.0523
+      },
+      {
+        "date": "2025-11-28 16:36:07.996853",
+        "currency_pair": "aud_hkd",
+        "exchange_rate": 5.1125
+      },
+      {
+        "date": "2025-11-28 16:36:07.996853",
+        "currency_pair": "cad_hkd",
+        "exchange_rate": 5.765
+      }
+    ]
+  }
+}

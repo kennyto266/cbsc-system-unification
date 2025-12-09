@@ -1,0 +1,53 @@
+{
+  "timestamp": "20251129_015543",
+  "initial_capital": 100000,
+  "symbols": [
+    "0700.HK"
+  ],
+  "strategies_config": {
+    "RSI_Conservative": {
+      "period": 21,
+      "oversold": 25,
+      "overbought": 75
+    },
+    "RSI_Aggressive": {
+      "period": 7,
+      "oversold": 20,
+      "overbought": 80
+    },
+    "MACD_Standard": {
+      "fast": 12,
+      "slow": 26,
+      "signal": 9
+    },
+    "MA_Standard": {
+      "short_period": 10,
+      "long_period": 30
+    },
+    "Bollinger_Standard": {
+      "period": 20,
+      "std_dev": 2.0
+    }
+  },
+  "allocation_type": "equal_weight",
+  "results": {
+    "0700.HK": {
+      "metrics": {
+        "total_return": 0.15186458112720236,
+        "annualized_return": 0.21755073126780466,
+        "volatility": 0.40705735589120323,
+        "max_drawdown": -0.19979491369966623,
+        "sharpe_ratio": 0.4607476773320675,
+        "calmar_ratio": 1.0888702181619556
+      },
+      "allocation": {
+        "RSI_Conservative": 0.2,
+        "RSI_Aggressive": 0.2,
+        "MACD_Standard": 0.2,
+        "MA_Standard": 0.2,
+        "Bollinger_Standard": 0.2
+      },
+      "total_trades": 0
+    }
+  }
+}

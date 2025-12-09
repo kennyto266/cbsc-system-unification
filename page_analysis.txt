@@ -1,0 +1,4 @@
+uid=6_0 RootWebArea "CBSC策略管理系統" url="http://localhost:3000/simple_dashboard.html"
+  uid=6_1 ignored
+    uid=6_2 ignored
+      uid=6_3 generic

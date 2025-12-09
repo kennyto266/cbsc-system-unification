@@ -1,0 +1,75 @@
+{
+  "timestamp": "20251129_013619",
+  "strategies_tested": 5,
+  "valid_strategies": 0,
+  "top_strategies": [],
+  "all_results": [
+    {
+      "strategy": "RSI_MEAN_REVERSION",
+      "params": {
+        "period": 14,
+        "oversold": 30,
+        "overbought": 70
+      },
+      "total_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.05,
+      "win_rate": 0.5,
+      "total_trades": 0,
+      "quality_score": 0
+    },
+    {
+      "strategy": "MACD_CROSSOVER",
+      "params": {
+        "fast": 12,
+        "slow": 26,
+        "signal": 9
+      },
+      "total_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.05,
+      "win_rate": 0.5,
+      "total_trades": 0,
+      "quality_score": 0
+    },
+    {
+      "strategy": "DUAL_MOVING_AVERAGE",
+      "params": {
+        "short_period": 10,
+        "long_period": 30
+      },
+      "total_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.05,
+      "win_rate": 0.5,
+      "total_trades": 0,
+      "quality_score": 0
+    },
+    {
+      "strategy": "BOLLINGER_BANDS",
+      "params": {
+        "period": 20,
+        "std_dev": 2
+      },
+      "total_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.05,
+      "win_rate": 0.5,
+      "total_trades": 0,
+      "quality_score": 0
+    },
+    {
+      "strategy": "MOMENTUM_BREAKOUT",
+      "params": {
+        "period": 14,
+        "threshold": 0.02
+      },
+      "total_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.05,
+      "win_rate": 0.5,
+      "total_trades": 0,
+      "quality_score": 0
+    }
+  ]
+}

@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBSC策略管理Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/antd@5.6.4/dist/reset.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/antd@5.6.4/dist/antd.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/recharts@2.8.0/umd/Recharts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/antd@5.6.4/dist/antd.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-connected { background: #52c41a; }
+        .status-disconnected { background: #ff4d4f; }
+
+        .websocket-status {
+            margin: 16px 0;
+            padding: 16px;
+            background: #f0f9ff;
+            border: 1px solid #91caff;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .strategy-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .strategy-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .performance-chart {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            height: 400px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ff4d4f;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 16px;
+            }
+
+            .strategy-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { Card, Row, Col, Statistic, Layout, Menu, Button, Spin, message, Progress, Tag } = antd;
+        const { Header, Content, Sider } = Layout;
+        const { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
+
+        // Mock strategy data
+        const mockStrategies = [
+            {
+                id: 1,
+                name: '月度低頻RSI策略',
+                category: 'monthly_low_frequency',
+                annualReturn: 0.156,
+                sharpeRatio: 1.24,
+                maxDrawdown: 0.087,
+                winRate: 0.632,
+                riskLevel: 'medium',
+                grade: 'A-',
+                description: '基於月度RSI信號的低頻交易策略'
+            },
+            {
+                id: 2,
+                name: '月度MACD趨勢策略',
+                category: 'monthly_low_frequency',
+                annualReturn: 0.142,
+                sharpeRatio: 1.18,
+                maxDrawdown: 0.093,
+                winRate: 0.598,
+                riskLevel: 'medium',
+                grade: 'B+',
+                description: '利用月度MACD指標識別趨勢轉折點'
+            },
+            {
+                id: 3,
+                name: '動量突破策略',
+                category: 'monthly_low_frequency',
+                annualReturn: 0.189,
+                sharpeRatio: 1.45,
+                maxDrawdown: 0.112,
+                winRate: 0.654,
+                riskLevel: 'medium',
+                grade: 'A',
+                description: '捕捉市場動量突破的月度交易策略'
+            },
+            {
+                id: 4,
+                name: '多策略驗證系統',
+                category: 'multi_strategy_validation',
+                annualReturn: 0.198,
+                sharpeRatio: 1.67,
+                maxDrawdown: 0.098,
+                winRate: 0.682,
+                riskLevel: 'low',
+                grade: 'A+',
+                description: '結合多種策略信號進行風險控制'
+            },
+            {
+                id: 5,
+                name: '五因子量化模型',
+                category: 'multi_factor_model',
+                annualReturn: 0.267,
+                sharpeRatio: 2.14,
+                maxDrawdown: 0.125,
+                winRate: 0.723,
+                riskLevel: 'medium',
+                grade: 'A+',
+                description: '基於五個市場因子的量化模型'
+            },
+            {
+                id: 6,
+                name: 'CBSC RSI策略',
+                category: 'core_cbsc_technical',
+                annualReturn: 0.172,
+                sharpeRatio: 1.34,
+                maxDrawdown: 0.092,
+                winRate: 0.589,
+                riskLevel: 'medium',
+                grade: 'A',
+                description: '基於CBSC數據的RSI技術分析策略'
+            }
+        ];
+
+        // Mock performance data
+        const generatePerformanceData = () => {
+            const data = [];
+            const dates = [];
+            for (let i = 30; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                dates.push(date.toISOString().split('T')[0]);
+            }
+
+            dates.forEach(date => {
+                const dataPoint = {
+                    date,
+                    benchmark: 100 * (1 + Math.sin(i * 0.1) * 0.05 + (30 - i) * 0.001)
+                };
+
+                mockStrategies.slice(0, 3).forEach(strategy => {
+                    const baseValue = 100;
+                    const trend = strategy.annualReturn / 365;
+                    const noise = (Math.random() - 0.5) * 0.01;
+                    dataPoint[strategy.name] = baseValue * (1 + trend * (30 - i) + noise);
+                });
+
+                data.push(dataPoint);
+            });
+
+            return data;
+        };
+
+        // WebSocket connection
+        const useWebSocket = () => {
+            const [connected, setConnected] = useState(false);
+            const [lastMessage, setLastMessage] = useState(null);
+            const [performanceData, setPerformanceData] = useState([]);
+            const [signals, setSignals] = useState({});
+
+            useEffect(() => {
+                const ws = new WebSocket('ws://localhost:3005/ws');
+
+                ws.onopen = () => {
+                    setConnected(true);
+                    message.success('WebSocket連接成功');
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        setLastMessage(message);
+
+                        if (message.type === 'performance_update') {
+                            // 處理性能更新
+                        } else if (message.type === 'signals_update') {
+                            setSignals(message.data);
+                        }
+                    } catch (error) {
+                        console.error('Failed to parse WebSocket message:', error);
+                    }
+                };
+
+                ws.onclose = () => {
+                    setConnected(false);
+                    message.warning('WebSocket連接斷開');
+                };
+
+                // 訂閱連接
+                ws.onclose = () => {
+                    setTimeout(() => {
+                        ws.reconnect();
+                    }, 3000);
+                };
+
+                return () => ws.close();
+            }, []);
+
+            return { connected, lastMessage, performanceData, signals };
+        };
+
+        // Dashboard Component
+        const Dashboard = () => {
+            const { connected, lastMessage } = useWebSocket();
+            const [loading, setLoading] = useState(false);
+            const [selectedCategory, setSelectedCategory] = useState('all');
+            const [chartData] = useState(generatePerformanceData());
+
+            const getGradeColor = (grade) => {
+                const colors = {
+                    'A+': '#52c41a',
+                    'A': '#73d13d',
+                    'A-': '#95de64',
+                    'B+': '#b7eb8f',
+                    'B': '#d9f7be',
+                    'C+': '#fff7e6',
+                    'C': '#ffccc7',
+                    'D+': '#ff9c6e',
+                    'D': '#ff7875',
+                    'F': '#ff4d4f'
+                };
+                return colors[grade] || '#d9d9d9';
+            };
+
+            const getRiskColor = (risk) => {
+                const colors = {
+                    'low': '#52c41a',
+                    'medium': '#faad14',
+                    'high': '#ff4d4f'
+                };
+                return colors[risk] || '#d9d9d9';
+            };
+
+            const filteredStrategies = selectedCategory === 'all'
+                ? mockStrategies
+                : mockStrategies.filter(s => s.category === selectedCategory);
+
+            return React.createElement(
+                'div',
+                { className: 'dashboard-container' },
+                React.createElement(
+                    'div',
+                    { className: 'header' },
+                    React.createElement(
+                        'h1',
+                        {},
+                        '🚀 CBSC策略管理Dashboard'
+                    ),
+                    React.createElement(
+                        'p',
+                        {},
+                        '實時量化交易策略監控與管理系統'
+                    ),
+                    React.createElement(
+                        'div',
+                        { className: 'websocket-status' },
+                        React.createElement(
+                            'span',
+                            { className: `status-indicator ${connected ? 'status-connected' : 'status-disconnected'}` }
+                        ),
+                        React.createElement(
+                            'span',
+                            {},
+                            `WebSocket狀態: ${connected ? '已連接' : '未連接'} (端口3004)`
+                        ),
+                        connected && React.createElement(
+                            Button,
+                            {
+                                size: 'small',
+                                onClick: () => window.open('http://localhost:3004/test', '_blank')
+                            },
+                            '測試WebSocket'
+                        )
+                    )
+                ),
+
+                React.createElement(
+                    Row,
+                    { gutter: [16, 16], style: { marginBottom: '24px' } },
+                    React.createElement(
+                        Col,
+                        { span: 6 },
+                        React.createElement(
+                            Card,
+                            { title: '總策略數' },
+                            React.createElement(
+                                Statistic,
+                                {
+                                    value: mockStrategies.length,
+                                    suffix: '個',
+                                    valueStyle: { color: '#1890ff' }
+                                }
+                            )
+                        ),
+                        React.createElement(
+                            Col,
+                            { span: 6 },
+                            React.createElement(
+                                Card,
+                                { title: '平均年化收益' },
+                                React.createElement(
+                                    Statistic,
+                                {
+                                    value: (mockStrategies.reduce((sum, s) => sum + s.annualReturn, 0) / mockStrategies.length * 100).toFixed(2),
+                                    suffix: '%',
+                                    valueStyle: { color: '#52c41a' }
+                                }
+                            )
+                        ),
+                        React.createElement(
+                            Col,
+                            { span: 6 },
+                            React.createElement(
+                                Card,
+                                { title: '平均夏普比率' },
+                                React.createElement(
+                                    Statistic,
+                                {
+                                    value: (mockStrategies.reduce((sum, s) => sum + s.sharpeRatio, 0) / mockStrategies.length).toFixed(2),
+                                    valueStyle: { color: '#722ed1' }
+                                }
+                            )
+                        ),
+                        React.createElement(
+                            Col,
+                            { span: 6 },
+                            React.createElement(
+                                Card,
+                                { title: '平均勝率' },
+                                React.createElement(
+                                    Statistic,
+                                {
+                                    value: (mockStrategies.reduce((sum, s) => sum + s.winRate, 0) / mockStrategies.length * 100).toFixed(1),
+                                    suffix: '%',
+                                    valueStyle: { color: '#52c41a' }
+                                }
+                            )
+                        )
+                    )
+                ),
+
+                React.createElement(
+                    'div',
+                    { style: { marginBottom: '32px' } },
+                    React.createElement('h2', { style: { marginBottom: '16px' } }, '策略分類'),
+                    React.createElement(
+                        Row,
+                        { gutter: [16, 16] },
+                        [
+                            { key: 'all', category: 'all', name: '全部策略' },
+                            { key: 'monthly', category: 'monthly_low_frequency', name: '月度低頻策略' },
+                            { key: 'multi', category: 'multi_strategy_validation', name: '多策略驗證' },
+                            { key: 'factor', category: 'multi_factor_model', name: '多因子模型' },
+                            { key: 'technical', category: 'core_cbsc_technical', name: '技術分析' },
+                            { key: 'sentiment', category: 'core_cbsc_sentiment', name: '情緒分析' },
+                            { key: 'aggressive', category: 'core_cbsc_aggressive', name: '激進策略' }
+                        ].map(cat => (
+                            React.createElement(
+                                Col,
+                                { key: cat.key, span: 3 },
+                                React.createElement(
+                                    Button,
+                                    {
+                                        type: selectedCategory === cat.category ? 'primary' : 'default',
+                                        onClick: () => setSelectedCategory(cat.category),
+                                        style: { width: '100%', marginBottom: '8px' }
+                                    },
+                                    cat.name
+                                )
+                            ))
+                        )
+                    )
+                ),
+
+                React.createElement(
+                    'div',
+                    { className: 'strategy-grid' },
+                    filteredStrategies.map(strategy => (
+                        React.createElement(
+                            Card,
+                            {
+                                key: strategy.id,
+                                className: 'strategy-card',
+                                hoverable: true,
+                                onClick: () => message.info(`查看策略詳情: ${strategy.name}`)
+                            },
+                            React.createElement(
+                                'h3',
+                                { style: { color: getGradeColor(strategy.grade), marginBottom: '8px' } },
+                                `${strategy.name} (${strategy.grade})`
+                            ),
+                            React.createElement(
+                                'p',
+                                { style: { color: '#666', marginBottom: '12px' } },
+                                strategy.description
+                            ),
+                            React.createElement(
+                                'div',
+                                { style: { marginBottom: '12px' } },
+                                React.createElement(
+                                    Tag,
+                                    { color: getRiskColor(strategy.riskLevel) },
+                                    strategy.riskLevel === 'low' ? '低風險' : strategy.riskLevel === 'medium' ? '中風險' : '高風險'
+                                )
+                            ),
+                            React.createElement(
+                                'div',
+                                { style: { marginBottom: '8px' } },
+                                `年化收益: ${(strategy.annualReturn * 100).toFixed(2)}% | 夏普比率: ${strategy.sharpeRatio.toFixed(2)} | 勝率: ${(strategy.winRate * 100).toFixed(1)}%`
+                            )
+                        )
+                    ))
+                ),
+
+                React.createElement(
+                    'div',
+                    { className: 'performance-chart' },
+                    React.createElement(
+                        'h2',
+                        { style: { marginBottom: '16px', textAlign: 'center' } },
+                        '策略性能趨勢'
+                    ),
+                    React.createElement(
+                        ResponsiveContainer,
+                        { width: '100%', height: 350 },
+                        React.createElement(
+                            LineChart,
+                            { data: chartData },
+                            React.createElement(
+                                CartesianGrid,
+                                { strokeDasharray: '3 3' }
+                            ),
+                            React.createElement(
+                                XAxis,
+                                { dataKey: 'date' }
+                            ),
+                            React.createElement(
+                                YAxis,
+                                {
+                                    label: '價值 (基準=100)'
+                                }
+                            ),
+                            React.createElement(
+                                Tooltip,
+                                { labelFormatter: (value, name) => `${name}: ${value}` }
+                            ),
+                            React.createElement(
+                                Legend,
+                                {}
+                            ),
+                            React.createElement(
+                                Line,
+                                {
+                                    type: 'monotone',
+                                    dataKey: 'benchmark',
+                                    stroke: '#8c8c8c',
+                                    strokeDasharray: '5 5',
+                                    name: '基準'
+                                }
+                            ),
+                            ...mockStrategies.slice(0, 3).map((strategy, index) => (
+                                React.createElement(
+                                    Line,
+                                    {
+                                        key: strategy.name,
+                                        type: 'monotone',
+                                        dataKey: strategy.name,
+                                        stroke: ['#1890ff', '#52c41a', '#faad14'][index],
+                                        strokeWidth: 2,
+                                        name: strategy.name
+                                    }
+                                )
+                            ))
+                        )
+                    )
+                )
+            );
+        };
+
+        // Render the app
+        ReactDOM.render(React.createElement(Dashboard), document.getElementById('root'));
+    </script>
+</body>
+</html>

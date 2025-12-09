@@ -1,0 +1,310 @@
+{
+  "data_sources": {
+    "primary_central_api": {
+      "name": "Primary Central API",
+      "type": "stock_api",
+      "url": "http://18.180.162.113:9191",
+      "priority": 1,
+      "enabled": true,
+      "timeout": 30,
+      "rate_limit": {
+        "requests_per_minute": 60,
+        "requests_per_hour": 1000,
+        "requests_per_day": 10000,
+        "burst_size": 10,
+        "concurrent_requests": 5
+      },
+      "retry_config": {
+        "max_retries": 3,
+        "initial_delay": 1.0,
+        "max_delay": 30.0,
+        "backoff_multiplier": 2.0,
+        "jitter": true
+      },
+      "required_headers": {
+        "User-Agent": "QuantSystem/2.0",
+        "Accept": "application/json"
+      },
+      "health_check": {
+        "endpoint": "/health",
+        "interval": 60,
+        "timeout": 10
+      },
+      "data_format": "json",
+      "auth": {
+        "type": "none"
+      }
+    },
+    "backup_central_api": {
+      "name": "Backup Central API",
+      "type": "stock_api",
+      "url": "http://backup.central-api.com:9191",
+      "priority": 2,
+      "enabled": false,
+      "timeout": 45,
+      "rate_limit": {
+        "requests_per_minute": 30,
+        "requests_per_hour": 500,
+        "requests_per_day": 10000,
+        "burst_size": 5,
+        "concurrent_requests": 5
+      },
+      "retry_config": {
+        "max_retries": 2,
+        "initial_delay": 1.0,
+        "max_delay": 30.0,
+        "backoff_multiplier": 2.0,
+        "jitter": true
+      },
+      "required_headers": {
+        "User-Agent": "QuantSystem/2.0",
+        "Accept": "application/json"
+      },
+      "health_check": {
+        "endpoint": "/health",
+        "interval": 120,
+        "timeout": 15
+      },
+      "data_format": "json",
+      "auth": {
+        "type": "none"
+      }
+    },
+    "binance_api": {
+      "name": "Binance API",
+      "type": "stock_api",
+      "url": "https://api.binance.com/api/v3",
+      "priority": 3,
+      "enabled": true,
+      "timeout": 20,
+      "rate_limit": {
+        "requests_per_minute": 1200,
+        "requests_per_hour": 100000,
+        "requests_per_day": 10000,
+        "burst_size": 100,
+        "concurrent_requests": 5
+      },
+      "retry_config": {
+        "max_retries": 2,
+        "initial_delay": 1.0,
+        "max_delay": 30.0,
+        "backoff_multiplier": 2.0,
+        "jitter": true
+      },
+      "required_headers": {
+        "User-Agent": "QuantSystem/2.0"
+      },
+      "health_check": {
+        "endpoint": "/ping",
+        "interval": 60,
+        "timeout": 5
+      },
+      "data_format": "json",
+      "auth": {
+        "type": "none"
+      }
+    },
+    "alpha_vantage": {
+      "name": "Alpha Vantage",
+      "type": "stock_api",
+      "url": "https://www.alphavantage.co/query",
+      "priority": 4,
+      "enabled": true,
+      "timeout": 60,
+      "rate_limit": {
+        "requests_per_minute": 5,
+        "requests_per_hour": 500,
+        "requests_per_day": 5000,
+        "burst_size": 1,
+        "concurrent_requests": 5
+      },
+      "retry_config": {
+        "max_retries": 1,
+        "initial_delay": 1.0,
+        "max_delay": 30.0,
+        "backoff_multiplier": 2.0,
+        "jitter": true
+      },
+      "required_headers": {
+        "User-Agent": "QuantSystem/2.0"
+      },
+      "health_check": {
+        "endpoint": null,
+        "interval": 300,
+        "timeout": 30
+      },
+      "data_format": "json",
+      "auth": {
+        "type": "api_key",
+        "key_env_var": "ALPHA_VANTAGE_API_KEY"
+      }
+    },
+    "hkma_hibor": {
+      "name": "HKMA HIBOR Rates",
+      "type": "government_api",
+      "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily",
+      "priority": 1,
+      "enabled": true,
+      "timeout": 30,
+      "rate_limit": {
+        "requests_per_minute": 60,
+        "requests_per_hour": 1000,
+        "requests_per_day": 10000,
+        "burst_size": 10,
+        "concurrent_requests": 5
+      },
+      "retry_config": {
+        "max_retries": 3,
+        "initial_delay": 1.0,
+        "max_delay": 30.0,
+        "backoff_multiplier": 2.0,
+        "jitter": true
+      },
+      "required_headers": {
+        "Accept": "application/json",
+        "User-Agent": "QuantSystem/2.0"
+      },
+      "health_check": {
+        "endpoint": null,
+        "interval": 300,
+        "timeout": 15
+      },
+      "data_format": "json",
+      "auth": {
+        "type": "none"
+      },
+      "data_type": "hibor_rates"
+    },
+    "hkma_monetary_base": {
+      "name": "HKMA Monetary Base",
+      "type": "government_api",
+      "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-monetary-base",
+      "priority": 1,
+      "enabled": true,
+      "timeout": 30,
+      "rate_limit": {
+        "requests_per_minute": 60,
+        "requests_per_hour": 1000,
+        "requests_per_day": 10000,
+        "burst_size": 10,
+        "concurrent_requests": 5
+      },
+      "retry_config": {
+        "max_retries": 3,
+        "initial_delay": 1.0,
+        "max_delay": 30.0,
+        "backoff_multiplier": 2.0,
+        "jitter": true
+      },
+      "required_headers": {
+        "Accept": "application/json",
+        "User-Agent": "QuantSystem/2.0"
+      },
+      "health_check": {
+        "endpoint": null,
+        "interval": 300,
+        "timeout": 15
+      },
+      "data_format": "json",
+      "auth": {
+        "type": "none"
+      },
+      "data_type": "monetary_base"
+    },
+    "hkma_exchange_rate": {
+      "name": "HKMA Exchange Rates",
+      "type": "government_api",
+      "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/er-eeri-daily",
+      "priority": 1,
+      "enabled": true,
+      "timeout": 30,
+      "rate_limit": {
+        "requests_per_minute": 60,
+        "requests_per_hour": 1000,
+        "requests_per_day": 10000,
+        "burst_size": 10,
+        "concurrent_requests": 5
+      },
+      "retry_config": {
+        "max_retries": 3,
+        "initial_delay": 1.0,
+        "max_delay": 30.0,
+        "backoff_multiplier": 2.0,
+        "jitter": true
+      },
+      "required_headers": {
+        "Accept": "application/json",
+        "User-Agent": "QuantSystem/2.0"
+      },
+      "health_check": {
+        "endpoint": null,
+        "interval": 300,
+        "timeout": 15
+      },
+      "data_format": "json",
+      "auth": {
+        "type": "none"
+      },
+      "data_type": "exchange_rates"
+    },
+    "redis_cache": {
+      "name": "Redis Cache",
+      "type": "cache",
+      "url": "redis://localhost:6379/0",
+      "priority": 1,
+      "enabled": false,
+      "timeout": 5,
+      "rate_limit": {
+        "requests_per_minute": 1000,
+        "requests_per_hour": 100000,
+        "requests_per_day": 10000,
+        "burst_size": 50,
+        "concurrent_requests": 5
+      },
+      "retry_config": {
+        "max_retries": 2,
+        "initial_delay": 1.0,
+        "max_delay": 30.0,
+        "backoff_multiplier": 2.0,
+        "jitter": true
+      },
+      "auth": {
+        "type": "password",
+        "password_env_var": "REDIS_PASSWORD"
+      }
+    }
+  },
+  "retry_config": {
+    "max_retries": 3,
+    "initial_delay": 1.0,
+    "max_delay": 30.0,
+    "backoff_multiplier": 2.0,
+    "jitter": true
+  },
+  "cache_config": {
+    "memory_ttl": 300,
+    "disk_ttl": 3600,
+    "redis_ttl": 7200,
+    "max_memory_size": 1000,
+    "max_disk_size": "1GB",
+    "compression": true,
+    "encryption": false
+  },
+  "monitoring_config": {
+    "health_check_interval": 60,
+    "alert_thresholds": {
+      "response_time_ms": 5000,
+      "success_rate": 0.95,
+      "data_quality_score": 0.7,
+      "error_rate": 0.1
+    },
+    "performance_metrics_retention": 168,
+    "auto_failover": true,
+    "failback_delay": 300,
+    "notification_channels": [
+      "log",
+      "file"
+    ]
+  },
+  "failover_strategy": "priority_based"
+}

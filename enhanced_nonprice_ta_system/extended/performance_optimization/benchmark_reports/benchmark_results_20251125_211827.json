@@ -1,0 +1,100 @@
+{
+  "summary": {
+    "test_id": "benchmark_1764076707",
+    "timestamp": "2025-11-25T21:18:27.724058",
+    "duration_seconds": 62.432338,
+    "total_tests": 6,
+    "passed_tests": 5,
+    "failed_tests": 1,
+    "pass_rate": 83.33333333333334,
+    "performance_score": 84.94444444444444,
+    "alert_count": 0
+  },
+  "results": [
+    {
+      "test_name": "computation_cache_lookup",
+      "timestamp": "2025-11-25 21:19:30.155856",
+      "metric_type": "PerformanceMetric.RESPONSE_TIME",
+      "value": 1.5348730087280273,
+      "unit": "ms",
+      "passed": true,
+      "target_value": 100.0,
+      "percentile_50": 1.5287399291992188,
+      "percentile_95": 1.646566390991211,
+      "percentile_99": 1.8333172798156738,
+      "sample_count": 1000,
+      "std_deviation": 0.09073319598099744
+    },
+    {
+      "test_name": "computation_cache_storage",
+      "timestamp": "2025-11-25 21:19:30.156039",
+      "metric_type": "PerformanceMetric.RESPONSE_TIME",
+      "value": 5.411655902862549,
+      "unit": "ms",
+      "passed": true,
+      "target_value": 100.0,
+      "percentile_50": 5.505204200744629,
+      "percentile_95": 5.573570728302002,
+      "percentile_99": 5.744490623474122,
+      "sample_count": 100,
+      "std_deviation": 0.18245414261170992
+    },
+    {
+      "test_name": "indicator_calculation_rsi",
+      "timestamp": "2025-11-25 21:19:30.156135",
+      "metric_type": "PerformanceMetric.RESPONSE_TIME",
+      "value": 10.299134254455566,
+      "unit": "ms",
+      "passed": true,
+      "target_value": 100.0,
+      "percentile_50": 10.33329963684082,
+      "percentile_95": 10.546290874481201,
+      "percentile_99": 10.594098567962646,
+      "sample_count": 10,
+      "std_deviation": 0.1919131853232461
+    },
+    {
+      "test_name": "indicator_calculation_macd",
+      "timestamp": "2025-11-25 21:19:30.156218",
+      "metric_type": "PerformanceMetric.RESPONSE_TIME",
+      "value": 15.239214897155762,
+      "unit": "ms",
+      "passed": true,
+      "target_value": 100.0,
+      "percentile_50": 15.2662992477417,
+      "percentile_95": 15.440261363983154,
+      "percentile_99": 15.461976528167725,
+      "sample_count": 10,
+      "std_deviation": 0.14757981442733548
+    },
+    {
+      "test_name": "memory_usage_indicator",
+      "timestamp": "2025-11-25 21:19:30.156325",
+      "metric_type": "PerformanceMetric.MEMORY_USAGE",
+      "value": 100.64865804602071,
+      "unit": "MB",
+      "passed": true,
+      "target_value": 2048.0,
+      "percentile_50": 100.94693572119638,
+      "percentile_95": 112.62067014582124,
+      "percentile_99": 114.94998318806336,
+      "sample_count": 30,
+      "std_deviation": 9.348864584228652
+    },
+    {
+      "test_name": "throughput_calculations",
+      "timestamp": "2025-11-25 21:19:30.156388",
+      "metric_type": "PerformanceMetric.THROUGHPUT",
+      "value": 96.66666666666667,
+      "unit": "req/sec",
+      "passed": false,
+      "target_value": 1000.0,
+      "percentile_50": 96.66666666666667,
+      "percentile_95": 96.66666666666667,
+      "percentile_99": 96.66666666666667,
+      "sample_count": 1,
+      "std_deviation": 0
+    }
+  ],
+  "alerts": []
+}

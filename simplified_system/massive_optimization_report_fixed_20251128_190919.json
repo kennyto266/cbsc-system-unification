@@ -1,0 +1,33 @@
+{
+  "optimization_info": {
+    "timestamp": "2025-11-28T19:09:19.358669",
+    "symbol": "0700.HK",
+    "data_points": 246,
+    "total_combinations_tested": 263,
+    "successful_strategies": 0,
+    "data_fetch_time": 0.5,
+    "optimization_time": 9.542427062988281,
+    "total_time": 9.542457818984985,
+    "cpu_cores_used": 32,
+    "strategies_per_second": 0.0
+  },
+  "results_by_strategy": {
+    "RSI": {
+      "count": 0,
+      "top_5": []
+    },
+    "MACD": {
+      "count": 0,
+      "top_5": []
+    },
+    "MA": {
+      "count": 0,
+      "top_5": []
+    }
+  },
+  "overall_best": {
+    "best_sharpe": null,
+    "best_return": null,
+    "best_winrate": null
+  }
+}

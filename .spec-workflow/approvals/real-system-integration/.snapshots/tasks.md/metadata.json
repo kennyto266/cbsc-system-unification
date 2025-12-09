@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/real-system-integration/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-26T03:27:30.931Z",
+      "trigger": "initial",
+      "approvalId": "approval_1758857250924_8e277mzvf",
+      "approvalTitle": "真实系统集成任务分解文档"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-09-26T03:27:49.265Z",
+      "trigger": "approved",
+      "approvalId": "approval_1758857250924_8e277mzvf",
+      "approvalTitle": "真实系统集成任务分解文档"
+    }
+  ]
+}

@@ -1,0 +1,174 @@
+{
+  "optimization_timestamp": "2025-11-28T16:42:04.586958",
+  "strategies_count": 6,
+  "weights": {
+    "strategy_weights": {
+      "RSI_Conservative": 0.21091184642586513,
+      "RSI_Moderate": 0.3753473099267492,
+      "RSI_Aggressive": 0.21166961353877242,
+      "MA_Short": 0.0,
+      "MA_Medium": 0.1262945188178833,
+      "MACD_Standard": 0.07577671129072999
+    },
+    "risk_parity_weights": {
+      "RSI_Conservative": 0.15552806322114776,
+      "RSI_Moderate": 0.18663367586537732,
+      "RSI_Aggressive": 0.1333097684752695,
+      "MA_Short": 0.16663721059408687,
+      "MA_Medium": 0.21208372257429242,
+      "MACD_Standard": 0.14580755926982603
+    },
+    "equal_weights": {
+      "RSI_Conservative": 0.16666666666666666,
+      "RSI_Moderate": 0.16666666666666666,
+      "RSI_Aggressive": 0.16666666666666666,
+      "MA_Short": 0.16666666666666666,
+      "MA_Medium": 0.16666666666666666,
+      "MACD_Standard": 0.16666666666666666
+    },
+    "momentum_weights": {
+      "RSI_Conservative": 0.0,
+      "RSI_Moderate": 0.05268490374873354,
+      "RSI_Aggressive": 0.6433637284701115,
+      "MA_Short": 0.0,
+      "MA_Medium": 0.2026342451874367,
+      "MACD_Standard": 0.10131712259371835
+    }
+  },
+  "metrics": {
+    "total_return": 0.004482116696135388,
+    "sharpe_ratio": 0.018852091668891624,
+    "max_drawdown": -0.07550267744379893,
+    "volatility": 0.23775169221840017,
+    "win_rate": 0.5,
+    "diversification_ratio": 1.6822429906542058,
+    "correlation_matrix": {
+      "RSI_Conservative": {
+        "RSI_Conservative": 1.0,
+        "RSI_Moderate": 0.7,
+        "RSI_Aggressive": 0.5,
+        "MA_Short": 0.3,
+        "MA_Medium": 0.4,
+        "MACD_Standard": 0.6
+      },
+      "RSI_Moderate": {
+        "RSI_Conservative": 0.7,
+        "RSI_Moderate": 1.0,
+        "RSI_Aggressive": 0.8,
+        "MA_Short": 0.4,
+        "MA_Medium": 0.5,
+        "MACD_Standard": 0.7
+      },
+      "RSI_Aggressive": {
+        "RSI_Conservative": 0.5,
+        "RSI_Moderate": 0.8,
+        "RSI_Aggressive": 1.0,
+        "MA_Short": 0.2,
+        "MA_Medium": 0.3,
+        "MACD_Standard": 0.5
+      },
+      "MA_Short": {
+        "RSI_Conservative": 0.3,
+        "RSI_Moderate": 0.4,
+        "RSI_Aggressive": 0.2,
+        "MA_Short": 1.0,
+        "MA_Medium": 0.9,
+        "MACD_Standard": 0.4
+      },
+      "MA_Medium": {
+        "RSI_Conservative": 0.4,
+        "RSI_Moderate": 0.5,
+        "RSI_Aggressive": 0.3,
+        "MA_Short": 0.9,
+        "MA_Medium": 1.0,
+        "MACD_Standard": 0.5
+      },
+      "MACD_Standard": {
+        "RSI_Conservative": 0.6,
+        "RSI_Moderate": 0.7,
+        "RSI_Aggressive": 0.5,
+        "MA_Short": 0.4,
+        "MA_Medium": 0.5,
+        "MACD_Standard": 1.0
+      }
+    }
+  },
+  "strategy_details": [
+    {
+      "name": "RSI_Conservative",
+      "type": "RSI",
+      "parameters": {
+        "period": 20,
+        "oversold": 25,
+        "overbought": 80
+      },
+      "expected_sharpe": 0.835,
+      "expected_return": -0.0673,
+      "expected_drawdown": 0.1247,
+      "volatility": 0.3
+    },
+    {
+      "name": "RSI_Moderate",
+      "type": "RSI",
+      "parameters": {
+        "period": 25,
+        "oversold": 25,
+        "overbought": 75
+      },
+      "expected_sharpe": 1.486,
+      "expected_return": 0.0052,
+      "expected_drawdown": -0.1049,
+      "volatility": 0.25
+    },
+    {
+      "name": "RSI_Aggressive",
+      "type": "RSI",
+      "parameters": {
+        "period": 14,
+        "oversold": 25,
+        "overbought": 75
+      },
+      "expected_sharpe": 0.838,
+      "expected_return": 0.0635,
+      "expected_drawdown": -0.1589,
+      "volatility": 0.35
+    },
+    {
+      "name": "MA_Short",
+      "type": "MA",
+      "parameters": {
+        "short_period": 10,
+        "long_period": 30
+      },
+      "expected_sharpe": -1.24,
+      "expected_return": -0.1049,
+      "expected_drawdown": -0.15,
+      "volatility": 0.28
+    },
+    {
+      "name": "MA_Medium",
+      "type": "MA",
+      "parameters": {
+        "short_period": 20,
+        "long_period": 60
+      },
+      "expected_sharpe": 0.5,
+      "expected_return": 0.02,
+      "expected_drawdown": -0.12,
+      "volatility": 0.22
+    },
+    {
+      "name": "MACD_Standard",
+      "type": "MACD",
+      "parameters": {
+        "fast": 12,
+        "slow": 26,
+        "signal": 9
+      },
+      "expected_sharpe": 0.3,
+      "expected_return": 0.01,
+      "expected_drawdown": -0.18,
+      "volatility": 0.32
+    }
+  ]
+}

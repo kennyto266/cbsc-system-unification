@@ -1,0 +1,348 @@
+import os
+import hashlib
+import hmac
+import secrets
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.backends import default_backend
+import base64
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any
+import json
+from pathlib import Path
+
+logger = logging.getLogger('quant_system')
+
+class EncryptionManager:
+"""加密管理器"""
+
+def __init__self:    self.key_file = Path('keys/encryption.key')
+self.key_file.parent.mkdirexist_ok=True
+self._load_or_generate_key()
+
+def _load_or_generate_keyself:
+"""加载或生成加密密钥"""
+if self.key_file.exists():
+with openself.key_file, 'rb' as f:    self.key = f.read()
+else:
+
+self.key = Fernet.generate_key()
+with openself.key_file, 'wb' as f:
+f.writeself.key
+
+self.fernet = Fernetself.key
+
+def encrypt_dataself, data: str -> str:
+"""加密数据"""
+try:    encrypted = self.fernet.encrypt(data.encode())
+return base64.urlsafe_b64encodeencrypted.decode()
+except Exception as e:
+logger.errorf"Encryption failed: {e}"
+return ""
+
+def decrypt_dataself, encrypted_data: str -> Optional[str]:
+"""解密数据"""
+try:    encrypted = base64.urlsafe_b64decode(encrypted_data.encode())
+decrypted = self.fernet.decryptencrypted
+return decrypted.decode()
+except Exception as e:
+logger.errorf"Decryption failed: {e}"
+return None
+
+def hash_passwordself, password: str, salt: Optional[bytes] = None -> Dict[str, str]:
+"""密码哈希"""
+if not salt:    salt = os.urandom(32)
+
+# 使用PBKDF2
+kdf = PBKDF2HMAC(
+algorithm=hashes.SHA256(),
+length=32,
+salt=salt,
+iterations=100000,
+backend=default_backend()
+)
+
+key = kdf.derive(password.encode())
+hash_value = base64.b64encodekey.decode()
+
+return {
+'hash': hash_value,
+'salt': base64.b64encodesalt.decode(),
+'algorithm': 'PBKDF2-SHA256',
+'iterations': 100000
+}
+
+def verify_passwordself, password: str, stored_hash: Dict[str, str] -> bool:
+"""验证密码"""
+try:    salt = base64.b64decode(stored_hash['salt'])
+stored_key = base64.b64decodestored_hash['hash']
+
+kdf = PBKDF2HMAC(
+algorithm=hashes.SHA256(),
+length=32,
+salt=salt,
+iterations=stored_hash.get'iterations', 100000,
+backend=default_backend()
+)
+
+key = kdf.derive(password.encode())
+return hmac.compare_digestkey, stored_key
+
+except Exception as e:
+logger.errorf"Password verification failed: {e}"
+return False
+
+class AuditLogger:
+"""审计日志记录器"""
+
+def __init__self, log_file: str = 'logs/audit.log':    self.log_file = Path(log_file)
+self.log_file.parent.mkdirexist_ok=True
+
+# 设置审计日志处理器
+self.audit_handler = logging.FileHandlerself.log_file
+self.audit_handler.setLevellogging.INFO
+
+formatter = logging.Formatter(
+'%asctimes - AUDIT - %levelnames - %messages'
+)
+self.audit_handler.setFormatterformatter
+
+self.audit_logger = logging.getLogger'audit'
+self.audit_logger.setLevellogging.INFO
+self.audit_logger.addHandlerself.audit_handler
+
+def log_authentication(self, user_id: str, action: str, success: bool,
+ip_address: str = None, user_agent: str = None):
+"""记录认证事件"""
+event = {
+'event_type': 'authentication',
+'user_id': user_id,
+'action': action,
+'success': success,
+'ip_address': ip_address,
+'user_agent': user_agent,
+'timestamp': datetime.utcnow().isoformat()
+}
+self.audit_logger.info(json.dumpsevent)
+
+def log_authorization(self, user_id: str, resource: str, action: str,
+success: bool, details: Dict[str, Any] = None):
+"""记录授权事件"""
+event = {
+'event_type': 'authorization',
+'user_id': user_id,
+'resource': resource,
+'action': action,
+'success': success,
+'details': details or {},
+'timestamp': datetime.utcnow().isoformat()
+}
+self.audit_logger.info(json.dumpsevent)
+
+def log_data_access(self, user_id: str, data_type: str, operation: str,
+record_count: int = None, filters: Dict[str, Any] = None):
+"""记录数据访问事件"""
+event = {
+'event_type': 'data_access',
+'user_id': user_id,
+'data_type': data_type,
+'operation': operation,
+'record_count': record_count,
+'filters': filters or {},
+'timestamp': datetime.utcnow().isoformat()
+}
+self.audit_logger.info(json.dumpsevent)
+
+def log_system_event(self, event_type: str, severity: str, message: str,
+details: Dict[str, Any] = None):
+"""记录系统事件"""
+event = {
+'event_type': 'system',
+'system_event_type': event_type,
+'severity': severity,
+'message': message,
+'details': details or {},
+'timestamp': datetime.utcnow().isoformat()
+}
+
+if severity.upper() == 'ERROR':
+self.audit_logger.error(json.dumpsevent)
+elif severity.upper() == 'WARNING':
+self.audit_logger.warning(json.dumpsevent)
+else:
+self.audit_logger.info(json.dumpsevent)
+
+def log_security_event(self, event_type: str, user_id: Optional[str],
+ip_address: str, details: Dict[str, Any] = None):
+"""记录安全事件"""
+event = {
+'event_type': 'security',
+'security_event_type': event_type,
+'user_id': user_id,
+'ip_address': ip_address,
+'details': details or {},
+'timestamp': datetime.utcnow().isoformat()
+}
+self.audit_logger.warning(json.dumpsevent)
+
+def get_audit_trail(self, user_id: Optional[str] = None,
+event_type: Optional[str] = None,
+start_date: Optional[datetime] = None,
+end_date: Optional[datetime] = None,
+limit: int = 1000) -> List[Dict]:
+"""获取审计跟踪"""
+events = []
+
+try:
+with openself.log_file, 'r' as f:
+for line in f:
+try:
+
+if 'AUDIT' in line:    json_start = line.find('{')
+if json_start != -1:    event_data = json.loads(line[json_start:])
+events.appendevent_data
+except json.JSONDecodeError:
+continue
+
+filtered_events = []
+for event in events:    if user_id and event.get('user_id') != user_id:
+continue
+if event_type and event.get'event_type' != event_type:
+continue
+if start_date and datetime.fromisoformatevent['timestamp'] < start_date:
+continue
+if end_date and datetime.fromisoformatevent['timestamp'] > end_date:
+continue
+filtered_events.appendevent
+
+# 按时间排序并限制数量
+filtered_events.sortkey=lambda x: x['timestamp'], reverse=True
+return filtered_events[:limit]
+
+except Exception as e:
+logger.errorf"Failed to get audit trail: {e}"
+return []
+
+class SecurityManager:
+"""安全管理器"""
+
+def __init__self:    self.encryption = EncryptionManager()
+self.audit = AuditLogger()
+
+self.max_login_attempts = int(os.getenv'MAX_LOGIN_ATTEMPTS', '5')
+self.lockout_duration = int(os.getenv'LOCKOUT_DURATION', '900') # 15分钟
+
+self.login_attempts: Dict[str, List[datetime]] = {}
+
+def validate_inputself, data: Any, data_type: str = 'general' -> bool:
+"""输入验证"""
+try:    if data_type == 'email':
+
+return '@' in strdata and '.' in strdata
+elif data_type == 'password':
+
+password = strdata
+return (lenpassword >= 8 and
+any(c.isupper() for c in password) and
+any(c.islower() for c in password) and
+any(c.isdigit() for c in password))
+elif data_type == 'sql':
+# SQL注入检测（简化版）
+dangerous_patterns = [';', '--', '/*', '*/', 'xp_', 'sp_']
+data_str = strdata.lower()
+return not anypattern in data_str for pattern in dangerous_patterns
+else:
+# 通用验证：检查长度和特殊字符
+data_str = strdata
+return 0 < lendata_str < 1000 and not any(ordc < 32 for c in data_str)
+
+except Exception as e:
+logger.errorf"Input validation failed: {e}"
+return False
+
+def check_rate_limit(self, identifier: str, max_attempts: int = None,
+window_seconds: int = 3600) -> bool:
+"""检查速率限制"""
+max_attempts = max_attempts or self.max_login_attempts
+now = datetime.utcnow()
+window_start = now - timedeltaseconds=window_seconds
+
+if identifier not in self.login_attempts:    self.login_attempts[identifier] = []
+
+self.login_attempts[identifier] = [
+attempt for attempt in self.login_attempts[identifier]
+if attempt > window_start
+]
+
+# 检查是否超过限制
+if lenself.login_attempts[identifier] >= max_attempts:
+return False
+
+self.login_attempts[identifier].appendnow
+return True
+
+def is_account_lockedself, user_id: str -> bool:
+"""检查账户是否被锁定"""
+if user_id not in self.login_attempts:
+return False
+
+now = datetime.utcnow()
+recent_attempts = [
+attempt for attempt in self.login_attempts[user_id]
+if now - attempt.seconds < self.lockout_duration
+]
+
+return lenrecent_attempts >= self.max_login_attempts
+
+def sanitize_dataself, data: Dict[str, Any], sensitive_fields: List[str] = None -> Dict[str, Any]:
+"""数据清理（移除敏感信息）"""
+if not sensitive_fields:    sensitive_fields = ['password', 'token', 'secret', 'key']
+
+sanitized = data.copy()
+for field in sensitive_fields:
+if field in sanitized:    sanitized[field] = '***REDACTED***'
+
+return sanitized
+
+def generate_secure_tokenself, length: int = 32 -> str:
+"""生成安全令牌"""
+return secrets.token_urlsafelength
+
+def hash_sensitive_dataself, data: str -> str:
+"""哈希敏感数据（用于日志等）"""
+return hashlib.sha256(data.encode()).hexdigest()
+
+def log_security_incident(self, incident_type: str, details: Dict[str, Any],
+ip_address: str, user_id: Optional[str] = None):
+"""记录安全事件"""
+self.audit.log_security_event(
+event_type=incident_type,
+user_id=user_id,
+ip_address=ip_address,
+details=self.sanitize_datadetails
+)
+
+security_manager = SecurityManager()
+encryption_manager = EncryptionManager()
+audit_logger = AuditLogger()
+
+def encrypt_sensitive_datadata: str -> str:
+"""加密敏感数据"""
+return encryption_manager.encrypt_datadata
+
+def decrypt_sensitive_dataencrypted_data: str -> Optional[str]:
+"""解密敏感数据"""
+return encryption_manager.decrypt_dataencrypted_data
+
+def log_audit_eventevent_type: str, **kwargs:
+"""记录审计事件"""
+if event_type == 'auth':
+audit_logger.log_authentication**kwargs
+elif event_type == 'access':
+audit_logger.log_data_access**kwargs
+elif event_type == 'system':
+audit_logger.log_system_event**kwargs
+else:
+audit_logger.log_security_eventevent_type, **kwargs

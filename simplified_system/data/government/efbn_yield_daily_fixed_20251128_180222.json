@@ -1,0 +1,74 @@
+{
+  "source": "efbn_yield_daily",
+  "title": "市場數據與統計資料 - 金融數據月報 - 外匯基金票據及債券 - 外匯基金票據及債券收益率 - 每日數字",
+  "api_url": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/efbn-indicative-price",
+  "description": "此應用程式介面提供每日的外匯基金票據及債券收益率的數字",
+  "data_type": "efbn_yields",
+  "collection_time": "2025-11-28T18:02:07.591774",
+  "status": "success",
+  "record_count": 1,
+  "extra_params": {
+    "segment": "IndicativePrice"
+  },
+  "data": {
+    "header": {
+      "success": true,
+      "err_code": "0000",
+      "err_msg": "No error found"
+    },
+    "result": {
+      "datasize": 7,
+      "records": [
+        {
+          "end_of_date": "2025-11-28",
+          "term": "1W",
+          "issue_no": "Q2536",
+          "yield": 2.72,
+          "price": null
+        },
+        {
+          "end_of_date": "2025-11-28",
+          "term": "1M",
+          "issue_no": "Q2539",
+          "yield": 2.66,
+          "price": null
+        },
+        {
+          "end_of_date": "2025-11-28",
+          "term": "3M",
+          "issue_no": "Q2548",
+          "yield": 2.7,
+          "price": null
+        },
+        {
+          "end_of_date": "2025-11-28",
+          "term": "6M",
+          "issue_no": "H2577",
+          "yield": 2.65,
+          "price": null
+        },
+        {
+          "end_of_date": "2025-11-28",
+          "term": "9M",
+          "issue_no": "Y2594",
+          "yield": 2.6,
+          "price": null
+        },
+        {
+          "end_of_date": "2025-11-28",
+          "term": "12M",
+          "issue_no": "Y2597",
+          "yield": 2.6,
+          "price": null
+        },
+        {
+          "end_of_date": "2025-11-28",
+          "term": "2 YR",
+          "issue_no": "02Y2711",
+          "yield": 2.435,
+          "price": 99.97
+        }
+      ]
+    }
+  }
+}

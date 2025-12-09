@@ -1,0 +1,55 @@
+============================================================
+VectorBT Performance Benchmark Report
+============================================================
+Test Date: 2025-11-24T10:24:44.614986
+
+Overall Performance Summary:
+  Strategies Tested: 6
+  Successful Strategies: 6
+  Average Performance: 47.51 strategies/sec
+  Target Performance: 600.00 strategies/sec
+  Target Met: NO
+  Improvement Needed: 552.49 strategies/sec
+
+Detailed Strategy Performance:
+----------------------------------------
+
+RSI_MEAN_REVERSION:
+  Performance: 5.55 strategies/sec
+  Avg Time: 0.1801s (180.09ms)
+  Success Rate: 100.0%
+  Time Range: 0.0159s - 3.2742s
+
+MACD_CROSSOVER:
+  Performance: 44.03 strategies/sec
+  Avg Time: 0.0227s (22.71ms)
+  Success Rate: 100.0%
+  Time Range: 0.0179s - 0.0843s
+
+BOLLINGER_BANDS:
+  Performance: 52.79 strategies/sec
+  Avg Time: 0.0189s (18.94ms)
+  Success Rate: 100.0%
+  Time Range: 0.0153s - 0.0721s
+
+DUAL_MOVING_AVERAGE:
+  Performance: 53.50 strategies/sec
+  Avg Time: 0.0187s (18.69ms)
+  Success Rate: 100.0%
+  Time Range: 0.0156s - 0.0229s
+
+MOMENTUM_BREAKOUT:
+  Performance: 62.00 strategies/sec
+  Avg Time: 0.0161s (16.13ms)
+  Success Rate: 100.0%
+  Time Range: 0.0137s - 0.0204s
+
+VOLATILITY_BREAKOUT:
+  Performance: 67.19 strategies/sec
+  Avg Time: 0.0149s (14.88ms)
+  Success Rate: 100.0%
+  Time Range: 0.0134s - 0.0165s
+
+============================================================
+End of Report
+============================================================

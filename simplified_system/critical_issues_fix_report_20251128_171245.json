@@ -1,0 +1,70 @@
+{
+  "fix_session": {
+    "timestamp": "2025-11-28T17:12:45.858812",
+    "issues_found": [
+      "HIBOR數據為空"
+    ],
+    "fixes_applied": [
+      "修復了股票API數據格式轉換",
+      "改進了數據標準化邏輯",
+      "字符編碼檢查通過",
+      "成功驗證修復效果"
+    ],
+    "total_issues": 1,
+    "total_fixes": 4
+  },
+  "test_results": {
+    "stock_api_fix": {
+      "status": "PASS",
+      "records": 8,
+      "columns": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "ret",
+        "vol_1m",
+        "drift_1m",
+        "vol_3m",
+        "drift_3m",
+        "vol_6m",
+        "drift_6m",
+        "vol_1y",
+        "drift_1y"
+      ],
+      "missing_columns": []
+    },
+    "standardization_format_1": {
+      "status": "PASS",
+      "input_records": 2,
+      "output_records": 2,
+      "columns": [
+        "value"
+      ]
+    },
+    "standardization_format_2": {
+      "status": "PASS",
+      "input_records": 2,
+      "output_records": 2,
+      "columns": [
+        "value",
+        "series"
+      ]
+    },
+    "encoding_fix": {
+      "status": "PASS",
+      "tested_strings": 3,
+      "issues_found": 0
+    },
+    "verification": {
+      "status": "PASS",
+      "quality_score": 0.6799999999999999,
+      "data_sources_count": 6,
+      "has_signals": true,
+      "integration_success": true
+    }
+  },
+  "success_rate": 100.0,
+  "system_status": "GOOD"
+}

@@ -1,0 +1,1306 @@
+{
+  "result": {
+    "records": [
+      {
+        "date": "2025-09-01 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 354857.25
+      },
+      {
+        "date": "2025-09-01 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 48924.02
+      },
+      {
+        "date": "2025-09-01 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10204.7
+      },
+      {
+        "date": "2025-09-01 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 498858.66
+      },
+      {
+        "date": "2025-09-02 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 346598.78
+      },
+      {
+        "date": "2025-09-02 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49798.23
+      },
+      {
+        "date": "2025-09-02 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9947.66
+      },
+      {
+        "date": "2025-09-02 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 494325.87
+      },
+      {
+        "date": "2025-09-03 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 347365.48
+      },
+      {
+        "date": "2025-09-03 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50187.91
+      },
+      {
+        "date": "2025-09-03 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9962.68
+      },
+      {
+        "date": "2025-09-03 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 510533.54
+      },
+      {
+        "date": "2025-09-04 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 354369.86
+      },
+      {
+        "date": "2025-09-04 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 48927.69
+      },
+      {
+        "date": "2025-09-04 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9938.23
+      },
+      {
+        "date": "2025-09-04 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 510776.03
+      },
+      {
+        "date": "2025-09-05 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 359388.49
+      },
+      {
+        "date": "2025-09-05 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 51668.83
+      },
+      {
+        "date": "2025-09-05 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10154.75
+      },
+      {
+        "date": "2025-09-05 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 504544.62
+      },
+      {
+        "date": "2025-09-08 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 354245.56
+      },
+      {
+        "date": "2025-09-08 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50163.65
+      },
+      {
+        "date": "2025-09-08 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9949.66
+      },
+      {
+        "date": "2025-09-08 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 500813.43
+      },
+      {
+        "date": "2025-09-09 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 348200.56
+      },
+      {
+        "date": "2025-09-09 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 48976.45
+      },
+      {
+        "date": "2025-09-09 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10084.41
+      },
+      {
+        "date": "2025-09-09 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 504590.03
+      },
+      {
+        "date": "2025-09-10 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 341799.23
+      },
+      {
+        "date": "2025-09-10 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49713.28
+      },
+      {
+        "date": "2025-09-10 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9859.07
+      },
+      {
+        "date": "2025-09-10 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 497808.6
+      },
+      {
+        "date": "2025-09-11 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 346906.14
+      },
+      {
+        "date": "2025-09-11 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50747.58
+      },
+      {
+        "date": "2025-09-11 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9861.89
+      },
+      {
+        "date": "2025-09-11 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 498857.03
+      },
+      {
+        "date": "2025-09-12 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 349770.92
+      },
+      {
+        "date": "2025-09-12 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 48463.87
+      },
+      {
+        "date": "2025-09-12 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9870.06
+      },
+      {
+        "date": "2025-09-12 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 493882.97
+      },
+      {
+        "date": "2025-09-15 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 342147.1
+      },
+      {
+        "date": "2025-09-15 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 48899.72
+      },
+      {
+        "date": "2025-09-15 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10011.74
+      },
+      {
+        "date": "2025-09-15 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 497785.11
+      },
+      {
+        "date": "2025-09-16 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 344109.14
+      },
+      {
+        "date": "2025-09-16 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50800.21
+      },
+      {
+        "date": "2025-09-16 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9996.41
+      },
+      {
+        "date": "2025-09-16 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 521389.45
+      },
+      {
+        "date": "2025-09-17 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 349345.81
+      },
+      {
+        "date": "2025-09-17 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 51100.35
+      },
+      {
+        "date": "2025-09-17 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10275.65
+      },
+      {
+        "date": "2025-09-17 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 504835.2
+      },
+      {
+        "date": "2025-09-18 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 345109.91
+      },
+      {
+        "date": "2025-09-18 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49874.79
+      },
+      {
+        "date": "2025-09-18 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9778.4
+      },
+      {
+        "date": "2025-09-18 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 505537.24
+      },
+      {
+        "date": "2025-09-19 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 346593.04
+      },
+      {
+        "date": "2025-09-19 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 48877.11
+      },
+      {
+        "date": "2025-09-19 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9613.32
+      },
+      {
+        "date": "2025-09-19 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 507778.39
+      },
+      {
+        "date": "2025-09-22 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 348867.33
+      },
+      {
+        "date": "2025-09-22 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 48170.09
+      },
+      {
+        "date": "2025-09-22 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10225.96
+      },
+      {
+        "date": "2025-09-22 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 512786.11
+      },
+      {
+        "date": "2025-09-23 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 351595.24
+      },
+      {
+        "date": "2025-09-23 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 52607.6
+      },
+      {
+        "date": "2025-09-23 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9598.88
+      },
+      {
+        "date": "2025-09-23 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 513749.76
+      },
+      {
+        "date": "2025-09-24 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 345163.53
+      },
+      {
+        "date": "2025-09-24 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50204.9
+      },
+      {
+        "date": "2025-09-24 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10121.04
+      },
+      {
+        "date": "2025-09-24 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 499905.68
+      },
+      {
+        "date": "2025-09-25 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 359213.07
+      },
+      {
+        "date": "2025-09-25 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49466.05
+      },
+      {
+        "date": "2025-09-25 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9989.82
+      },
+      {
+        "date": "2025-09-25 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 497971.09
+      },
+      {
+        "date": "2025-09-26 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 349378.81
+      },
+      {
+        "date": "2025-09-26 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49427.32
+      },
+      {
+        "date": "2025-09-26 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9923.16
+      },
+      {
+        "date": "2025-09-26 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 502723.73
+      },
+      {
+        "date": "2025-09-29 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 349349.13
+      },
+      {
+        "date": "2025-09-29 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49748.04
+      },
+      {
+        "date": "2025-09-29 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9737.68
+      },
+      {
+        "date": "2025-09-29 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 507866.35
+      },
+      {
+        "date": "2025-09-30 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 345177.31
+      },
+      {
+        "date": "2025-09-30 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49923.9
+      },
+      {
+        "date": "2025-09-30 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9952.48
+      },
+      {
+        "date": "2025-09-30 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 482487.85
+      },
+      {
+        "date": "2025-10-01 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 359534.93
+      },
+      {
+        "date": "2025-10-01 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50992.32
+      },
+      {
+        "date": "2025-10-01 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10098.42
+      },
+      {
+        "date": "2025-10-01 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 508017.14
+      },
+      {
+        "date": "2025-10-02 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 356458.92
+      },
+      {
+        "date": "2025-10-02 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49708.15
+      },
+      {
+        "date": "2025-10-02 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10058.62
+      },
+      {
+        "date": "2025-10-02 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 502198.78
+      },
+      {
+        "date": "2025-10-03 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 356749.47
+      },
+      {
+        "date": "2025-10-03 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 51018.56
+      },
+      {
+        "date": "2025-10-03 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9492.32
+      },
+      {
+        "date": "2025-10-03 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 487576.22
+      },
+      {
+        "date": "2025-10-06 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 348098.94
+      },
+      {
+        "date": "2025-10-06 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 51369.02
+      },
+      {
+        "date": "2025-10-06 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10189.86
+      },
+      {
+        "date": "2025-10-06 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 504187.32
+      },
+      {
+        "date": "2025-10-07 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 346300.99
+      },
+      {
+        "date": "2025-10-07 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49783.78
+      },
+      {
+        "date": "2025-10-07 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9995.26
+      },
+      {
+        "date": "2025-10-07 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 501126.16
+      },
+      {
+        "date": "2025-10-08 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 345909.16
+      },
+      {
+        "date": "2025-10-08 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50732.02
+      },
+      {
+        "date": "2025-10-08 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10072.17
+      },
+      {
+        "date": "2025-10-08 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 490696.96
+      },
+      {
+        "date": "2025-10-09 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 337615.17
+      },
+      {
+        "date": "2025-10-09 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49474.64
+      },
+      {
+        "date": "2025-10-09 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10338.64
+      },
+      {
+        "date": "2025-10-09 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 503826.16
+      },
+      {
+        "date": "2025-10-10 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 351197.5
+      },
+      {
+        "date": "2025-10-10 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50067.1
+      },
+      {
+        "date": "2025-10-10 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10262.68
+      },
+      {
+        "date": "2025-10-10 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 493311.55
+      },
+      {
+        "date": "2025-10-13 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 346287.53
+      },
+      {
+        "date": "2025-10-13 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 48885.82
+      },
+      {
+        "date": "2025-10-13 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9749.75
+      },
+      {
+        "date": "2025-10-13 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 513391.03
+      },
+      {
+        "date": "2025-10-14 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 343677.63
+      },
+      {
+        "date": "2025-10-14 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 52515.96
+      },
+      {
+        "date": "2025-10-14 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9855.26
+      },
+      {
+        "date": "2025-10-14 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 507321.43
+      },
+      {
+        "date": "2025-10-15 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 346293.17
+      },
+      {
+        "date": "2025-10-15 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50309.31
+      },
+      {
+        "date": "2025-10-15 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10272.97
+      },
+      {
+        "date": "2025-10-15 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 505631.06
+      },
+      {
+        "date": "2025-10-16 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 361165.81
+      },
+      {
+        "date": "2025-10-16 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50943.39
+      },
+      {
+        "date": "2025-10-16 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9927.33
+      },
+      {
+        "date": "2025-10-16 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 515829.13
+      },
+      {
+        "date": "2025-10-17 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 355867.51
+      },
+      {
+        "date": "2025-10-17 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49601.08
+      },
+      {
+        "date": "2025-10-17 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9774.72
+      },
+      {
+        "date": "2025-10-17 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 494092.33
+      },
+      {
+        "date": "2025-10-20 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 357552.59
+      },
+      {
+        "date": "2025-10-20 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 51176.12
+      },
+      {
+        "date": "2025-10-20 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10013.94
+      },
+      {
+        "date": "2025-10-20 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 499336.49
+      },
+      {
+        "date": "2025-10-21 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 345034.18
+      },
+      {
+        "date": "2025-10-21 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50285.19
+      },
+      {
+        "date": "2025-10-21 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10004.8
+      },
+      {
+        "date": "2025-10-21 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 510464.46
+      },
+      {
+        "date": "2025-10-22 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 352384.18
+      },
+      {
+        "date": "2025-10-22 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49040.0
+      },
+      {
+        "date": "2025-10-22 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9774.54
+      },
+      {
+        "date": "2025-10-22 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 490481.26
+      },
+      {
+        "date": "2025-10-23 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 350489.43
+      },
+      {
+        "date": "2025-10-23 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49895.63
+      },
+      {
+        "date": "2025-10-23 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9851.56
+      },
+      {
+        "date": "2025-10-23 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 506813.24
+      },
+      {
+        "date": "2025-10-24 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 353654.85
+      },
+      {
+        "date": "2025-10-24 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50204.58
+      },
+      {
+        "date": "2025-10-24 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9968.72
+      },
+      {
+        "date": "2025-10-24 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 514686.67
+      },
+      {
+        "date": "2025-10-27 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 359096.19
+      },
+      {
+        "date": "2025-10-27 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49021.42
+      },
+      {
+        "date": "2025-10-27 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9699.63
+      },
+      {
+        "date": "2025-10-27 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 502320.68
+      },
+      {
+        "date": "2025-10-28 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 353998.82
+      },
+      {
+        "date": "2025-10-28 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 48954.61
+      },
+      {
+        "date": "2025-10-28 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9734.22
+      },
+      {
+        "date": "2025-10-28 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 494432.09
+      },
+      {
+        "date": "2025-10-29 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 345369.87
+      },
+      {
+        "date": "2025-10-29 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49699.15
+      },
+      {
+        "date": "2025-10-29 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10098.14
+      },
+      {
+        "date": "2025-10-29 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 503532.05
+      },
+      {
+        "date": "2025-10-30 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 346177.45
+      },
+      {
+        "date": "2025-10-30 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 51435.47
+      },
+      {
+        "date": "2025-10-30 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9989.56
+      },
+      {
+        "date": "2025-10-30 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 503354.85
+      },
+      {
+        "date": "2025-10-31 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 344470.24
+      },
+      {
+        "date": "2025-10-31 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50048.61
+      },
+      {
+        "date": "2025-10-31 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9901.98
+      },
+      {
+        "date": "2025-10-31 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 499265.3
+      },
+      {
+        "date": "2025-11-03 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 351681.66
+      },
+      {
+        "date": "2025-11-03 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49802.33
+      },
+      {
+        "date": "2025-11-03 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9969.5
+      },
+      {
+        "date": "2025-11-03 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 495849.09
+      },
+      {
+        "date": "2025-11-04 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 359553.28
+      },
+      {
+        "date": "2025-11-04 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50908.34
+      },
+      {
+        "date": "2025-11-04 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10026.19
+      },
+      {
+        "date": "2025-11-04 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 522498.7
+      },
+      {
+        "date": "2025-11-05 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 358111.86
+      },
+      {
+        "date": "2025-11-05 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50024.8
+      },
+      {
+        "date": "2025-11-05 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9731.23
+      },
+      {
+        "date": "2025-11-05 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 483782.45
+      },
+      {
+        "date": "2025-11-06 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 357754.45
+      },
+      {
+        "date": "2025-11-06 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49094.48
+      },
+      {
+        "date": "2025-11-06 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10035.78
+      },
+      {
+        "date": "2025-11-06 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 482109.38
+      },
+      {
+        "date": "2025-11-07 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 340292.95
+      },
+      {
+        "date": "2025-11-07 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 46527.35
+      },
+      {
+        "date": "2025-11-07 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9626.83
+      },
+      {
+        "date": "2025-11-07 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 509483.97
+      },
+      {
+        "date": "2025-11-10 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 347511.99
+      },
+      {
+        "date": "2025-11-10 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49677.09
+      },
+      {
+        "date": "2025-11-10 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9882.6
+      },
+      {
+        "date": "2025-11-10 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 506148.82
+      },
+      {
+        "date": "2025-11-11 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 354621.55
+      },
+      {
+        "date": "2025-11-11 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49731.42
+      },
+      {
+        "date": "2025-11-11 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10163.8
+      },
+      {
+        "date": "2025-11-11 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 483151.52
+      },
+      {
+        "date": "2025-11-12 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 357940.11
+      },
+      {
+        "date": "2025-11-12 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50183.38
+      },
+      {
+        "date": "2025-11-12 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9852.71
+      },
+      {
+        "date": "2025-11-12 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 511389.27
+      },
+      {
+        "date": "2025-11-13 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 356111.86
+      },
+      {
+        "date": "2025-11-13 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 48189.95
+      },
+      {
+        "date": "2025-11-13 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10081.94
+      },
+      {
+        "date": "2025-11-13 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 492820.92
+      },
+      {
+        "date": "2025-11-14 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 360210.51
+      },
+      {
+        "date": "2025-11-14 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50199.86
+      },
+      {
+        "date": "2025-11-14 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10196.22
+      },
+      {
+        "date": "2025-11-14 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 489142.63
+      },
+      {
+        "date": "2025-11-17 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 355020.35
+      },
+      {
+        "date": "2025-11-17 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49259.63
+      },
+      {
+        "date": "2025-11-17 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9769.62
+      },
+      {
+        "date": "2025-11-17 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 481081.86
+      },
+      {
+        "date": "2025-11-18 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 356271.31
+      },
+      {
+        "date": "2025-11-18 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50716.36
+      },
+      {
+        "date": "2025-11-18 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10090.98
+      },
+      {
+        "date": "2025-11-18 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 485992.6
+      },
+      {
+        "date": "2025-11-19 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 361464.72
+      },
+      {
+        "date": "2025-11-19 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49746.3
+      },
+      {
+        "date": "2025-11-19 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10285.15
+      },
+      {
+        "date": "2025-11-19 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 504833.8
+      },
+      {
+        "date": "2025-11-20 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 340964.64
+      },
+      {
+        "date": "2025-11-20 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 49647.87
+      },
+      {
+        "date": "2025-11-20 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9757.58
+      },
+      {
+        "date": "2025-11-20 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 490575.62
+      },
+      {
+        "date": "2025-11-21 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 344321.59
+      },
+      {
+        "date": "2025-11-21 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 48456.54
+      },
+      {
+        "date": "2025-11-21 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10138.21
+      },
+      {
+        "date": "2025-11-21 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 506180.32
+      },
+      {
+        "date": "2025-11-24 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 352916.71
+      },
+      {
+        "date": "2025-11-24 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 52153.18
+      },
+      {
+        "date": "2025-11-24 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10398.03
+      },
+      {
+        "date": "2025-11-24 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 514235.15
+      },
+      {
+        "date": "2025-11-25 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 346438.39
+      },
+      {
+        "date": "2025-11-25 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50252.71
+      },
+      {
+        "date": "2025-11-25 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9834.34
+      },
+      {
+        "date": "2025-11-25 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 487183.24
+      },
+      {
+        "date": "2025-11-26 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 349049.11
+      },
+      {
+        "date": "2025-11-26 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50071.53
+      },
+      {
+        "date": "2025-11-26 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10139.52
+      },
+      {
+        "date": "2025-11-26 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 498244.12
+      },
+      {
+        "date": "2025-11-27 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 355734.39
+      },
+      {
+        "date": "2025-11-27 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 48898.39
+      },
+      {
+        "date": "2025-11-27 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 10132.6
+      },
+      {
+        "date": "2025-11-27 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 523988.62
+      },
+      {
+        "date": "2025-11-28 16:36:22.933893",
+        "metric": "interbank_market_liquidity",
+        "value": 349375.06
+      },
+      {
+        "date": "2025-11-28 16:36:22.933893",
+        "metric": "laf_facility_usage",
+        "value": 50483.71
+      },
+      {
+        "date": "2025-11-28 16:36:22.933893",
+        "metric": "discount_window_usage",
+        "value": 9710.81
+      },
+      {
+        "date": "2025-11-28 16:36:22.933893",
+        "metric": "total_reserves",
+        "value": 523049.71
+      }
+    ]
+  }
+}

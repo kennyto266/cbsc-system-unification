@@ -1,0 +1,74 @@
+{
+  "test_key_123": {
+    "created_time": 1763913760.8059342,
+    "last_access_time": 1763913760.8059342,
+    "file_size": 26,
+    "key": "test_key_123"
+  },
+  "stock_data_0700.hk_100": {
+    "created_time": 1763913762.2568352,
+    "last_access_time": 1763913762.2568352,
+    "file_size": 2596,
+    "key": "stock_data_0700.hk_100"
+  },
+  "gov_data_HB_100": {
+    "created_time": 1763913762.3936858,
+    "last_access_time": 1763913762.3936858,
+    "file_size": 916,
+    "key": "gov_data_HB_100"
+  },
+  "gov_data_MB_100": {
+    "created_time": 1763913762.3946178,
+    "last_access_time": 1763913762.3946178,
+    "file_size": 516,
+    "key": "gov_data_MB_100"
+  },
+  "gov_data_GD_100": {
+    "created_time": 1763913762.3954725,
+    "last_access_time": 1763913762.3954725,
+    "file_size": 216,
+    "key": "gov_data_GD_100"
+  },
+  "gov_data_RT_100": {
+    "created_time": 1763913762.396264,
+    "last_access_time": 1763913762.396264,
+    "file_size": 216,
+    "key": "gov_data_RT_100"
+  },
+  "gov_data_CP_100": {
+    "created_time": 1763913762.397183,
+    "last_access_time": 1763913762.397183,
+    "file_size": 216,
+    "key": "gov_data_CP_100"
+  },
+  "gov_data_PT_100": {
+    "created_time": 1763913762.3982928,
+    "last_access_time": 1763913762.3982928,
+    "file_size": 216,
+    "key": "gov_data_PT_100"
+  },
+  "gov_data_TR_100": {
+    "created_time": 1763913762.3991177,
+    "last_access_time": 1763913762.3991177,
+    "file_size": 316,
+    "key": "gov_data_TR_100"
+  },
+  "gov_data_UE_100": {
+    "created_time": 1763913762.3999982,
+    "last_access_time": 1763913762.3999982,
+    "file_size": 916,
+    "key": "gov_data_UE_100"
+  },
+  "gov_data_TS_100": {
+    "created_time": 1763913762.4007957,
+    "last_access_time": 1763913762.4007957,
+    "file_size": 316,
+    "key": "gov_data_TS_100"
+  },
+  "stock_data_0700.hk": {
+    "created_time": 1763913762.8258278,
+    "last_access_time": 1763913762.8258278,
+    "file_size": 9105,
+    "key": "stock_data_0700.hk"
+  }
+}

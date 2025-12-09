@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/hk-ai-agent-improvements/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-28T11:30:28.967Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759059028957_ehz6qa3cb",
+      "approvalTitle": "港股AI代理系统改进 - 需求规格"
+    }
+  ]
+}

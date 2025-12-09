@@ -1,0 +1,170 @@
+{
+  "analysis_date": "2025-12-05T20:58:57.526895",
+  "strategy_type": "Monthly Low Frequency",
+  "total_strategies": 6,
+  "valid_strategies": 6,
+  "rankings": [
+    [
+      "Seasonal_Quarterly",
+      {
+        "strategy_name": "Seasonal_Quarterly",
+        "total_return": 0.034983750716881534,
+        "annual_return": 0.0024494668080741883,
+        "annual_volatility": 0.010138022598985217,
+        "sharpe_ratio": -2.2243522315863693,
+        "max_drawdown": -0.013817778051939036,
+        "calmar_ratio": 0.17726922511470336,
+        "win_rate": 0.011627906976744186,
+        "total_trades": 3,
+        "trades_per_year": 0.20930232558139533,
+        "monthly_periods": 172,
+        "years_tested": 14.333333333333334,
+        "average_monthly_return": 0.00020412223400618237,
+        "best_month": 0.03300834767093663,
+        "worst_month": -0.010918512121398605,
+        "score": 42,
+        "grade": "C"
+      }
+    ],
+    [
+      "Quarterly_Reversal",
+      {
+        "strategy_name": "Quarterly_Reversal",
+        "total_return": 0.03368770577531732,
+        "annual_return": 0.007158934612075273,
+        "annual_volatility": 0.10085794429578271,
+        "sharpe_ratio": -0.1768930103869938,
+        "max_drawdown": -0.23873219460789497,
+        "calmar_ratio": 0.029987302817843422,
+        "win_rate": 0.06976744186046512,
+        "total_trades": 24,
+        "trades_per_year": 1.6744186046511627,
+        "monthly_periods": 172,
+        "years_tested": 14.333333333333334,
+        "average_monthly_return": 0.000596577884339606,
+        "best_month": 0.2423341263547456,
+        "worst_month": -0.14207960086177507,
+        "score": 31,
+        "grade": "D+"
+      }
+    ],
+    [
+      "Dividend_Yield",
+      {
+        "strategy_name": "Dividend_Yield",
+        "total_return": 0.40963928131233174,
+        "annual_return": 0.03555704077122236,
+        "annual_volatility": 0.15220764657966682,
+        "sharpe_ratio": 0.06935946391955225,
+        "max_drawdown": -0.28575358796826544,
+        "calmar_ratio": 0.12443252602368433,
+        "win_rate": 0.4186046511627907,
+        "total_trades": 126,
+        "trades_per_year": 8.790697674418604,
+        "monthly_periods": 172,
+        "years_tested": 14.333333333333334,
+        "average_monthly_return": 0.0029630867309351967,
+        "best_month": 0.13359368643723069,
+        "worst_month": -0.14776036610733534,
+        "score": 29,
+        "grade": "D"
+      }
+    ],
+    [
+      "Risk_Parity",
+      {
+        "strategy_name": "Risk_Parity",
+        "total_return": 0.2347553479223945,
+        "annual_return": 0.033835299825051776,
+        "annual_volatility": 0.19669501544086732,
+        "sharpe_ratio": 0.04491877847157719,
+        "max_drawdown": -0.46191593770000805,
+        "calmar_ratio": 0.07324990775058764,
+        "win_rate": 0.5290697674418605,
+        "total_trades": 167,
+        "trades_per_year": 11.651162790697674,
+        "monthly_periods": 172,
+        "years_tested": 14.333333333333334,
+        "average_monthly_return": 0.002819608318754315,
+        "best_month": 0.2423341263547456,
+        "worst_month": -0.14776036610733534,
+        "score": 22,
+        "grade": "D"
+      }
+    ],
+    [
+      "Valuation_Based",
+      {
+        "strategy_name": "Valuation_Based",
+        "total_return": 0.2583544400264437,
+        "annual_return": 0.024285207608000445,
+        "annual_volatility": 0.13078150305356034,
+        "sharpe_ratio": -0.005465546543740364,
+        "max_drawdown": -0.40445027326637295,
+        "calmar_ratio": 0.06004497762325923,
+        "win_rate": 0.19186046511627908,
+        "total_trades": 64,
+        "trades_per_year": 4.465116279069767,
+        "monthly_periods": 172,
+        "years_tested": 14.333333333333334,
+        "average_monthly_return": 0.002023767300666704,
+        "best_month": 0.2423341263547456,
+        "worst_month": -0.14207960086177507,
+        "score": 21,
+        "grade": "D"
+      }
+    ],
+    [
+      "Monthly_Momentum",
+      {
+        "strategy_name": "Monthly_Momentum",
+        "total_return": -0.38774786818154283,
+        "annual_return": -0.02666848047428854,
+        "annual_volatility": 0.12115968270701176,
+        "sharpe_ratio": -0.4264494534806039,
+        "max_drawdown": -0.4566327100150538,
+        "calmar_ratio": -0.05840247509515768,
+        "win_rate": 0.13953488372093023,
+        "total_trades": 50,
+        "trades_per_year": 3.488372093023256,
+        "monthly_periods": 172,
+        "years_tested": 14.333333333333334,
+        "average_monthly_return": -0.0022223733728573784,
+        "best_month": 0.15983450378354913,
+        "worst_month": -0.21073204911668542,
+        "score": 15,
+        "grade": "F"
+      }
+    ]
+  ],
+  "best_strategy": [
+    "Seasonal_Quarterly",
+    {
+      "strategy_name": "Seasonal_Quarterly",
+      "total_return": 0.034983750716881534,
+      "annual_return": 0.0024494668080741883,
+      "annual_volatility": 0.010138022598985217,
+      "sharpe_ratio": -2.2243522315863693,
+      "max_drawdown": -0.013817778051939036,
+      "calmar_ratio": 0.17726922511470336,
+      "win_rate": 0.011627906976744186,
+      "total_trades": 3,
+      "trades_per_year": 0.20930232558139533,
+      "monthly_periods": 172,
+      "years_tested": 14.333333333333334,
+      "average_monthly_return": 0.00020412223400618237,
+      "best_month": 0.03300834767093663,
+      "worst_month": -0.010918512121398605,
+      "score": 42,
+      "grade": "C"
+    }
+  ],
+  "average_score": 26.666666666666668,
+  "statistics": {
+    "avg_monthly_return": 0.0010641315159741042,
+    "avg_sharpe_ratio": -0.45314699993442975,
+    "avg_max_drawdown": -0.31021708026825573,
+    "best_monthly_return": 0.2423341263547456,
+    "worst_monthly_return": -0.21073204911668542
+  }
+}

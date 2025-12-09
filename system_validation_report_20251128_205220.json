@@ -1,0 +1,613 @@
+{
+  "report_metadata": {
+    "generated_at": "2025-11-28T20:52:20.410945",
+    "validator": "SystemValidator",
+    "version": "1.0.0"
+  },
+  "executive_summary": {
+    "overall_status": "FAILED",
+    "overall_pass_rate": 0.1875,
+    "total_tests_executed": 16,
+    "critical_issues": 0,
+    "health_score": 0.1875,
+    "deployment_ready": false
+  },
+  "test_results_summary": {
+    "functional_tests": {
+      "passed": 0,
+      "total": 4,
+      "pass_rate": 0.0
+    },
+    "performance_tests": {
+      "passed": 1,
+      "total": 4,
+      "pass_rate": 0.25
+    },
+    "security_tests": {
+      "passed": 2,
+      "total": 4,
+      "pass_rate": 0.5
+    },
+    "reliability_tests": {
+      "passed": 0,
+      "total": 4,
+      "pass_rate": 0.0
+    }
+  },
+  "detailed_results": {
+    "architecture_assessment": {
+      "修复任务完成状况": {
+        "Sharpe比率安全審計": {
+          "status": "ERROR",
+          "error": "No module named 'src.backtest.safe_sharpe_calculator'",
+          "validation": "FAILED"
+        },
+        "安全漏洞全面修復": {
+          "status": "IMPLEMENTED",
+          "security_checks": [
+            {
+              "file": "simplified_system/src/backtest/safe_sharpe_calculator.py",
+              "has_validation": true,
+              "has_error_handling": true
+            },
+            {
+              "file": "simplified_system/src/data/government_data.py",
+              "has_validation": false,
+              "has_error_handling": true
+            }
+          ],
+          "validation": "PASSED"
+        },
+        "核心文件解析修復": {
+          "status": "VERIFIED",
+          "validation": "PASSED"
+        },
+        "代碼質量全面格式化": {
+          "status": "VERIFIED",
+          "validation": "PASSED"
+        },
+        "Sharpe邏輯安全重構": {
+          "status": "VERIFIED",
+          "validation": "PASSED"
+        },
+        "多數據源架構優化": {
+          "status": "ERROR",
+          "error": "No module named 'src.data.government_data'",
+          "validation": "FAILED"
+        },
+        "安全配置管理": {
+          "status": "VERIFIED",
+          "validation": "PASSED"
+        },
+        "防禦性編程實施": {
+          "status": "VERIFIED",
+          "validation": "PASSED"
+        }
+      },
+      "核心模块健康度": {
+        "simplified_system/src/api/stock_api.py": {
+          "status": "HEALTHY",
+          "health_score": 1.0,
+          "indicators": {
+            "has_docstring": true,
+            "has_error_handling": true,
+            "has_logging": true,
+            "line_count": 261,
+            "file_size": 8014
+          },
+          "last_modified": "2025-11-28T20:27:21.258974"
+        },
+        "simplified_system/src/api/government_data.py": {
+          "status": "HEALTHY",
+          "health_score": 1.0,
+          "indicators": {
+            "has_docstring": true,
+            "has_error_handling": true,
+            "has_logging": true,
+            "line_count": 549,
+            "file_size": 22384
+          },
+          "last_modified": "2025-11-28T20:27:20.539757"
+        },
+        "simplified_system/src/data/government_data.py": {
+          "status": "HEALTHY",
+          "health_score": 1.0,
+          "indicators": {
+            "has_docstring": true,
+            "has_error_handling": true,
+            "has_logging": true,
+            "line_count": 639,
+            "file_size": 24756
+          },
+          "last_modified": "2025-11-28T20:27:40.415193"
+        },
+        "simplified_system/src/backtest/safe_sharpe_calculator.py": {
+          "status": "HEALTHY",
+          "health_score": 1.0,
+          "indicators": {
+            "has_docstring": true,
+            "has_error_handling": true,
+            "has_logging": true,
+            "line_count": 668,
+            "file_size": 25271
+          },
+          "last_modified": "2025-11-28T20:33:29.939866"
+        },
+        "simplified_system/src/backtest/vectorbt_engine.py": {
+          "status": "HEALTHY",
+          "health_score": 1.0,
+          "indicators": {
+            "has_docstring": true,
+            "has_error_handling": true,
+            "has_logging": true,
+            "line_count": 1579,
+            "file_size": 61002
+          },
+          "last_modified": "2025-11-28T20:35:21.713231"
+        },
+        "simplified_system/src/indicators/core_indicators.py": {
+          "status": "HEALTHY",
+          "health_score": 1.0,
+          "indicators": {
+            "has_docstring": true,
+            "has_error_handling": true,
+            "has_logging": true,
+            "line_count": 458,
+            "file_size": 15550
+          },
+          "last_modified": "2025-11-28T20:27:42.682440"
+        }
+      },
+      "文件系统完整性": {
+        "simplified_system/data/government": {
+          "exists": true,
+          "file_count": 54,
+          "status": "OK"
+        },
+        "simplified_system/src/api": {
+          "exists": true,
+          "file_count": 23,
+          "status": "OK"
+        },
+        "simplified_system/src/backtest": {
+          "exists": true,
+          "file_count": 102,
+          "status": "OK"
+        },
+        "simplified_system/src/indicators": {
+          "exists": true,
+          "file_count": 21,
+          "status": "OK"
+        },
+        "simplified_system/tests": {
+          "exists": true,
+          "file_count": 16,
+          "status": "OK"
+        }
+      },
+      "依赖关系检查": {}
+    },
+    "functional_tests": {
+      "sharpe_ratio_calculation": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      },
+      "data_source_failover": {
+        "status": "ERROR",
+        "error": "No module named 'src.data.government_data'"
+      },
+      "caching_mechanism": {
+        "status": "ERROR",
+        "error": "No module named 'src.data.government_data'"
+      },
+      "safety_protection": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      }
+    },
+    "performance_tests": {
+      "response_time_benchmark": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      },
+      "concurrent_processing": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      },
+      "memory_usage": {
+        "status": "PASSED",
+        "baseline_memory_mb": 86.4921875,
+        "peak_memory_mb": 86.58203125,
+        "final_memory_mb": 86.58203125,
+        "memory_growth_mb": 0.08984375,
+        "memory_efficiency": 0.0,
+        "memory_usage_acceptable": true
+      },
+      "large_dataset_processing": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      }
+    },
+    "security_tests": {
+      "sql_injection_protection": {
+        "status": "PASSED",
+        "sql_injection_checks": [
+          {
+            "file": "simplified_system/src/data/government_data.py",
+            "dangerous_patterns": [],
+            "safe": true
+          },
+          {
+            "file": "simplified_system/src/backtest/safe_sharpe_calculator.py",
+            "dangerous_patterns": [],
+            "safe": true
+          }
+        ],
+        "all_files_safe": true
+      },
+      "input_validation": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      },
+      "configuration_encryption": {
+        "status": "PASSED",
+        "config_checks": [
+          {
+            "file": "simplified_system/.env",
+            "status": "not_found",
+            "secure": true
+          },
+          {
+            "file": "simplified_system/config.json",
+            "status": "not_found",
+            "secure": true
+          },
+          {
+            "file": "simplified_system/requirements.txt",
+            "sensitive_data_found": [],
+            "secure": true
+          }
+        ],
+        "all_configs_secure": true
+      },
+      "exception_handling": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      }
+    },
+    "reliability_tests": {
+      "data_source_failure_simulation": {
+        "status": "ERROR",
+        "error": "No module named 'src.data.government_data'"
+      },
+      "long_running_stability": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      },
+      "error_recovery": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      },
+      "system_monitoring": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      }
+    }
+  },
+  "system_assessment": {
+    "architecture_health": {
+      "修复任务完成状况": {
+        "Sharpe比率安全審計": {
+          "status": "ERROR",
+          "error": "No module named 'src.backtest.safe_sharpe_calculator'",
+          "validation": "FAILED"
+        },
+        "安全漏洞全面修復": {
+          "status": "IMPLEMENTED",
+          "security_checks": [
+            {
+              "file": "simplified_system/src/backtest/safe_sharpe_calculator.py",
+              "has_validation": true,
+              "has_error_handling": true
+            },
+            {
+              "file": "simplified_system/src/data/government_data.py",
+              "has_validation": false,
+              "has_error_handling": true
+            }
+          ],
+          "validation": "PASSED"
+        },
+        "核心文件解析修復": {
+          "status": "VERIFIED",
+          "validation": "PASSED"
+        },
+        "代碼質量全面格式化": {
+          "status": "VERIFIED",
+          "validation": "PASSED"
+        },
+        "Sharpe邏輯安全重構": {
+          "status": "VERIFIED",
+          "validation": "PASSED"
+        },
+        "多數據源架構優化": {
+          "status": "ERROR",
+          "error": "No module named 'src.data.government_data'",
+          "validation": "FAILED"
+        },
+        "安全配置管理": {
+          "status": "VERIFIED",
+          "validation": "PASSED"
+        },
+        "防禦性編程實施": {
+          "status": "VERIFIED",
+          "validation": "PASSED"
+        }
+      },
+      "核心模块健康度": {
+        "simplified_system/src/api/stock_api.py": {
+          "status": "HEALTHY",
+          "health_score": 1.0,
+          "indicators": {
+            "has_docstring": true,
+            "has_error_handling": true,
+            "has_logging": true,
+            "line_count": 261,
+            "file_size": 8014
+          },
+          "last_modified": "2025-11-28T20:27:21.258974"
+        },
+        "simplified_system/src/api/government_data.py": {
+          "status": "HEALTHY",
+          "health_score": 1.0,
+          "indicators": {
+            "has_docstring": true,
+            "has_error_handling": true,
+            "has_logging": true,
+            "line_count": 549,
+            "file_size": 22384
+          },
+          "last_modified": "2025-11-28T20:27:20.539757"
+        },
+        "simplified_system/src/data/government_data.py": {
+          "status": "HEALTHY",
+          "health_score": 1.0,
+          "indicators": {
+            "has_docstring": true,
+            "has_error_handling": true,
+            "has_logging": true,
+            "line_count": 639,
+            "file_size": 24756
+          },
+          "last_modified": "2025-11-28T20:27:40.415193"
+        },
+        "simplified_system/src/backtest/safe_sharpe_calculator.py": {
+          "status": "HEALTHY",
+          "health_score": 1.0,
+          "indicators": {
+            "has_docstring": true,
+            "has_error_handling": true,
+            "has_logging": true,
+            "line_count": 668,
+            "file_size": 25271
+          },
+          "last_modified": "2025-11-28T20:33:29.939866"
+        },
+        "simplified_system/src/backtest/vectorbt_engine.py": {
+          "status": "HEALTHY",
+          "health_score": 1.0,
+          "indicators": {
+            "has_docstring": true,
+            "has_error_handling": true,
+            "has_logging": true,
+            "line_count": 1579,
+            "file_size": 61002
+          },
+          "last_modified": "2025-11-28T20:35:21.713231"
+        },
+        "simplified_system/src/indicators/core_indicators.py": {
+          "status": "HEALTHY",
+          "health_score": 1.0,
+          "indicators": {
+            "has_docstring": true,
+            "has_error_handling": true,
+            "has_logging": true,
+            "line_count": 458,
+            "file_size": 15550
+          },
+          "last_modified": "2025-11-28T20:27:42.682440"
+        }
+      },
+      "文件系统完整性": {
+        "simplified_system/data/government": {
+          "exists": true,
+          "file_count": 54,
+          "status": "OK"
+        },
+        "simplified_system/src/api": {
+          "exists": true,
+          "file_count": 23,
+          "status": "OK"
+        },
+        "simplified_system/src/backtest": {
+          "exists": true,
+          "file_count": 102,
+          "status": "OK"
+        },
+        "simplified_system/src/indicators": {
+          "exists": true,
+          "file_count": 21,
+          "status": "OK"
+        },
+        "simplified_system/tests": {
+          "exists": true,
+          "file_count": 16,
+          "status": "OK"
+        }
+      },
+      "依赖关系检查": {}
+    },
+    "performance_metrics": {
+      "response_time_benchmark": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      },
+      "concurrent_processing": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      },
+      "memory_usage": {
+        "status": "PASSED",
+        "baseline_memory_mb": 86.4921875,
+        "peak_memory_mb": 86.58203125,
+        "final_memory_mb": 86.58203125,
+        "memory_growth_mb": 0.08984375,
+        "memory_efficiency": 0.0,
+        "memory_usage_acceptable": true
+      },
+      "large_dataset_processing": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      }
+    },
+    "security_posture": {
+      "sql_injection_protection": {
+        "status": "PASSED",
+        "sql_injection_checks": [
+          {
+            "file": "simplified_system/src/data/government_data.py",
+            "dangerous_patterns": [],
+            "safe": true
+          },
+          {
+            "file": "simplified_system/src/backtest/safe_sharpe_calculator.py",
+            "dangerous_patterns": [],
+            "safe": true
+          }
+        ],
+        "all_files_safe": true
+      },
+      "input_validation": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      },
+      "configuration_encryption": {
+        "status": "PASSED",
+        "config_checks": [
+          {
+            "file": "simplified_system/.env",
+            "status": "not_found",
+            "secure": true
+          },
+          {
+            "file": "simplified_system/config.json",
+            "status": "not_found",
+            "secure": true
+          },
+          {
+            "file": "simplified_system/requirements.txt",
+            "sensitive_data_found": [],
+            "secure": true
+          }
+        ],
+        "all_configs_secure": true
+      },
+      "exception_handling": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      }
+    },
+    "reliability_assessment": {
+      "data_source_failure_simulation": {
+        "status": "ERROR",
+        "error": "No module named 'src.data.government_data'"
+      },
+      "long_running_stability": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      },
+      "error_recovery": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      },
+      "system_monitoring": {
+        "status": "ERROR",
+        "error": "No module named 'src.backtest.safe_sharpe_calculator'"
+      }
+    }
+  },
+  "recommendations": {
+    "deployment": [
+      "建議優化性能後再部署到生產環境",
+      "安全性檢查通過，符合部署標準",
+      "部署前確保所有依賴已正確安裝",
+      "建議配置監控和日誌系統",
+      "建議設置定期備份機制",
+      "建議使用藍綠部署或金絲雀發布策略"
+    ],
+    "monitoring": {
+      "key_metrics": [
+        "system_response_time",
+        "sharpe_calculation_accuracy",
+        "data_source_availability",
+        "error_rate",
+        "memory_usage",
+        "cpu_usage"
+      ],
+      "alert_thresholds": {
+        "response_time": 1.0,
+        "error_rate": 0.05,
+        "memory_usage": 0.8,
+        "cpu_usage": 0.8
+      },
+      "monitoring_tools": [
+        "prometheus",
+        "grafana",
+        "elasticsearch",
+        "kibana"
+      ],
+      "log_levels": [
+        "ERROR: 立即警報",
+        "WARNING: 每小時匯總",
+        "INFO: 每日分析"
+      ]
+    },
+    "improvements": [
+      "考慮實施更有效的並行處理策略",
+      "建議增加更多備用數據源以提高可用性",
+      "考慮實施機器學習模型以增強預測能力",
+      "定期進行安全審計和漏洞掃描",
+      "實施更詳細的性能監控和分析",
+      "增加自動化測試覆蓋範圍",
+      "考慮實施API版本控制"
+    ]
+  },
+  "appendices": {
+    "system_info": {
+      "python_version": "3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]",
+      "platform": "Windows-11-10.0.26100-SP0",
+      "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
+      "architecture": [
+        "64bit",
+        "WindowsPE"
+      ],
+      "hostname": "kenny"
+    },
+    "test_environment": {
+      "test_start_time": "2025-11-28T20:52:20.466342",
+      "test_config": {
+        "functional_tests": true,
+        "performance_tests": true,
+        "security_tests": true,
+        "reliability_tests": true,
+        "timeout_seconds": 30,
+        "max_concurrent_requests": 10
+      },
+      "working_directory": "C:\\Users\\Penguin8n\\CODEX--",
+      "environment_variables": {
+        "PATH": "C:\\Users\\Penguin8n\\bin;C:\\Program Files\\Git\\mingw64\\bin;C:\\Program Files\\Git\\usr\\local\\bin;C:\\Program Files\\Git\\usr\\bin;C:\\Program Files\\Git\\usr\\bin;C:\\Program Files\\Git\\mingw64\\bin;C:\\Program Files\\Git\\usr\\bin;C:\\Users\\Penguin8n\\bin;C:\\Users\\Penguin8n\\CODEX--\\.venv310\\Scripts;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.0\\bin\\x64;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.0\\bin;C:\\Program Files\\Oculus\\Support\\oculus-runtime;C:\\Users\\Penguin8n\\AppData\\Local\\Programs\\cursor\\resources\\app\\bin;C:\\Python313\\Scripts;C:\\Python313;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem;C:\\Windows\\System32\\WindowsPowerShell\\v1.0;C:\\Windows\\System32\\OpenSSH;C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files\\nodejs;C:\\ProgramData\\chocolatey\\bin;C:\\Users\\Penguin8n\\AppData\\Local\\Programs\\Python\\Python310\\Scripts;C:\\Users\\Penguin8n\\AppData\\Local\\Programs\\Python\\Python310;C:\\Users\\Penguin8n\\.local\\bin;C:\\Users\\Penguin8n\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\Penguin8n\\AppData\\Local\\Programs\\cursor\\resources\\app\\bin;C:\\Program Files\\JetBrains\\PyCharm 2025.1.2\\bin;C:\\Users\\Penguin8n\\AppData\\Roaming\\npm;C:\\Users\\Penguin8n\\AppData\\Local\\Programs\\Ollama;C:\\Program Files\\dotnet;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0;C:\\WINDOWS\\System32\\OpenSSH;C:\\Program Files\\GitHub CLI;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files\\NVIDIA Corporation\\Nsight Compute 2025.3.1;C:\\Users\\Penguin8n\\.cargo\\bin;C:\\Users\\Penguin8n\\AppData\\Local\\Programs\\Python\\Python310\\Scripts;C:\\Users\\Penguin8n\\AppData\\Local\\Programs\\Python\\Python310;C:\\Users\\Penguin8n\\.local\\bin;C:\\Users\\Penguin8n\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\Penguin8n\\AppData\\Local\\Programs\\cursor\\resources\\app\\bin;C:\\Program Files\\JetBrains\\PyCharm 2025.1.2\\bin;C:\\Users\\Penguin8n\\AppData\\Roaming\\npm;C:\\Program Files\\nodejs;C:\\Users\\Penguin8n\\AppData\\Local\\Programs\\Ollama;C:\\Users\\Administrator\\.local\\bin;C:\\Users\\Penguin8n\\.local\\bin;C:\\ProgramData\\Penguin8n\\GitHubDesktop\\bin;C:\\Users\\Penguin8n\\AppData\\Local\\GitHubDesktop\\bin;C:\\Users\\Penguin8n\\.cursor\\extensions\\ms-python.debugpy-2025.14.1-win32-x64\\bundled\\scripts\\noConfigScripts;C:\\Program Files\\Git\\usr\\bin\\vendor_perl;C:\\Program Files\\Git\\usr\\bin\\core_perl",
+        "PATHEXT": ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.PY;.PYW;.CPL"
+      }
+    }
+  }
+}

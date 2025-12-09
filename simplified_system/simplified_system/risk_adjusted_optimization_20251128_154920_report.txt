@@ -1,0 +1,43 @@
+================================================================================
+Risk-Adjusted Parameter Optimization Report
+Generated: 2025-11-28 15:49:20
+Total strategies analyzed: 144
+================================================================================
+
+Passed risk validation: 12
+Failed risk validation: 132
+Pass rate: 8.3%
+
+Top Risk-Adjusted Strategies (Validated):
+------------------------------------------------------------
+Rank Strategy                  Risk Score WF Sharpe  WF Return  WF Drawdown Trade Freq
+--------------------------------------------------------------------------------
+1   RSI_{'period': 20, 'over  0.609    0.835      -6.73%     12.47%     16.5    
+2   RSI_{'period': 25, 'over  0.585    1.486      0.52%      -10.49%    14.5    
+3   RSI_{'period': 14, 'over  0.517    0.838      6.35%      -15.89%    16.2    
+4   RSI_{'period': 14, 'over  0.498    0.831      8.59%      -18.86%    17.7    
+5   RSI_{'period': 25, 'over  0.494    0.834      -2.39%     -8.05%     14.5    
+6   RSI_{'period': 20, 'over  0.492    0.761      5.06%      -11.54%    15.5    
+7   RSI_{'period': 30, 'over  0.467    0.498      3.35%      1.03%      13.5    
+8   RSI_{'period': 25, 'over  0.425    0.482      -6.84%     3.16%      14.5    
+9   RSI_{'period': 25, 'over  0.371    0.523      0.82%      -12.32%    15.5    
+10  RSI_{'period': 25, 'over  0.362    0.591      -0.85%     -15.43%    14.0    
+
+Failed Validation Analysis:
+----------------------------------------
+Main failure reasons:
+  min_trades: 51 strategies
+  drawdown: 53 strategies
+  sharpe: 111 strategies
+  volatility: 31 strategies
+  win_rate: 25 strategies
+
+Recommended Configuration:
+------------------------------
+Recommended strategy: RSI_{'period': 20, 'oversold': 25, 'overbought': 80}
+Strategy parameters: {'period': 20, 'oversold': 25, 'overbought': 80}
+Expected WF Sharpe: 0.835
+Expected WF Return: -6.73%
+Expected WF Drawdown: 12.47%
+Risk score: 0.609
+Stability score: 0.738

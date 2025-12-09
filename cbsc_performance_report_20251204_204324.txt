@@ -1,0 +1,127 @@
+CBSC Strategy Comprehensive Performance Report
+Generated: 20251204_204324
+Data Period: 2025-09-01 to 2025-10-17
+Trading Days: 33
+Risk-Free Rate: 2.0%
+
+DETAILED STRATEGY ANALYSIS
+==================================================
+
+1. RISK ADJUSTED BOLLINGER
+   Total Return: 0.015600 (0.119127 annualized)
+   Sharpe Ratio: 3.580000
+   Maximum Drawdown: -0.028000
+   Calmar Ratio: 0.560000
+   Sortino Ratio: 4.950000
+   Win Rate: 0.670000 (5 trades)
+   Volatility: 0.098000
+   Efficiency Ratio: 0.780000
+   Portfolio Weight: 0.350000
+   Portfolio Contribution: 0.005460
+   95% VaR: -0.142709
+   95% CVaR: -0.185459
+
+2. SENTIMENT MOMENTUM
+   Total Return: 0.012500 (0.095455 annualized)
+   Sharpe Ratio: 1.850000
+   Maximum Drawdown: -0.042000
+   Calmar Ratio: 0.300000
+   Sortino Ratio: 2.650000
+   Win Rate: 0.580000 (8 trades)
+   Volatility: 0.145000
+   Efficiency Ratio: 0.640000
+   Portfolio Weight: 0.350000
+   Portfolio Contribution: 0.004375
+   95% VaR: -0.216955
+   95% CVaR: -0.264049
+
+3. TIME DECAY MOMENTUM
+   Total Return: 0.009200 (0.070255 annualized)
+   Sharpe Ratio: 1.650000
+   Maximum Drawdown: -0.045000
+   Calmar Ratio: 0.200000
+   Sortino Ratio: 2.280000
+   Win Rate: 0.550000 (7 trades)
+   Volatility: 0.142000
+   Efficiency Ratio: 0.580000
+   Portfolio Weight: 0.200000
+   Portfolio Contribution: 0.001840
+   95% VaR: -0.215678
+   95% CVaR: -0.266527
+
+4. VOLUME REVERSAL
+   Total Return: 0.008500 (0.064909 annualized)
+   Sharpe Ratio: 1.420000
+   Maximum Drawdown: -0.038000
+   Calmar Ratio: 0.220000
+   Sortino Ratio: 2.010000
+   Win Rate: 0.520000 (6 trades)
+   Volatility: 0.165000
+   Efficiency Ratio: 0.510000
+   Portfolio Weight: 0.100000
+   Portfolio Contribution: 0.000850
+   95% VaR: -0.239810
+   95% CVaR: -0.303902
+
+
+DETAILED PORTFOLIO ANALYSIS
+==================================================
+
+CONSERVATIVE Portfolio
+   Description: Low risk, high reliability approach
+   Total Return: 0.008500 (0.064909 annualized)
+   Sharpe Ratio: 2.450000
+   Maximum Drawdown: -0.025000
+   Calmar Ratio: 0.340000
+   Win Rate: 0.597500
+   Volatility: 0.003469
+   Max Position Size: 0.250000
+   Max Daily Risk: 0.020000
+
+BALANCED Portfolio
+   Description: Balanced risk-reward approach
+   Total Return: 0.011200 (0.085527 annualized)
+   Sharpe Ratio: 2.890000
+   Maximum Drawdown: -0.032000
+   Calmar Ratio: 0.350000
+   Win Rate: 0.619500
+   Volatility: 0.003875
+   Max Position Size: 0.350000
+   Max Daily Risk: 0.050000
+
+AGGRESSIVE Portfolio
+   Description: High return potential, higher risk
+   Total Return: 0.013800 (0.105382 annualized)
+   Sharpe Ratio: 3.250000
+   Maximum Drawdown: -0.041000
+   Calmar Ratio: 0.336585
+   Win Rate: 0.637500
+   Volatility: 0.004246
+   Max Position Size: 0.450000
+   Max Daily Risk: 0.080000
+
+HIGH_FREQUENCY Portfolio
+   Description: Maximum trading opportunities approach
+   Total Return: 0.009800 (0.074836 annualized)
+   Sharpe Ratio: 2.150000
+   Maximum Drawdown: -0.035000
+   Calmar Ratio: 0.280000
+   Win Rate: 0.582500
+   Volatility: 0.004558
+   Max Position Size: 0.300000
+   Max Daily Risk: 0.040000
+
+
+RISK MANAGEMENT RULES
+==================================================
+
+Position Limits:
+   Max Position Size: 40.0%
+   Max Daily Risk: 8.0%
+   Max Concurrent Strategies: Maximum 2 strategies simultaneously
+
+Stop Loss & Take Profit:
+   Individual Stop Loss: 3% per position
+   Portfolio Stop Loss: 6% total portfolio
+   Individual Take Profit: 8% per position
+   Portfolio Take Profit: 15% total portfolio

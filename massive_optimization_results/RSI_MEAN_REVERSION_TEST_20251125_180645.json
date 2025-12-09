@@ -1,0 +1,79 @@
+{
+  "optimization_summary": {
+    "strategy_name": "RSI_MEAN_REVERSION",
+    "symbol": "TEST",
+    "optimization_metric": "sharpe_ratio",
+    "max_combinations": 5,
+    "actual_combinations": 0,
+    "execution_time": 1.6665992736816406,
+    "parallel_config": {
+      "max_workers": 16,
+      "use_processes": true,
+      "chunk_size": 10,
+      "enable_gpu": true,
+      "cache_results": true,
+      "save_intermediate": true,
+      "progress_update_interval": 5.0,
+      "enable_detailed_logging": false,
+      "memory_limit_mb": null,
+      "timeout_per_task": null,
+      "results_dir": "optimization_results",
+      "save_top_n": 100
+    }
+  },
+  "best_strategy": {
+    "parameters": null,
+    "performance_metrics": {},
+    "backtest_result": null
+  },
+  "optimization_statistics": {},
+  "top_strategies": [],
+  "performance_report": {
+    "error": "'NoneType' object has no attribute 'symbol'",
+    "report_time": "2025-11-25T18:06:45.141922"
+  },
+  "overfitting_analysis": {
+    "sample_stability": {
+      "in_sample_sharpe": 0.0,
+      "out_of_sample_sharpe": 0.0,
+      "sharpe_decay": 0.0
+    },
+    "parameter_stability": {
+      "parameter_stability": 0.0,
+      "optimal_parameter_cluster": 0.0
+    },
+    "temporal_stability": {
+      "walk_forward_performance": 0.0,
+      "rolling_performance_std": 0.0
+    },
+    "statistical_significance": {
+      "p_value": 1.0,
+      "deflation_adjusted_sharpe": 0.0,
+      "minimum_track_record_length": 0
+    },
+    "overfitting_assessment": {
+      "overfitting_risk_score": 0.0,
+      "confidence_level": 0.0,
+      "risk_level": "VERY_LOW"
+    }
+  },
+  "parameter_space_analysis": {
+    "total_possible_combinations": 11264,
+    "efficiency_ratio": 0.00044389204545454544,
+    "parameter_importance": {}
+  },
+  "system_performance": {
+    "parallel_efficiency": 0.0,
+    "tasks_per_second": 0.0,
+    "cache_hit_rate": 0
+  },
+  "metadata": {
+    "timestamp": "2025-11-25T18:06:45.141959",
+    "data_period": {
+      "start_date": "2023-11-01",
+      "end_date": "2025-11-25",
+      "total_days": 756
+    },
+    "system_version": "Phase 3 - Massive Optimizer v1.0"
+  }
+}

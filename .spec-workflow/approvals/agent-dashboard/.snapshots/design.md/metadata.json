@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/agent-dashboard/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-26T02:08:23.203Z",
+      "trigger": "initial",
+      "approvalId": "approval_1758852503199_eot0anxpz",
+      "approvalTitle": "Agent仪表板设计文档审批"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-09-26T02:08:25.072Z",
+      "trigger": "approved",
+      "approvalId": "approval_1758852503199_eot0anxpz",
+      "approvalTitle": "Agent仪表板设计文档审批"
+    }
+  ]
+}

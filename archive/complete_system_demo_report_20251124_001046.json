@@ -1,0 +1,24 @@
+{
+  "timestamp": "2025-11-24T00:10:46.006607",
+  "system_health": {
+    "health_score": 80.0,
+    "status": "[PASS]",
+    "total_tests": 5,
+    "passed_tests": 4,
+    "failed_tests": 1
+  },
+  "test_results": {
+    "Simplified System": false,
+    "Enhanced System": true,
+    "性能監控系統": true,
+    "MB_KDJ策略保護": true,
+    "原始非價格系統": true
+  },
+  "components_status": {
+    "simplified_system": false,
+    "enhanced_system": true,
+    "performance_monitoring": true,
+    "mb_kdj_protection": true,
+    "original_system": true
+  }
+}

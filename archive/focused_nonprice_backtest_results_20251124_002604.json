@@ -1,0 +1,514 @@
+{
+  "summary": {
+    "execution_time": "2025-11-24T00:26:04.907848",
+    "core_strategy": "MB_KDJ_[10,2]",
+    "core_sharpe": 0.0,
+    "core_return": 0.0,
+    "core_drawdown": 0.0,
+    "best_strategy_sharpe": 0.0,
+    "best_strategy_name": "MB_KDJ_[10,2]",
+    "total_strategies_tested": 28,
+    "successful_strategies": 28
+  },
+  "core_result": {
+    "strategy_id": "MB_KDJ_[10,2]",
+    "data_source": "MB",
+    "indicator_type": "KDJ",
+    "params": [
+      10,
+      2
+    ],
+    "total_return": 0.0,
+    "annual_return": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "volatility": 0.0,
+    "trade_count": 0,
+    "quality_score": 30.0,
+    "success": true,
+    "signals_generated": 1,
+    "avg_k_value": 49.99999999999999,
+    "avg_d_value": 50.0,
+    "avg_j_value": 49.99999999999999
+  },
+  "nearby_results": [
+    {
+      "strategy_id": "MB_KDJ_[8,1]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        8,
+        1
+      ],
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "volatility": 0.0,
+      "trade_count": 0,
+      "quality_score": 30.0,
+      "success": true,
+      "signals_generated": 0,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 49.99999999999999,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[8,2]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        8,
+        2
+      ],
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "volatility": 0.0,
+      "trade_count": 0,
+      "quality_score": 30.0,
+      "success": true,
+      "signals_generated": 1,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 50.0,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[8,3]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        8,
+        3
+      ],
+      "total_return": 0.009911415938881785,
+      "annual_return": 0.005105983633927114,
+      "sharpe_ratio": -3.491626257485179,
+      "max_drawdown": 0.0,
+      "volatility": 0.00711509381789879,
+      "trade_count": 1,
+      "quality_score": 0,
+      "success": true,
+      "signals_generated": 2,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 50.0,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[8,4]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        8,
+        4
+      ],
+      "total_return": 0.018128063607717904,
+      "annual_return": 0.009320542777764729,
+      "sharpe_ratio": -2.241832939730386,
+      "max_drawdown": 0.0,
+      "volatility": 0.009195995052395543,
+      "trade_count": 1,
+      "quality_score": 0,
+      "success": true,
+      "signals_generated": 3,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 50.0,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[9,1]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        9,
+        1
+      ],
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "volatility": 0.0,
+      "trade_count": 0,
+      "quality_score": 30.0,
+      "success": true,
+      "signals_generated": 0,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 49.99999999999999,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[9,2]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        9,
+        2
+      ],
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "volatility": 0.0,
+      "trade_count": 0,
+      "quality_score": 30.0,
+      "success": true,
+      "signals_generated": 1,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 50.0,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[9,3]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        9,
+        3
+      ],
+      "total_return": 0.009911415938881785,
+      "annual_return": 0.005105983633927114,
+      "sharpe_ratio": -3.491626257485179,
+      "max_drawdown": 0.0,
+      "volatility": 0.00711509381789879,
+      "trade_count": 1,
+      "quality_score": 0,
+      "success": true,
+      "signals_generated": 2,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 50.0,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[9,4]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        9,
+        4
+      ],
+      "total_return": 0.018128063607717904,
+      "annual_return": 0.009320542777764729,
+      "sharpe_ratio": -2.241832939730386,
+      "max_drawdown": 0.0,
+      "volatility": 0.009195995052395543,
+      "trade_count": 1,
+      "quality_score": 0,
+      "success": true,
+      "signals_generated": 3,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 50.0,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[10,1]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        10,
+        1
+      ],
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "volatility": 0.0,
+      "trade_count": 0,
+      "quality_score": 30.0,
+      "success": true,
+      "signals_generated": 0,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 49.99999999999999,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[10,3]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        10,
+        3
+      ],
+      "total_return": 0.009911415938881785,
+      "annual_return": 0.005105983633927114,
+      "sharpe_ratio": -3.491626257485179,
+      "max_drawdown": 0.0,
+      "volatility": 0.00711509381789879,
+      "trade_count": 1,
+      "quality_score": 0,
+      "success": true,
+      "signals_generated": 2,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 50.0,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[10,4]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        10,
+        4
+      ],
+      "total_return": 0.018128063607717904,
+      "annual_return": 0.009320542777764729,
+      "sharpe_ratio": -2.241832939730386,
+      "max_drawdown": 0.0,
+      "volatility": 0.009195995052395543,
+      "trade_count": 1,
+      "quality_score": 0,
+      "success": true,
+      "signals_generated": 3,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 50.0,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[11,1]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        11,
+        1
+      ],
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "volatility": 0.0,
+      "trade_count": 0,
+      "quality_score": 30.0,
+      "success": true,
+      "signals_generated": 0,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 49.99999999999999,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[11,2]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        11,
+        2
+      ],
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "volatility": 0.0,
+      "trade_count": 0,
+      "quality_score": 30.0,
+      "success": true,
+      "signals_generated": 1,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 50.0,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[11,3]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        11,
+        3
+      ],
+      "total_return": 0.009911415938881785,
+      "annual_return": 0.005105983633927114,
+      "sharpe_ratio": -3.491626257485179,
+      "max_drawdown": 0.0,
+      "volatility": 0.00711509381789879,
+      "trade_count": 1,
+      "quality_score": 0,
+      "success": true,
+      "signals_generated": 2,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 50.0,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[11,4]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        11,
+        4
+      ],
+      "total_return": 0.018128063607717904,
+      "annual_return": 0.009320542777764729,
+      "sharpe_ratio": -2.241832939730386,
+      "max_drawdown": 0.0,
+      "volatility": 0.009195995052395543,
+      "trade_count": 1,
+      "quality_score": 0,
+      "success": true,
+      "signals_generated": 3,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 50.0,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[12,1]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        12,
+        1
+      ],
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "volatility": 0.0,
+      "trade_count": 0,
+      "quality_score": 30.0,
+      "success": true,
+      "signals_generated": 0,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 49.99999999999999,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[12,2]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        12,
+        2
+      ],
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.0,
+      "volatility": 0.0,
+      "trade_count": 0,
+      "quality_score": 30.0,
+      "success": true,
+      "signals_generated": 1,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 50.0,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[12,3]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        12,
+        3
+      ],
+      "total_return": 0.009911415938881785,
+      "annual_return": 0.005105983633927114,
+      "sharpe_ratio": -3.491626257485179,
+      "max_drawdown": 0.0,
+      "volatility": 0.00711509381789879,
+      "trade_count": 1,
+      "quality_score": 0,
+      "success": true,
+      "signals_generated": 2,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 50.0,
+      "avg_j_value": 49.99999999999999
+    },
+    {
+      "strategy_id": "MB_KDJ_[12,4]",
+      "data_source": "MB",
+      "indicator_type": "KDJ",
+      "params": [
+        12,
+        4
+      ],
+      "total_return": 0.018128063607717904,
+      "annual_return": 0.009320542777764729,
+      "sharpe_ratio": -2.241832939730386,
+      "max_drawdown": 0.0,
+      "volatility": 0.009195995052395543,
+      "trade_count": 1,
+      "quality_score": 0,
+      "success": true,
+      "signals_generated": 3,
+      "avg_k_value": 49.99999999999999,
+      "avg_d_value": 50.0,
+      "avg_j_value": 49.99999999999999
+    }
+  ],
+  "other_source_results": [
+    {
+      "strategy_id": "HB_KDJ_[10,2]",
+      "data_source": "HB",
+      "total_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "success": true
+    },
+    {
+      "strategy_id": "GD_KDJ_[10,2]",
+      "data_source": "GD",
+      "total_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "success": true
+    },
+    {
+      "strategy_id": "RT_KDJ_[10,2]",
+      "data_source": "RT",
+      "total_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "success": true
+    },
+    {
+      "strategy_id": "PT_KDJ_[10,2]",
+      "data_source": "PT",
+      "total_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "success": true
+    },
+    {
+      "strategy_id": "TR_KDJ_[10,2]",
+      "data_source": "TR",
+      "total_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "success": true
+    },
+    {
+      "strategy_id": "TS_KDJ_[10,2]",
+      "data_source": "TS",
+      "total_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "success": true
+    },
+    {
+      "strategy_id": "CP_KDJ_[10,2]",
+      "data_source": "CP",
+      "total_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "success": true
+    },
+    {
+      "strategy_id": "UE_KDJ_[10,2]",
+      "data_source": "UE",
+      "total_return": 0.0,
+      "sharpe_ratio": 0.0,
+      "success": true
+    }
+  ],
+  "best_strategy": {
+    "strategy_id": "MB_KDJ_[10,2]",
+    "data_source": "MB",
+    "indicator_type": "KDJ",
+    "params": [
+      10,
+      2
+    ],
+    "total_return": 0.0,
+    "annual_return": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "volatility": 0.0,
+    "trade_count": 0,
+    "quality_score": 30.0,
+    "success": true,
+    "signals_generated": 1,
+    "avg_k_value": 49.99999999999999,
+    "avg_d_value": 50.0,
+    "avg_j_value": 49.99999999999999
+  }
+}

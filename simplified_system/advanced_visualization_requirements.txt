@@ -1,0 +1,99 @@
+# Advanced Visualization Tools Requirements
+# 高級可視化工具依賴
+
+# Core visualization libraries
+plotly>=5.17.0                    # Interactive charts and 3D visualization
+bokeh>=3.2.0                      # Large scale data visualization
+dash>=2.14.0                      # Interactive web applications
+dash-bootstrap-components>=1.5.0  # Bootstrap components for Dash
+
+# Advanced data processing
+pandas>=2.0.0                     # Data manipulation
+numpy>=1.24.0                     # Numerical computing
+scipy>=1.11.0                     # Scientific computing
+
+# Financial data and analysis
+yfinance>=0.2.18                   # Yahoo Finance API
+talib>=0.4.25                     # Technical analysis library
+mplfinance>=0.12.9b               # Financial plotting
+
+# Statistical analysis
+scikit-learn>=1.3.0               # Machine learning and statistics
+seaborn>=0.12.0                   # Statistical visualization
+
+# 3D and advanced visualization
+ipywidgets>=8.0.0                 # Interactive widgets
+jupyter>=1.0.0                    # Jupyter notebook support
+notebook>=6.5.0                   # Jupyter notebooks
+widgetsnbextension>=4.0.0         # Notebook widget extensions
+
+# Performance optimization
+numba>=0.58.0                     # Just-in-time compilation
+orjson>=3.9.0                     # Fast JSON processing
+
+# Data export and reporting
+weasyprint>=60.0                   # PDF generation
+jinja2>=3.1.0                     # Template engine
+markdown>=3.5.0                   # Markdown support
+
+# Web and networking
+websockets>=12.0                  # WebSocket support
+aiohttp>=3.8.0                    # Async HTTP client
+
+# Optional GPU acceleration (uncomment if needed)
+# cupy-cuda11x>=13.0.0            # GPU acceleration for CUDA 11.x
+# cuml>=23.10.0                    # GPU machine learning
+
+# Development and testing
+pytest>=7.4.0                     # Testing framework
+pytest-asyncio>=0.21.0            # Async testing support
+black>=23.0.0                     # Code formatting
+flake8>=6.0.0                     # Linting
+
+# Logging and monitoring
+structlog>=23.1.0                 # Structured logging
+psutil>=5.9.0                     # System monitoring
+
+# Configuration management
+pydantic>=2.5.0                   # Data validation
+pydantic-settings>=2.1.0          # Settings management
+
+# Time zone handling
+pytz>=2023.3                      # Time zone support
+python-dateutil>=2.8.0            # Date utilities
+
+# Interactive features
+ipython>=8.15.0                   # Interactive Python
+ipyleaflet>=0.17.0                # Interactive maps (optional)
+
+# Data validation
+great-expectations>=0.18.0        # Data validation
+
+# Performance profiling
+memory-profiler>=0.61.0           # Memory profiling
+line-profiler>=4.0.0              # Line-by-line profiling
+
+# Advanced statistical analysis
+statsmodels>=0.14.0               # Statistical models
+arch>=6.2.0                       # Autoregressive conditional heteroskedasticity models
+
+# Portfolio optimization
+cvxpy>=1.3.0                      # Convex optimization
+riskfolio-lib>=6.0.0              # Portfolio optimization
+
+# Alternative plotting libraries
+altair>=5.1.0                     # Declarative statistical visualization
+vega-datasets>=0.9.0              # Example datasets for Altair
+
+# Note on GPU acceleration:
+# Uncomment GPU-related packages if you have CUDA GPU
+# Install with: pip install cupy-cuda11x cuml
+
+# Installation command:
+# pip install -r advanced_visualization_requirements.txt
+
+# For JupyterLab support (optional):
+# pip install jupyterlab>=4.0.0
+
+# For development environment:
+# pip install -r advanced_visualization_requirements.txt -r requirements.txt

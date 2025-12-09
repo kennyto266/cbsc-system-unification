@@ -1,0 +1,611 @@
+{
+  "strategy_name": "poor_strategy",
+  "validation_level": "standard",
+  "validation_timestamp": "2025-11-28T16:54:59.264811",
+  "in_sample_metrics": {
+    "total_return": -0.9999999999976331,
+    "sharpe_ratio": -10.452975897910791,
+    "max_drawdown": -0.9999999999982057,
+    "win_rate": 0.2206266318537859,
+    "trades_count": "532",
+    "volatility": 0.7994150706520735,
+    "calmar_ratio": -0.9999999999994275,
+    "sortino_ratio": -14.855971687227141,
+    "profit_factor": 0.187605470938412
+  },
+  "out_of_sample_metrics": {
+    "total_return": -0.999999999998757,
+    "sharpe_ratio": -29.082277666392866,
+    "max_drawdown": -0.999999999998757,
+    "win_rate": 0.042682926829268296,
+    "trades_count": "311",
+    "volatility": 0.6869525767354355,
+    "calmar_ratio": -1.0,
+    "sortino_ratio": -32.99560084660763,
+    "profit_factor": 0.012230802759278573
+  },
+  "walk_forward_results": {
+    "window_results": [
+      {
+        "window": 1,
+        "train_metrics": {
+          "total_return": 0.06994064172135261,
+          "sharpe_ratio": 0.7646322816299324,
+          "max_drawdown": -0.20945040123447436,
+          "win_rate": 0.43137254901960786,
+          "trades_count": "27",
+          "volatility": 0.8361036945915894,
+          "calmar_ratio": 0.33392460128570417,
+          "sortino_ratio": 1.4042576543658134,
+          "profit_factor": 1.1538086267217387
+        },
+        "test_metrics": {
+          "total_return": -0.17083256983675255,
+          "sharpe_ratio": -7.795051643953414,
+          "max_drawdown": -0.17393732451365304,
+          "win_rate": 0.4166666666666667,
+          "trades_count": 0,
+          "volatility": 0.49031254569337807,
+          "calmar_ratio": -0.9821501527312685,
+          "sortino_ratio": -14.144221350529545,
+          "profit_factor": 0.3009071604814499
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 2,
+        "train_metrics": {
+          "total_return": -0.4409096525049534,
+          "sharpe_ratio": -4.307976036688669,
+          "max_drawdown": -0.529455268404272,
+          "win_rate": 0.37254901960784315,
+          "trades_count": "29",
+          "volatility": 0.6261957195094979,
+          "calmar_ratio": -0.8327609126146072,
+          "sortino_ratio": -7.541120019839877,
+          "profit_factor": 0.48258820132833763
+        },
+        "test_metrics": {
+          "total_return": -0.1973429783647016,
+          "sharpe_ratio": -3.9505065852541956,
+          "max_drawdown": -0.2874162106284361,
+          "win_rate": 0.3333333333333333,
+          "trades_count": 0,
+          "volatility": 1.0398100606883676,
+          "calmar_ratio": -0.6866104661710305,
+          "sortino_ratio": -6.330918552606869,
+          "profit_factor": 0.5087710434671775
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 3,
+        "train_metrics": {
+          "total_return": -0.19720794580940415,
+          "sharpe_ratio": -0.9397000010376808,
+          "max_drawdown": -0.3886657363924195,
+          "win_rate": 0.4117647058823529,
+          "trades_count": "28",
+          "volatility": 0.8283903565188517,
+          "calmar_ratio": -0.5073973014443741,
+          "sortino_ratio": -1.5827839659107101,
+          "profit_factor": 0.8583473625073275
+        },
+        "test_metrics": {
+          "total_return": -0.3341837956306224,
+          "sharpe_ratio": -6.5854951285822825,
+          "max_drawdown": -0.4021653810978267,
+          "win_rate": 0.3333333333333333,
+          "trades_count": 0,
+          "volatility": 1.179166638266678,
+          "calmar_ratio": -0.8309611203191362,
+          "sortino_ratio": -8.651784835456153,
+          "profit_factor": 0.30997161643971194
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 4,
+        "train_metrics": {
+          "total_return": -0.825544607963508,
+          "sharpe_ratio": -9.019423017525407,
+          "max_drawdown": -0.8433569622830852,
+          "win_rate": 0.23529411764705882,
+          "trades_count": "26",
+          "volatility": 0.8973208206597655,
+          "calmar_ratio": -0.9788792230144675,
+          "sortino_ratio": -10.864706308447586,
+          "profit_factor": 0.19244975633390976
+        },
+        "test_metrics": {
+          "total_return": -0.2818803625000105,
+          "sharpe_ratio": -9.337662618776497,
+          "max_drawdown": -0.2818803625000105,
+          "win_rate": 0.3333333333333333,
+          "trades_count": 0,
+          "volatility": 0.7118744859860298,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -11.155818666749694,
+          "profit_factor": 0.16561539473196654
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 5,
+        "train_metrics": {
+          "total_return": -0.7239539850199768,
+          "sharpe_ratio": -8.177938742063565,
+          "max_drawdown": -0.725088175778266,
+          "win_rate": 0.27450980392156865,
+          "trades_count": "29",
+          "volatility": 0.7381121170487042,
+          "calmar_ratio": -0.9984357891961597,
+          "sortino_ratio": -10.880904612771438,
+          "profit_factor": 0.2412593564619461
+        },
+        "test_metrics": {
+          "total_return": -0.31684732813947203,
+          "sharpe_ratio": -15.507446917683621,
+          "max_drawdown": -0.316847328139472,
+          "win_rate": 0.25,
+          "trades_count": 0,
+          "volatility": 0.5021441267890193,
+          "calmar_ratio": -1.0000000000000002,
+          "sortino_ratio": -23.557540854465568,
+          "profit_factor": 0.08809227814012346
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 6,
+        "train_metrics": {
+          "total_return": -0.8161168156094271,
+          "sharpe_ratio": -10.975089005407213,
+          "max_drawdown": -0.8161168156094271,
+          "win_rate": 0.2549019607843137,
+          "trades_count": "35",
+          "volatility": 0.7277750170355035,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -13.857946906756048,
+          "profit_factor": 0.14501776494410182
+        },
+        "test_metrics": {
+          "total_return": -0.3373477824589701,
+          "sharpe_ratio": -15.912642822986447,
+          "max_drawdown": -0.3373477824589701,
+          "win_rate": 0.08333333333333333,
+          "trades_count": 0,
+          "volatility": 0.5276919585222438,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -27.47211280035224,
+          "profit_factor": 0.12090238022485508
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 7,
+        "train_metrics": {
+          "total_return": -0.7823970507792369,
+          "sharpe_ratio": -8.604846051457047,
+          "max_drawdown": -0.7900359669127022,
+          "win_rate": 0.21568627450980393,
+          "trades_count": "34",
+          "volatility": 0.8270621590502575,
+          "calmar_ratio": -0.9903309261180645,
+          "sortino_ratio": -14.06360831350875,
+          "profit_factor": 0.2618886902830222
+        },
+        "test_metrics": {
+          "total_return": -0.3284287979738084,
+          "sharpe_ratio": -15.163221876805856,
+          "max_drawdown": -0.3580157417006569,
+          "win_rate": 0.16666666666666666,
+          "trades_count": 0,
+          "volatility": 0.5354048817936409,
+          "calmar_ratio": -0.9173585396376602,
+          "sortino_ratio": -21.114307746390146,
+          "profit_factor": 0.10579502683981727
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 8,
+        "train_metrics": {
+          "total_return": -0.8155704528255213,
+          "sharpe_ratio": -12.345942749320134,
+          "max_drawdown": -0.8197771680235539,
+          "win_rate": 0.23529411764705882,
+          "trades_count": "42",
+          "volatility": 0.6505331623339717,
+          "calmar_ratio": -0.99486846503889,
+          "sortino_ratio": -17.498880597484238,
+          "profit_factor": 0.14919340447127288
+        },
+        "test_metrics": {
+          "total_return": -0.4657441031094437,
+          "sharpe_ratio": -13.1634346023168,
+          "max_drawdown": -0.5030739582851294,
+          "win_rate": 0.16666666666666666,
+          "trades_count": 0,
+          "volatility": 0.9451986021532902,
+          "calmar_ratio": -0.9257964866578762,
+          "sortino_ratio": -22.314946065082076,
+          "profit_factor": 0.14215956878465416
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 9,
+        "train_metrics": {
+          "total_return": -0.8314111189210374,
+          "sharpe_ratio": -10.928342465578474,
+          "max_drawdown": -0.8431908644540994,
+          "win_rate": 0.21568627450980393,
+          "trades_count": "36",
+          "volatility": 0.7667687903937743,
+          "calmar_ratio": -0.9860295621908943,
+          "sortino_ratio": -16.002015311735537,
+          "profit_factor": 0.1713799379990035
+        },
+        "test_metrics": {
+          "total_return": -0.356982978385189,
+          "sharpe_ratio": -9.343057390438618,
+          "max_drawdown": -0.3971881343077932,
+          "win_rate": 0.16666666666666666,
+          "trades_count": 0,
+          "volatility": 0.9334423624105057,
+          "calmar_ratio": -0.8987755362010689,
+          "sortino_ratio": -13.410295994804978,
+          "profit_factor": 0.23391525174727235
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 10,
+        "train_metrics": {
+          "total_return": -0.9059145195428828,
+          "sharpe_ratio": -14.823496013666617,
+          "max_drawdown": -0.9117972898035082,
+          "win_rate": 0.11764705882352941,
+          "trades_count": "45",
+          "volatility": 0.7525125479783834,
+          "calmar_ratio": -0.9935481599622948,
+          "sortino_ratio": -21.517927567048478,
+          "profit_factor": 0.12006157212525734
+        },
+        "test_metrics": {
+          "total_return": -0.5799088228266387,
+          "sharpe_ratio": -30.308765789809172,
+          "max_drawdown": -0.5799088228266387,
+          "win_rate": 0.0,
+          "trades_count": 0,
+          "volatility": 0.5751320241634694,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -30.308765789809176,
+          "profit_factor": 0.0
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 11,
+        "train_metrics": {
+          "total_return": -0.9462978792406788,
+          "sharpe_ratio": -17.671597914686973,
+          "max_drawdown": -0.9462978792406788,
+          "win_rate": 0.0784313725490196,
+          "trades_count": "44",
+          "volatility": 0.778774629457063,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -23.321632185771595,
+          "profit_factor": 0.07294222676970816
+        },
+        "test_metrics": {
+          "total_return": -0.3977392608275947,
+          "sharpe_ratio": -17.2232676557941,
+          "max_drawdown": -0.39773926082759475,
+          "win_rate": 0.08333333333333333,
+          "trades_count": 0,
+          "volatility": 0.5974222773152296,
+          "calmar_ratio": -0.9999999999999999,
+          "sortino_ratio": -25.6739391468218,
+          "profit_factor": 0.09477241790550175
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 12,
+        "train_metrics": {
+          "total_return": -0.8917579563462342,
+          "sharpe_ratio": -15.984126756303862,
+          "max_drawdown": -0.8917579563462342,
+          "win_rate": 0.1568627450980392,
+          "trades_count": "41",
+          "volatility": 0.6604915767451951,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -20.738989304040064,
+          "profit_factor": 0.0841136265306125
+        },
+        "test_metrics": {
+          "total_return": -0.4599766054310842,
+          "sharpe_ratio": -15.72157372414382,
+          "max_drawdown": -0.4599766054310842,
+          "win_rate": 0.08333333333333333,
+          "trades_count": 0,
+          "volatility": 0.7856559917622269,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -22.017333016504296,
+          "profit_factor": 0.10140454949496035
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 13,
+        "train_metrics": {
+          "total_return": -0.9405822874399677,
+          "sharpe_ratio": -19.67127546080611,
+          "max_drawdown": -0.9405822874399677,
+          "win_rate": 0.09803921568627451,
+          "trades_count": "47",
+          "volatility": 0.6794663424974778,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -28.20163246474549,
+          "profit_factor": 0.07202318519322827
+        },
+        "test_metrics": {
+          "total_return": -0.5370686099470052,
+          "sharpe_ratio": -20.210459802792354,
+          "max_drawdown": -0.5370686099470052,
+          "win_rate": 0.0,
+          "trades_count": 0,
+          "volatility": 0.7620892202518377,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -20.210459802792357,
+          "profit_factor": 0.0
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 14,
+        "train_metrics": {
+          "total_return": -0.953833637437433,
+          "sharpe_ratio": -20.599174750057955,
+          "max_drawdown": -0.953833637437433,
+          "win_rate": 0.09803921568627451,
+          "trades_count": "41",
+          "volatility": 0.7046545524073156,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -23.294300509770427,
+          "profit_factor": 0.02302148773309877
+        },
+        "test_metrics": {
+          "total_return": -0.44537834288405664,
+          "sharpe_ratio": -13.143104882070828,
+          "max_drawdown": -0.4552169809472377,
+          "win_rate": 0.16666666666666666,
+          "trades_count": 0,
+          "volatility": 0.892820348211489,
+          "calmar_ratio": -0.9783869265098407,
+          "sortino_ratio": -19.465906084245738,
+          "profit_factor": 0.13157481827834647
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 15,
+        "train_metrics": {
+          "total_return": -0.953430468010016,
+          "sharpe_ratio": -19.690619953810625,
+          "max_drawdown": -0.9534304680100161,
+          "win_rate": 0.09803921568627451,
+          "trades_count": "40",
+          "volatility": 0.7343740702332775,
+          "calmar_ratio": -0.9999999999999999,
+          "sortino_ratio": -25.150953975657668,
+          "profit_factor": 0.05064620524284927
+        },
+        "test_metrics": {
+          "total_return": -0.5122850038997633,
+          "sharpe_ratio": -20.369153779274008,
+          "max_drawdown": -0.5122850038997633,
+          "win_rate": 0.16666666666666666,
+          "trades_count": 0,
+          "volatility": 0.7080688454397508,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -28.588296902117836,
+          "profit_factor": 0.04403062854040145
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 16,
+        "train_metrics": {
+          "total_return": -0.9668384833634432,
+          "sharpe_ratio": -27.625978260482533,
+          "max_drawdown": -0.9671424510870864,
+          "win_rate": 0.0784313725490196,
+          "trades_count": "47",
+          "volatility": 0.5839721506374699,
+          "calmar_ratio": -0.9996857053236557,
+          "sortino_ratio": -33.754523726637515,
+          "profit_factor": 0.01611016605730876
+        },
+        "test_metrics": {
+          "total_return": -0.685267396032324,
+          "sharpe_ratio": -35.60277643164387,
+          "max_drawdown": -0.685267396032324,
+          "win_rate": 0.0,
+          "trades_count": 0,
+          "volatility": 0.6450087429848976,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -35.602776431643875,
+          "profit_factor": 0.0
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 17,
+        "train_metrics": {
+          "total_return": -0.9823089180546115,
+          "sharpe_ratio": -24.739858413123113,
+          "max_drawdown": -0.9823089180546115,
+          "win_rate": 0.058823529411764705,
+          "trades_count": "48",
+          "volatility": 0.7636559661442807,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -30.563618671359553,
+          "profit_factor": 0.030806722829242572
+        },
+        "test_metrics": {
+          "total_return": -0.7481735832708694,
+          "sharpe_ratio": -26.688631148077487,
+          "max_drawdown": -0.7481735832708694,
+          "win_rate": 0.0,
+          "trades_count": 0,
+          "volatility": 1.005877841640538,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -26.688631148077487,
+          "profit_factor": 0.0
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 18,
+        "train_metrics": {
+          "total_return": -0.9853872051921065,
+          "sharpe_ratio": -26.73025298898856,
+          "max_drawdown": -0.9853872051921065,
+          "win_rate": 0.0392156862745098,
+          "trades_count": "51",
+          "volatility": 0.7395716469794592,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -30.137057995595477,
+          "profit_factor": 0.01704470876490508
+        },
+        "test_metrics": {
+          "total_return": -0.6949805652982248,
+          "sharpe_ratio": -37.91686435628507,
+          "max_drawdown": -0.6949805652982248,
+          "win_rate": 0.0,
+          "trades_count": 0,
+          "volatility": 0.6216917886415657,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -37.916864356285075,
+          "profit_factor": 0.0
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 19,
+        "train_metrics": {
+          "total_return": -0.9844584469859267,
+          "sharpe_ratio": -33.142956216450564,
+          "max_drawdown": -0.9844584469859267,
+          "win_rate": 0.058823529411764705,
+          "trades_count": "48",
+          "volatility": 0.5915151301667316,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -41.36671717755298,
+          "profit_factor": 0.011334169208208535
+        },
+        "test_metrics": {
+          "total_return": -0.7194200636019146,
+          "sharpe_ratio": -35.12396131133815,
+          "max_drawdown": -0.7194200636019146,
+          "win_rate": 0.0,
+          "trades_count": 0,
+          "volatility": 0.714213269469385,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -35.12396131133816,
+          "profit_factor": 0.0
+        },
+        "train_size": 52,
+        "test_size": 13
+      },
+      {
+        "window": 20,
+        "train_metrics": {
+          "total_return": -0.9924253282244994,
+          "sharpe_ratio": -34.479705179346126,
+          "max_drawdown": -0.9924253282244994,
+          "win_rate": 0.0196078431372549,
+          "trades_count": "50",
+          "volatility": 0.6612265172756322,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -35.955810765933215,
+          "profit_factor": 0.00028643705124932874
+        },
+        "test_metrics": {
+          "total_return": -0.6276116483261909,
+          "sharpe_ratio": -25.183594889187912,
+          "max_drawdown": -0.6276116483261909,
+          "win_rate": 0.08333333333333333,
+          "trades_count": 0,
+          "volatility": 0.7802004390745276,
+          "calmar_ratio": -1.0,
+          "sortino_ratio": -33.44485535704903,
+          "profit_factor": 0.03190397137380942
+        },
+        "train_size": 52,
+        "test_size": 13
+      }
+    ],
+    "stability_metrics": {
+      "performance_stability": 0
+    },
+    "performance_degradation": 0,
+    "trade_frequency": 0.0,
+    "successful_windows": 0
+  },
+  "statistical_tests": {
+    "sharpe_significance": {
+      "train": 289.3039303633547,
+      "test": 526.7024499268794,
+      "degradation": -0.8205851861928082
+    },
+    "distribution_stability": {
+      "ks_statistic": 0.44719957969814683,
+      "p_value": 5.2781826360453265e-42,
+      "is_stable": "False"
+    },
+    "autocorrelation": {
+      "train": 0.06702222346086621,
+      "test": -0.0171396649046021,
+      "stability": 0.9158381116345317
+    },
+    "overfitting_indicators": {
+      "trade_frequency": 0.0,
+      "successful_window_ratio": 0.0,
+      "performance_degradation": 0
+    }
+  },
+  "overfitting_risk": "critical",
+  "validation_score": 0,
+  "is_accepted": false,
+  "validation_config": {
+    "validation_level": "ValidationLevel.STANDARD",
+    "walk_forward_windows": 20,
+    "min_trades_per_window": 3,
+    "stability_threshold": 0.7,
+    "statistical_significance": 0.05,
+    "out_of_sample_ratio": 0.3,
+    "max_correlation_with_others": 0.8
+  }
+}

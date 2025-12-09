@@ -1,0 +1,247 @@
+# GPU Accelerated Non-Price TA Backtest Configuration
+# GPU加速非價格技術分析回測系統配置
+
+# GPU Configuration
+gpu:
+  # GPU Detection and Configuration
+  detection:
+    auto_detect: true
+    fallback_to_cpu: true
+    min_compute_capability: 3.5  # Minimum CUDA compute capability
+    min_memory_mb: 2048  # Minimum GPU memory in MB
+
+  # GPU Memory Management
+  memory:
+    max_allocation_ratio: 0.8  # Maximum GPU memory usage ratio
+    batch_size: 1000  # Batch size for GPU operations
+    enable_memory_pool: true
+    cleanup_threshold: 0.9  # Clean up when memory usage > 90%
+
+  # GPU Performance Settings
+  performance:
+    enable_mixed_precision: false  # Use mixed precision for faster computation
+    thread_block_size: 256  # CUDA thread block size
+    max_grid_size: 65535  # Maximum CUDA grid size
+    enable_profiling: false  # Enable CUDA profiling
+
+# Data Sources Configuration (Extended from existing)
+data_sources:
+  # Stock Price Data
+  stock_data:
+    provider: "central_api"
+    base_url: "http://18.180.162.113:9191"
+    endpoint: "/inst/getInst"
+    timeout: 30
+    retry_count: 3
+    symbols:
+      default: ["0700.HK"]
+      hsi_components: [
+        "0700.HK", "0941.HK", "1398.HK", "1299.HK", "2318.HK",
+        "0388.HK", "0883.HK", "0005.HK", "0939.HK", "3988.HK"
+      ]
+
+  # Non-Price Government Data Sources (9 sources)
+  government_data:
+    enabled_sources: ["hibor", "monetary_base", "gdp", "exchange_rate", "property", "retail", "visitor", "trade", "employment"]
+
+    # Source-specific configurations
+    hibor:
+      enabled: true
+      priority: 1
+      update_frequency: "daily"
+      api_endpoint: "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily"
+      cache_duration_hours: 24
+
+    monetary_base:
+      enabled: true
+      priority: 1
+      update_frequency: "daily"
+      api_endpoint: "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-monetary-base"
+      cache_duration_hours: 24
+
+# VectorBT Integration Configuration
+vectorbt:
+  # VectorBT Settings
+  settings:
+    enable_gpu: true
+    use_numba: true
+    chunk_size: "auto"  # Auto-detect optimal chunk size
+    max_workers: 4  # Parallel workers for VectorBT operations
+
+  # Strategy Parameters
+  strategies:
+    rsi:
+      default_params:
+        period: 14
+        upper_band: 70
+        lower_band: 30
+      optimization_range:
+        period: [10, 50]
+        upper_band: [65, 80]
+        lower_band: [20, 35]
+
+    macd:
+      default_params:
+        fast_period: 12
+        slow_period: 26
+        signal_period: 9
+      optimization_range:
+        fast_period: [8, 20]
+        slow_period: [20, 40]
+        signal_period: [7, 15]
+
+    bollinger:
+      default_params:
+        period: 20
+        std_dev: 2.0
+      optimization_range:
+        period: [10, 50]
+        std_dev: [1.5, 3.0]
+
+    sma_crossover:
+      default_params:
+        short_period: 20
+        long_period: 50
+      optimization_range:
+        short_period: [10, 30]
+        long_period: [40, 100]
+
+# Parameter Optimization Configuration
+optimization:
+  # Optimization Settings
+  settings:
+    max_workers: 32  # Maximum parallel optimization workers
+    chunk_size: 100  # Parameter combinations per chunk
+    timeout_seconds: 1800  # 30 minutes timeout
+
+  # GPU Optimization
+  gpu_optimization:
+    enabled: true
+    batch_size: 1000  # GPU batch size
+    memory_limit_mb: 4096  # GPU memory limit
+    enable_parallel: true
+
+  # Parameter Search Ranges (0-300 as specified)
+  parameter_ranges:
+    rsi_period: [1, 300]
+    macd_fast: [1, 50]
+    macd_slow: [51, 300]
+    macd_signal: [1, 20]
+    bollinger_period: [1, 300]
+    bollinger_std: [1, 5]
+    sma_short: [1, 100]
+    sma_long: [101, 300]
+
+# Performance Monitoring Configuration
+performance_monitoring:
+  # Metrics Collection
+  metrics:
+    enable_gpu_metrics: true
+    enable_cpu_metrics: true
+    enable_memory_metrics: true
+    collection_interval_seconds: 10
+
+  # Alerts
+  alerts:
+    gpu_memory_threshold: 90  # Alert when GPU memory usage > 90%
+    cpu_memory_threshold: 85  # Alert when CPU memory usage > 85%
+    temperature_threshold: 80  # Alert when GPU temperature > 80°C
+
+  # Logging
+  logging:
+    level: "INFO"
+    enable_file_logging: true
+    log_file_path: "logs/gpu_ta_performance.log"
+    max_file_size_mb: 100
+    backup_count: 5
+
+# Output and Reporting Configuration
+output:
+  # Result Storage
+  results:
+    base_path: "results/"
+    file_format: "json"  # json, csv, parquet
+    compression: true
+    include_metadata: true
+
+  # HTML Reports
+  html_reports:
+    enabled: true
+    template: "default"
+    include_charts: true
+    chart_library: "plotly"
+
+  # Performance Reports
+  performance_reports:
+    enabled: true
+    include_gpu_stats: true
+    include_timing_breakdown: true
+    export_format: ["html", "json"]
+
+# System Configuration
+system:
+  # General Settings
+  settings:
+    timezone: "Asia/Hong_Kong"
+    date_format: "%Y-%m-%d"
+    datetime_format: "%Y-%m-%d %H:%M:%S"
+
+  # Caching
+  caching:
+    enabled: true
+    cache_dir: "cache/"
+    max_cache_size_gb: 10
+    cleanup_interval_hours: 24
+
+  # Error Handling
+  error_handling:
+    max_retries: 3
+    retry_delay_seconds: 2
+    exponential_backoff: true
+    fallback_to_cpu_on_gpu_error: true
+
+# Security Configuration
+security:
+  # API Keys and Credentials
+  credentials:
+    # Store sensitive credentials in environment variables
+    hkma_api_key: "${HKMA_API_KEY}"
+    data_api_key: "${DATA_API_KEY}"
+
+  # Rate Limiting
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 100
+    burst_size: 20
+
+  # Data Encryption
+  encryption:
+    encrypt_cached_data: false  # Set to true for sensitive data
+    encryption_algorithm: "AES-256"
+
+# Development and Testing Configuration
+development:
+  # Debug Settings
+  debug:
+    enable_debug_mode: false
+    verbose_logging: false
+    profile_performance: false
+
+  # Test Settings
+  testing:
+    use_mock_data: false
+    small_dataset_only: false
+    skip_gpu_tests: false
+
+  # Experimental Features
+  experimental:
+    enable_cuda_graphs: false  # Experimental CUDA graphs optimization
+    enable_tensor_cores: false  # Use Tensor Cores if available
+    enable_multi_gpu: false  # Multi-GPU support (experimental)
+
+# Version Information
+version:
+  config_version: "1.0.0"
+  compatible_gpu_version: ">=11.0"
+  compatible_python_version: ">=3.8"
+  last_updated: "2025-11-24"

@@ -1,0 +1,236 @@
+# Data Authenticity Verification Rules
+# 数据真实性验证规则
+
+version: "1.0.0"
+description: "Core rules for data authenticity verification"
+
+rules:
+  # Rule 1: HKMA Government Data Auto-Approval
+  # 规则1：HKMA政府数据自动批准
+  - id: "hkma_government_data_approval"
+    name: "HKMA Government Data Auto-Approval"
+    description: "Auto-approve data from trusted HKMA government sources"
+    priority: 1  # CRITICAL
+    enabled: true
+    tags: ["hkma", "government", "auto-approval"]
+    conditions:
+      - field: "data.source"
+        operator: "eq"
+        value: "hkma.gov.hk"
+      - field: "data.domain"
+        operator: "in"
+        value: ["api.hkma.gov.hk", "data.hkma.gov.hk"]
+    actions:
+      - action_type: "require_verifier"
+        parameters:
+          verifiers: ["digital_signature", "domain_validation"]
+      - action_type: "set_priority"
+        parameters:
+          verifier: "statistical_analysis"
+          priority: 90
+      - action_type: "approve_data"
+        parameters:
+          confidence: 0.9
+          auto_approve: true
+
+  # Rule 2: Suspicious Domain Detection
+  # 规则2：可疑域名检测
+  - id: "suspicious_domain_detection"
+    name: "Suspicious Domain Detection"
+    description: "Flag data from suspicious or untrusted domains"
+    priority: 2  # HIGH
+    enabled: true
+    tags: ["security", "domain", "suspicious"]
+    conditions:
+      - field: "data.domain"
+        operator: "not_in"
+        value: ["*.gov.hk", "*.hkma.gov.hk", "*.data.gov.hk", "localhost", "127.0.0.1"]
+      - field: "data.source"
+        operator: "not_contains"
+        value: "official"
+    actions:
+      - action_type: "require_verifier"
+        parameters:
+          verifiers: ["domain_validation", "statistical_analysis", "regulatory_compliance"]
+      - action_type: "set_priority"
+        parameters:
+          verifier: "data_integrity"
+          priority: 95
+      - action_type: "log_warning"
+        parameters:
+          message: "Data received from untrusted domain, enhanced verification required"
+
+  # Rule 3: High-Value Financial Data Verification
+  # 规则3：高价值金融数据验证
+  - id: "high_value_financial_data"
+    name: "High-Value Financial Data Verification"
+    description: "Enhanced verification for high-value financial data"
+    priority: 1  # CRITICAL
+    enabled: true
+    tags: ["financial", "high-value", "enhanced-verification"]
+    conditions:
+      - field: "data.type"
+        operator: "in"
+        value: ["hibor_rate", "exchange_rate", "monetary_base"]
+      - field: "data.value_amount"
+        operator: "gt"
+        value: 1000000  # 1M HKD
+    actions:
+      - action_type: "require_verifier"
+        parameters:
+          verifiers: ["digital_signature", "blockchain_verification", "data_integrity", "statistical_analysis"]
+      - action_type: "adjust_timeout"
+        parameters:
+          timeout: 120
+      - action_type: "require_additional_check"
+        parameters:
+          checks: ["manual_review", "cross_reference"]
+          timeout: 300
+
+  # Rule 4: Real-Time Data Stream Validation
+  # 规则4：实时数据流验证
+  - id: "real_time_stream_validation"
+    name: "Real-Time Data Stream Validation"
+    description: "Optimized verification for real-time data streams"
+    priority: 3  # NORMAL
+    enabled: true
+    tags: ["real-time", "streaming", "performance"]
+    conditions:
+      - field: "data.stream_type"
+        operator: "eq"
+        value: "real_time"
+      - field: "data.frequency"
+        operator: "gt"
+        value: 1  # More than 1 update per second
+    actions:
+      - action_type: "require_verifier"
+        parameters:
+          verifiers: ["statistical_analysis", "historical_pattern"]
+      - action_type: "exclude_verifier"
+        parameters:
+          verifiers: ["blockchain_verification"]  # Exclude for performance
+      - action_type: "adjust_timeout"
+        parameters:
+          timeout: 10
+      - action_type: "cache_result"
+        parameters:
+          cache_key: "real_time_verification"
+          ttl: 60
+
+  # Rule 5: Historical Data Anomaly Detection
+  # 规则5：历史数据异常检测
+  - id: "historical_anomaly_detection"
+    name: "Historical Data Anomaly Detection"
+    description: "Detect anomalies in historical data patterns"
+    priority: 2  # HIGH
+    enabled: true
+    tags: ["historical", "anomaly", "pattern-detection"]
+    conditions:
+      - field: "data.type"
+        operator: "in"
+        value: ["historical", "backfill"]
+      - field: "statistical.outlier_score"
+        operator: "gt"
+        value: 2.0
+    actions:
+      - action_type: "require_verifier"
+        parameters:
+          verifiers: ["historical_pattern", "statistical_analysis", "data_integrity"]
+      - action_type: "log_warning"
+        parameters:
+          message: "Statistical anomaly detected in historical data"
+      - action_type: "require_additional_check"
+        parameters:
+          checks: ["manual_verification"]
+          timeout: 1800  # 30 minutes
+
+  # Rule 6: Regulatory Compliance Check
+  # 规则6：监管合规检查
+  - id: "regulatory_compliance_check"
+    name: "Regulatory Compliance Check"
+    description: "Ensure data meets regulatory compliance requirements"
+    priority: 1  # CRITICAL
+    enabled: true
+    tags: ["regulatory", "compliance", "hkma"]
+    conditions:
+      - field: "data.category"
+        operator: "in"
+        value: ["financial", "economic", "market_data"]
+      - field: "compliance.required_fields"
+        operator: "is_not_null"
+    actions:
+      - action_type: "require_verifier"
+        parameters:
+          verifiers: ["regulatory_compliance", "data_integrity"]
+      - action_type: "modify_context"
+        parameters:
+          updates:
+            compliance_check_required: true
+            audit_trail_enabled: true
+      - action_type: "log_info"
+        parameters:
+          message: "Regulatory compliance check initiated"
+
+  # Rule 7: Batch Processing Optimization
+  # 规则7：批处理优化
+  - id: "batch_processing_optimization"
+    name: "Batch Processing Optimization"
+    description: "Optimize verification for batch data processing"
+    priority: 4  # LOW
+    enabled: true
+    tags: ["batch", "performance", "optimization"]
+    conditions:
+      - field: "processing.mode"
+        operator: "eq"
+        value: "batch"
+      - field: "batch.size"
+        operator: "gt"
+        value: 100
+    actions:
+      - action_type: "require_verifier"
+        parameters:
+          verifiers: ["statistical_analysis", "data_integrity"]
+      - action_type: "exclude_verifier"
+        parameters:
+          verifiers: ["blockchain_verification", "digital_signature"]
+      - action_type: "adjust_timeout"
+        parameters:
+          timeout: 300
+      - action_type: "cache_result"
+        parameters:
+          cache_key: "batch_verification"
+          ttl: 3600
+
+  # Rule 8: Emergency Data Handling
+  # 规则8：紧急数据处理
+  - id: "emergency_data_handling"
+    name: "Emergency Data Handling"
+    description: "Special handling for emergency or critical data"
+    priority: 1  # CRITICAL
+    enabled: true
+    tags: ["emergency", "critical", "priority"]
+    conditions:
+      - field: "data.priority"
+        operator: "eq"
+        value: "emergency"
+      - field: "data.timestamp"
+        operator: "matches"
+        value: ".*CRITICAL.*"
+    actions:
+      - action_type: "require_verifier"
+        parameters:
+          verifiers: ["digital_signature", "regulatory_compliance", "data_integrity"]
+      - action_type: "set_priority"
+        parameters:
+          verifier: "all"
+          priority: 100
+      - action_type: "adjust_timeout"
+        parameters:
+          timeout: 5
+      - action_type: "approve_data"
+        parameters:
+          confidence: 0.95
+          auto_approve: true
+      - action_type: "log_warning"
+        parameters:
+          message: "Emergency data processed with priority handling"

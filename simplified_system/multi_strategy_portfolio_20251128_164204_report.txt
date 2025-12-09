@@ -1,0 +1,37 @@
+================================================================================
+Multi-Strategy Portfolio Analysis Report
+Generated: 2025-11-28 16:42:04
+Strategies in Portfolio: 6
+================================================================================
+
+Strategy Weights:
+------------------------------
+RSI_Conservative: 21.1% (Type: RSI, Sharpe: 0.835)
+RSI_Moderate: 37.5% (Type: RSI, Sharpe: 1.486)
+RSI_Aggressive: 21.2% (Type: RSI, Sharpe: 0.838)
+MA_Short: 0.0% (Type: MA, Sharpe: -1.240)
+MA_Medium: 12.6% (Type: MA, Sharpe: 0.500)
+MACD_Standard: 7.6% (Type: MACD, Sharpe: 0.300)
+
+Portfolio Metrics:
+-------------------------
+Expected Annual Return: 0.45%
+Expected Sharpe Ratio: 0.019
+Expected Max Drawdown: -7.55%
+Portfolio Volatility: 23.78%
+Win Rate Estimate: 50.0%
+Diversification Ratio: 1.68
+
+Risk Analysis:
+--------------------
+WARNING: Low Sharpe ratio - consider strategy selection
+WARNING: Low diversification - consider adding uncorrelated strategies
+
+Correlation Analysis:
+-------------------------
+Highly correlated strategy pairs (>0.7):
+  RSI_Moderate <-> RSI_Aggressive: 0.80
+  MA_Short <-> MA_Medium: 0.90
+
+Recommendations:
+--------------------

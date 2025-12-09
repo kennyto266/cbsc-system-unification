@@ -1,0 +1,94 @@
+[
+  {
+    "strategy_id": "RC_MB_KDJ_0",
+    "source_code": "MB",
+    "source_name": "貨幣基礎數據",
+    "indicator_type": "KDJ",
+    "config": {
+      "k_period": 10,
+      "d_period": 2
+    },
+    "performance": {
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "volatility": 0,
+      "sharpe_ratio": 0,
+      "max_drawdown": 0.0,
+      "trades": 0,
+      "win_rate": 0.0,
+      "final_value": 100000,
+      "peak_value": 100000,
+      "risk_controlled": true
+    },
+    "data_type": "REAL_HKMA_RISK_CONTROLLED"
+  },
+  {
+    "strategy_id": "RC_MB_KDJ_1",
+    "source_code": "MB",
+    "source_name": "貨幣基礎數據",
+    "indicator_type": "KDJ",
+    "config": {
+      "k_period": 14,
+      "d_period": 3
+    },
+    "performance": {
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "volatility": 0,
+      "sharpe_ratio": 0,
+      "max_drawdown": 0.0,
+      "trades": 0,
+      "win_rate": 0.0,
+      "final_value": 100000,
+      "peak_value": 100000,
+      "risk_controlled": true
+    },
+    "data_type": "REAL_HKMA_RISK_CONTROLLED"
+  },
+  {
+    "strategy_id": "RC_MB_KDJ_2",
+    "source_code": "MB",
+    "source_name": "貨幣基礎數據",
+    "indicator_type": "KDJ",
+    "config": {
+      "k_period": 8,
+      "d_period": 2
+    },
+    "performance": {
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "volatility": 0,
+      "sharpe_ratio": 0,
+      "max_drawdown": 0.0,
+      "trades": 0,
+      "win_rate": 0.0,
+      "final_value": 100000,
+      "peak_value": 100000,
+      "risk_controlled": true
+    },
+    "data_type": "REAL_HKMA_RISK_CONTROLLED"
+  },
+  {
+    "strategy_id": "RC_MB_KDJ_3",
+    "source_code": "MB",
+    "source_name": "貨幣基礎數據",
+    "indicator_type": "KDJ",
+    "config": {
+      "k_period": 20,
+      "d_period": 5
+    },
+    "performance": {
+      "total_return": 0.0,
+      "annual_return": 0.0,
+      "volatility": 0,
+      "sharpe_ratio": 0,
+      "max_drawdown": 0.0,
+      "trades": 0,
+      "win_rate": 0.0,
+      "final_value": 100000,
+      "peak_value": 100000,
+      "risk_controlled": true
+    },
+    "data_type": "REAL_HKMA_RISK_CONTROLLED"
+  }
+]

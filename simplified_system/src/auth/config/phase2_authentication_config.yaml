@@ -1,0 +1,297 @@
+# Phase 2: Source Authentication Layer Configuration
+# 阶段2：源认证层配置
+
+version: "2.0.0"
+description: "Source Authentication Layer configuration for enhanced security"
+
+# Digital Signature Verifier Configuration
+digital_signature_verifier:
+  enabled: true
+  priority: 90
+  supported_algorithms:
+    - "RS256"  # RSA using SHA-256
+    - "ES256"  # ECDSA using P-256 and SHA-256
+    - "HS256"  # HMAC using SHA-256
+
+  # Key store configuration
+  key_store_path: "config/auth/keys/"
+
+  # Trusted issuers for signature validation
+  trusted_issuers:
+    - "hkma.gov.hk"
+    - "api.hkma.gov.hk"
+    - "data.gov.hk"
+    - "18.180.162.113"  # Stock API server
+
+  # Performance settings
+  max_signature_size: 8192  # 8KB maximum signature size
+  verification_timeout: 10.0  # 10 seconds timeout
+
+  # Government API specific settings
+  government_apis:
+    hkma:
+      base_url: "https://api.hkma.gov.hk"
+      key_id: "hkma_public_key"
+      algorithm: "RS256"
+      required_headers:
+        - "X-HKMA-Signature"
+        - "X-HKMA-Timestamp"
+
+    stock_api:
+      base_url: "http://18.180.162.113:9191"
+      key_id: "stock_api_key"
+      algorithm: "HS256"  # HMAC for internal API
+      shared_secret_env: "STOCK_API_SECRET"
+
+# TLS Certificate Validator Configuration
+tls_certificate_validator:
+  enabled: true
+  priority: 95
+
+  # Certificate pinning configuration
+  certificate_store_path: "config/auth/certificates/"
+
+  # Critical endpoints requiring certificate pinning
+  critical_endpoints:
+    - "api.hkma.gov.hk:443"
+    - "18.180.162.113:9191"  # Note: HTTP only - security issue identified
+    - "data.gov.hk:443"
+
+  # Validation settings
+  validation_timeout: 30.0  # 30 seconds
+  max_chain_length: 10
+  allow_self_signed: false  # Set to false for production
+
+  # CRL/OCSP settings
+  enable_crl_checking: true
+  enable_ocsp_checking: true
+  crl_cache_timeout: 3600  # 1 hour
+
+  # Pinned certificates (SHA-256 fingerprints)
+  pinned_certificates:
+    hkma_api: "BASE64_SHA256_FINGERPRINT_HERE"
+    stock_api: "BASE64_SHA256_FINGERPRINT_HERE"
+
+  # Security recommendations
+  security_recommendations:
+    - "Upgrade stock API to HTTPS"
+    - "Implement proper certificate management"
+    - "Enable OCSP stapling for better performance"
+
+# Endpoint Whitelist Verifier Configuration
+endpoint_whitelist_verifier:
+  enabled: true
+  priority: 80
+
+  # File paths
+  whitelist_path: "config/auth/whitelist.json"
+  approval_queue_path: "config/auth/approval_queue.json"
+
+  # DNS validation settings
+  enable_dns_validation: true
+  dns_timeout: 5.0
+
+  # Health monitoring
+  health_check_interval: 300  # 5 minutes
+  max_redirects: 3
+
+  # Security settings
+  block_private_ips: true
+  block_suspicious_tlds: true
+  suspicious_tlds:
+    - ".tk"
+    - ".ml"
+    - ".ga"
+    - ".cf"
+    - ".pw"
+    - ".top"
+    - ".click"
+    - ".xyz"
+
+  # Pre-approved endpoints
+  approved_endpoints:
+    # Hong Kong Government APIs
+    "api.hkma.gov.hk":
+      owner: "Hong Kong Monetary Authority"
+      purpose: "Financial data API"
+      approved: true
+      added_date: "2024-01-01"
+      required_dns_records: ["A", "AAAA", "TXT"]
+
+    "data.gov.hk":
+      owner: "Hong Kong Government"
+      purpose: "Open data portal"
+      approved: true
+      added_date: "2024-01-01"
+      required_dns_records: ["A", "AAAA"]
+
+    # Internal Stock API (SECURITY ISSUE: HTTP only)
+    "18.180.162.113":
+      owner: "Internal Stock API"
+      purpose: "Stock market data"
+      approved: true
+      security_risk: "HTTP only - unencrypted"
+      added_date: "2024-01-01"
+      required_dns_records: ["A"]
+      port_specific:
+        "9191": "Stock data API"
+      recommendations:
+        - "Upgrade to HTTPS"
+        - "Implement TLS encryption"
+        - "Add certificate-based authentication"
+
+# Rate Limit Anomaly Detector Configuration
+rate_limit_anomaly_detector:
+  enabled: true
+  priority: 70
+
+  # Sliding window configuration
+  window_sizes: [60, 300, 900]  # 1min, 5min, 15min
+  max_requests_per_window:
+    60: 100    # 100 requests per minute
+    300: 400   # 400 requests per 5 minutes
+    900: 1000  # 1000 requests per 15 minutes
+
+  # Adaptive thresholds
+  enable_adaptive_thresholds: true
+  adaptive_factor: 0.2  # 20% adjustment
+  min_threshold: 10
+  max_threshold: 10000
+
+  # Graduated response levels
+  response_levels:
+    warning:
+      threshold: 0.7     # 70% of limit
+      action: "log_warning"
+      delay_ms: 0
+    throttle:
+      threshold: 0.85    # 85% of limit
+      action: "add_delay"
+      delay_ms: 1000     # 1 second delay
+    block:
+      threshold: 1.0     # 100% of limit
+      action: "block_request"
+      delay_ms: 0
+
+  # Configuration
+  cleanup_interval: 300  # 5 minutes
+  block_duration: 300    # 5 minutes
+  statistics_file: "config/auth/rate_limit_stats.json"
+
+# Integration Configuration
+integration:
+  # Data source mapping to verifiers
+  data_source_verifiers:
+    hkma_apis:
+      - "digital_signature_verifier"
+      - "tls_certificate_validator"
+      - "endpoint_whitelist_verifier"
+
+    stock_api:
+      - "endpoint_whitelist_verifier"
+      - "rate_limit_anomaly_detector"
+      # Note: TLS validation limited due to HTTP
+      # Note: Digital signature not implemented
+
+    government_data:
+      - "digital_signature_verifier"
+      - "tls_certificate_validator"
+      - "endpoint_whitelist_verifier"
+
+  # Global security policies
+  security_policies:
+    # Require at least 2 verifiers for critical data
+    min_verifiers_critical: 2
+
+    # Confidence thresholds
+    confidence_thresholds:
+      authentic: 0.85
+      suspicious: 0.5
+      falsified: 0.2
+
+    # Timeout settings
+    global_timeout: 60.0  # 60 seconds maximum
+
+    # Fail-safe settings
+    fail_secure: true    # Block if verification fails
+    audit_all_failures: true
+
+# Alert Configuration
+alerts:
+  enabled: true
+
+  # Alert channels
+  channels:
+    - "log"
+    - "telegram"  # If telegram bot is configured
+    - "email"     # If email is configured
+
+  # Alert conditions
+  conditions:
+    critical_failures:
+      - "TLS certificate validation failure"
+      - "Digital signature verification failure"
+      - "Certificate pinning mismatch"
+      - "Endpoint not in whitelist"
+
+    warnings:
+      - "Rate limit threshold exceeded"
+      - "DNS validation warning"
+      - "Endpoint health check failure"
+
+  # Alert rate limiting
+  max_alerts_per_minute: 10
+  alert_cooldown: 300  # 5 minutes between similar alerts
+
+# Performance Optimization
+performance:
+  # Caching
+  enable_verification_cache: true
+  cache_ttl: 300  # 5 minutes
+  max_cache_size: 10000
+
+  # Parallel processing
+  max_concurrent_verifications: 10
+  parallel_timeout: 30.0
+
+  # Memory management
+  max_history_size: 10000
+  cleanup_batch_size: 1000
+
+# Compliance and Audit
+compliance:
+  # Audit trail
+  enable_audit_trail: true
+  audit_retention_days: 90
+
+  # Compliance standards
+  standards:
+    - "ISO 27001"
+    - "SOC 2 Type II"
+    - "GDPR" (if applicable)
+
+  # Required fields for audit
+  required_audit_fields:
+    - "timestamp"
+    - "data_id"
+    - "verdict"
+    - "confidence"
+    - "verifier"
+    - "execution_time_ms"
+    - "metadata"
+
+# Development/Testing Settings
+development:
+  # Override settings for development
+  override_production: false
+
+  # Test endpoints
+  test_endpoints:
+    - "localhost"
+    - "127.0.0.1"
+    - "test-api.example.com"
+
+  # Relaxed security for testing
+  allow_self_signed_certs: true
+  reduced_verification_requirements: true
+  enable_debug_logging: true

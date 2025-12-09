@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ report_title }}</title>
+    <style>
+        body {
+            font-family: Georgia, serif;
+            line-height: 1.8;
+            margin: 0;
+            padding: 40px;
+            color: #2c3e50;
+            background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+        }
+        .executive-header {
+            text-align: center;
+            margin-bottom: 50px;
+            border-bottom: 2px solid #e74c3c;
+            padding-bottom: 30px;
+        }
+        .executive-header h1 {
+            color: #2c3e50;
+            font-size: 3em;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .executive-summary {
+            font-size: 1.2em;
+            font-style: italic;
+            color: #34495e;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #ecf0f1;
+            border-left: 4px solid #e74c3c;
+            border-radius: 4px;
+        }
+        .key-metrics {
+            display: flex;
+            justify-content: space-around;
+            margin: 40px 0;
+        }
+        .key-metric {
+            text-align: center;
+            padding: 20px;
+        }
+        .key-metric .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #e74c3c;
+            display: block;
+        }
+        .key-metric .label {
+            font-size: 1.1em;
+            color: #7f8c8d;
+            margin-top: 10px;
+        }
+        .recommendations {
+            background-color: #ffffff;
+            border: 1px solid #ecf0f1;
+            border-radius: 8px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+        .recommendations h2 {
+            color: #e74c3c;
+            border-bottom: 2px solid #e74c3c;
+            padding-bottom: 10px;
+        }
+        .recommendations ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .recommendations li {
+            margin: 15px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        .recommendations li:before {
+            content: "▶";
+            color: #e74c3c;
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="executive-header">
+        <h1>{{ report_title }}</h1>
+        <p>Executive Briefing | {{ generation_time }}</p>
+    </div>
+
+    <div class="executive-summary">
+        <strong>Executive Summary:</strong> The {{ strategy_name }} strategy has demonstrated strong performance with a total return of {{ total_return }} and a Sharpe ratio of {{ sharpe_ratio }}. Key indicators suggest continued opportunity with manageable risk exposure.
+    </div>
+
+    <div class="key-metrics">
+        <div class="key-metric">
+            <span class="value">{{ total_return }}</span>
+            <span class="label">Total Return</span>
+        </div>
+        <div class="key-metric">
+            <span class="value">{{ sharpe_ratio }}</span>
+            <span class="label">Sharpe Ratio</span>
+        </div>
+        <div class="key-metric">
+            <span class="value">{{ win_rate }}</span>
+            <span class="label">Win Rate</span>
+        </div>
+    </div>
+
+    <div class="recommendations">
+        <h2>Key Recommendations</h2>
+        <ul>
+            <li>Maintain current strategy parameters given strong performance metrics</li>
+            <li>Monitor market conditions for potential optimization opportunities</li>
+            <li>Consider gradual position scaling based on continued positive results</li>
+            <li>Implement enhanced risk monitoring protocols for drawdown control</li>
+        </ul>
+    </div>
+</body>
+</html>
+        

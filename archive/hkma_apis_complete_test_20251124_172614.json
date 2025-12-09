@@ -1,0 +1,220 @@
+{
+  "test_time": "2025-11-24T17:26:14.476991",
+  "summary": {
+    "total_urls": 6,
+    "successful_urls": 6,
+    "success_rate": 100.0,
+    "working_urls": [
+      "hibor_rates",
+      "exchange_rates",
+      "monetary_base",
+      "interbank_liquidity",
+      "efbn_indicative",
+      "rmb_liquidity"
+    ],
+    "url_status": {
+      "hibor_rates": "success",
+      "exchange_rates": "success",
+      "monetary_base": "success",
+      "interbank_liquidity": "success",
+      "efbn_indicative": "success",
+      "rmb_liquidity": "success"
+    }
+  },
+  "detailed_analysis": {
+    "hibor_rates": {
+      "http_status": 200,
+      "data_points": 100,
+      "structure": [
+        "header",
+        "result"
+      ],
+      "sample_record": {
+        "end_of_day": "2025-06-05",
+        "ir_overnight": 0.01949,
+        "ir_1w": 0.11607,
+        "ir_1m": 0.7,
+        "ir_3m": 1.77226,
+        "ir_6m": 2.45393,
+        "ir_9m": null,
+        "ir_12m": 3.11107
+      }
+    },
+    "exchange_rates": {
+      "http_status": 200,
+      "data_points": 100,
+      "structure": [
+        "header",
+        "result"
+      ],
+      "sample_record": {
+        "end_of_day": "2025-07-02",
+        "usd": 7.8525,
+        "gbp": 10.775,
+        "jpy": 0.054555,
+        "cad": 5.7505,
+        "aud": 5.155,
+        "sgd": 6.168,
+        "twd": 0.26575,
+        "chf": 9.9105,
+        "cny": 1.0959,
+        "krw": 0.005772,
+        "thb": 0.24245,
+        "myr": 1.85905,
+        "dem": null,
+        "nlg": null,
+        "bef": null,
+        "frf": null,
+        "itl": null,
+        "eur": 9.249,
+        "php": 0.1415,
+        "inr": 0.0915,
+        "idr": 0.0004831,
+        "zar": 0.445,
+        "special_drawing_rights": 10.802134575,
+        "neeri_1983_trade_wgt": null,
+        "neeri_1983_import_wgt": null,
+        "neeri_1983_export_wgt": null,
+        "neeri_2000_trade_wgt": null,
+        "neeri_2000_import_wgt": null,
+        "neeri_2000_export_wgt": null,
+        "neeri_2010_trade_wgt": null,
+        "neeri_2010_import_wgt": null,
+        "neeri_2010_export_wgt": null,
+        "neeri_2020_trade_wgt": 102.6,
+        "neeri_2020_import_wgt": 102.7,
+        "neeri_2020_export_wgt": 102.4
+      }
+    },
+    "monetary_base": {
+      "http_status": 200,
+      "data_points": 100,
+      "structure": [
+        "header",
+        "result"
+      ],
+      "sample_record": {
+        "end_of_date": "2025-07-02",
+        "cert_of_indebt": 616595,
+        "gov_notes_coins_circulation": 13169,
+        "aggr_balance_bf_disc_win": 164192,
+        "aggr_balance_af_disc_win": 164192,
+        "outstanding_efbn": 1323727,
+        "ow_lb_bf_disc_win": 1209751,
+        "ow_lb_af_disc_win": 1209751,
+        "mb_bf_disc_win_total": 2117683
+      }
+    },
+    "interbank_liquidity": {
+      "http_status": 200,
+      "data_points": 100,
+      "structure": [
+        "header",
+        "result"
+      ],
+      "sample_record": {
+        "end_of_date": "2025-07-02",
+        "cu_weakside": 7.85,
+        "cu_strongside": 7.75,
+        "disc_win_base_rate": 4.75,
+        "hibor_overnight": 0.02,
+        "hibor_fixing_1m": 0.72958,
+        "twi": 102.6,
+        "opening_balance": 164098,
+        "closing_balance": 164192,
+        "market_activities": "+0",
+        "interest_payment": "+94",
+        "discount_window_reversal": "-0",
+        "discount_window_activities": "+0",
+        "intraday_movements_of_aggregate_balance_at_0930": 200056,
+        "intraday_movements_of_aggregate_balance_at_1000": 251754,
+        "intraday_movements_of_aggregate_balance_at_1100": 274625,
+        "intraday_movements_of_aggregate_balance_at_1200": 296664,
+        "intraday_movements_of_aggregate_balance_at_1500": 301576,
+        "intraday_movements_of_aggregate_balance_at_1600": 308409,
+        "forex_trans_t1": "-20018",
+        "other_market_activities_t1": "+0",
+        "reversal_of_discount_window_t1": "-0",
+        "interest_payment_issuance_efbn_t1": "+0",
+        "forecast_aggregate_bal_t1": 144175,
+        "forex_trans_t2": "+0",
+        "other_market_activities_t2": "+0",
+        "reversal_of_discount_window_t2": "-0",
+        "interest_payment_issuance_efbn_t2": "+0",
+        "forecast_aggregate_bal_t2": 144175,
+        "forex_trans_t3": "+0",
+        "other_market_activities_t3": "+0",
+        "reversal_of_discount_window_t3": "-0",
+        "interest_payment_issuance_efbn_t3": "+0",
+        "forecast_aggregate_bal_t3": 144175,
+        "forex_trans_t4": null,
+        "other_market_activities_t4": null,
+        "reversal_of_discount_window_t4": null,
+        "interest_payment_issuance_efbn_t4": null,
+        "forecast_aggregate_bal_t4": null,
+        "forex_trans_u": "+0",
+        "other_market_activities_u": "+0",
+        "reversal_of_discount_window_u": "-0",
+        "interest_payment_issuance_efbn_u": "-353",
+        "forecast_aggregate_bal_u": 143822
+      }
+    },
+    "efbn_indicative": {
+      "http_status": 200,
+      "data_points": 100,
+      "structure": [
+        "header",
+        "result"
+      ],
+      "sample_record": {
+        "end_of_day": "2025-06-09",
+        "efb_7d": 0.09,
+        "efb_30d": 0.4,
+        "efb_91d": 0.81,
+        "efb_182d": 1.45,
+        "efb_273d": 1.7,
+        "efb_364d": 1.8,
+        "efn_2y": 1.878,
+        "efn_3y": null,
+        "efn_4y": null,
+        "efn_5y": null,
+        "efn_7y": null,
+        "efn_10y": null,
+        "efn_15y": null
+      }
+    },
+    "rmb_liquidity": {
+      "http_status": 200,
+      "data_points": 100,
+      "structure": [
+        "header",
+        "result"
+      ],
+      "sample_record": {
+        "end_of_date": "2025-07-02",
+        "intraday_repo_at_0900": 0,
+        "overnight_repo_at_0900": 0,
+        "plp_fac_at_0900": 200,
+        "intraday_repo_at_1100": 15000,
+        "overnight_repo_at_1100": 0,
+        "plp_fac_at_1100": 4200,
+        "intraday_repo_at_1400": 15100,
+        "overnight_repo_at_1400": 0,
+        "plp_fac_at_1400": 4000,
+        "intraday_repo_at_1600": 16525,
+        "overnight_repo_at_1600": 0,
+        "plp_fac_at_1600": 7501
+      }
+    }
+  },
+  "status_groups": {
+    "success": [
+      "hibor_rates",
+      "exchange_rates",
+      "monetary_base",
+      "interbank_liquidity",
+      "efbn_indicative",
+      "rmb_liquidity"
+    ]
+  }
+}

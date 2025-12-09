@@ -1,0 +1,156 @@
+{
+  "stock_symbol": "1398.HK",
+  "backtest_date": "20251123_195625",
+  "data_points": 245,
+  "duration_days": 365,
+  "total_strategies": 7,
+  "successful_strategies": 7,
+  "success_rate": 100.0,
+  "best_strategy": {
+    "strategy": "BUY_HOLD",
+    "total_return": 0.4399949600176396,
+    "sharpe_ratio": 2.2096416129016077,
+    "max_drawdown": -0.1289198606271775,
+    "volatility": 0.2484760562196215,
+    "win_rate": 0.5185185185185185,
+    "trading_days": 243,
+    "quality_score": 86.93152041362242,
+    "success": true
+  },
+  "top_strategies": [
+    {
+      "strategy": "BUY_HOLD",
+      "total_return": 0.4399949600176396,
+      "sharpe_ratio": 2.2096416129016077,
+      "max_drawdown": -0.1289198606271775,
+      "volatility": 0.2484760562196215,
+      "win_rate": 0.5185185185185185,
+      "trading_days": 243,
+      "quality_score": 86.93152041362242,
+      "success": true
+    },
+    {
+      "strategy": "MOMENTUM_2PCT",
+      "total_return": 0.07524804821114772,
+      "sharpe_ratio": 0.5633017711949069,
+      "max_drawdown": -0.13050542469116605,
+      "volatility": 0.16407455638275087,
+      "win_rate": 0.24279835390946503,
+      "trading_days": 243,
+      "quality_score": 14.693552549549256,
+      "success": true
+    },
+    {
+      "strategy": "BREAKOUT_20",
+      "total_return": 0.018445115158922665,
+      "sharpe_ratio": 0.03493017806102532,
+      "max_drawdown": -0.07423013159768882,
+      "volatility": 0.11423020593390816,
+      "win_rate": 0.11934156378600823,
+      "trading_days": 243,
+      "quality_score": 0.025024135088414168,
+      "success": true
+    },
+    {
+      "strategy": "SMA_XOVER_20_50",
+      "total_return": 0.015717800700289164,
+      "sharpe_ratio": -0.09856843509370208,
+      "max_drawdown": -0.027504911591355707,
+      "volatility": 0.052705079947276266,
+      "win_rate": 0.012345679012345678,
+      "trading_days": 243,
+      "quality_score": 0,
+      "success": true
+    },
+    {
+      "strategy": "RSI_MR_21",
+      "total_return": -0.01821412770584019,
+      "sharpe_ratio": -0.5853782584264837,
+      "max_drawdown": -0.08754296762338909,
+      "volatility": 0.0913695077444716,
+      "win_rate": 0.06172839506172839,
+      "trading_days": 243,
+      "quality_score": 0,
+      "success": true
+    }
+  ],
+  "all_results": [
+    {
+      "strategy": "RSI_MR_14",
+      "total_return": -0.14394423057052874,
+      "sharpe_ratio": -1.6928364151816362,
+      "max_drawdown": -0.16870264399496313,
+      "volatility": 0.14902018397109534,
+      "win_rate": 0.12757201646090535,
+      "trading_days": 243,
+      "quality_score": 0,
+      "success": true
+    },
+    {
+      "strategy": "RSI_MR_21",
+      "total_return": -0.01821412770584019,
+      "sharpe_ratio": -0.5853782584264837,
+      "max_drawdown": -0.08754296762338909,
+      "volatility": 0.0913695077444716,
+      "win_rate": 0.06172839506172839,
+      "trading_days": 243,
+      "quality_score": 0,
+      "success": true
+    },
+    {
+      "strategy": "SMA_XOVER_20_50",
+      "total_return": 0.015717800700289164,
+      "sharpe_ratio": -0.09856843509370208,
+      "max_drawdown": -0.027504911591355707,
+      "volatility": 0.052705079947276266,
+      "win_rate": 0.012345679012345678,
+      "trading_days": 243,
+      "quality_score": 0,
+      "success": true
+    },
+    {
+      "strategy": "SMA_XOVER_20_100",
+      "total_return": -0.012589989602663887,
+      "sharpe_ratio": -2.018308843106919,
+      "max_drawdown": -0.018675721561969505,
+      "volatility": 0.024147406353039642,
+      "win_rate": 0.00411522633744856,
+      "trading_days": 243,
+      "quality_score": 0,
+      "success": true
+    },
+    {
+      "strategy": "BREAKOUT_20",
+      "total_return": 0.018445115158922665,
+      "sharpe_ratio": 0.03493017806102532,
+      "max_drawdown": -0.07423013159768882,
+      "volatility": 0.11423020593390816,
+      "win_rate": 0.11934156378600823,
+      "trading_days": 243,
+      "quality_score": 0.025024135088414168,
+      "success": true
+    },
+    {
+      "strategy": "MOMENTUM_2PCT",
+      "total_return": 0.07524804821114772,
+      "sharpe_ratio": 0.5633017711949069,
+      "max_drawdown": -0.13050542469116605,
+      "volatility": 0.16407455638275087,
+      "win_rate": 0.24279835390946503,
+      "trading_days": 243,
+      "quality_score": 14.693552549549256,
+      "success": true
+    },
+    {
+      "strategy": "BUY_HOLD",
+      "total_return": 0.4399949600176396,
+      "sharpe_ratio": 2.2096416129016077,
+      "max_drawdown": -0.1289198606271775,
+      "volatility": 0.2484760562196215,
+      "win_rate": 0.5185185185185185,
+      "trading_days": 243,
+      "quality_score": 86.93152041362242,
+      "success": true
+    }
+  ]
+}

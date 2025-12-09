@@ -1,0 +1,151 @@
+{
+  "timestamp": "2025-11-24 21:39:53",
+  "symbol": "0700.HK",
+  "data_source": "Real API",
+  "data_points": 246,
+  "optimization_summary": {
+    "total_combinations_tested": 270,
+    "successful_combinations": 270,
+    "execution_time": 0.5544953346252441,
+    "processing_speed": 486.9292546572634
+  },
+  "best_parameters": [
+    {
+      "parameters": {
+        "rsi_period": 20,
+        "rsi_oversold": 40,
+        "rsi_overbought": 60
+      },
+      "sharpe_ratio": 2.778115608283667,
+      "total_return": 1.278965675777941,
+      "max_drawdown": -0.1019343191568053,
+      "win_rate": 0.5348837209302325,
+      "total_trades": 10,
+      "annual_return": 1.3252148932324808
+    },
+    {
+      "parameters": {
+        "rsi_period": 20,
+        "rsi_oversold": 40,
+        "rsi_overbought": 55
+      },
+      "sharpe_ratio": 2.2604859215618807,
+      "total_return": 0.9535534679542104,
+      "max_drawdown": -0.10193431915680534,
+      "win_rate": 0.5333333333333333,
+      "total_trades": 12,
+      "annual_return": 0.9857227078560704
+    },
+    {
+      "parameters": {
+        "rsi_period": 30,
+        "rsi_oversold": 40,
+        "rsi_overbought": 75
+      },
+      "sharpe_ratio": 2.023169151477852,
+      "total_return": 0.7846131805194476,
+      "max_drawdown": -0.14658279613030448,
+      "win_rate": 0.5392156862745098,
+      "total_trades": 6,
+      "annual_return": 0.8100030974059234
+    },
+    {
+      "parameters": {
+        "rsi_period": 25,
+        "rsi_oversold": 40,
+        "rsi_overbought": 80
+      },
+      "sharpe_ratio": 1.7891023223076414,
+      "total_return": 0.6706890693860055,
+      "max_drawdown": -0.14811296975965804,
+      "win_rate": 0.5265700483091788,
+      "total_trades": 4,
+      "annual_return": 0.6917341258107086
+    },
+    {
+      "parameters": {
+        "rsi_period": 30,
+        "rsi_oversold": 40,
+        "rsi_overbought": 80
+      },
+      "sharpe_ratio": 1.7878935308109256,
+      "total_return": 0.6653333333333349,
+      "max_drawdown": -0.19963235294117593,
+      "win_rate": 0.5588235294117647,
+      "total_trades": 2,
+      "annual_return": 0.6861788697529736
+    },
+    {
+      "parameters": {
+        "rsi_period": 20,
+        "rsi_oversold": 40,
+        "rsi_overbought": 65
+      },
+      "sharpe_ratio": 1.6600412918343512,
+      "total_return": 0.6319339904363077,
+      "max_drawdown": -0.14853248693768908,
+      "win_rate": 0.5023041474654378,
+      "total_trades": 9,
+      "annual_return": 0.651545169749773
+    },
+    {
+      "parameters": {
+        "rsi_period": 25,
+        "rsi_oversold": 40,
+        "rsi_overbought": 75
+      },
+      "sharpe_ratio": 1.5342471926616241,
+      "total_return": 0.5508964120100173,
+      "max_drawdown": -0.13409573879989206,
+      "win_rate": 0.5169082125603864,
+      "total_trades": 5,
+      "annual_return": 0.5675851908676017
+    },
+    {
+      "parameters": {
+        "rsi_period": 30,
+        "rsi_oversold": 35,
+        "rsi_overbought": 80
+      },
+      "sharpe_ratio": 1.4362436825917013,
+      "total_return": 0.3169548713622954,
+      "max_drawdown": -0.1025830258302581,
+      "win_rate": 0.5428571428571428,
+      "total_trades": 2,
+      "annual_return": 0.3258282128524026
+    },
+    {
+      "parameters": {
+        "rsi_period": 25,
+        "rsi_oversold": 40,
+        "rsi_overbought": 60
+      },
+      "sharpe_ratio": 1.3463372405517429,
+      "total_return": 0.4836507287034335,
+      "max_drawdown": -0.24943267716340653,
+      "win_rate": 0.49528301886792453,
+      "total_trades": 8,
+      "annual_return": 0.497995454499907
+    },
+    {
+      "parameters": {
+        "rsi_period": 25,
+        "rsi_oversold": 30,
+        "rsi_overbought": 80
+      },
+      "sharpe_ratio": 1.3269793076664251,
+      "total_return": 0.41897995697605106,
+      "max_drawdown": -0.12639515759915654,
+      "win_rate": 0.5333333333333333,
+      "total_trades": 3,
+      "annual_return": 0.43114289618821333
+    }
+  ],
+  "statistics": {
+    "average_sharpe": -0.43055289974415006,
+    "max_sharpe": 2.778115608283667,
+    "positive_sharpe_count": 25,
+    "profitable_count": 67,
+    "no_trade_count": 0
+  }
+}

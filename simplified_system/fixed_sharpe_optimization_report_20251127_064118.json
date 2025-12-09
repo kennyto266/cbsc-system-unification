@@ -1,0 +1,4276 @@
+{
+  "optimization_summary": {
+    "timestamp": "2025-11-27T06:41:18.992210",
+    "total_combinations": 520,
+    "completed_combinations": 520,
+    "successful_strategies": 365,
+    "total_time": 1.2149417400360107,
+    "optimization_time": 0.7062795162200928,
+    "cpu_cores": 32,
+    "strategies_per_second": 516.7925610435765,
+    "data_points": 491,
+    "sharpe_calculation": "corrected_with_3_percent_risk_free_rate"
+  },
+  "results": [
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        35,
+        80
+      ],
+      "total_return": 0.30927267318155394,
+      "sharpe": 480.05127984536136,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        20,
+        80
+      ],
+      "total_return": 0.15181125035041018,
+      "sharpe": 178.70571171382687,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        25,
+        80
+      ],
+      "total_return": 0.14457563083508002,
+      "sharpe": 123.2806729806255,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        30,
+        80
+      ],
+      "total_return": 0.1848580921023131,
+      "sharpe": 74.22137094148374,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        35,
+        75
+      ],
+      "total_return": 0.1848580921023131,
+      "sharpe": 74.22137094148374,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        35,
+        75
+      ],
+      "total_return": 0.3638952541337471,
+      "sharpe": 69.32517178442582,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        30,
+        80
+      ],
+      "total_return": 0.40031700905460654,
+      "sharpe": 62.7180520137982,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        35,
+        85
+      ],
+      "total_return": 0.4156518040372908,
+      "sharpe": 47.19334880619877,
+      "trades": 4,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        30,
+        85
+      ],
+      "total_return": 0.43472562272691945,
+      "sharpe": 46.84326116447084,
+      "trades": 4,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        23,
+        80
+      ],
+      "total_return": 0.34925760364669467,
+      "sharpe": 43.36802489162007,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        35,
+        85
+      ],
+      "total_return": 0.3685559099638722,
+      "sharpe": 42.93575031908955,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        35,
+        75
+      ],
+      "total_return": 0.43722370611480277,
+      "sharpe": 42.45146298519987,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        35,
+        80
+      ],
+      "total_return": 0.16827382287663858,
+      "sharpe": 42.30939045484871,
+      "trades": 4,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        25,
+        85
+      ],
+      "total_return": 0.34617440106543673,
+      "sharpe": 42.25965974627956,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        20,
+        85
+      ],
+      "total_return": 0.35401951525308234,
+      "sharpe": 42.22855881221847,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        35,
+        80
+      ],
+      "total_return": 0.3398398470833063,
+      "sharpe": 41.46520524597235,
+      "trades": 4,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        30,
+        80
+      ],
+      "total_return": 0.18626528142783957,
+      "sharpe": 38.994300928418994,
+      "trades": 4,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        14,
+        70
+      ],
+      "total_return": 0.38813815670504775,
+      "sharpe": 35.53461519144927,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        35,
+        70
+      ],
+      "total_return": 0.3460605221080453,
+      "sharpe": 35.29936787488315,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        17,
+        75
+      ],
+      "total_return": 0.30113092319775864,
+      "sharpe": 35.12075524187985,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        26,
+        80
+      ],
+      "total_return": 0.3454169485389365,
+      "sharpe": 34.53842528232154,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        29,
+        80
+      ],
+      "total_return": 0.26733375110730095,
+      "sharpe": 31.976703846908585,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        35,
+        75
+      ],
+      "total_return": 0.21805783122922698,
+      "sharpe": 31.944801407898673,
+      "trades": 4,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        30,
+        75
+      ],
+      "total_return": 0.11329604999246254,
+      "sharpe": 30.467326801259997,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        35,
+        70
+      ],
+      "total_return": 0.11329604999246254,
+      "sharpe": 30.467326801259997,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        26,
+        85
+      ],
+      "total_return": 0.2555867981173477,
+      "sharpe": 29.66592440804415,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        17,
+        65
+      ],
+      "total_return": 0.5212449800735541,
+      "sharpe": 29.29256745753067,
+      "trades": 4,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        30,
+        75
+      ],
+      "total_return": 0.2129636720531773,
+      "sharpe": 29.160735768529356,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        35,
+        70
+      ],
+      "total_return": 0.2129636720531773,
+      "sharpe": 29.160735768529356,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        35,
+        70
+      ],
+      "total_return": 0.1470039151610019,
+      "sharpe": 27.09001370141964,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        29,
+        70
+      ],
+      "total_return": 0.2826460356310608,
+      "sharpe": 26.808536129732612,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        14,
+        65
+      ],
+      "total_return": 0.5148081261712456,
+      "sharpe": 26.799320671541956,
+      "trades": 4,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        29,
+        85
+      ],
+      "total_return": 0.2302701526666718,
+      "sharpe": 25.753395483554513,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        20,
+        75
+      ],
+      "total_return": 0.2567776476371112,
+      "sharpe": 25.200834865800744,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        17,
+        70
+      ],
+      "total_return": 0.3376047501156616,
+      "sharpe": 24.293249931416405,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        26,
+        75
+      ],
+      "total_return": 0.3454461443841719,
+      "sharpe": 23.38185971173825,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        11,
+        70
+      ],
+      "total_return": 0.5855437392351038,
+      "sharpe": 22.132184088348293,
+      "trades": 4,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        11,
+        65
+      ],
+      "total_return": 0.5298797198244896,
+      "sharpe": 21.852098776384935,
+      "trades": 4,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        29,
+        75
+      ],
+      "total_return": 0.3302227713586367,
+      "sharpe": 21.63650663972997,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        20,
+        65
+      ],
+      "total_return": 0.423694470085924,
+      "sharpe": 21.523489445666705,
+      "trades": 4,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        23,
+        70
+      ],
+      "total_return": 0.26136446985962414,
+      "sharpe": 20.152543627421664,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        25,
+        80
+      ],
+      "total_return": 0.23754736653676523,
+      "sharpe": 20.102516335468447,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        23,
+        75
+      ],
+      "total_return": 0.2872697323237269,
+      "sharpe": 19.47085168703178,
+      "trades": 3,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        30,
+        70
+      ],
+      "total_return": 0.13875543820986397,
+      "sharpe": 18.74533423627758,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        35,
+        65
+      ],
+      "total_return": 0.13875543820986397,
+      "sharpe": 18.74533423627758,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        29,
+        65
+      ],
+      "total_return": 0.5222012338309943,
+      "sharpe": 18.69112223994885,
+      "trades": 4,
+      "win_rate": 0.75
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        23,
+        60
+      ],
+      "total_return": 0.45605479372970326,
+      "sharpe": 18.484471242907222,
+      "trades": 4,
+      "win_rate": 0.75
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        20,
+        70
+      ],
+      "total_return": 0.26695012466010687,
+      "sharpe": 18.124910354500965,
+      "trades": 3,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        35,
+        65
+      ],
+      "total_return": 0.1751094951118661,
+      "sharpe": 18.066121713959184,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        5,
+        100
+      ],
+      "total_return": 0.21923919420783872,
+      "sharpe": 17.958002229573427,
+      "trades": 4,
+      "win_rate": 0.75
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        29,
+        60
+      ],
+      "total_return": 0.5041415901160294,
+      "sharpe": 17.744652952816274,
+      "trades": 4,
+      "win_rate": 0.75
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        14,
+        75
+      ],
+      "total_return": 0.34739211035403283,
+      "sharpe": 16.408247436640668,
+      "trades": 4,
+      "win_rate": 0.75
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        17,
+        90
+      ],
+      "total_return": 0.19522300752193505,
+      "sharpe": 16.211742695329626,
+      "trades": 2,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        26,
+        70
+      ],
+      "total_return": 0.23952057153098394,
+      "sharpe": 16.19142577363763,
+      "trades": 3,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        29,
+        55
+      ],
+      "total_return": 0.45190436266528183,
+      "sharpe": 15.984469258396961,
+      "trades": 5,
+      "win_rate": 0.8
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        23,
+        90
+      ],
+      "total_return": 0.18603146953909983,
+      "sharpe": 15.854190633290063,
+      "trades": 2,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        26,
+        60
+      ],
+      "total_return": 0.43953533598564143,
+      "sharpe": 15.233170562322947,
+      "trades": 4,
+      "win_rate": 0.75
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        8,
+        65
+      ],
+      "total_return": 0.6076709175567085,
+      "sharpe": 14.708974087386153,
+      "trades": 6,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        25,
+        75
+      ],
+      "total_return": 0.16449671279146624,
+      "sharpe": 14.35119231042572,
+      "trades": 3,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        29,
+        50
+      ],
+      "total_return": 0.48785642771802007,
+      "sharpe": 14.066257809705418,
+      "trades": 5,
+      "win_rate": 0.8
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        29,
+        95
+      ],
+      "total_return": 0.23448301353995338,
+      "sharpe": 13.812216002167757,
+      "trades": 2,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        26,
+        65
+      ],
+      "total_return": 0.24435003417092635,
+      "sharpe": 13.505144208991538,
+      "trades": 3,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        20,
+        60
+      ],
+      "total_return": 0.42077183148112707,
+      "sharpe": 13.1799808921585,
+      "trades": 5,
+      "win_rate": 0.8
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        29,
+        90
+      ],
+      "total_return": 0.22089911831344247,
+      "sharpe": 13.05954074922956,
+      "trades": 2,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        5,
+        90
+      ],
+      "total_return": 0.2977059246918814,
+      "sharpe": 12.998942262215111,
+      "trades": 5,
+      "win_rate": 0.6
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        20,
+        90
+      ],
+      "total_return": 0.1705628439058568,
+      "sharpe": 12.541554938804989,
+      "trades": 2,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        26,
+        90
+      ],
+      "total_return": 0.16711053724486838,
+      "sharpe": 12.457918977610596,
+      "trades": 2,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        11,
+        60
+      ],
+      "total_return": 0.46320315177663973,
+      "sharpe": 12.255993195002311,
+      "trades": 5,
+      "win_rate": 0.8
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        26,
+        50
+      ],
+      "total_return": 0.4686993985552131,
+      "sharpe": 12.194248878146004,
+      "trades": 5,
+      "win_rate": 0.6
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        8,
+        70
+      ],
+      "total_return": 0.5798879398685761,
+      "sharpe": 12.135703931104224,
+      "trades": 6,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        23,
+        65
+      ],
+      "total_return": 0.18393885565662227,
+      "sharpe": 12.132995672427718,
+      "trades": 3,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        17,
+        60
+      ],
+      "total_return": 0.3874138313487923,
+      "sharpe": 11.493093922967073,
+      "trades": 5,
+      "win_rate": 0.8
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        26,
+        55
+      ],
+      "total_return": 0.4173186067992165,
+      "sharpe": 11.4760602796288,
+      "trades": 6,
+      "win_rate": 0.8333333333333334
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        8,
+        90
+      ],
+      "total_return": 0.2538481983275358,
+      "sharpe": 11.287932620286595,
+      "trades": 4,
+      "win_rate": 0.75
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        14,
+        60
+      ],
+      "total_return": 0.43348741030972565,
+      "sharpe": 11.179090550205988,
+      "trades": 5,
+      "win_rate": 0.8
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        5,
+        95
+      ],
+      "total_return": 0.32153580795356324,
+      "sharpe": 10.868907412281457,
+      "trades": 5,
+      "win_rate": 0.6
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        14,
+        85
+      ],
+      "total_return": 0.12557495364423893,
+      "sharpe": 10.331035472136987,
+      "trades": 2,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        5,
+        65
+      ],
+      "total_return": 0.6402734099461769,
+      "sharpe": 10.242390719768379,
+      "trades": 8,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        11,
+        35
+      ],
+      "total_return": 0.6497215713724825,
+      "sharpe": 9.753308120113122,
+      "trades": 8,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        8,
+        55
+      ],
+      "total_return": 0.48321314135235,
+      "sharpe": 9.536512960666439,
+      "trades": 6,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        8,
+        95
+      ],
+      "total_return": 0.21667094825623523,
+      "sharpe": 9.238960295709742,
+      "trades": 3,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        35,
+        70
+      ],
+      "total_return": 0.09592282862881452,
+      "sharpe": 9.23323203831612,
+      "trades": 4,
+      "win_rate": 0.75
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        11,
+        55
+      ],
+      "total_return": 0.4295587217027483,
+      "sharpe": 9.177030998490444,
+      "trades": 6,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        14,
+        80
+      ],
+      "total_return": 0.2218841935009001,
+      "sharpe": 9.14128654906534,
+      "trades": 4,
+      "win_rate": 0.75
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        11,
+        90
+      ],
+      "total_return": 0.14508929548408053,
+      "sharpe": 8.99095985635724,
+      "trades": 3,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        20,
+        80
+      ],
+      "total_return": 0.20722361272186068,
+      "sharpe": 8.929517644519851,
+      "trades": 3,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        23,
+        55
+      ],
+      "total_return": 0.374990813063784,
+      "sharpe": 8.926653698589725,
+      "trades": 6,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        14,
+        55
+      ],
+      "total_return": 0.3769074700650765,
+      "sharpe": 8.350985084365398,
+      "trades": 6,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        8,
+        80
+      ],
+      "total_return": 0.46840632377277386,
+      "sharpe": 8.259559089090423,
+      "trades": 7,
+      "win_rate": 0.7142857142857143
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        35,
+        65
+      ],
+      "total_return": 0.06471593958312061,
+      "sharpe": 8.06079546574693,
+      "trades": 3,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        5,
+        70
+      ],
+      "total_return": 0.5153820553125708,
+      "sharpe": 8.031773879189931,
+      "trades": 9,
+      "win_rate": 0.4444444444444444
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        5,
+        85
+      ],
+      "total_return": 0.24444098605196424,
+      "sharpe": 7.985593958284459,
+      "trades": 7,
+      "win_rate": 0.5714285714285714
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        8,
+        75
+      ],
+      "total_return": 0.4683485698503788,
+      "sharpe": 7.6232333389621525,
+      "trades": 7,
+      "win_rate": 0.5714285714285714
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        11,
+        80
+      ],
+      "total_return": 0.21741079693540893,
+      "sharpe": 7.588619785196351,
+      "trades": 4,
+      "win_rate": 0.75
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        5,
+        60
+      ],
+      "total_return": 0.5221176318232542,
+      "sharpe": 7.574766052651099,
+      "trades": 9,
+      "win_rate": 0.5555555555555556
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        8,
+        35
+      ],
+      "total_return": 0.5702384405192823,
+      "sharpe": 7.513330343308037,
+      "trades": 9,
+      "win_rate": 0.5555555555555556
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        8,
+        60
+      ],
+      "total_return": 0.436223063124239,
+      "sharpe": 7.440067423546673,
+      "trades": 8,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        5,
+        75
+      ],
+      "total_return": 0.483829992901025,
+      "sharpe": 7.272129083798402,
+      "trades": 9,
+      "win_rate": 0.4444444444444444
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        20,
+        40
+      ],
+      "total_return": 0.32634316577380573,
+      "sharpe": 7.177014607811591,
+      "trades": 7,
+      "win_rate": 0.7142857142857143
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        14,
+        35
+      ],
+      "total_return": 0.3601913853633091,
+      "sharpe": 7.170763987707026,
+      "trades": 7,
+      "win_rate": 0.7142857142857143
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        11,
+        40
+      ],
+      "total_return": 0.48567787306022225,
+      "sharpe": 7.020524302723928,
+      "trades": 8,
+      "win_rate": 0.625
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        17,
+        35
+      ],
+      "total_return": 0.37367269893020644,
+      "sharpe": 6.995198427771092,
+      "trades": 8,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        11,
+        50
+      ],
+      "total_return": 0.41698998350105376,
+      "sharpe": 6.9244019003417,
+      "trades": 7,
+      "win_rate": 0.5714285714285714
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        17,
+        85
+      ],
+      "total_return": 0.1675789542898165,
+      "sharpe": 6.846086877511769,
+      "trades": 3,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        5,
+        55
+      ],
+      "total_return": 0.4305314372964696,
+      "sharpe": 6.786271541008837,
+      "trades": 9,
+      "win_rate": 0.5555555555555556
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        17,
+        55
+      ],
+      "total_return": 0.2831595235430831,
+      "sharpe": 6.717961926784647,
+      "trades": 6,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        29,
+        45
+      ],
+      "total_return": 0.422361608256214,
+      "sharpe": 6.684074192705996,
+      "trades": 8,
+      "win_rate": 0.375
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        14,
+        50
+      ],
+      "total_return": 0.34377846302668236,
+      "sharpe": 6.604997536707452,
+      "trades": 7,
+      "win_rate": 0.5714285714285714
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        5,
+        80
+      ],
+      "total_return": 0.4942948030061739,
+      "sharpe": 6.450591729174269,
+      "trades": 9,
+      "win_rate": 0.4444444444444444
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        11,
+        45
+      ],
+      "total_return": 0.3759816577686169,
+      "sharpe": 6.416549199010489,
+      "trades": 7,
+      "win_rate": 0.5714285714285714
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        26,
+        45
+      ],
+      "total_return": 0.3300612094084001,
+      "sharpe": 6.32603739068117,
+      "trades": 6,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        8,
+        50
+      ],
+      "total_return": 0.4271888992777235,
+      "sharpe": 6.254466054272376,
+      "trades": 9,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        20,
+        55
+      ],
+      "total_return": 0.30299239982152054,
+      "sharpe": 6.179835147132928,
+      "trades": 7,
+      "win_rate": 0.7142857142857143
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        23,
+        85
+      ],
+      "total_return": 0.1589215825199357,
+      "sharpe": 6.092375037820003,
+      "trades": 3,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        17,
+        80
+      ],
+      "total_return": 0.1211008936727968,
+      "sharpe": 6.074095167305158,
+      "trades": 3,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        5,
+        35
+      ],
+      "total_return": 0.514341240495145,
+      "sharpe": 5.993812660796958,
+      "trades": 11,
+      "win_rate": 0.45454545454545453
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        17,
+        50
+      ],
+      "total_return": 0.3048099213749793,
+      "sharpe": 5.800898756189984,
+      "trades": 7,
+      "win_rate": 0.5714285714285714
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        11,
+        85
+      ],
+      "total_return": 0.1963144916469987,
+      "sharpe": 5.724758603238889,
+      "trades": 6,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        17,
+        45
+      ],
+      "total_return": 0.3119456631854257,
+      "sharpe": 5.683508084583489,
+      "trades": 7,
+      "win_rate": 0.42857142857142855
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        23,
+        50
+      ],
+      "total_return": 0.32128631199853125,
+      "sharpe": 5.576668814916504,
+      "trades": 7,
+      "win_rate": 0.42857142857142855
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        20,
+        45
+      ],
+      "total_return": 0.25433993273285405,
+      "sharpe": 5.4554177838583735,
+      "trades": 7,
+      "win_rate": 0.5714285714285714
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        8,
+        40
+      ],
+      "total_return": 0.42038716908701157,
+      "sharpe": 5.429139442313113,
+      "trades": 9,
+      "win_rate": 0.4444444444444444
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        20,
+        85
+      ],
+      "total_return": 0.17015594540903095,
+      "sharpe": 5.078541193490523,
+      "trades": 4,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        17,
+        40
+      ],
+      "total_return": 0.269221178922611,
+      "sharpe": 5.0783354581941165,
+      "trades": 8,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        11,
+        75
+      ],
+      "total_return": 0.1580178200089761,
+      "sharpe": 5.062951187375327,
+      "trades": 5,
+      "win_rate": 0.6
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        23,
+        45
+      ],
+      "total_return": 0.23938744819727617,
+      "sharpe": 4.985036538207397,
+      "trades": 7,
+      "win_rate": 0.5714285714285714
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        20,
+        85
+      ],
+      "total_return": 0.03936450903830304,
+      "sharpe": 4.944856844245761,
+      "trades": 4,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        14,
+        45
+      ],
+      "total_return": 0.3121822388490523,
+      "sharpe": 4.927257089484505,
+      "trades": 8,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        5,
+        50
+      ],
+      "total_return": 0.38130164818114376,
+      "sharpe": 4.900769444273772,
+      "trades": 12,
+      "win_rate": 0.4166666666666667
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        20,
+        50
+      ],
+      "total_return": 0.273931912640598,
+      "sharpe": 4.823527901747274,
+      "trades": 8,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        8,
+        45
+      ],
+      "total_return": 0.37246627757104667,
+      "sharpe": 4.506170328074075,
+      "trades": 10,
+      "win_rate": 0.4
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        14,
+        40
+      ],
+      "total_return": 0.28050737647415436,
+      "sharpe": 3.903024276290803,
+      "trades": 8,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        25,
+        70
+      ],
+      "total_return": 0.041467374508235455,
+      "sharpe": 3.604503942039778,
+      "trades": 3,
+      "win_rate": 0.6666666666666666
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        8,
+        85
+      ],
+      "total_return": 0.09760107544071338,
+      "sharpe": 3.421987669564253,
+      "trades": 5,
+      "win_rate": 0.6
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        30,
+        65
+      ],
+      "total_return": 0.02316450877267632,
+      "sharpe": 3.419075166983284,
+      "trades": 2,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        5,
+        45
+      ],
+      "total_return": 0.261785943615669,
+      "sharpe": 3.3835742621349785,
+      "trades": 12,
+      "win_rate": 0.4166666666666667
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        5,
+        40
+      ],
+      "total_return": 0.28551141557072623,
+      "sharpe": 3.3768333286341212,
+      "trades": 13,
+      "win_rate": 0.38461538461538464
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        25,
+        85
+      ],
+      "total_return": 0.022636764463820357,
+      "sharpe": 2.4487415030217674,
+      "trades": 4,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        30,
+        75
+      ],
+      "total_return": 0.031141418881247232,
+      "sharpe": 2.2471148709173945,
+      "trades": 4,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        23,
+        40
+      ],
+      "total_return": 0.09107604131584901,
+      "sharpe": 1.3862773806179784,
+      "trades": 9,
+      "win_rate": 0.4444444444444444
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        15,
+        85
+      ],
+      "total_return": 0.006755813386129128,
+      "sharpe": 1.0358422135932974,
+      "trades": 3,
+      "win_rate": 0.3333333333333333
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        35,
+        65
+      ],
+      "total_return": 0.013615493104786628,
+      "sharpe": 1.0249569957272375,
+      "trades": 5,
+      "win_rate": 0.4
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        35,
+        75
+      ],
+      "total_return": 0.013378173952259972,
+      "sharpe": 1.0058280327324538,
+      "trades": 4,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        20,
+        65
+      ],
+      "total_return": -0.054924272574159314,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        20,
+        70
+      ],
+      "total_return": -0.041036400742469475,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        20,
+        75
+      ],
+      "total_return": 0.011363093665131052,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        20,
+        80
+      ],
+      "total_return": 0.04924113382597818,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        20,
+        85
+      ],
+      "total_return": 0.2531559727081988,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        25,
+        85
+      ],
+      "total_return": 0.2140691365488481,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        30,
+        85
+      ],
+      "total_return": 0.2523664826510969,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        20,
+        65
+      ],
+      "total_return": -0.0709471651670734,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        20,
+        70
+      ],
+      "total_return": -0.02018204867997744,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        20,
+        75
+      ],
+      "total_return": 0.016514548163319397,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        20,
+        80
+      ],
+      "total_return": 0.1143741960956079,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        20,
+        85
+      ],
+      "total_return": 0.35040515239096975,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        25,
+        65
+      ],
+      "total_return": -0.04164054918306647,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        25,
+        70
+      ],
+      "total_return": 0.010725933468030548,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        25,
+        75
+      ],
+      "total_return": 0.04858011040934175,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        25,
+        80
+      ],
+      "total_return": 0.1495267034697805,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        25,
+        85
+      ],
+      "total_return": 0.3930031659162861,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        30,
+        85
+      ],
+      "total_return": 0.3930031659162861,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        35,
+        85
+      ],
+      "total_return": 0.3930031659162861,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        15,
+        65
+      ],
+      "total_return": -0.03724764157701533,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        15,
+        70
+      ],
+      "total_return": 0.011363093665131052,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        15,
+        75
+      ],
+      "total_return": 0.09596067331662879,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        15,
+        80
+      ],
+      "total_return": 0.20517563604988423,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        15,
+        85
+      ],
+      "total_return": 0.415531365513377,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        20,
+        65
+      ],
+      "total_return": -0.03785417694131138,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        20,
+        70
+      ],
+      "total_return": 0.010725933468030548,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        20,
+        75
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        20,
+        80
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        20,
+        85
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        25,
+        65
+      ],
+      "total_return": -0.03785417694131138,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        25,
+        70
+      ],
+      "total_return": 0.010725933468030548,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        25,
+        75
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        25,
+        80
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        25,
+        85
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        30,
+        65
+      ],
+      "total_return": -0.03785417694131138,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        30,
+        70
+      ],
+      "total_return": 0.010725933468030548,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        30,
+        75
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        30,
+        80
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        30,
+        85
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        35,
+        80
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        17,
+        35,
+        85
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        15,
+        65
+      ],
+      "total_return": -0.02018204867997744,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        15,
+        70
+      ],
+      "total_return": 0.016514548163319397,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        15,
+        75
+      ],
+      "total_return": 0.10214096897276048,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        15,
+        80
+      ],
+      "total_return": 0.37137992405898845,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        20,
+        65
+      ],
+      "total_return": 0.010725933468030548,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        20,
+        70
+      ],
+      "total_return": 0.04858011040934175,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        20,
+        75
+      ],
+      "total_return": 0.13690758388087232,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        20,
+        80
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        25,
+        65
+      ],
+      "total_return": 0.010725933468030548,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        25,
+        70
+      ],
+      "total_return": 0.04858011040934175,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        25,
+        75
+      ],
+      "total_return": 0.13690758388087232,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        25,
+        80
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        30,
+        65
+      ],
+      "total_return": 0.010725933468030548,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        30,
+        70
+      ],
+      "total_return": 0.04858011040934175,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        30,
+        75
+      ],
+      "total_return": 0.13690758388087232,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        30,
+        80
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        20,
+        35,
+        80
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        15,
+        65
+      ],
+      "total_return": 0.010725933468030548,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        15,
+        70
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        15,
+        75
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        15,
+        80
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        20,
+        65
+      ],
+      "total_return": 0.010725933468030548,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        20,
+        70
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        20,
+        75
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        20,
+        80
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        25,
+        65
+      ],
+      "total_return": 0.010725933468030548,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        25,
+        70
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        25,
+        75
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        25,
+        80
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        30,
+        65
+      ],
+      "total_return": 0.010725933468030548,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        30,
+        70
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        30,
+        75
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        30,
+        80
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        35,
+        75
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        23,
+        35,
+        80
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        15,
+        65
+      ],
+      "total_return": 0.04858011040934175,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        15,
+        70
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        15,
+        75
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        20,
+        65
+      ],
+      "total_return": 0.04858011040934175,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        20,
+        70
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        20,
+        75
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        25,
+        65
+      ],
+      "total_return": 0.04858011040934175,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        25,
+        70
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        25,
+        75
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        30,
+        65
+      ],
+      "total_return": 0.04858011040934175,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        30,
+        70
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        30,
+        75
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        35,
+        65
+      ],
+      "total_return": 0.04858011040934175,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        35,
+        70
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        26,
+        35,
+        75
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        15,
+        65
+      ],
+      "total_return": 0.04858011040934175,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        15,
+        70
+      ],
+      "total_return": 0.1495267034697805,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        15,
+        75
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        20,
+        65
+      ],
+      "total_return": 0.04858011040934175,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        20,
+        70
+      ],
+      "total_return": 0.1495267034697805,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        20,
+        75
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        25,
+        65
+      ],
+      "total_return": 0.04858011040934175,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        25,
+        70
+      ],
+      "total_return": 0.1495267034697805,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        25,
+        75
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        30,
+        65
+      ],
+      "total_return": 0.04858011040934175,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        30,
+        70
+      ],
+      "total_return": 0.1495267034697805,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        30,
+        75
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        35,
+        65
+      ],
+      "total_return": 0.04858011040934175,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        35,
+        70
+      ],
+      "total_return": 0.1495267034697805,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        29,
+        35,
+        75
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        15,
+        65
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        15,
+        70
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        15,
+        75
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        20,
+        65
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        20,
+        70
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        20,
+        75
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        25,
+        65
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        25,
+        70
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        25,
+        75
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        30,
+        65
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        30,
+        70
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        30,
+        75
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        35,
+        65
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        35,
+        70
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        32,
+        35,
+        75
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        35,
+        15,
+        65
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        35,
+        15,
+        70
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        35,
+        20,
+        65
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        35,
+        20,
+        70
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        35,
+        25,
+        65
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        35,
+        25,
+        70
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        35,
+        30,
+        65
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        35,
+        30,
+        70
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        35,
+        35,
+        65
+      ],
+      "total_return": 0.09527021652321921,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        35,
+        35,
+        70
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        38,
+        15,
+        65
+      ],
+      "total_return": 0.1495267034697805,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        38,
+        15,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        38,
+        20,
+        65
+      ],
+      "total_return": 0.1495267034697805,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        38,
+        20,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        38,
+        25,
+        65
+      ],
+      "total_return": 0.1495267034697805,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        38,
+        25,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        38,
+        30,
+        65
+      ],
+      "total_return": 0.1495267034697805,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        38,
+        30,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        38,
+        35,
+        65
+      ],
+      "total_return": 0.1495267034697805,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        38,
+        35,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        41,
+        15,
+        65
+      ],
+      "total_return": 0.19306043877372442,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        41,
+        15,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        41,
+        20,
+        65
+      ],
+      "total_return": 0.19306043877372442,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        41,
+        20,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        41,
+        25,
+        65
+      ],
+      "total_return": 0.19306043877372442,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        41,
+        25,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        41,
+        30,
+        65
+      ],
+      "total_return": 0.19306043877372442,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        41,
+        30,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        41,
+        35,
+        65
+      ],
+      "total_return": 0.19306043877372442,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        41,
+        35,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        44,
+        15,
+        65
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        44,
+        15,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        44,
+        20,
+        65
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        44,
+        20,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        44,
+        25,
+        65
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        44,
+        25,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        44,
+        30,
+        65
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        44,
+        30,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        44,
+        35,
+        65
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        44,
+        35,
+        70
+      ],
+      "total_return": 0.41463957872631524,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        47,
+        15,
+        65
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        47,
+        20,
+        65
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        47,
+        25,
+        65
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        47,
+        30,
+        65
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        47,
+        35,
+        65
+      ],
+      "total_return": 0.20441637367357635,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        50,
+        15,
+        65
+      ],
+      "total_return": 0.3930031659162861,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        50,
+        20,
+        65
+      ],
+      "total_return": 0.3930031659162861,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        50,
+        25,
+        65
+      ],
+      "total_return": 0.3930031659162861,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        50,
+        30,
+        65
+      ],
+      "total_return": 0.3930031659162861,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        50,
+        35,
+        65
+      ],
+      "total_return": 0.3930031659162861,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        8,
+        100
+      ],
+      "total_return": 0.10968133066661113,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        11,
+        95
+      ],
+      "total_return": 0.23727190491495817,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        11,
+        100
+      ],
+      "total_return": 0.10968133066661113,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        14,
+        90
+      ],
+      "total_return": 0.19563755595545324,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        14,
+        95
+      ],
+      "total_return": 0.22468049292064432,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        14,
+        100
+      ],
+      "total_return": 0.0983883765784133,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        17,
+        95
+      ],
+      "total_return": 0.22468049292064432,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        17,
+        100
+      ],
+      "total_return": 0.0983883765784133,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        20,
+        95
+      ],
+      "total_return": 0.22468049292064432,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        20,
+        100
+      ],
+      "total_return": 0.08768978849485727,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        23,
+        95
+      ],
+      "total_return": 0.22468049292064432,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        23,
+        100
+      ],
+      "total_return": 0.08768978849485727,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        26,
+        95
+      ],
+      "total_return": 0.22468049292064432,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        26,
+        100
+      ],
+      "total_return": 0.08768978849485727,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "MA",
+      "params": [
+        29,
+        100
+      ],
+      "total_return": 0.08768978849485727,
+      "sharpe": 0.0,
+      "trades": 1,
+      "win_rate": 1.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        35,
+        70
+      ],
+      "total_return": -0.011678394641774923,
+      "sharpe": -0.7185441787369384,
+      "trades": 7,
+      "win_rate": 0.5714285714285714
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        20,
+        75
+      ],
+      "total_return": -0.006128433434237038,
+      "sharpe": -0.9283783107394883,
+      "trades": 3,
+      "win_rate": 0.3333333333333333
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        30,
+        70
+      ],
+      "total_return": -0.006732581874834033,
+      "sharpe": -1.0090473909875037,
+      "trades": 3,
+      "win_rate": 0.3333333333333333
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        14,
+        35,
+        65
+      ],
+      "total_return": -0.006732581874834033,
+      "sharpe": -1.0090473909875037,
+      "trades": 3,
+      "win_rate": 0.3333333333333333
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        25,
+        75
+      ],
+      "total_return": -0.01274149454057931,
+      "sharpe": -1.7615842684611587,
+      "trades": 3,
+      "win_rate": 0.3333333333333333
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        25,
+        80
+      ],
+      "total_return": -0.021351075983772148,
+      "sharpe": -2.201648266627255,
+      "trades": 6,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        25,
+        65
+      ],
+      "total_return": -0.03462292123690008,
+      "sharpe": -3.0362053633076096,
+      "trades": 3,
+      "win_rate": 0.3333333333333333
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        35,
+        85
+      ],
+      "total_return": -0.0662085146448692,
+      "sharpe": -4.0742924552846596,
+      "trades": 5,
+      "win_rate": 0.4
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        35,
+        65
+      ],
+      "total_return": -0.14781372994943068,
+      "sharpe": -5.44583693053075,
+      "trades": 8,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        20,
+        80
+      ],
+      "total_return": -0.03408963008496884,
+      "sharpe": -5.500974021820592,
+      "trades": 4,
+      "win_rate": 0.25
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        30,
+        70
+      ],
+      "total_return": -0.06587398699604695,
+      "sharpe": -5.690306477997455,
+      "trades": 4,
+      "win_rate": 0.25
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        35,
+        80
+      ],
+      "total_return": -0.12562984375534886,
+      "sharpe": -6.520348127194473,
+      "trades": 7,
+      "win_rate": 0.2857142857142857
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        25,
+        75
+      ],
+      "total_return": -0.14738997949524607,
+      "sharpe": -6.652455769401091,
+      "trades": 7,
+      "win_rate": 0.2857142857142857
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        30,
+        85
+      ],
+      "total_return": -0.07277397910412317,
+      "sharpe": -6.754457841261685,
+      "trades": 4,
+      "win_rate": 0.5
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        25,
+        65
+      ],
+      "total_return": -0.20059863136930128,
+      "sharpe": -6.8900642977069095,
+      "trades": 11,
+      "win_rate": 0.45454545454545453
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        25,
+        70
+      ],
+      "total_return": -0.20092667624882454,
+      "sharpe": -7.7370418830456735,
+      "trades": 10,
+      "win_rate": 0.3
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        30,
+        75
+      ],
+      "total_return": -0.23352603588012164,
+      "sharpe": -8.911429956437795,
+      "trades": 8,
+      "win_rate": 0.375
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        30,
+        80
+      ],
+      "total_return": -0.11633995854854891,
+      "sharpe": -9.411334403953846,
+      "trades": 6,
+      "win_rate": 0.3333333333333333
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        30,
+        70
+      ],
+      "total_return": -0.2978498405938403,
+      "sharpe": -9.757373607204668,
+      "trades": 11,
+      "win_rate": 0.36363636363636365
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        20,
+        70
+      ],
+      "total_return": -0.16231608739973077,
+      "sharpe": -9.866492594047982,
+      "trades": 6,
+      "win_rate": 0.3333333333333333
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        20,
+        75
+      ],
+      "total_return": -0.13820349809283655,
+      "sharpe": -10.053431171799405,
+      "trades": 4,
+      "win_rate": 0.25
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        30,
+        65
+      ],
+      "total_return": -0.17693334945562364,
+      "sharpe": -10.721407390480369,
+      "trades": 4,
+      "win_rate": 0.25
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        30,
+        65
+      ],
+      "total_return": -0.3376364279930831,
+      "sharpe": -11.00958368373232,
+      "trades": 12,
+      "win_rate": 0.25
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        20,
+        65
+      ],
+      "total_return": -0.18878231583544466,
+      "sharpe": -11.118339176286325,
+      "trades": 6,
+      "win_rate": 0.3333333333333333
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        35,
+        75
+      ],
+      "total_return": -0.32544748985648886,
+      "sharpe": -11.39151911912367,
+      "trades": 9,
+      "win_rate": 0.3333333333333333
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        35,
+        70
+      ],
+      "total_return": -0.43048474669730974,
+      "sharpe": -11.992805181792175,
+      "trades": 13,
+      "win_rate": 0.3076923076923077
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        35,
+        65
+      ],
+      "total_return": -0.46969284883175877,
+      "sharpe": -12.747252371969843,
+      "trades": 14,
+      "win_rate": 0.2857142857142857
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        15,
+        70
+      ],
+      "total_return": -0.18442519129848559,
+      "sharpe": -17.861080987988487,
+      "trades": 4,
+      "win_rate": 0.25
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        15,
+        65
+      ],
+      "total_return": -0.2108914197341995,
+      "sharpe": -20.942017100220568,
+      "trades": 4,
+      "win_rate": 0.25
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        25,
+        70
+      ],
+      "total_return": -0.08916919153630169,
+      "sharpe": -21.102978908962722,
+      "trades": 3,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        25,
+        65
+      ],
+      "total_return": -0.18805714847507057,
+      "sharpe": -21.646024558305303,
+      "trades": 3,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        20,
+        65
+      ],
+      "total_return": -0.18199263257381218,
+      "sharpe": -22.307226394740393,
+      "trades": 3,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        11,
+        30,
+        65
+      ],
+      "total_return": -0.08324730095253564,
+      "sharpe": -22.502562405029792,
+      "trades": 3,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        8,
+        20,
+        70
+      ],
+      "total_return": -0.08265190189107756,
+      "sharpe": -22.665511986166955,
+      "trades": 3,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        15,
+        75
+      ],
+      "total_return": -0.18385567200588007,
+      "sharpe": -28.907852516072417,
+      "trades": 3,
+      "win_rate": 0.0
+    },
+    {
+      "strategy": "RSI",
+      "params": [
+        5,
+        15,
+        80
+      ],
+      "total_return": -0.06669832573714275,
+      "sharpe": -40.36926081012251,
+      "trades": 3,
+      "win_rate": 0.0
+    }
+  ]
+}

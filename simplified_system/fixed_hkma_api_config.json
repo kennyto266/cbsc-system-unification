@@ -1,0 +1,118 @@
+{
+  "hkma_api_config": {
+    "version": "2.0",
+    "updated": "2025-11-28T17:47:34.718563",
+    "base_settings": {
+      "timeout": 30,
+      "retry_count": 3,
+      "retry_delay": 1,
+      "default_params": {
+        "lang": "en",
+        "limit": "100"
+      },
+      "default_headers": {
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (compatible; QuantSystem/1.0)"
+      }
+    },
+    "endpoints": {
+      "hibor_rates": {
+        "data_type": "hibor_rates",
+        "status": "working",
+        "working_endpoint": "primary",
+        "primary": {
+          "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily",
+          "params": {
+            "lang": "en",
+            "limit": "100"
+          },
+          "response_time": 0.443036,
+          "data_keys": [
+            "header",
+            "result"
+          ]
+        },
+        "alternative": {
+          "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-interbank-liquidity",
+          "params": {
+            "lang": "en",
+            "limit": "100"
+          },
+          "response_time": 0.950198,
+          "data_keys": [
+            "header",
+            "result"
+          ]
+        }
+      },
+      "exchange_rates": {
+        "data_type": "exchange_rates",
+        "status": "working",
+        "working_endpoint": "primary",
+        "primary": {
+          "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/er-eeri-daily",
+          "params": {
+            "lang": "en",
+            "limit": "100"
+          },
+          "response_time": 1.212066,
+          "data_keys": [
+            "header",
+            "result"
+          ]
+        },
+        "alternative": {
+          "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-monetary-base",
+          "params": {
+            "lang": "en",
+            "limit": "100"
+          },
+          "response_time": 13.504659,
+          "data_keys": [
+            "header",
+            "result"
+          ]
+        }
+      },
+      "monetary_base": {
+        "data_type": "monetary_base",
+        "status": "working",
+        "working_endpoint": "primary",
+        "primary": {
+          "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-monetary-base",
+          "params": {
+            "lang": "en",
+            "limit": "100"
+          },
+          "response_time": 13.648005,
+          "data_keys": [
+            "header",
+            "result"
+          ]
+        }
+      },
+      "liquidity": {
+        "data_type": "liquidity",
+        "status": "working",
+        "working_endpoint": "primary",
+        "primary": {
+          "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-interbank-liquidity",
+          "params": {
+            "lang": "en",
+            "limit": "100"
+          },
+          "response_time": 0.874434,
+          "data_keys": [
+            "header",
+            "result"
+          ]
+        }
+      },
+      "efbn": {
+        "data_type": "efbn",
+        "status": "failed",
+        "working_endpoint": null
+      }
+    }
+  }
+}

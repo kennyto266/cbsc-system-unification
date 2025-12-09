@@ -1,0 +1,103 @@
+{
+  "timestamp": "20251127_141138",
+  "stock": "0700.HK",
+  "analysis_period": "2020-01-01 to 2023-12-31",
+  "data_points": 1461,
+  "price_range": {
+    "min": 388.7077601029797,
+    "max": 618.6502952565381,
+    "current": 598.8923521281298
+  },
+  "top_factors": [
+    {
+      "name": "momentum_10",
+      "ic_mean": 0.4949552563615402,
+      "sharpe_ratio": 1.0629347993209233,
+      "hit_rate": 0.0,
+      "composite_score": 79.56,
+      "original_sharpe": 22.552305220426693,
+      "sharpe_correction_details": {
+        "original_sharpe": 22.552305220426693,
+        "corrected_sharpe": 1.0629347993209233,
+        "ic_mean": 0.4949552563615402,
+        "ir_assumption": 0.8,
+        "years_of_data": 5.7976190476190474,
+        "correction_method": "IC-based realistic Sharpe calculation"
+      }
+    },
+    {
+      "name": "reversal_10",
+      "ic_mean": -0.4949552563615402,
+      "sharpe_ratio": -0.9616510247817056,
+      "hit_rate": 0.0,
+      "composite_score": 79.56,
+      "original_sharpe": -22.718697044003836,
+      "sharpe_correction_details": {
+        "original_sharpe": -22.718697044003836,
+        "corrected_sharpe": -0.9616510247817056,
+        "ic_mean": -0.4949552563615402,
+        "ir_assumption": 0.8,
+        "years_of_data": 5.7976190476190474,
+        "correction_method": "IC-based realistic Sharpe calculation"
+      }
+    },
+    {
+      "name": "momentum_5",
+      "ic_mean": 0.4783092285330044,
+      "sharpe_ratio": 0.7922091949899113,
+      "hit_rate": 0.0,
+      "composite_score": 79.15,
+      "original_sharpe": 19.797345783970346,
+      "sharpe_correction_details": {
+        "original_sharpe": 19.797345783970346,
+        "corrected_sharpe": 0.7922091949899113,
+        "ic_mean": 0.4783092285330044,
+        "ir_assumption": 0.8,
+        "years_of_data": 5.7976190476190474,
+        "correction_method": "IC-based realistic Sharpe calculation"
+      }
+    },
+    {
+      "name": "reversal_5",
+      "ic_mean": -0.4783092285330044,
+      "sharpe_ratio": -1.1094251086476516,
+      "hit_rate": 0.0,
+      "composite_score": 79.15,
+      "original_sharpe": -20.036734307626315,
+      "sharpe_correction_details": {
+        "original_sharpe": -20.036734307626315,
+        "corrected_sharpe": -1.1094251086476516,
+        "ic_mean": -0.4783092285330044,
+        "ir_assumption": 0.8,
+        "years_of_data": 5.7976190476190474,
+        "correction_method": "IC-based realistic Sharpe calculation"
+      }
+    },
+    {
+      "name": "reversal_30",
+      "ic_mean": -0.4849397562111079,
+      "sharpe_ratio": -1.0933324203311634,
+      "hit_rate": 0.0,
+      "composite_score": 78.8,
+      "original_sharpe": -23.390242034936538,
+      "sharpe_correction_details": {
+        "original_sharpe": -23.390242034936538,
+        "corrected_sharpe": -1.0933324203311634,
+        "ic_mean": -0.4849397562111079,
+        "ir_assumption": 0.8,
+        "years_of_data": 5.7976190476190474,
+        "correction_method": "IC-based realistic Sharpe calculation"
+      }
+    }
+  ],
+  "strategic_recommendations": [
+    "STRONG: momentum_10 shows excellent predictive power (Sharpe: 1.063 (corrected)",
+    "CONSIDER: Implement factor-based position sizing based on IC scores",
+    "MONITOR: Regular factor validation to maintain effectiveness",
+    "RISK: Use stop-losses and position sizing to control downside",
+    "DIVERSIFY: Combine alpha factors with other strategies"
+  ],
+  "sharpe_correction_applied": true,
+  "sharpe_correction_timestamp": "2025-11-28 18:57:12",
+  "sharpe_correction_count": 5
+}
