@@ -40,6 +40,7 @@ class DashboardManager {
         this.currentData = null;
         this.performanceChart = null;
         this.websocketClient = null;
+        this.strategyStateManager = null;
 
         // 綁定事件
         this.bindEvents();
@@ -62,6 +63,9 @@ class DashboardManager {
 
         // 等待資源加載完成
         setTimeout(() => {
+            // 初始化策略狀態管理器
+            this.initializeStrategyStateManager();
+
             // 初始化WebSocket實時連接
             this.initializeWebSocket();
 
@@ -150,6 +154,30 @@ class DashboardManager {
 
         // 網絡監控
         this.setupNetworkMonitoring();
+    }
+
+    /**
+     * 初始化策略狀態管理器
+     */
+    initializeStrategyStateManager() {
+        console.log('⚙️ 初始化策略狀態管理器...');
+
+        try {
+            // 檢查策略狀態管理器是否可用
+            if (typeof StrategyStateManager === 'undefined') {
+                console.warn('策略狀態管理器不可用');
+                return;
+            }
+
+            // 創建策略狀態管理器實例
+            this.strategyStateManager = new StrategyStateManager(this);
+
+            console.log('✅ 策略狀態管理器初始化完成');
+
+        } catch (error) {
+            console.error('策略狀態管理器初始化失敗:', error);
+            this.showMessage('策略狀態管理器初始化失敗', 'warning');
+        }
     }
 
     /**
@@ -583,18 +611,26 @@ class DashboardManager {
     }
 
     /**
-     * 處理策略切換（啟動/停止）
+     * 處理策略切換（啟動/停止）- 使用策略狀態管理器
      */
-    async handleToggleStrategy(strategyName, currentStatus) {
-        const newStatus = currentStatus === 'active' ? 'stopped' : 'active';
+    async handleToggleStrategy(strategyName, currentStatus, strategyElement = null) {
+        if (this.strategyStateManager) {
+            // 使用增強的策略狀態管理器
+            return this.strategyStateManager.toggleStrategyWithConfirm(strategyName, currentStatus, strategyElement);
+        } else {
+            // 後備方法
+            const newStatus = currentStatus === 'active' ? 'stopped' : 'active';
 
-        try {
-            await window.strategyAPI.updateStrategyStatus(strategyName, newStatus);
-            this.showMessage(`策略 ${strategyName} 已${newStatus === 'active' ? '啟動' : '停止'}`, 'success');
-            // 刷新數據
-            await this.refreshData();
-        } catch (error) {
-            this.showMessage(`操作失敗: ${error.message}`, 'error');
+            try {
+                if (window.strategyAPI && window.strategyAPI.updateStrategyStatus) {
+                    await window.strategyAPI.updateStrategyStatus(strategyName, newStatus);
+                }
+                this.showMessage(`策略 ${strategyName} 已${newStatus === 'active' ? '啟動' : '停止'}`, 'success');
+                // 刷新數據
+                await this.refreshData();
+            } catch (error) {
+                this.showMessage(`操作失敗: ${error.message}`, 'error');
+            }
         }
     }
 
@@ -1085,6 +1121,11 @@ class DashboardManager {
      */
     destroy() {
         this.stopAutoRefresh();
+
+        // 清理策略狀態管理器
+        if (this.strategyStateManager) {
+            this.strategyStateManager = null;
+        }
 
         // 清理WebSocket連接
         if (this.websocketClient) {
