@@ -16,6 +16,12 @@
     <!-- 樣式文件 -->
     <link rel="stylesheet" href="css/dashboard.css">
 
+    <!-- 組件樣式表 -->
+    <link rel="stylesheet" href="css/components.css">
+
+    <!-- 增強圖表樣式表 -->
+    <link rel="stylesheet" href="css/charts-enhanced.css">
+
     <!-- Google Fonts (可選，如果需要更好的字體渲染) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -135,21 +141,61 @@
                             </div>
                         </div>
 
-                        <!-- 圖表容器預留 -->
-                        <div class="chart-container">
-                            <div class="chart-header">
-                                <h3 class="chart-title">策略收益曲線</h3>
-                                <div class="chart-controls">
-                                    <button class="chart-btn active" data-chart="returns">收益</button>
-                                    <button class="chart-btn" data-chart="drawdown">回撤</button>
-                                    <button class="chart-btn" data-chart="signals">信號</button>
+                        <!-- 增強圖表容器 -->
+                        <div class="charts-grid">
+                            <!-- Sharpe比率圖表 -->
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h3 class="chart-title">Sharpe比率分析</h3>
+                                    <div class="chart-controls">
+                                        <button class="chart-btn active" data-chart="sharpe">SR</button>
+                                        <button class="chart-btn" data-chart="sortino">Sortino</button>
+                                    </div>
+                                </div>
+                                <div class="chart-wrapper">
+                                    <canvas id="sharpeRatioChart"></canvas>
                                 </div>
                             </div>
-                            <div class="chart-wrapper">
-                                <canvas id="performanceChart"></canvas>
-                                <div class="chart-placeholder">
-                                    <div class="placeholder-icon">📊</div>
-                                    <p>策略表現圖表載入中...</p>
+
+                            <!-- 最大回撤圖表 -->
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h3 class="chart-title">最大回撤分析</h3>
+                                    <div class="chart-controls">
+                                        <button class="chart-btn active" data-chart="mdd">MDD</button>
+                                        <button class="chart-btn" data-chart="drawdown">回撤</button>
+                                    </div>
+                                </div>
+                                <div class="chart-wrapper">
+                                    <canvas id="maxDrawdownChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- 策略雷達圖 -->
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h3 class="chart-title">策略綜合評分</h3>
+                                    <div class="chart-controls">
+                                        <button class="chart-btn active" data-chart="radar">雷達圖</button>
+                                        <button class="chart-btn" data-chart="comparison">對比</button>
+                                    </div>
+                                </div>
+                                <div class="chart-wrapper">
+                                    <canvas id="strategyRadarChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- 策略對比圖表 -->
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h3 class="chart-title">策略收益對比</h3>
+                                    <div class="chart-controls">
+                                        <button class="chart-btn active" data-chart="returns">收益</button>
+                                        <button class="chart-btn" data-chart="signals">信號</button>
+                                    </div>
+                                </div>
+                                <div class="chart-wrapper">
+                                    <canvas id="strategyComparisonChart"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -168,8 +214,18 @@
                         </div>
                     </div>
 
-                    <div class="strategy-grid">
-                        <!-- 策略列表 -->
+                    <!-- 性能指標概覽 -->
+                    <div id="performanceMetricsContainer">
+                        <!-- 性能指標組件將在這裡渲染 -->
+                    </div>
+
+                    <!-- 策略列表 -->
+                    <div id="strategyListContainer">
+                        <!-- 策略列表組件將在這裡渲染 -->
+                    </div>
+
+                    <div class="strategy-grid" style="display: none;">
+                        <!-- 舊的列表結構保留但隱藏，作為備用 -->
                         <div class="strategy-list-container">
                             <div class="list-header">
                                 <h3 class="list-title">我的策略</h3>
@@ -447,5 +503,17 @@
             document.getElementById('messageToast').classList.remove('show');
         }
     </script>
+
+    <!-- API客戶端 -->
+    <script src="js/api.js"></script>
+
+    <!-- Dashboard組件 -->
+    <script src="js/components.js"></script>
+
+  <!-- Dashboard核心JavaScript -->
+    <script src="js/dashboard-new.js"></script>
+
+    <!-- 增強圖表組件 -->
+    <script src="js/charts-enhanced.js"></script>
 </body>
 </html>
