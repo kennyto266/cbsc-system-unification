@@ -39,6 +39,7 @@ class DashboardManager {
         this.isLoading = false;
         this.currentData = null;
         this.performanceChart = null;
+        this.websocketClient = null;
 
         // 綁定事件
         this.bindEvents();
@@ -61,18 +62,21 @@ class DashboardManager {
 
         // 等待資源加載完成
         setTimeout(() => {
-            this.hideLoading();
-            this.showMessage('Dashboard初始化完成', 'success');
-            this.isInitialized = true;
-
-            // 開始自動刷新
-            this.startAutoRefresh();
+            // 初始化WebSocket實時連接
+            this.initializeWebSocket();
 
             // 初始化圖表
             this.initializeCharts();
 
+            // 開始自動刷新（作為WebSocket的後備）
+            this.startAutoRefresh();
+
             // 立即獲取數據
             this.refreshData();
+
+            this.hideLoading();
+            this.showMessage('Dashboard初始化完成', 'success');
+            this.isInitialized = true;
 
             console.log('✅ Dashboard初始化完成');
         }, 1500);
@@ -154,12 +158,240 @@ class DashboardManager {
     setupNetworkMonitoring() {
         window.addEventListener('online', () => {
             this.showMessage('網絡已恢復', 'success');
+            if (this.websocketClient) {
+                this.websocketClient.connect();
+            }
             this.refreshData();
         });
 
         window.addEventListener('offline', () => {
             this.showMessage('網絡連接已斷開', 'warning');
+            if (this.websocketClient) {
+                this.websocketClient.disconnect();
+            }
         });
+    }
+
+    /**
+     * 初始化WebSocket實時連接
+     */
+    initializeWebSocket() {
+        console.log('🔌 初始化WebSocket實時連接...');
+
+        try {
+            // 檢查WebSocket客戶端是否可用
+            if (typeof DashboardWebSocketClient === 'undefined') {
+                console.warn('WebSocket客戶端不可用，使用HTTP輪詢');
+                return;
+            }
+
+            // 創建WebSocket客戶端實例
+            this.websocketClient = new DashboardWebSocketClient({
+                serverUrl: 'ws://localhost:3005',
+                reconnectInterval: 3000,
+                maxReconnectAttempts: 5
+            });
+
+            // 設置事件監聽器
+            this.setupWebSocketEvents();
+
+            // 建立連接
+            this.websocketClient.connect();
+
+            console.log('✅ WebSocket客戶端初始化完成');
+
+        } catch (error) {
+            console.error('WebSocket初始化失敗:', error);
+            this.showMessage('實時連接初始化失敗，將使用HTTP輪詢', 'warning');
+        }
+    }
+
+    /**
+     * 設置WebSocket事件監聽器
+     */
+    setupWebSocketEvents() {
+        if (!this.websocketClient) return;
+
+        // 連接成功
+        this.websocketClient.on('onConnect', (data) => {
+            console.log('🔗 WebSocket連接成功');
+            this.showMessage('實時連接已建立', 'success');
+            this.updateConnectionStatus('connected');
+        });
+
+        // 連接斷開
+        this.websocketClient.on('onDisconnect', (data) => {
+            console.log('🔌 WebSocket連接斷開');
+            this.showMessage('實時連接已斷開', 'warning');
+            this.updateConnectionStatus('disconnected');
+        });
+
+        // 連接錯誤
+        this.websocketClient.on('onError', (error) => {
+            console.error('❌ WebSocket連接錯誤:', error);
+            this.showMessage('實時連接發生錯誤', 'error');
+            this.updateConnectionStatus('error');
+        });
+
+        // 接收數據更新
+        this.websocketClient.on('onDataUpdate', (data) => {
+            this.handleRealtimeDataUpdate(data);
+        });
+
+        // 通用消息處理
+        this.websocketClient.on('onMessage', (message) => {
+            console.log('📨 收到WebSocket消息:', message.type);
+        });
+    }
+
+    /**
+     * 處理實時數據更新
+     */
+    handleRealtimeDataUpdate(data) {
+        try {
+            const { type, data: updateData, timestamp } = data;
+
+            switch (type) {
+                case 'strategies':
+                    this.handleRealtimeStrategiesUpdate(updateData, timestamp);
+                    break;
+                case 'performance':
+                    this.handleRealtimePerformanceUpdate(updateData, timestamp);
+                    break;
+                case 'signals':
+                    this.handleRealtimeSignalsUpdate(updateData, timestamp);
+                    break;
+                case 'system_health':
+                    this.handleRealtimeSystemHealthUpdate(updateData, timestamp);
+                    break;
+                default:
+                    console.log('收到未知實時數據類型:', type);
+            }
+
+        } catch (error) {
+            console.error('處理實時數據更新失敗:', error);
+        }
+    }
+
+    /**
+     * 處理實時策略數據更新
+     */
+    handleRealtimeStrategiesUpdate(strategies, timestamp) {
+        console.log('🔄 實時策略數據更新', strategies?.length || 0, '個策略');
+
+        if (!strategies || !Array.isArray(strategies)) return;
+
+        // 轉換為Dashboard格式
+        const dashboardData = {
+            strategies: strategies.map(strategy => ({
+                name: strategy.name,
+                display_name: strategy.name,
+                status: 'active', // 假設都是活躍狀態
+                performance: strategy.performance || {
+                    sharpe_ratio: 0,
+                    max_drawdown: 0,
+                    win_rate: 0
+                },
+                last_signal: {
+                    signal: strategy.signal || 'HOLD',
+                    strength: strategy.strength || 0.5,
+                    confidence: strategy.confidence || 0.5
+                },
+                description: `${strategy.name} 策略實時監控`,
+                last_updated: timestamp
+            })),
+            summary: this.calculateSummary(strategies),
+            timestamp: timestamp
+        };
+
+        // 更新顯示
+        this.updateStrategyDisplay(dashboardData);
+
+        // 更新圖表
+        this.updateChartsData(dashboardData);
+    }
+
+    /**
+     * 處理實時性能更新
+     */
+    handleRealtimePerformanceUpdate(performanceData, timestamp) {
+        console.log('📈 實時性能更新', performanceData);
+
+        if (performanceData.updated_strategies) {
+            // 更新現有策略的性能指標
+            if (this.currentData && this.currentData.strategies) {
+                performanceData.updated_strategies.forEach(updatedStrategy => {
+                    const strategyIndex = this.currentData.strategies.findIndex(
+                        s => s.name === updatedStrategy.name
+                    );
+
+                    if (strategyIndex >= 0) {
+                        this.currentData.strategies[strategyIndex] = {
+                            ...this.currentData.strategies[strategyIndex],
+                            ...updatedStrategy
+                        };
+                    }
+                });
+
+                // 更新顯示
+                this.updateStrategyDisplay(this.currentData);
+                this.updateChartsData(this.currentData);
+            }
+        }
+    }
+
+    /**
+     * 處理實時信號更新
+     */
+    handleRealtimeSignalsUpdate(signalsData, timestamp) {
+        console.log('📊 實時信號更新', Object.keys(signalsData).length, '個信號');
+
+        // 顯示信號更新通知
+        Object.entries(signalsData).forEach(([strategy, signalInfo]) => {
+            if (signalInfo.signal && signalInfo.signal !== 'HOLD') {
+                const signalText = signalInfo.signal === 'BUY' ? '買入信號' : '賣出信號';
+                const strengthText = (signalInfo.strength * 100).toFixed(0);
+                this.showMessage(
+                    `${strategy}: ${signalText} (強度: ${strengthText}%)`,
+                    signalInfo.signal === 'BUY' ? 'success' : 'warning'
+                );
+            }
+        });
+    }
+
+    /**
+     * 處理實時系統健康更新
+     */
+    handleRealtimeSystemHealthUpdate(healthData, timestamp) {
+        console.log('🏥 系統健康狀態更新', healthData);
+
+        // 可以在UI上顯示系統健康狀態
+        if (healthData.active_connections !== undefined) {
+            console.log(`活躍連接數: ${healthData.active_connections}`);
+        }
+    }
+
+    /**
+     * 更新連接狀態顯示
+     */
+    updateConnectionStatus(status) {
+        const statusElement = document.querySelector('.user-status');
+        if (statusElement) {
+            statusElement.className = `user-status ${status}`;
+            statusElement.title = `連接狀態: ${status}`;
+        }
+
+        // 更新連接狀態指示器顏色
+        const statusColors = {
+            'connected': '#27ae60',
+            'disconnected': '#e74c3c',
+            'error': '#f39c12',
+            'connecting': '#3498db'
+        };
+
+        if (statusElement) {
+            statusElement.style.color = statusColors[status] || '#95a5a6';
+        }
     }
 
     /**
@@ -853,6 +1085,12 @@ class DashboardManager {
      */
     destroy() {
         this.stopAutoRefresh();
+
+        // 清理WebSocket連接
+        if (this.websocketClient) {
+            this.websocketClient.disconnect();
+            this.websocketClient = null;
+        }
 
         // 清理增強圖表管理器
         if (this.chartManager) {
