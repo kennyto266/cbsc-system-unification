@@ -1,5 +1,5 @@
 import React from 'react';
-import { Strategy, PerformanceSummary } from '../../types/strategy';
+import { Strategy, PerformanceSummary } from '../../types/index';
 
 interface PerformanceSummaryProps {
   strategies: Strategy[];

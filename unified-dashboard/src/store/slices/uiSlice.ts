@@ -1,141 +1,93 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { UIState, Notification } from '@types/index'
+import { WebSocketStatus, StrategyUpdate, TradingSignal, SystemHealth } from '../../types'
+
+interface UIState {
+  theme: 'light' | 'dark'
+  sidebarCollapsed: boolean
+  loading: boolean
+  // WebSocket相關狀態
+  webSocketStatus: WebSocketStatus
+  realtimeStrategies: StrategyUpdate[]
+  realtimeSignals: TradingSignal[]
+  systemHealth: SystemHealth | null
+}
 
 const initialState: UIState = {
   theme: 'light',
   sidebarCollapsed: false,
-  currentPath: '/',
-  loading: {
-    global: false,
-    strategies: false,
-    analytics: false,
-    monitoring: false,
+  loading: false,
+  // WebSocket初始狀態
+  webSocketStatus: {
+    connected: false,
+    reconnecting: false,
+    reconnectAttempts: 0
   },
-  notifications: [],
-  modals: {
-    strategyDetail: false,
-    createStrategy: false,
-    settings: false,
-  },
+  realtimeStrategies: [],
+  realtimeSignals: [],
+  systemHealth: null
 }
 
 const uiSlice = createSlice({
   name: 'ui',
   initialState,
   reducers: {
-    setTheme: (state, action: PayloadAction<'light' | 'dark' | 'auto'>) => {
+    setTheme: (state, action: PayloadAction<'light' | 'dark'>) => {
       state.theme = action.payload
-      // Apply theme to document
-      if (action.payload === 'dark') {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
     },
     toggleSidebar: (state) => {
       state.sidebarCollapsed = !state.sidebarCollapsed
     },
-    setSidebarCollapsed: (state, action: PayloadAction<boolean>) => {
-      state.sidebarCollapsed = action.payload
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload
     },
-    setCurrentPath: (state, action: PayloadAction<string>) => {
-      state.currentPath = action.payload
+    // WebSocket相關actions
+    setWebSocketStatus: (state, action: PayloadAction<Partial<WebSocketStatus>>) => {
+      state.webSocketStatus = { ...state.webSocketStatus, ...action.payload }
     },
-    setGlobalLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading.global = action.payload
+    updateStrategyData: (state, action: PayloadAction<StrategyUpdate[]>) => {
+      state.realtimeStrategies = action.payload
     },
-    setStrategiesLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading.strategies = action.payload
-    },
-    setAnalyticsLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading.analytics = action.payload
-    },
-    setMonitoringLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading.monitoring = action.payload
-    },
-    addNotification: (state, action: PayloadAction<Omit<Notification, 'id' | 'timestamp' | 'read'>>) => {
-      const notification: Notification = {
-        ...action.payload,
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        read: false,
-      }
-      state.notifications.unshift(notification)
-      // Keep only last 50 notifications
-      if (state.notifications.length > 50) {
-        state.notifications = state.notifications.slice(0, 50)
+    updatePerformanceMetrics: (state, action: PayloadAction<any>) => {
+      // 更新策略性能數據
+      if (action.payload.updated_strategies) {
+        action.payload.updated_strategies.forEach((updatedStrategy: StrategyUpdate) => {
+          const index = state.realtimeStrategies.findIndex(s => s.id === updatedStrategy.id)
+          if (index !== -1) {
+            state.realtimeStrategies[index] = { ...state.realtimeStrategies[index], ...updatedStrategy }
+          } else {
+            state.realtimeStrategies.push(updatedStrategy)
+          }
+        })
       }
     },
-    removeNotification: (state, action: PayloadAction<string>) => {
-      state.notifications = state.notifications.filter(n => n.id !== action.payload)
-    },
-    markNotificationAsRead: (state, action: PayloadAction<string>) => {
-      const notification = state.notifications.find(n => n.id === action.payload)
-      if (notification) {
-        notification.read = true
+    addNewSignal: (state, action: PayloadAction<TradingSignal>) => {
+      // 限制信號數量，保持最新的100條
+      state.realtimeSignals.unshift(action.payload)
+      if (state.realtimeSignals.length > 100) {
+        state.realtimeSignals = state.realtimeSignals.slice(0, 100)
       }
     },
-    markAllNotificationsAsRead: (state) => {
-      state.notifications.forEach(n => {
-        n.read = true
-      })
+    updateSystemHealth: (state, action: PayloadAction<SystemHealth>) => {
+      state.systemHealth = action.payload
     },
-    clearNotifications: (state) => {
-      state.notifications = []
-    },
-    openModal: (state, action: PayloadAction<keyof UIState['modals']>) => {
-      state.modals[action.payload] = true
-    },
-    closeModal: (state, action: PayloadAction<keyof UIState['modals']>) => {
-      state.modals[action.payload] = false
-    },
-    closeAllModals: (state) => {
-      Object.keys(state.modals).forEach(key => {
-        state.modals[key as keyof UIState['modals']] = false
-      })
-    },
-    // Reset UI state (for logout)
-    resetUIState: () => {
-      return { ...initialState }
-    },
+    clearRealtimeData: (state) => {
+      state.realtimeStrategies = []
+      state.realtimeSignals = []
+      state.systemHealth = null
+    }
   },
 })
 
 export const {
   setTheme,
   toggleSidebar,
-  setSidebarCollapsed,
-  setCurrentPath,
-  setGlobalLoading,
-  setStrategiesLoading,
-  setAnalyticsLoading,
-  setMonitoringLoading,
-  addNotification,
-  removeNotification,
-  markNotificationAsRead,
-  markAllNotificationsAsRead,
-  clearNotifications,
-  openModal,
-  closeModal,
-  closeAllModals,
-  resetUIState,
+  setLoading,
+  setWebSocketStatus,
+  updateStrategyData,
+  updatePerformanceMetrics,
+  addNewSignal,
+  updateSystemHealth,
+  clearRealtimeData
 } = uiSlice.actions
 
 export default uiSlice.reducer
-
-// Selectors
-export const selectTheme = (state: { ui: UIState }) => state.ui.theme
-export const selectSidebarCollapsed = (state: { ui: UIState }) => state.ui.sidebarCollapsed
-export const selectCurrentPath = (state: { ui: UIState }) => state.ui.currentPath
-export const selectGlobalLoading = (state: { ui: UIState }) => state.ui.loading.global
-export const selectStrategiesLoading = (state: { ui: UIState }) => state.ui.loading.strategies
-export const selectAnalyticsLoading = (state: { ui: UIState }) => state.ui.loading.analytics
-export const selectMonitoringLoading = (state: { ui: UIState }) => state.ui.loading.monitoring
-export const selectNotifications = (state: { ui: UIState }) => state.ui.notifications
-export const selectUnreadNotifications = (state: { ui: UIState }) =>
-  state.ui.notifications.filter(n => !n.read)
-export const selectUnreadNotificationCount = (state: { ui: UIState }) =>
-  state.ui.notifications.filter(n => !n.read).length
-export const selectModals = (state: { ui: UIState }) => state.ui.modals
-export const selectModal = (state: { ui: UIState }, modalName: keyof UIState['modals']) =>
-  state.ui.modals[modalName]

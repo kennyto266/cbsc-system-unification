@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Tag, Space, Progress, Typography, Tooltip, BackTop } from 'antd';
 import { ArrowLeftOutlined, StarOutlined, TrophyOutlined, FireOutlined, ThunderboltOutlined } from '@ant-design/icons';
-import { Strategy } from '../../types/strategy';
+import { Strategy } from '../../types/index';
 import './StrategyList.css';
 
 const { Title, Text } = Typography;

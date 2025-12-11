@@ -2,9 +2,10 @@
 name: system-unification
 status: backlog
 created: 2025-12-09T08:46:41Z
+updated: 2025-12-10T02:20:00Z
 progress: 0%
 prd: .claude/prds/system-unification.md
-github: [Will be updated when synced to GitHub]
+github: https://github.com/kennyto266/cbsc-system-unification/tree/main/.claude/epics/system-unification
 ---
 
 # Epic: System Unification
@@ -172,10 +173,10 @@ github: [Will be updated when synced to GitHub]
 ---
 
 ## Tasks Created
-- [ ] 001.md - Setup Development Environment and API Gateway (parallel: true)
-- [ ] 002.md - Design Unified Data Model and Migration Tools (parallel: true)
-- [ ] 003.md - Implement Authentication and User Management Service (parallel: true)
-- [ ] 004.md - Build Frontend Foundation and Component Library (parallel: true)
+- [ ] #14 - Setup Development Environment and API Gateway (parallel: true)
+- [ ] #15 - Design Unified Data Model and Migration Tools (parallel: true)
+- [ ] #17 - Implement Authentication and User Management Service (parallel: true)
+- [ ] #18 - Build Frontend Foundation and Component Library (parallel: true)
 - [ ] 005.md - Migrate Core CBSC Strategy Management APIs (parallel: false)
 - [ ] 006.md - Implement Unified Dashboard and Monitoring UI (parallel: false)
 - [ ] 007.md - Build Testing Framework and Quality Assurance (parallel: true)
@@ -183,18 +184,18 @@ github: [Will be updated when synced to GitHub]
 
 ### 任务统计
 - **总任务数**: 8个
-- **并行任务**: 5个 (001, 002, 003, 004, 007)
+- **并行任务**: 5个 (14, 15, 17, 18, 007)
 - **串行任务**: 3个 (005, 006, 008)
 - **预计总工时**: 178-228小时
 - **预计完成时间**: 22-29个工作日 (约4-6周)
 
 ### 关键路径
-1. **基础设施层** (001) → **数据层** (002) → **认证层** (003)
-2. **前端基础** (004) → **策略API** (005) → **UI界面** (006)
+1. **基础设施层** (14) → **数据层** (15) → **认证层** (17)
+2. **前端基础** (18) → **策略API** (005) → **UI界面** (006)
 3. **测试框架** (007) → **生产部署** (008)
 
 ### 并行执行策略
-- **第1周**: 并行执行任务 001, 002, 003, 004
+- **第1周**: 并行执行任务 14, 15, 17, 18
 - **第2-3周**: 执行任务 005, 006 (依赖前期任务)
 - **第3-4周**: 并行执行任务 007, 进行任务 008 准备
 - **第4-6周**: 完成任务 008 和最终集成测试

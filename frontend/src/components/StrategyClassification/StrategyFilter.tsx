@@ -18,7 +18,7 @@ import {
   ClearOutlined,
   SearchOutlined
 } from '@ant-design/icons';
-import { StrategyGrade, StrategyCategory } from '../../types/strategy';
+import { StrategyGrade, StrategyCategory } from '../../types/index';
 import './StrategyFilter.css';
 
 interface FilterOptions {

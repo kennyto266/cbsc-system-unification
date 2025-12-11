@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 import logging
 import os
+import asyncio
 from datetime import datetime
 import sys
 
@@ -19,10 +20,16 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # 导入端点
 from api.auth_endpoints import router as auth_router
 from api.user_endpoints import router as user_router
+from api.personal_strategy_endpoints import router as personal_strategy_router
+from api.cbsc_strategy_api import router as cbsc_strategy_router
+from api.websocket_server import websocket_router
 
 # 导入服务
 from auth_simple import init_auth_service
 from user_profile import init_user_profile_service
+from api.cache_service import cache_service
+from api.middleware import setup_middleware
+from api.websocket_server import get_websocket_manager
 
 # 配置日志
 logging.basicConfig(
@@ -47,7 +54,12 @@ app = FastAPI(
 # CORS中间件
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # 允许前端域名
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8888",  # 允许Dashboard连接
+        "http://127.0.0.1:8888"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -60,6 +72,9 @@ if os.path.exists("uploads"):
 # 包含路由
 app.include_router(auth_router)
 app.include_router(user_router)
+app.include_router(personal_strategy_router)
+app.include_router(cbsc_strategy_router)
+app.include_router(websocket_router)
 
 # 全局异常处理器
 @app.exception_handler(Exception)
@@ -115,12 +130,16 @@ async def health_check():
         db.execute("SELECT 1")
         db.close()
 
+        # 检查缓存服务
+        cache_status = await cache_service.get_cache_info()
+
         return {
             "status": "healthy",
             "timestamp": datetime.utcnow().isoformat(),
             "version": "1.0.0",
             "checks": {
                 "database": {"status": "healthy"},
+                "cache": cache_status,
                 "api": {"status": "healthy"}
             }
         }
@@ -163,15 +182,33 @@ async def startup_event():
         os.makedirs("logs", exist_ok=True)
         os.makedirs("uploads", exist_ok=True)
 
+        # 初始化缓存服务
+        cache_success = await cache_service.initialize()
+        if cache_success:
+            logger.info("✅ 缓存服务初始化成功")
+        else:
+            logger.warning("⚠️ 缓存服务初始化失败，将继续运行但性能可能受影响")
+
         # 初始化认证服务
         init_auth_service()
 
         # 初始化用户资料服务
         init_user_profile_service()
 
+        # 设置中间件
+        setup_middleware(app)
+
+        # 启动WebSocket数据模拟
+        ws_manager = get_websocket_manager()
+        asyncio.create_task(ws_manager.start_data_simulation())
+        logger.info("✅ WebSocket实时数据模拟已启动")
+
         logger.info("✅ CBSC用户管理系统API启动成功")
         logger.info("📚 API文档: http://localhost:3004/docs")
         logger.info("🔍 健康检查: http://localhost:3004/health")
+        logger.info("📊 个人策略管理API: http://localhost:3004/api/personal-strategies")
+        logger.info("🔌 WebSocket端点: ws://localhost:3004/ws/strategies")
+        logger.info("🧠 CBSC策略管理API: http://localhost:3004/api/strategies")
 
     except Exception as e:
         logger.error(f"❌ 应用启动失败: {e}")
@@ -182,6 +219,19 @@ async def startup_event():
 async def shutdown_event():
     """应用关闭时执行"""
     logger.info("正在关闭CBSC用户管理系统API...")
+
+    try:
+        # 停止WebSocket数据模拟
+        ws_manager = get_websocket_manager()
+        ws_manager.stop_data_simulation()
+        logger.info("✅ WebSocket数据模拟已停止")
+
+        # 关闭缓存服务
+        await cache_service.close()
+        logger.info("✅ 缓存服务已关闭")
+
+    except Exception as e:
+        logger.error(f"❌ 关闭服务失败: {e}")
 
 # 中间件：请求日志
 @app.middleware("http")

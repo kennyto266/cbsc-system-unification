@@ -64,16 +64,55 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    target: 'esnext',
     rollupOptions: {
       output: {
         manualChunks: {
+          // 核心框架
           vendor: ['react', 'react-dom'],
-          antd: ['antd'],
+          // UI 库
+          ui: ['antd', '@ant-design/colors', '@ant-design/icons'],
+          // 图表库
           charts: ['chart.js', 'react-chartjs-2', 'recharts', 'plotly.js', 'react-plotly.js'],
-          utils: ['lodash', 'dayjs', 'axios']
-        }
-      }
-    }
+          // 工具库
+          utils: ['lodash', 'dayjs', 'axios'],
+          // 状态管理
+          state: ['@reduxjs/toolkit', 'react-redux', 'react-query', 'zustand'],
+          // 路由
+          router: ['react-router-dom'],
+          // 表单
+          forms: ['react-hook-form'],
+          // 样式和动画
+          styles: ['framer-motion', 'clsx', 'class-variance-authority', 'tailwind-merge'],
+        },
+        // 资源文件名优化
+        chunkFileNames: 'js/[name]-[hash].js',
+        entryFileNames: 'js/[name]-[hash].js',
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name?.split('.') || []
+          let extType = info[info.length - 1] || ''
+          if (/\.(mp4|webm|ogg|mp3|wav|flac|aac)$/.test(assetInfo.name || '')) {
+            extType = 'media'
+          } else if (/\.(png|jpe?g|gif|svg|webp|avif)$/.test(assetInfo.name || '')) {
+            extType = 'images'
+          } else if (/\.(woff2?|eot|ttf|otf)$/.test(assetInfo.name || '')) {
+            extType = 'fonts'
+          }
+          return `${extType}/[name]-[hash].[ext]`
+        },
+      },
+    },
+    // 压缩优化
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ['console.log'],
+      },
+    },
+    // 代码分割优化
+    chunkSizeWarningLimit: 1000,
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'antd', 'chart.js', 'recharts']

@@ -4,7 +4,7 @@ import {
   CalendarOutlined,
   VerifiedOutlined,
   AnalyticsOutlined,
-  TrendingUpOutlined,
+  RiseOutlined,
   PsychologyOutlined,
   SpeedOutlined,
   PieChartOutlined,
@@ -109,7 +109,7 @@ const StrategyCategories: React.FC<StrategyCategoriesProps> = ({
       'calendar_month': <CalendarOutlined />,
       'verified': <VerifiedOutlined />,
       'analytics': <AnalyticsOutlined />,
-      'trending_up': <TrendingUpOutlined />,
+      'trending_up': <RiseOutlined />,
       'psychology': <PsychologyOutlined />,
       'speed': <SpeedOutlined />,
       'pie_chart': <PieChartOutlined />

@@ -1,0 +1,258 @@
+# Prometheus configuration for CBSC System
+# CBSC系统Prometheus监控配置
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'cbsc-dev'
+    environment: 'development'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Rule files
+rule_files:
+  - "rules/*.yml"
+  - "alerts/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 5s
+    metrics_path: '/metrics'
+
+  # API网关监控
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'api-gateway'
+
+  # 用户管理服务监控
+  - job_name: 'user-management'
+    static_configs:
+      - targets: ['user-management:3004']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'user-management'
+
+  # 策略Dashboard服务监控
+  - job_name: 'strategy-dashboard'
+    static_configs:
+      - targets: ['strategy-dashboard:3003']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'strategy-dashboard'
+
+  # 配置服务监控
+  - job_name: 'config-service'
+    static_configs:
+      - targets: ['config-service:3005']
+    metrics_path: '/metrics'
+    scrape_interval: 20s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'config-service'
+
+  # 量化系统监控
+  - job_name: 'quant-system'
+    static_configs:
+      - targets: ['quant-system:8001']
+    metrics_path: '/api/metrics'
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'quant-system'
+
+  # Nginx监控
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:80']
+    metrics_path: '/nginx_status'
+    scrape_interval: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'nginx'
+
+  # Redis监控
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 10s
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'redis'
+
+  # PostgreSQL监控
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'postgres'
+
+  # 前端应用监控（如果有的话）
+  - job_name: 'frontend-dashboard'
+    static_configs:
+      - targets: ['frontend-dashboard:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'frontend-dashboard'
+
+  # 统一Dashboard监控
+  - job_name: 'unified-dashboard'
+    static_configs:
+      - targets: ['unified-dashboard:3001']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'unified-dashboard'
+
+  # Node Exporter（系统监控）
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets:
+        - 'node-exporter:9100'
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'docker-host'
+
+  # cAdvisor（容器监控）
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cadvisor'
+
+  # Grafana监控
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'grafana'
+
+  # Elasticsearch监控
+  - job_name: 'elasticsearch'
+    static_configs:
+      - targets: ['elasticsearch-exporter:9114']
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'elasticsearch'
+
+  # Kibana监控
+  - job_name: 'kibana'
+    static_configs:
+      - targets: ['kibana:5601']
+    metrics_path: '/api/status/metrics'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'kibana'
+
+  # Jaeger监控
+  - job_name: 'jaeger'
+    static_configs:
+      - targets: ['jaeger:14269']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'jaeger'
+
+  # Docker容器监控
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['docker-exporter:9323']
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'docker'
+
+  # 自定义业务指标
+  - job_name: 'business-metrics'
+    static_configs:
+      - targets: ['api-gateway:8000']
+    metrics_path: '/api/metrics/business'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'business-metrics'
+
+  # 健康检查监控
+  - job_name: 'health-checks'
+    static_configs:
+      - targets:
+        - 'api-gateway:8000'
+        - 'user-management:3004'
+        - 'strategy-dashboard:3003'
+        - 'config-service:3005'
+    metrics_path: '/health'
+    scrape_interval: 30s
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+):([0-9]+)'
+        replacement: '${1}'
+
+# 远程写入配置（可选）
+# remote_write:
+#   - url: "http://remote-storage:9201/api/v1/write"
+#     queue_config:
+#       max_samples_per_send: 1000
+#       max_shards: 200
+#       capacity: 2500
+
+# 远程读取配置（可选）
+# remote_read:
+#   - url: "http://remote-storage:9201/api/v1/read"
+#     read_recent: true

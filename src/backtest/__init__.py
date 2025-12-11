@@ -6,14 +6,14 @@
 
 from .config import StockBacktestConfig  # pragma: no cover
 from .engine_interface import BaseBacktestEngine, BacktestEngineConfig
-from .stockbacktest_integration import StockBacktestIntegration
-from .strategy_performance import BacktestMetrics, StrategyPerformance
+# from .stockbacktest_integration import StockBacktestIntegration  # Temporarily disabled
+# from .strategy_performance import BacktestMetrics, StrategyPerformance  # Temporarily disabled
 
 __all__ = [
     "StockBacktestConfig",
     'BaseBacktestEngine',
     'BacktestEngineConfig', 
-    'StockBacktestIntegration',
-    'StrategyPerformance',
-    'BacktestMetrics',
+    # 'StockBacktestIntegration',
+    # 'StrategyPerformance',
+    # 'BacktestMetrics',
 ]

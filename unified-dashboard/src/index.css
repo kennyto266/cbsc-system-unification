@@ -1,0 +1,388 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS Reset and Base Styles */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  * {
+    border-width: 0;
+    border-style: solid;
+    border-color: theme('colors.gray.200');
+  }
+
+  html {
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    -moz-tab-size: 4;
+    tab-size: 4;
+    font-family: theme('fontFamily.sans');
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  body {
+    margin: 0;
+    font-family: theme('fontFamily.sans');
+    line-height: inherit;
+    color: theme('colors.gray.900');
+    background-color: theme('colors.white');
+  }
+
+  /* 改善表单元素的默认样式 */
+  input,
+  textarea,
+  select,
+  button {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+    margin: 0;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: default;
+  }
+
+  /* 改善链接的默认样式 */
+  a {
+    color: inherit;
+    text-decoration: inherit;
+  }
+
+  /* 改善列表的默认样式 */
+  ol,
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 改善图片的默认样式 */
+  img,
+  svg,
+  video,
+  canvas,
+  audio,
+  iframe,
+  embed,
+  object {
+    display: block;
+    vertical-align: middle;
+  }
+
+  img,
+  video {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* 改善表格的默认样式 */
+  table {
+    text-indent: 0;
+    border-color: inherit;
+    border-collapse: collapse;
+  }
+
+  /* 改善标题的默认样式 */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-size: inherit;
+    font-weight: inherit;
+    margin: 0;
+  }
+
+  /* 改善段落的默认样式 */
+  p {
+    margin: 0;
+  }
+
+  /* 改善代码的默认样式 */
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: theme('fontFamily.mono');
+    font-size: 1em;
+  }
+
+  /* 改善引用的默认样式 */
+  blockquote {
+    margin: 0;
+  }
+
+  /* 改善水平分割线的默认样式 */
+  hr {
+    height: 0;
+    color: inherit;
+    border-top-width: 1px;
+  }
+
+  /* 改善abbr的默认样式 */
+  abbr:where([title]) {
+    text-decoration: underline dotted;
+  }
+
+  /* 改善搜索输入框的默认样式 */
+  input:where([type='search']) {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* 改善滚动条样式 */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: theme('colors.gray.100');
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: theme('colors.gray.300');
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: theme('colors.gray.400');
+  }
+
+  /* 改善选择文本的样式 */
+  ::selection {
+    background-color: theme('colors.primary.200');
+    color: theme('colors.primary.900');
+  }
+
+  /* 改善焦点样式 */
+  :focus-visible {
+    outline: 2px solid theme('colors.primary.500');
+    outline-offset: 2px;
+  }
+
+  /* 改善占位符文本样式 */
+  ::placeholder {
+    color: theme('colors.gray.500');
+    opacity: 1;
+  }
+
+  /* Screen reader only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    :root {
+      color-scheme: light;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+    }
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+}
+
+@layer components {
+  /* 自定义组件样式 */
+  .btn-group {
+    @apply inline-flex rounded-md overflow-hidden;
+  }
+
+  .btn-group > * {
+    @apply rounded-none;
+  }
+
+  .btn-group > *:first-child {
+    @apply rounded-l-md;
+  }
+
+  .btn-group > *:last-child {
+    @apply rounded-r-md;
+  }
+
+  /* 输入组样式 */
+  .input-group {
+    @apply relative flex items-stretch;
+  }
+
+  .input-group > *:not(:last-child) {
+    @apply rounded-r-none;
+  }
+
+  .input-group > *:not(:first-child) {
+    @apply rounded-l-none;
+  }
+
+  .input-group > *:first-child {
+    @apply rounded-l-md;
+  }
+
+  .input-group > *:last-child {
+    @apply rounded-r-md;
+  }
+
+  /* 卡片组样式 */
+  .card-group {
+    @apply grid gap-6;
+  }
+
+  /* 响应式容器 */
+  .responsive-container {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* 页面标题 */
+  .page-title {
+    @apply text-3xl font-bold text-gray-900 mb-8;
+  }
+
+  .page-subtitle {
+    @apply text-lg text-gray-600 mb-6;
+  }
+
+  /* 节标题 */
+  .section-title {
+    @apply text-2xl font-semibold text-gray-900 mb-6;
+  }
+
+  /* 加载动画 */
+  .loading-spinner {
+    @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary-600;
+  }
+
+  /* 错误状态 */
+  .error-text {
+    @apply text-error-600 text-sm;
+  }
+
+  /* 成功状态 */
+  .success-text {
+    @apply text-success-600 text-sm;
+  }
+
+  /* 警告状态 */
+  .warning-text {
+    @apply text-warning-600 text-sm;
+  }
+}
+
+@layer utilities {
+  /* 文本渐变 */
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-primary-600 to-cbsc-cyan bg-clip-text text-transparent;
+  }
+
+  .text-gradient-success {
+    @apply bg-gradient-to-r from-success-600 to-success-400 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-warning {
+    @apply bg-gradient-to-r from-warning-600 to-warning-400 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-error {
+    @apply bg-gradient-to-r from-error-600 to-error-400 bg-clip-text text-transparent;
+  }
+
+  /* 玻璃效果 */
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-sm border border-white/20;
+  }
+
+  .glass-effect-dark {
+    @apply bg-black/80 backdrop-blur-sm border border-white/10;
+  }
+
+  /* 悬浮阴影 */
+  .hover-shadow-sm {
+    @apply transition-shadow duration-200 hover:shadow-md;
+  }
+
+  .hover-shadow-md {
+    @apply transition-shadow duration-200 hover:shadow-lg;
+  }
+
+  .hover-shadow-lg {
+    @apply transition-shadow duration-200 hover:shadow-xl;
+  }
+
+  /* 安全区域 */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* 打印样式 */
+  @media print {
+    .print-hidden {
+      display: none !important;
+    }
+
+    .print-only {
+      display: block !important;
+    }
+  }
+
+  /* 打印时只显示 */
+  .print-only {
+    display: none;
+  }
+
+  @media print {
+    .print-only {
+      display: block;
+    }
+  }
+}

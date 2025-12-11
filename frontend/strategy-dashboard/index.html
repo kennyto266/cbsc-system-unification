@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CBSC個人策略管理Dashboard - 實時量化交易策略監控與管理系統">
+    <meta name="keywords" content="CBSC,量化交易,策略管理,Dashboard,監控">
+    <meta name="author" content="CBSC Team">
+
+    <!-- Title -->
+    <title>CBSC策略管理Dashboard | 個人量化交易平台</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/dashboard.css">
+
+    <!-- Preload critical resources -->
+    <link rel="preload" href="../assets/logo.svg" as="image">
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#2c3e50">
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p>正在載入策略管理系統...</p>
+    </div>
+
+    <!-- Main Application Container -->
+    <div id="app" class="app-container">
+        <!-- Header Navigation -->
+        <header class="app-header">
+            <div class="header-container">
+                <div class="header-left">
+                    <div class="logo-section">
+                        <img src="../assets/logo.svg" alt="CBSC Logo" class="logo">
+                        <h1 class="app-title">CBSC策略管理Dashboard</h1>
+                    </div>
+                    <nav class="main-nav">
+                        <a href="#dashboard" class="nav-link active" data-page="dashboard">
+                            <span class="nav-icon">📊</span>
+                            <span class="nav-text">儀表板</span>
+                        </a>
+                        <a href="#strategies" class="nav-link" data-page="strategies">
+                            <span class="nav-icon">🎯</span>
+                            <span class="nav-text">策略管理</span>
+                        </a>
+                        <a href="#performance" class="nav-link" data-page="performance">
+                            <span class="nav-icon">📈</span>
+                            <span class="nav-text">績效分析</span>
+                        </a>
+                        <a href="#settings" class="nav-link" data-page="settings">
+                            <span class="nav-icon">⚙️</span>
+                            <span class="nav-text">設定</span>
+                        </a>
+                    </nav>
+                </div>
+                <div class="header-right">
+                    <button id="refresh-btn" class="btn btn-secondary" title="刷新數據">
+                        <span class="refresh-icon">🔄</span>
+                        刷新
+                    </button>
+                    <div class="connection-status">
+                        <span class="status-indicator" id="status-indicator"></span>
+                        <span class="status-text" id="status-text">檢查連接中...</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <div class="main-container">
+                <!-- Dashboard Page -->
+                <div id="dashboard-page" class="page-content active">
+                    <!-- Performance Summary Section -->
+                    <section class="performance-summary">
+                        <h2 class="section-title">策略總覽</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card primary">
+                                <div class="stat-header">
+                                    <h3>總策略數</h3>
+                                    <span class="stat-icon">📋</span>
+                                </div>
+                                <div class="stat-value" id="total-strategies">-</div>
+                                <div class="stat-change positive">+2 本週新增</div>
+                            </div>
+                            <div class="stat-card success">
+                                <div class="stat-header">
+                                    <h3>平均年化收益</h3>
+                                    <span class="stat-icon">💰</span>
+                                </div>
+                                <div class="stat-value" id="avg-return">-</div>
+                                <div class="stat-change positive">+1.2% 較上週</div>
+                            </div>
+                            <div class="stat-card warning">
+                                <div class="stat-header">
+                                    <h3>平均夏普比率</h3>
+                                    <span class="stat-icon">📊</span>
+                                </div>
+                                <div class="stat-value" id="avg-sharpe">-</div>
+                                <div class="stat-change neutral">持平</div>
+                            </div>
+                            <div class="stat-card info">
+                                <div class="stat-header">
+                                    <h3>平均勝率</h3>
+                                    <span class="stat-icon">🎯</span>
+                                </div>
+                                <div class="stat-value" id="avg-winrate">-</div>
+                                <div class="stat-change positive">+0.5% 較上週</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Two Column Layout -->
+                    <div class="content-columns">
+                        <!-- Left Column: Performance Charts -->
+                        <div class="column-left">
+                            <section class="chart-section">
+                                <div class="section-header">
+                                    <h2 class="section-title">策略表現趨勢</h2>
+                                    <div class="chart-controls">
+                                        <select id="timeframe-select" class="timeframe-select">
+                                            <option value="1d">1天</option>
+                                            <option value="1w">1週</option>
+                                            <option value="1m" selected>1月</option>
+                                            <option value="3m">3月</option>
+                                            <option value="1y">1年</option>
+                                        </select>
+                                        <button class="btn btn-sm" onclick="toggleChartType()">
+                                            切換圖表
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="performance-chart"></canvas>
+                                    <div class="chart-placeholder">
+                                        <div class="chart-loading">載入圖表中...</div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="chart-section">
+                                <h2 class="section-title">策略分佈</h2>
+                                <div class="chart-container">
+                                    <canvas id="distribution-chart"></canvas>
+                                    <div class="chart-placeholder">
+                                        <div class="chart-loading">載入圖表中...</div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- Right Column: Strategy Management -->
+                        <div class="column-right">
+                            <section class="strategy-section">
+                                <div class="section-header">
+                                    <h2 class="section-title">策略管理</h2>
+                                    <div class="strategy-controls">
+                                        <select id="category-filter" class="filter-select">
+                                            <option value="all">所有策略</option>
+                                            <option value="monthly_low_frequency">月度低頻</option>
+                                            <option value="multi_strategy_validation">多策略驗證</option>
+                                            <option value="multi_factor_model">多因子模型</option>
+                                            <option value="core_cbsc_technical">技術分析</option>
+                                            <option value="core_cbsc_sentiment">情緒分析</option>
+                                            <option value="core_cbsc_aggressive">激進策略</option>
+                                        </select>
+                                        <button class="btn btn-primary btn-sm" onclick="addNewStrategy()">
+                                            + 新增策略
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Strategy List -->
+                                <div class="strategy-list" id="strategy-list">
+                                    <!-- Strategy items will be dynamically loaded here -->
+                                    <div class="strategy-placeholder">
+                                        <div class="loading-spinner small"></div>
+                                        <p>載入策略列表...</p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <!-- Quick Actions -->
+                            <section class="quick-actions">
+                                <h2 class="section-title">快速操作</h2>
+                                <div class="action-grid">
+                                    <button class="action-card" onclick="exportReport()">
+                                        <span class="action-icon">📄</span>
+                                        <span class="action-title">導出報告</span>
+                                        <span class="action-desc">生成績效報告</span>
+                                    </button>
+                                    <button class="action-card" onclick="optimizeStrategies()">
+                                        <span class="action-icon">⚡</span>
+                                        <span class="action-title">策略優化</span>
+                                        <span class="action-desc">批量優化參數</span>
+                                    </button>
+                                    <button class="action-card" onclick="runBacktest()">
+                                        <span class="action-icon">🧪</span>
+                                        <span class="action-title">回測分析</span>
+                                        <span class="action-desc">歷史數據回測</span>
+                                    </button>
+                                    <button class="action-card" onclick="viewAlerts()">
+                                        <span class="action-icon">🔔</span>
+                                        <span class="action-title">風險提醒</span>
+                                        <span class="action-desc">查看風險警報</span>
+                                    </button>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other Pages (Hidden by default) -->
+                <div id="strategies-page" class="page-content">
+                    <h2>策略管理頁面</h2>
+                    <p>詳細的策略管理功能即將推出...</p>
+                </div>
+
+                <div id="performance-page" class="page-content">
+                    <h2>績效分析頁面</h2>
+                    <p>詳細的績效分析功能即將推出...</p>
+                </div>
+
+                <div id="settings-page" class="page-content">
+                    <h2>設定頁面</h2>
+                    <p>系統設定功能即將推出...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="footer-container">
+                <div class="footer-left">
+                    <p>&copy; 2025 CBSC量化交易系統. 版權所有.</p>
+                </div>
+                <div class="footer-right">
+                    <span class="footer-version">v1.0.0</span>
+                    <span class="footer-separator">|</span>
+                    <a href="#help" class="footer-link">幫助中心</a>
+                    <span class="footer-separator">|</span>
+                    <a href="#contact" class="footer-link">聯繫我們</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="notification-container"></div>
+
+    <!-- JavaScript -->
+    <script src="js/dashboard.js"></script>
+
+    <!-- Chart.js Library (for future use) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Initialize Application -->
+    <script>
+        // Initialize dashboard when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if Dashboard class is available
+            if (typeof Dashboard !== 'undefined') {
+                window.dashboard = new Dashboard();
+                window.dashboard.init();
+            } else {
+                console.error('Dashboard class not found. Please check dashboard.js is loaded correctly.');
+                // Hide loading screen and show error
+                const loadingScreen = document.getElementById('loading-screen');
+                const app = document.getElementById('app');
+                if (loadingScreen) loadingScreen.style.display = 'none';
+                if (app) {
+                    app.style.display = 'block';
+                    app.innerHTML = '<div class="error-message">系統載入失敗，請重新整理頁面。</div>';
+                }
+            }
+        });
+
+        // Handle page visibility changes for performance optimization
+        document.addEventListener('visibilitychange', function() {
+            if (window.dashboard) {
+                if (document.hidden) {
+                    window.dashboard.pause();
+                } else {
+                    window.dashboard.resume();
+                }
+            }
+        });
+
+        // Handle online/offline status
+        window.addEventListener('online', function() {
+            if (window.dashboard) {
+                window.dashboard.updateConnectionStatus(true);
+            }
+        });
+
+        window.addEventListener('offline', function() {
+            if (window.dashboard) {
+                window.dashboard.updateConnectionStatus(false);
+            }
+        });
+    </script>
+</body>
+</html>
