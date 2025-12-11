@@ -1,5 +1,5 @@
 import React from 'react';
-import { StrategyFilter } from '../../types/strategy';
+import { StrategyFilter } from '../../types/index';
 
 interface StrategyFiltersProps {
   filters: StrategyFilter;

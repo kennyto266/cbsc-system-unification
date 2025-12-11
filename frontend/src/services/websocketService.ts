@@ -1,4 +1,4 @@
-import { WebSocketMessage, Strategy, PerformanceMetrics } from '../types/strategy';
+import { WebSocketMessage, Strategy, PerformanceMetrics } from '../types/index';
 
 export class WebSocketService {
   private ws: WebSocket | null = null;

@@ -5,24 +5,28 @@ import { Layout, Spin } from 'antd'
 import { Helmet } from 'react-helmet-async'
 
 // Components
-import ProtectedRoute from '@components/auth/ProtectedRoute'
-import AppLayout from '@components/layout/AppLayout'
-import LoadingScreen from '@components/ui/LoadingScreen'
+import UnifiedDashboard from './components/UnifiedDashboard/UnifiedDashboard'
+import AuthPage from './pages/auth/AuthPage'
+import ErrorPage from './pages/error/ErrorPage'
+import ProtectedRoute from './components/auth/ProtectedRoute'
+import AppLayout from './components/layout/AppLayout'
+import LoadingScreen from './components/ui/LoadingScreen'
 
 // Pages
-import LoginPage from '@pages/auth/LoginPage'
-import RegisterPage from '@pages/auth/RegisterPage'
-import ForgotPasswordPage from '@pages/auth/ForgotPasswordPage'
-import DashboardPage from '@pages/dashboard/DashboardPage'
-import StrategiesPage from '@pages/strategies/StrategiesPage'
-import StrategyDetailPage from '@pages/strategies/StrategyDetailPage'
-import CreateStrategyPage from '@pages/strategies/CreateStrategyPage'
-import MonitoringPage from '@pages/monitoring/MonitoringPage'
-import AnalyticsPage from '@pages/analytics/AnalyticsPage'
-import ReportsPage from '@pages/reports/ReportsPage'
-import SettingsPage from '@pages/settings/SettingsPage'
-import ProfilePage from '@pages/profile/ProfilePage'
-import NotFoundPage from '@pages/error/NotFoundPage'
+import LoginPage from './pages/auth/LoginPage'
+import RegisterPage from './pages/auth/RegisterPage'
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
+import DashboardPage from './pages/dashboard/DashboardPage'
+import StrategiesPage from './pages/strategies/StrategiesPage'
+import StrategyDetailPage from './pages/strategies/StrategyDetailPage'
+import CreateStrategyPage from './pages/strategies/CreateStrategyPage'
+import MonitoringPage from './pages/monitoring/MonitoringPage'
+import AnalyticsPage from './pages/analytics/AnalyticsPage'
+import ReportsPage from './pages/reports/ReportsPage'
+import SettingsPage from './pages/settings/SettingsPage'
+import ProfilePage from './pages/profile/ProfilePage'
+import Showcase from './pages/Showcase'
+import NotFoundPage from './pages/error/NotFoundPage'
 
 // Hooks
 import { useAuth } from '@hooks/useAuth'
@@ -112,7 +116,68 @@ const App: React.FC = () => {
         />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-        {/* Protected routes */}
+        {/* Component Showcase */}
+        <Route path="/showcase" element={<Showcase />} />
+
+        {/* Unified Dashboard Routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <UnifiedDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <UnifiedDashboard defaultPage="dashboard" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/strategies"
+          element={
+            <ProtectedRoute>
+              <UnifiedDashboard defaultPage="strategies" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/monitoring"
+          element={
+            <ProtectedRoute>
+              <UnifiedDashboard defaultPage="monitoring" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <UnifiedDashboard defaultPage="analytics" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <UnifiedDashboard defaultPage="settings" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <UnifiedDashboard defaultPage="profile" />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Legacy Protected routes */}
         <Route
           path="/*"
           element={
@@ -120,24 +185,17 @@ const App: React.FC = () => {
               <AppLayout>
                 <Content style={{ margin: '24px', padding: '24px', background: '#fff', borderRadius: '8px' }}>
                   <Routes>
-                    {/* Dashboard */}
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                    <Route path="/dashboard" element={<DashboardPage />} />
-
                     {/* Strategy Management */}
-                    <Route path="/strategies" element={<StrategiesPage />} />
                     <Route path="/strategies/new" element={<CreateStrategyPage />} />
                     <Route path="/strategies/:id" element={<StrategyDetailPage />} />
                     <Route path="/strategies/:id/edit" element={<CreateStrategyPage />} />
 
                     {/* Monitoring */}
-                    <Route path="/monitoring" element={<MonitoringPage />} />
                     <Route path="/monitoring/system" element={<MonitoringPage />} />
                     <Route path="/monitoring/strategies" element={<MonitoringPage />} />
                     <Route path="/monitoring/alerts" element={<MonitoringPage />} />
 
                     {/* Analytics */}
-                    <Route path="/analytics" element={<AnalyticsPage />} />
                     <Route path="/analytics/portfolio" element={<AnalyticsPage />} />
                     <Route path="/analytics/strategies" element={<AnalyticsPage />} />
                     <Route path="/analytics/market" element={<AnalyticsPage />} />
@@ -149,8 +207,6 @@ const App: React.FC = () => {
                     <Route path="/reports/history" element={<ReportsPage />} />
 
                     {/* Settings */}
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/settings/profile" element={<ProfilePage />} />
                     <Route path="/settings/security" element={<SettingsPage />} />
                     <Route path="/settings/preferences" element={<SettingsPage />} />
                     <Route path="/settings/api-keys" element={<SettingsPage />} />

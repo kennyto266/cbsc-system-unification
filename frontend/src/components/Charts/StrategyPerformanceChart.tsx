@@ -28,7 +28,7 @@ import {
   ReloadOutlined,
   InfoCircleOutlined
 } from '@ant-design/icons';
-import { Strategy } from '../../types/strategy';
+import { Strategy } from '../../types/index';
 import './StrategyPerformanceChart.css';
 
 const { Title, Text } = Typography;

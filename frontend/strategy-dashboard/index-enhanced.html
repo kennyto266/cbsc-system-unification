@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CBSC個人策略管理Dashboard - 增強版UI組件展示">
+    <meta name="keywords" content="CBSC,量化交易,策略管理,Dashboard,監控,組件">
+    <meta name="author" content="CBSC Team">
+
+    <!-- Title -->
+    <title>CBSC策略管理Dashboard | 增強版組件展示</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/components.css">
+
+    <!-- Preload critical resources -->
+    <link rel="preload" href="../assets/logo.svg" as="image">
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#2c3e50">
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p>正在載入增強版策略管理系統...</p>
+    </div>
+
+    <!-- Main Application Container -->
+    <div id="app" class="app-container">
+        <!-- Header Navigation -->
+        <header class="app-header">
+            <div class="header-container">
+                <div class="header-left">
+                    <div class="logo-section">
+                        <img src="../assets/logo.svg" alt="CBSC Logo" class="logo">
+                        <h1 class="app-title">CBSC策略管理Dashboard</h1>
+                    </div>
+                    <nav class="main-nav">
+                        <a href="#dashboard" class="nav-link active" data-page="dashboard">
+                            <span class="nav-icon">📊</span>
+                            <span class="nav-text">儀表板</span>
+                        </a>
+                        <a href="#strategies" class="nav-link" data-page="strategies">
+                            <span class="nav-icon">🎯</span>
+                            <span class="nav-text">策略管理</span>
+                        </a>
+                        <a href="#performance" class="nav-link" data-page="performance">
+                            <span class="nav-icon">📈</span>
+                            <span class="nav-text">績效分析</span>
+                        </a>
+                        <a href="#settings" class="nav-link" data-page="settings">
+                            <span class="nav-icon">⚙️</span>
+                            <span class="nav-text">設定</span>
+                        </a>
+                    </nav>
+                </div>
+                <div class="header-right">
+                    <button id="refresh-btn" class="btn btn-secondary" title="刷新數據">
+                        <span class="refresh-icon">🔄</span>
+                        刷新
+                    </button>
+                    <div class="connection-status">
+                        <span class="status-indicator" id="status-indicator"></span>
+                        <span class="status-text" id="status-text">檢查連接中...</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <div class="main-container">
+                <!-- Dashboard Page -->
+                <div id="dashboard-page" class="page-content active">
+                    <!-- Performance Summary Section with New Components -->
+                    <section class="performance-summary">
+                        <h2 class="section-title">策略總覽 - 增強版組件展示</h2>
+
+                        <!-- Performance Cards Component -->
+                        <div id="performance-cards" class="performance-cards-container">
+                            <!-- Performance cards will be dynamically loaded here -->
+                            <div class="performance-cards-grid">
+                                <!-- Placeholder cards will be replaced by component -->
+                                <div class="performance-card primary">
+                                    <div class="card-header">
+                                        <h3 class="card-title">總體表現</h3>
+                                        <span class="card-icon">📊</span>
+                                    </div>
+                                    <div class="card-content">
+                                        <div class="main-metric">
+                                            <span class="metric-value">-</span>
+                                            <span class="metric-label">綜合評分</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="performance-card success">
+                                    <div class="card-header">
+                                        <h3 class="card-title">夏普比率</h3>
+                                        <span class="card-icon">📈</span>
+                                    </div>
+                                    <div class="card-content">
+                                        <div class="main-metric">
+                                            <span class="metric-value">-</span>
+                                            <span class="metric-label">平均SR</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="performance-card warning">
+                                    <div class="card-header">
+                                        <h3 class="card-title">最大回撤</h3>
+                                        <span class="card-icon">📉</span>
+                                    </div>
+                                    <div class="card-content">
+                                        <div class="main-metric">
+                                            <span class="metric-value">-</span>
+                                            <span class="metric-label">平均MDD</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="performance-card info">
+                                    <div class="card-header">
+                                        <h3 class="card-title">勝率</h3>
+                                        <span class="card-icon">🎯</span>
+                                    </div>
+                                    <div class="card-content">
+                                        <div class="main-metric">
+                                            <span class="metric-value">-</span>
+                                            <span class="metric-label">平均勝率</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status Indicators Section -->
+                        <div class="status-indicators-section">
+                            <h3 class="section-subtitle">策略狀態監控</h3>
+                            <div id="status-indicators" class="status-indicators-container">
+                                <!-- Status indicators will be dynamically loaded here -->
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Enhanced Strategy List Section -->
+                    <section class="strategy-section-enhanced">
+                        <div class="section-header">
+                            <h2 class="section-title">策略列表管理</h2>
+                            <div class="strategy-controls">
+                                <select id="category-filter" class="filter-select">
+                                    <option value="all">所有策略</option>
+                                    <option value="monthly_low_frequency">月度低頻</option>
+                                    <option value="multi_strategy_validation">多策略驗證</option>
+                                    <option value="multi_factor_model">多因子模型</option>
+                                    <option value="core_cbsc_technical">技術分析</option>
+                                    <option value="core_cbsc_sentiment">情緒分析</option>
+                                    <option value="core_cbsc_aggressive">激進策略</option>
+                                </select>
+                                <button class="btn btn-primary btn-sm" onclick="addNewStrategy()">
+                                    + 新增策略
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Enhanced Strategy List Component -->
+                        <div class="strategy-list-enhanced" id="strategy-list">
+                            <!-- Strategy list will be dynamically loaded by the component -->
+                            <div class="strategy-placeholder">
+                                <div class="loading-spinner small"></div>
+                                <p>載入策略列表組件...</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Component Demonstration Section -->
+                    <section class="component-demo-section">
+                        <h2 class="section-title">組件功能展示</h2>
+                        <div class="demo-grid">
+                            <!-- Strategy Toggle Demo -->
+                            <div class="demo-card">
+                                <h3 class="demo-title">策略切換開關</h3>
+                                <div class="demo-content">
+                                    <div class="strategy-toggle-item">
+                                        <div class="toggle-info">
+                                            <h4 class="strategy-name">月度RSI策略</h4>
+                                            <p class="strategy-description">基於月度RSI信號的低頻交易策略</p>
+                                        </div>
+                                        <div class="toggle-container" id="demo-toggle-1"></div>
+                                    </div>
+                                    <div class="strategy-toggle-item">
+                                        <div class="toggle-info">
+                                            <h4 class="strategy-name">多策略驗證系統</h4>
+                                            <p class="strategy-description">結合多種策略信號進行風險控制</p>
+                                        </div>
+                                        <div class="toggle-container" id="demo-toggle-2"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Status Indicator Demo -->
+                            <div class="demo-card">
+                                <h3 class="demo-title">狀態指示器</h3>
+                                <div class="demo-content">
+                                    <div class="status-demo-grid">
+                                        <div class="status-demo-item">
+                                            <div class="status-demo-label">運行中</div>
+                                            <div class="status-demo-indicator" id="demo-status-active"></div>
+                                        </div>
+                                        <div class="status-demo-item">
+                                            <div class="status-demo-label">載入中</div>
+                                            <div class="status-demo-indicator" id="demo-status-loading"></div>
+                                        </div>
+                                        <div class="status-demo-item">
+                                            <div class="status-demo-label">警告</div>
+                                            <div class="status-demo-indicator" id="demo-status-warning"></div>
+                                        </div>
+                                        <div class="status-demo-item">
+                                            <div class="status-demo-label">錯誤</div>
+                                            <div class="status-demo-indicator" id="demo-status-error"></div>
+                                        </div>
+                                        <div class="status-demo-item">
+                                            <div class="status-demo-label">已停止</div>
+                                            <div class="status-demo-indicator" id="demo-status-inactive"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Legacy Stats Summary (Backward Compatibility) -->
+                    <section class="legacy-stats-section">
+                        <h2 class="section-title">傳統統計摘要</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card primary">
+                                <div class="stat-header">
+                                    <h3>總策略數</h3>
+                                    <span class="stat-icon">📋</span>
+                                </div>
+                                <div class="stat-value" id="total-strategies">-</div>
+                                <div class="stat-change positive">+2 本週新增</div>
+                            </div>
+                            <div class="stat-card success">
+                                <div class="stat-header">
+                                    <h3>平均年化收益</h3>
+                                    <span class="stat-icon">💰</span>
+                                </div>
+                                <div class="stat-value" id="avg-return">-</div>
+                                <div class="stat-change positive">+1.2% 較上週</div>
+                            </div>
+                            <div class="stat-card warning">
+                                <div class="stat-header">
+                                    <h3>平均夏普比率</h3>
+                                    <span class="stat-icon">📊</span>
+                                </div>
+                                <div class="stat-value" id="avg-sharpe">-</div>
+                                <div class="stat-change neutral">持平</div>
+                            </div>
+                            <div class="stat-card info">
+                                <div class="stat-header">
+                                    <h3>平均勝率</h3>
+                                    <span class="stat-icon">🎯</span>
+                                </div>
+                                <div class="stat-value" id="avg-winrate">-</div>
+                                <div class="stat-change positive">+0.5% 較上週</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Quick Actions -->
+                    <section class="quick-actions">
+                        <h2 class="section-title">快速操作</h2>
+                        <div class="action-grid">
+                            <button class="action-card" onclick="exportReport()">
+                                <span class="action-icon">📄</span>
+                                <span class="action-title">導出報告</span>
+                                <span class="action-desc">生成績效報告</span>
+                            </button>
+                            <button class="action-card" onclick="optimizeStrategies()">
+                                <span class="action-icon">⚡</span>
+                                <span class="action-title">策略優化</span>
+                                <span class="action-desc">批量優化參數</span>
+                            </button>
+                            <button class="action-card" onclick="runBacktest()">
+                                <span class="action-icon">🧪</span>
+                                <span class="action-title">回測分析</span>
+                                <span class="action-desc">歷史數據回測</span>
+                            </button>
+                            <button class="action-card" onclick="viewAlerts()">
+                                <span class="action-icon">🔔</span>
+                                <span class="action-title">風險提醒</span>
+                                <span class="action-desc">查看風險警報</span>
+                            </button>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Other Pages (Hidden by default) -->
+                <div id="strategies-page" class="page-content">
+                    <h2>策略管理頁面</h2>
+                    <p>詳細的策略管理功能即將推出...</p>
+                </div>
+
+                <div id="performance-page" class="page-content">
+                    <h2>績效分析頁面</h2>
+                    <p>詳細的績效分析功能即將推出...</p>
+                </div>
+
+                <div id="settings-page" class="page-content">
+                    <h2>設定頁面</h2>
+                    <p>系統設定功能即將推出...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="footer-container">
+                <div class="footer-left">
+                    <p>&copy; 2025 CBSC量化交易系統. 版權所有.</p>
+                </div>
+                <div class="footer-right">
+                    <span class="footer-version">v2.0.0 Enhanced</span>
+                    <span class="footer-separator">|</span>
+                    <a href="#help" class="footer-link">幫助中心</a>
+                    <span class="footer-separator">|</span>
+                    <a href="#contact" class="footer-link">聯繫我們</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="notification-container"></div>
+
+    <!-- JavaScript Components -->
+    <!-- Load components first -->
+    <script src="js/components/StrategyList.js"></script>
+    <script src="js/components/PerformanceCards.js"></script>
+    <script src="js/components/StatusIndicator.js"></script>
+    <script src="js/components/StrategyToggle.js"></script>
+
+    <!-- Load enhanced dashboard -->
+    <script src="js/dashboard-enhanced.js"></script>
+
+    <!-- Chart.js Library (for future use) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Initialize Enhanced Application -->
+    <script>
+        // Initialize demo components after page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize demo toggles
+            setTimeout(() => {
+                try {
+                    // Demo toggle 1
+                    if (typeof StrategyToggle !== 'undefined') {
+                        const demoToggle1 = new StrategyToggle(
+                            document.getElementById('demo-toggle-1'),
+                            '月度RSI策略',
+                            {
+                                onToggle: async (enabled) => {
+                                    console.log('Demo Toggle 1:', enabled);
+                                    return true;
+                                }
+                            }
+                        );
+                        demoToggle1.setState(true, false);
+
+                        // Demo toggle 2
+                        const demoToggle2 = new StrategyToggle(
+                            document.getElementById('demo-toggle-2'),
+                            '多策略驗證系統',
+                            {
+                                onToggle: async (enabled) => {
+                                    console.log('Demo Toggle 2:', enabled);
+                                    return true;
+                                }
+                            }
+                        );
+                        demoToggle2.setState(false, false);
+                    }
+
+                    // Initialize demo status indicators
+                    if (typeof StatusIndicator !== 'undefined') {
+                        const statusConfigs = [
+                            { id: 'active', status: 'active', message: '策略正在運行' },
+                            { id: 'loading', status: 'loading', message: '正在載入數據...' },
+                            { id: 'warning', status: 'warning', message: '需要注意風險' },
+                            { id: 'error', status: 'error', message: '發生錯誤' },
+                            { id: 'inactive', status: 'inactive', message: '策略已停止' }
+                        ];
+
+                        statusConfigs.forEach(config => {
+                            const container = document.getElementById(`demo-status-${config.id}`);
+                            if (container) {
+                                const indicator = new StatusIndicator(container, {
+                                    size: 'medium',
+                                    showText: true,
+                                    showIcon: true,
+                                    animated: true
+                                });
+                                indicator.setStatus(config.status, config.message, {
+                                    lastUpdate: new Date().toISOString(),
+                                    strategyId: 'demo'
+                                });
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Failed to initialize demo components:', error);
+                }
+            }, 1000);
+
+            // Check if EnhancedDashboard class is available
+            if (typeof EnhancedDashboard !== 'undefined') {
+                window.dashboard = new EnhancedDashboard();
+                window.dashboard.init();
+            } else {
+                console.error('EnhancedDashboard class not found. Please check component files are loaded correctly.');
+                // Hide loading screen and show error
+                const loadingScreen = document.getElementById('loading-screen');
+                const app = document.getElementById('app');
+                if (loadingScreen) loadingScreen.style.display = 'none';
+                if (app) {
+                    app.style.display = 'block';
+                    app.innerHTML = '<div class="error-message">系統載入失敗，請重新整理頁面。</div>';
+                }
+            }
+        });
+
+        // Handle page visibility changes for performance optimization
+        document.addEventListener('visibilitychange', function() {
+            if (window.dashboard) {
+                if (document.hidden) {
+                    window.dashboard.pause();
+                } else {
+                    window.dashboard.resume();
+                }
+            }
+        });
+
+        // Handle online/offline status
+        window.addEventListener('online', function() {
+            if (window.dashboard) {
+                window.dashboard.updateConnectionStatus(true);
+            }
+        });
+
+        window.addEventListener('offline', function() {
+            if (window.dashboard) {
+                window.dashboard.updateConnectionStatus(false);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -5,7 +5,10 @@ import { PerformanceSummary } from './PerformanceSummary';
 import { RealTimeMonitor } from './RealTimeMonitor';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { useStrategyData } from '../../hooks/useStrategyData';
-import { Strategy, StrategyFilter, PerformanceMetrics } from '../../types/strategy';
+import { Strategy, StrategyFilter, PerformanceMetrics } from '../../types/index';
+import BatchStrategyControls from '../StrategyControl/BatchStrategyControls';
+import strategyControlService from '../../services/strategyControlService';
+import { ChartsDashboard } from '../Charts';
 
 interface StrategyDashboardProps {
   apiUrl?: string;
@@ -29,6 +32,8 @@ export const StrategyDashboard: React.FC<StrategyDashboardProps> = ({
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedStrategies, setSelectedStrategies] = useState<Set<string>>(new Set());
+  const [batchMode, setBatchMode] = useState(false);
 
   // Custom hooks
   const {
@@ -265,6 +270,69 @@ export const StrategyDashboard: React.FC<StrategyDashboardProps> = ({
     setSelectedStrategy(strategy);
   };
 
+  // Handle strategy status change
+  const handleStrategyStatusChange = useCallback((strategyId: string, newStatus: boolean) => {
+    setStrategies(prev =>
+      prev.map(strategy =>
+        strategy.id === strategyId
+          ? {
+              ...strategy,
+              status: newStatus ? 'active' : 'inactive'
+            }
+          : strategy
+      )
+    );
+  }, []);
+
+  // Handle batch control
+  const handleBatchControl = useCallback(async (strategyIds: string[], action: string, reason?: string) => {
+    try {
+      let result;
+
+      // 根据操作类型调用相应的批量API
+      switch (action) {
+        case 'enable':
+          result = await strategyControlService.batchEnableStrategies(strategyIds, reason);
+          break;
+        case 'disable':
+          result = await strategyControlService.batchDisableStrategies(strategyIds, reason);
+          break;
+        case 'start':
+          result = await strategyControlService.batchEnableStrategies(strategyIds, reason); // start maps to enable
+          break;
+        case 'stop':
+          result = await strategyControlService.batchStopStrategies(strategyIds, reason);
+          break;
+        case 'pause':
+          result = await strategyControlService.batchPauseStrategies(strategyIds, reason);
+          break;
+        default:
+          throw new Error(`未知的批量操作类型: ${action}`);
+      }
+
+      // 更新策略状态
+      setStrategies(prev =>
+        prev.map(strategy => {
+          if (strategyIds.includes(strategy.id)) {
+            const successResult = result.results.find(r => r.strategy_id === strategy.id && r.success);
+            if (successResult) {
+              return {
+                ...strategy,
+                status: successResult.new_status ? 'active' : 'inactive'
+              };
+            }
+          }
+          return strategy;
+        })
+      );
+
+      return result;
+    } catch (error) {
+      console.error('批量控制失败:', error);
+      throw error;
+    }
+  }, []);
+
   // Render loading state
   if (isLoading) {
     return (
@@ -315,6 +383,22 @@ export const StrategyDashboard: React.FC<StrategyDashboardProps> = ({
                 connectionStatus={connectionStatus}
                 lastUpdate={new Date()}
               />
+
+              {/* Batch Mode Toggle */}
+              <button
+                onClick={() => {
+                  setBatchMode(!batchMode);
+                  setSelectedStrategies(new Set());
+                }}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  batchMode
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {batchMode ? '退出批量操作' : '批量操作'}
+              </button>
+
               <button
                 onClick={() => refetch()}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -331,6 +415,29 @@ export const StrategyDashboard: React.FC<StrategyDashboardProps> = ({
         {/* Performance Summary */}
         <PerformanceSummary strategies={filteredStrategies} />
 
+        {/* Charts Dashboard */}
+        <div className="mb-8">
+          <ChartsDashboard
+            strategies={filteredStrategies}
+            height={350}
+            showControls={true}
+            defaultLayout="grid"
+          />
+        </div>
+
+        {/* Batch Controls - Only show in batch mode */}
+        {batchMode && (
+          <div className="mb-6">
+            <BatchStrategyControls
+              strategies={filteredStrategies}
+              selectedStrategies={selectedStrategies}
+              onSelectionChange={setSelectedStrategies}
+              onBatchControl={handleBatchControl}
+              isLoading={isLoading}
+            />
+          </div>
+        )}
+
         {/* Filters */}
         <div className="mb-8">
           <StrategyFilters
@@ -343,12 +450,44 @@ export const StrategyDashboard: React.FC<StrategyDashboardProps> = ({
         {/* Strategy Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredStrategies.map((strategy) => (
-            <StrategyCard
+            <div
               key={strategy.id}
-              strategy={strategy}
-              onSelect={handleStrategySelect}
-              isSelected={selectedStrategy?.id === strategy.id}
-            />
+              className={`relative ${batchMode ? 'cursor-pointer' : ''}`}
+              onClick={() => {
+                if (batchMode) {
+                  handleStrategySelect(strategy);
+                }
+              }}
+            >
+              {/* Selection Checkbox in Batch Mode */}
+              {batchMode && (
+                <div className="absolute top-2 left-2 z-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedStrategies.has(strategy.id)}
+                    onChange={() => {
+                      const newSelected = new Set(selectedStrategies);
+                      if (newSelected.has(strategy.id)) {
+                        newSelected.delete(strategy.id);
+                      } else {
+                        newSelected.add(strategy.id);
+                      }
+                      setSelectedStrategies(newSelected);
+                    }}
+                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              )}
+
+              <StrategyCard
+                strategy={strategy}
+                onSelect={handleStrategySelect}
+                isSelected={selectedStrategy?.id === strategy.id}
+                onStatusChange={handleStrategyStatusChange}
+                showControls={!batchMode}
+              />
+            </div>
           ))}
         </div>
 

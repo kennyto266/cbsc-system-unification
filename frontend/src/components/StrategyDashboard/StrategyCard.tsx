@@ -1,17 +1,65 @@
-import React from 'react';
-import { Strategy, PerformanceMetrics } from '../../types/strategy';
+import React, { useState } from 'react';
+import { Strategy, PerformanceMetrics } from '../../types/index';
+import StrategyToggle from '../StrategyControl/StrategyToggle';
+import strategyControlService from '../../services/strategyControlService';
 
 interface StrategyCardProps {
   strategy: Strategy;
   onSelect: (strategy: Strategy) => void;
   isSelected: boolean;
+  onStatusChange?: (strategyId: string, newStatus: boolean) => void;
+  showControls?: boolean;
 }
 
 export const StrategyCard: React.FC<StrategyCardProps> = ({
   strategy,
   onSelect,
-  isSelected
+  isSelected,
+  onStatusChange,
+  showControls = true
 }) => {
+  const [isControlLoading, setIsControlLoading] = useState(false);
+
+  // 处理策略状态切换
+  const handleStrategyToggle = async (strategyId: string, action: 'enable' | 'disable' | 'start' | 'stop' | 'pause'): Promise<boolean> => {
+    setIsControlLoading(true);
+    try {
+      let result;
+
+      // 根据操作类型调用相应的API
+      switch (action) {
+        case 'enable':
+          result = await strategyControlService.enableStrategy(strategyId);
+          break;
+        case 'disable':
+          result = await strategyControlService.disableStrategy(strategyId);
+          break;
+        case 'start':
+          result = await strategyControlService.startStrategy(strategyId);
+          break;
+        case 'stop':
+          result = await strategyControlService.stopStrategy(strategyId);
+          break;
+        case 'pause':
+          result = await strategyControlService.pauseStrategy(strategyId);
+          break;
+        default:
+          throw new Error(`未知的操作类型: ${action}`);
+      }
+
+      // 如果操作成功，更新策略状态
+      if (result.success && onStatusChange) {
+        onStatusChange(strategyId, result.new_status);
+      }
+
+      return result.success;
+    } catch (error) {
+      console.error('策略控制失败:', error);
+      throw error;
+    } finally {
+      setIsControlLoading(false);
+    }
+  };
   const getPerformanceColor = (sharpeRatio: number | undefined): string => {
     if (!sharpeRatio) return 'text-gray-500';
     if (sharpeRatio >= 1.5) return 'text-green-600';
@@ -270,15 +318,33 @@ export const StrategyCard: React.FC<StrategyCardProps> = ({
           <span className="text-xs text-gray-500">
             {strategy.category.replace('_', ' ')}
           </span>
-          <button
-            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect(strategy);
-            }}
-          >
-            查看详情 →
-          </button>
+          <div className="flex items-center space-x-3">
+            {/* Strategy Control Toggle */}
+            {showControls && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <StrategyToggle
+                  strategyId={strategy.id}
+                  strategyName={strategy.name}
+                  isActive={strategy.status === 'active'}
+                  status={strategy.status}
+                  onToggle={handleStrategyToggle}
+                  size="small"
+                  disabled={isControlLoading}
+                  showLabels={false}
+                />
+              </div>
+            )}
+
+            <button
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect(strategy);
+              }}
+            >
+              查看详情 →
+            </button>
+          </div>
         </div>
       </div>
     </div>

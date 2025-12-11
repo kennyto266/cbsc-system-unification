@@ -13,115 +13,117 @@ from enum import Enum
 from pydantic import BaseModel, Field, validator, model_validator
 import pandas as pd
 
-class DataSourceTypestr, Enum:
-"""数据源类型枚举"""
-RAW_DATA = "raw_data"
-YAHOO_FINANCE = "yahoo_finance"
-ALPHA_VANTAGE = "alpha_vantage"
-HTTP_API = "http_api"
-CUSTOM = "custom"
+class DataSourceType(str, Enum):
+    """数据源类型枚举"""
+    RAW_DATA = "raw_data"
+    YAHOO_FINANCE = "yahoo_finance"
+    ALPHA_VANTAGE = "alpha_vantage"
+    HTTP_API = "http_api"
+    CUSTOM = "custom"
 
-class DataQualitystr, Enum:
-"""数据质量等级"""
-EXCELLENT = "excellent"
-GOOD = "good"
-FAIR = "fair"
-POOR = "poor"
-UNKNOWN = "unknown"
+class DataQuality(str, Enum):
+    """数据质量等级"""
+    EXCELLENT = "excellent"
+    GOOD = "good"
+    FAIR = "fair"
+    POOR = "poor"
+    UNKNOWN = "unknown"
 
-class DataAdapterConfigBaseModel:
-"""数据适配器配置"""
-source_type: DataSourceType = Field..., description="数据源类型"
-source_path: str = Field..., description="数据源路径或URL"
-update_frequency: int = Field60, ge=1, description="数据更新频率（秒）"
-max_retries: int = Field3, ge=1, le=10, description="最大重试次数"
-timeout: int = Field30, ge=5, le=300, description="连接超时时间（秒）"
-cache_enabled: bool = FieldTrue, description="是否启用缓存"
-cache_ttl: int = Field300, ge=60, description="缓存生存时间（秒）"
-quality_threshold: float = Field0.8, ge=0.0, le=1.0, description="数据质量阈值"
+class DataAdapterConfig(BaseModel):
+    """数据适配器配置"""
+    source_type: DataSourceType = Field(..., description="数据源类型")
+    source_path: str = Field(..., description="数据源路径或URL")
+    update_frequency: int = Field(60, ge=1, description="数据更新频率（秒）")
+    max_retries: int = Field(3, ge=1, le=10, description="最大重试次数")
+    timeout: int = Field(30, ge=5, le=300, description="连接超时时间（秒）")
+    cache_enabled: bool = Field(True, description="是否启用缓存")
+    cache_ttl: int = Field(300, ge=60, description="缓存生存时间（秒）")
+    quality_threshold: float = Field(0.8, ge=0.0, le=1.0, description="数据质量阈值")
 
-class Config:    use_enum_values = True
+    model_config = {"use_enum_values": True}
 
-class RealMarketDataBaseModel:
-"""真实市场数据模型"""
-symbol: str = Field..., description="股票代码"
-timestamp: datetime = Field..., description="数据时间戳"
-open_price: Decimal = Field..., gt=0, description="开盘价"
-high_price: Decimal = Field..., gt=0, description="最高价"
-low_price: Decimal = Field..., gt=0, description="最低价"
-close_price: Decimal = Field..., gt=0, description="收盘价"
-volume: int = Field..., ge=0, description="成交量"
-market_cap: Optional[Decimal] = FieldNone, gt=0, description="市值"
-pe_ratio: Optional[Decimal] = FieldNone, description="市盈率"
-data_source: str = Field..., description="数据源标识"
-quality_score: float = Field..., ge=0.0, le=1.0, description="数据质量评分"
-last_updated: datetime = Fielddefault_factory=datetime.now, description="最后更新时间"
+class RealMarketData(BaseModel):
+    """真实市场数据模型"""
+    symbol: str = Field(..., description="股票代码")
+    timestamp: datetime = Field(..., description="数据时间戳")
+    open_price: Decimal = Field(..., gt=0, description="开盘价")
+    high_price: Decimal = Field(..., gt=0, description="最高价")
+    low_price: Decimal = Field(..., gt=0, description="最低价")
+    close_price: Decimal = Field(..., gt=0, description="收盘价")
+    volume: int = Field(..., ge=0, description="成交量")
+    market_cap: Optional[Decimal] = Field(None, gt=0, description="市值")
+    pe_ratio: Optional[Decimal] = Field(None, description="市盈率")
+    data_source: str = Field(..., description="数据源标识")
+    quality_score: float = Field(..., ge=0.0, le=1.0, description="数据质量评分")
+    last_updated: datetime = Field(default_factory=datetime.now, description="最后更新时间")
 
-@validator'high_price'
-def validate_high_pricecls, v, values:
-"""验证最高价"""
-if 'low_price' in values and v < values['low_price']:
-raise ValueError'最高价不能低于最低价'
-return v
+  @validator('high_price')
+    def validate_high_price(cls, v, values):
+        """验证最高价"""
+        if 'low_price' in values and v < values['low_price']:
+            raise ValueError('最高价不能低于最低价')
+        return v
 
-@validator'close_price'
-def validate_close_pricecls, v, values:
-"""验证收盘价"""
-if 'high_price' in values and v > values['high_price']:
-raise ValueError'收盘价不能高于最高价'
-if 'low_price' in values and v < values['low_price']:
-raise ValueError'收盘价不能低于最低价'
-return v
+    @validator('close_price')
+    def validate_close_price(cls, v, values):
+        """验证收盘价"""
+        if 'high_price' in values and v > values['high_price']:
+            raise ValueError('收盘价不能高于最高价')
+        if 'low_price' in values and v < values['low_price']:
+            raise ValueError('收盘价不能低于最低价')
+        return v
 
-@model_validatormode='after'
-def validate_price_consistencyself:
-"""验证价格一致性"""
-open_price = self.open_price
-high_price = self.high_price
-low_price = self.low_price
-close_price = self.close_price
+    @model_validator(mode='after')
+    def validate_price_consistency(self):
+        """验证价格一致性"""
+        open_price = self.open_price
+        high_price = self.high_price
+        low_price = self.low_price
+        close_price = self.close_price
 
-if allp is not None for p in [open_price, high_price, low_price, close_price]:    if not (low_price <= open_price <= high_price and low_price <= close_price <= high_price):
-raise ValueError'价格数据不一致'
+        if all(p is not None for p in [open_price, high_price, low_price, close_price]):
+            if not (low_price <= open_price <= high_price and low_price <= close_price <= high_price):
+                raise ValueError('价格数据不一致')
 
-return self
+        return self
 
-class DataValidationResultBaseModel:
-"""数据验证结果"""
-is_valid: bool = Field..., description="数据是否有效"
-quality_score: float = Field..., ge=0.0, le=1.0, description="质量评分"
-quality_level: DataQuality = Field..., description="质量等级"
-errors: List[str] = Fielddefault_factory=list, description="错误列表"
-warnings: List[str] = Fielddefault_factory=list, description="警告列表"
-metadata: Dict[str, Any] = Fielddefault_factory=dict, description="验证元数据"
+class DataValidationResult(BaseModel):
+    """数据验证结果"""
+    is_valid: bool = Field(..., description="数据是否有效")
+    quality_score: float = Field(..., ge=0.0, le=1.0, description="质量评分")
+    quality_level: DataQuality = Field(..., description="质量等级")
+    errors: List[str] = Field(default_factory=list, description="错误列表")
+    warnings: List[str] = Field(default_factory=list, description="警告列表")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="验证元数据")
 
-class BaseDataAdapterABC:
-"""数据适配器基础类"""
+class BaseDataAdapter(ABC):
+    """数据适配器基础类"""
 
-def __init__self, config: DataAdapterConfig:    self.config = config
-self.logger = logging.getLoggerf"hk_quant_system.data_adapter.{config.source_type}"
-self._cache: Dict[str, Any] = {}
-self._last_update: Optional[datetime] = None
-
-@abstractmethod
-async def connectself -> bool:
-"""
-连接到数据源
-
-Returns:
-bool: 连接是否成功
-"""
-pass
+    def __init__(self, config: DataAdapterConfig):
+        self.config = config
+        self.logger = logging.getLogger(f"hk_quant_system.data_adapter.{config.source_type}")
+        self._cache: Dict[str, Any] = {}
+        self._last_update: Optional[datetime] = None
 
 @abstractmethod
-async def disconnectself -> bool:
-"""
-断开数据源连接
+    async def connect(self) -> bool:
+        """
+        连接到数据源
 
-Returns:
-bool: 断开是否成功
-"""
-pass
+        Returns:
+        bool: 连接是否成功
+        """
+        pass
+
+    @abstractmethod
+    async def disconnect(self) -> bool:
+        """
+        断开数据源连接
+
+        Returns:
+        bool: 断开是否成功
+        """
+        pass
 
 @abstractmethod
 async def get_market_data(
@@ -172,10 +174,10 @@ List[RealMarketData]: 转换后的标准数据
 """
 pass
 
-def get_cache_keyself, symbol: str, start_date: Optional[date] = None, end_date: Optional[date] = None -> str:
-"""生成缓存键"""
-date_range = f"{start_date or 'all'}_{end_date or 'all'}"
-return f"{self.config.source_type}:{symbol}:{date_range}"
+def get_cache_key(self, symbol: str, start_date: Optional[date] = None, end_date: Optional[date] = None) -> str:
+        """生成缓存键"""
+        date_range = f"{start_date or 'all'}_{end_date or 'all'}"
+        return f"{self.config.source_type}:{symbol}:{date_range}"
 
 def is_cache_validself, cache_key: str -> bool:
 """检查缓存是否有效"""

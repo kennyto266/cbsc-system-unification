@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Strategy, PerformanceMetrics, PerformanceSummary, ApiResponse, StrategyListResponse } from '../types/strategy';
+import { Strategy, PerformanceMetrics, PerformanceSummary, ApiResponse, StrategyListResponse } from '../types/index';
 
 interface UseStrategyDataOptions {
   apiUrl: string;

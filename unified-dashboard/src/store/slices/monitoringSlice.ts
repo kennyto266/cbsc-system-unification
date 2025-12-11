@@ -1,117 +1,330 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { MonitoringState, SystemStatus, MarketData, WebSocketMessage, Strategy } from '@types/index'
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
+
+// Enhanced interfaces for monitoring
+interface SystemHealth {
+  status: 'healthy' | 'warning' | 'error' | 'critical'
+  cpuUsage: number
+  memoryUsage: number
+  diskUsage: number
+  networkLatency: number
+  activeConnections: number
+  uptime: number
+  lastUpdate: string
+}
+
+interface Alert {
+  id: string
+  type: 'info' | 'warning' | 'error' | 'critical'
+  title: string
+  message: string
+  timestamp: string
+  read: boolean
+  strategyId?: string
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  source: 'system' | 'strategy' | 'market' | 'network'
+}
+
+interface NetworkActivity {
+  service: string
+  requestsPerSecond: number
+  responseTime: number
+  status: 'healthy' | 'warning' | 'error'
+  uptime: number
+}
+
+interface PerformanceMetrics {
+  responseTime: number
+  throughput: number
+  errorRate: number
+  availability: number
+}
+
+interface MonitoringState {
+  // System health
+  systemHealth: SystemHealth | null
+
+  // Alerts
+  alerts: Alert[]
+  unreadAlertsCount: number
+
+  // Network monitoring
+  networkActivity: NetworkActivity[]
+  performanceMetrics: PerformanceMetrics | null
+
+  // Real-time metrics
+  realTimeMetrics: {
+    cpu: number[]
+    memory: number[]
+    network: number[]
+    timestamps: string[]
+  }
+
+  // Loading states
+  loading: boolean
+  error: string | null
+
+  // Monitoring settings
+  alertThresholds: {
+    cpu: number
+    memory: number
+    disk: number
+    responseTime: number
+  }
+
+  // Auto-refresh settings
+  autoRefresh: boolean
+  refreshInterval: number
+}
 
 const initialState: MonitoringState = {
-  isConnected: false,
-  lastMessage: null,
-  systemStatus: null,
-  marketData: {},
-  activeStrategies: [],
+  systemHealth: null,
+  alerts: [],
+  unreadAlertsCount: 0,
+  networkActivity: [],
+  performanceMetrics: null,
+  realTimeMetrics: {
+    cpu: [],
+    memory: [],
+    network: [],
+    timestamps: [],
+  },
+  loading: false,
+  error: null,
+  alertThresholds: {
+    cpu: 80,
+    memory: 80,
+    disk: 90,
+    responseTime: 5000,
+  },
+  autoRefresh: true,
+  refreshInterval: 5000,
 }
+
+// Async thunks
+export const fetchSystemHealth = createAsyncThunk(
+  'monitoring/fetchSystemHealth',
+  async () => {
+    const response = await fetch('/api/monitoring/system-health')
+    if (!response.ok) {
+      throw new Error('Failed to fetch system health')
+    }
+    return response.json()
+  }
+)
+
+export const fetchAlerts = createAsyncThunk(
+  'monitoring/fetchAlerts',
+  async (params?: { unread?: boolean; severity?: string; limit?: number }) => {
+    const queryString = new URLSearchParams(params as any).toString()
+    const response = await fetch(`/api/monitoring/alerts?${queryString}`)
+    if (!response.ok) {
+      throw new Error('Failed to fetch alerts')
+    }
+    return response.json()
+  }
+)
+
+export const fetchNetworkActivity = createAsyncThunk(
+  'monitoring/fetchNetworkActivity',
+  async () => {
+    const response = await fetch('/api/monitoring/network')
+    if (!response.ok) {
+      throw new Error('Failed to fetch network activity')
+    }
+    return response.json()
+  }
+)
+
+export const markAlertAsRead = createAsyncThunk(
+  'monitoring/markAlertAsRead',
+  async (alertId: string) => {
+    const response = await fetch(`/api/monitoring/alerts/${alertId}/read`, {
+      method: 'PATCH',
+    })
+    if (!response.ok) {
+      throw new Error('Failed to mark alert as read')
+    }
+    return alertId
+  }
+)
+
+export const clearAlerts = createAsyncThunk(
+  'monitoring/clearAlerts',
+  async (params?: { type?: string; olderThan?: string }) => {
+    const queryString = new URLSearchParams(params as any).toString()
+    const response = await fetch(`/api/monitoring/alerts/clear?${queryString}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) {
+      throw new Error('Failed to clear alerts')
+    }
+    return params
+  }
+)
 
 const monitoringSlice = createSlice({
   name: 'monitoring',
   initialState,
   reducers: {
-    setWebSocketConnected: (state, action: PayloadAction<boolean>) => {
-      state.isConnected = action.payload
+    updateSystemHealth: (state, action: PayloadAction<SystemHealth>) => {
+      state.systemHealth = action.payload
     },
-    setLastMessage: (state, action: PayloadAction<WebSocketMessage | null>) => {
-      state.lastMessage = action.payload
+    addRealTimeMetric: (state, action) => {
+      const { cpu, memory, network, timestamp } = action.payload
+
+      // Keep only last 100 data points
+      if (state.realTimeMetrics.cpu.length >= 100) {
+        state.realTimeMetrics.cpu.shift()
+        state.realTimeMetrics.memory.shift()
+        state.realTimeMetrics.network.shift()
+        state.realTimeMetrics.timestamps.shift()
+      }
+
+      state.realTimeMetrics.cpu.push(cpu)
+      state.realTimeMetrics.memory.push(memory)
+      state.realTimeMetrics.network.push(network)
+      state.realTimeMetrics.timestamps.push(timestamp)
     },
-    setSystemStatus: (state, action: PayloadAction<SystemStatus>) => {
-      state.systemStatus = action.payload
-    },
-    updateSystemStatus: (state, action: PayloadAction<Partial<SystemStatus>>) => {
-      if (state.systemStatus) {
-        state.systemStatus = { ...state.systemStatus, ...action.payload }
+    addAlert: (state, action: PayloadAction<Alert>) => {
+      state.alerts.unshift(action.payload)
+      if (!action.payload.read) {
+        state.unreadAlertsCount += 1
       }
     },
-    setMarketData: (state, action: PayloadAction<Record<string, MarketData>>) => {
-      state.marketData = action.payload
+    updateAlertThresholds: (state, action) => {
+      state.alertThresholds = { ...state.alertThresholds, ...action.payload }
     },
-    updateMarketData: (state, action: PayloadAction<{ symbol: string; data: MarketData }>) => {
-      const { symbol, data } = action.payload
-      state.marketData[symbol] = data
+    setAutoRefresh: (state, action: PayloadAction<boolean>) => {
+      state.autoRefresh = action.payload
     },
-    removeMarketData: (state, action: PayloadAction<string>) => {
-      delete state.marketData[action.payload]
+    setRefreshInterval: (state, action: PayloadAction<number>) => {
+      state.refreshInterval = action.payload
     },
-    setActiveStrategies: (state, action: PayloadAction<Strategy[]>) => {
-      state.activeStrategies = action.payload
+    clearError: (state) => {
+      state.error = null
     },
-    addActiveStrategy: (state, action: PayloadAction<Strategy>) => {
-      const exists = state.activeStrategies.find(s => s.id === action.payload.id)
-      if (!exists) {
-        state.activeStrategies.push(action.payload)
+    // WebSocket real-time updates
+    updateRealTimeData: (state, action) => {
+      if (action.payload.systemHealth) {
+        state.systemHealth = { ...state.systemHealth, ...action.payload.systemHealth }
+      }
+      if (action.payload.alert) {
+        state.alerts.unshift(action.payload.alert)
+        if (!action.payload.alert.read) {
+          state.unreadAlertsCount += 1
+        }
+      }
+      if (action.payload.metrics) {
+        const { cpu, memory, network } = action.payload.metrics
+        const timestamp = new Date().toISOString()
+
+        if (state.realTimeMetrics.cpu.length >= 100) {
+          state.realTimeMetrics.cpu.shift()
+          state.realTimeMetrics.memory.shift()
+          state.realTimeMetrics.network.shift()
+          state.realTimeMetrics.timestamps.shift()
+        }
+
+        state.realTimeMetrics.cpu.push(cpu)
+        state.realTimeMetrics.memory.push(memory)
+        state.realTimeMetrics.network.push(network)
+        state.realTimeMetrics.timestamps.push(timestamp)
       }
     },
-    updateActiveStrategy: (state, action: PayloadAction<{ id: string; updates: Partial<Strategy> }>) => {
-      const { id, updates } = action.payload
-      const index = state.activeStrategies.findIndex(strategy => strategy.id === id)
-      if (index !== -1) {
-        state.activeStrategies[index] = { ...state.activeStrategies[index], ...updates }
-      }
-    },
-    removeActiveStrategy: (state, action: PayloadAction<string>) => {
-      state.activeStrategies = state.activeStrategies.filter(strategy => strategy.id !== action.payload)
-    },
-    // WebSocket message handlers
-    handlePerformanceUpdate: (state, action: PayloadAction<any>) => {
-      // Handle performance update messages
-      // This would update strategy performance data
-    },
-    handleSignalsUpdate: (state, action: PayloadAction<any>) => {
-      // Handle signals update messages
-      // This would update signals data
-    },
-    handleMarketDataUpdate: (state, action: PayloadAction<{ symbol: string; data: MarketData }>) => {
-      const { symbol, data } = action.payload
-      state.marketData[symbol] = data
-    },
-    handleSystemStatusUpdate: (state, action: PayloadAction<SystemStatus>) => {
-      state.systemStatus = action.payload
-    },
-    handleStrategyExecutionUpdate: (state, action: PayloadAction<any>) => {
-      // Handle strategy execution update messages
-      // This would update execution data
-    },
-    // Clear monitoring data (for logout)
-    clearMonitoringData: (state) => {
-      return { ...initialState }
-    },
+  },
+  extraReducers: (builder) => {
+    builder
+      // Fetch system health
+      .addCase(fetchSystemHealth.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(fetchSystemHealth.fulfilled, (state, action) => {
+        state.loading = false
+        state.systemHealth = action.payload
+      })
+      .addCase(fetchSystemHealth.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.error.message || 'Failed to fetch system health'
+      })
+
+      // Fetch alerts
+      .addCase(fetchAlerts.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(fetchAlerts.fulfilled, (state, action) => {
+        state.loading = false
+        state.alerts = action.payload
+        state.unreadAlertsCount = action.payload.filter((alert: Alert) => !alert.read).length
+      })
+      .addCase(fetchAlerts.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.error.message || 'Failed to fetch alerts'
+      })
+
+      // Fetch network activity
+      .addCase(fetchNetworkActivity.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(fetchNetworkActivity.fulfilled, (state, action) => {
+        state.loading = false
+        state.networkActivity = action.payload
+      })
+      .addCase(fetchNetworkActivity.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.error.message || 'Failed to fetch network activity'
+      })
+
+      // Mark alert as read
+      .addCase(markAlertAsRead.fulfilled, (state, action) => {
+        const alertId = action.payload
+        const alert = state.alerts.find(a => a.id === alertId)
+        if (alert && !alert.read) {
+          alert.read = true
+          state.unreadAlertsCount = Math.max(0, state.unreadAlertsCount - 1)
+        }
+      })
+
+      // Clear alerts
+      .addCase(clearAlerts.fulfilled, (state, action) => {
+        const { type, olderThan } = action.payload || {}
+
+        if (type) {
+          state.alerts = state.alerts.filter(alert => alert.type !== type)
+        }
+
+        if (olderThan) {
+          const cutoffTime = new Date(olderThan)
+          state.alerts = state.alerts.filter(alert => new Date(alert.timestamp) > cutoffTime)
+        }
+
+        if (!type && !olderThan) {
+          state.alerts = []
+          state.unreadAlertsCount = 0
+        } else {
+          state.unreadAlertsCount = state.alerts.filter(alert => !alert.read).length
+        }
+      })
   },
 })
 
 export const {
-  setWebSocketConnected,
-  setLastMessage,
-  setSystemStatus,
-  updateSystemStatus,
-  setMarketData,
-  updateMarketData,
-  removeMarketData,
-  setActiveStrategies,
-  addActiveStrategy,
-  updateActiveStrategy,
-  removeActiveStrategy,
-  handlePerformanceUpdate,
-  handleSignalsUpdate,
-  handleMarketDataUpdate,
-  handleSystemStatusUpdate,
-  handleStrategyExecutionUpdate,
-  clearMonitoringData,
+  updateSystemHealth,
+  addRealTimeMetric,
+  addAlert,
+  updateAlertThresholds,
+  setAutoRefresh,
+  setRefreshInterval,
+  clearError,
+  updateRealTimeData,
 } = monitoringSlice.actions
 
-export default monitoringSlice.reducer
-
 // Selectors
-export const selectWebSocketConnected = (state: { monitoring: MonitoringState }) => state.monitoring.isConnected
-export const selectLastMessage = (state: { monitoring: MonitoringState }) => state.monitoring.lastMessage
-export const selectSystemStatus = (state: { monitoring: MonitoringState }) => state.monitoring.systemStatus
-export const selectMarketData = (state: { monitoring: MonitoringState }) => state.monitoring.marketData
-export const selectMarketDataBySymbol = (state: { monitoring: MonitoringState }, symbol: string) =>
-  state.monitoring.marketData[symbol]
-export const selectActiveStrategies = (state: { monitoring: MonitoringState }) => state.monitoring.activeStrategies
-export const selectActiveStrategyById = (state: { monitoring: MonitoringState }, id: string) =>
-  state.monitoring.activeStrategies.find(strategy => strategy.id === id)
+export const selectMonitoring = (state: { monitoring: MonitoringState }) => state.monitoring
+export const selectSystemHealth = (state: { monitoring: MonitoringState }) => state.monitoring.systemHealth
+export const selectAlerts = (state: { monitoring: MonitoringState }) => state.monitoring.alerts
+export const selectRealTimeMetrics = (state: { monitoring: MonitoringState }) => state.monitoring.realTimeMetrics
+
+export default monitoringSlice.reducer
