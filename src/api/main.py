@@ -22,6 +22,7 @@ from api.auth_endpoints import router as auth_router
 from api.user_endpoints import router as user_router
 from api.personal_strategy_endpoints import router as personal_strategy_router
 from api.cbsc_strategy_api import router as cbsc_strategy_router
+from api.unified_strategy_endpoints import router as unified_strategy_router
 from api.websocket_server import websocket_router
 
 # 导入服务
@@ -30,6 +31,8 @@ from user_profile import init_user_profile_service
 from api.cache_service import cache_service
 from api.middleware import setup_middleware
 from api.websocket_server import get_websocket_manager
+from api.unified_strategy_service import init_unified_strategy_manager
+from api.strategy_execution_engine import initialize_execution_engine, shutdown_execution_engine
 
 # 配置日志
 logging.basicConfig(
@@ -74,6 +77,7 @@ app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(personal_strategy_router)
 app.include_router(cbsc_strategy_router)
+app.include_router(unified_strategy_router)
 app.include_router(websocket_router)
 
 # 全局异常处理器
@@ -195,6 +199,14 @@ async def startup_event():
         # 初始化用户资料服务
         init_user_profile_service()
 
+        # 初始化统一策略管理器
+        init_unified_strategy_manager()
+        logger.info("✅ 统一策略管理器初始化成功")
+
+        # 初始化策略执行引擎
+        await initialize_execution_engine()
+        logger.info("✅ 策略执行引擎初始化成功")
+
         # 设置中间件
         setup_middleware(app)
 
@@ -209,6 +221,7 @@ async def startup_event():
         logger.info("📊 个人策略管理API: http://localhost:3004/api/personal-strategies")
         logger.info("🔌 WebSocket端点: ws://localhost:3004/ws/strategies")
         logger.info("🧠 CBSC策略管理API: http://localhost:3004/api/strategies")
+        logger.info("🚀 统一策略管理API: http://localhost:3004/api/v1/strategies")
 
     except Exception as e:
         logger.error(f"❌ 应用启动失败: {e}")
@@ -225,6 +238,10 @@ async def shutdown_event():
         ws_manager = get_websocket_manager()
         ws_manager.stop_data_simulation()
         logger.info("✅ WebSocket数据模拟已停止")
+
+        # 关闭策略执行引擎
+        await shutdown_execution_engine()
+        logger.info("✅ 策略执行引擎已关闭")
 
         # 关闭缓存服务
         await cache_service.close()

@@ -1,12 +1,9 @@
 import React from 'react'
+import DataAnalytics from './DataAnalytics'
 
+// Use the new DataAnalytics component for backward compatibility
 const AnalyticsPage: React.FC = () => {
-  return (
-    <div style={{ padding: '20px' }}>
-      <h2>数据分析</h2>
-      <p>数据分析页面开发中...</p>
-    </div>
-  )
+  return <DataAnalytics />
 }
 
 export default AnalyticsPage
