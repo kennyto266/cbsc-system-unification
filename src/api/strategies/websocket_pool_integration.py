@@ -110,7 +110,7 @@ class WebSocketPoolManager:
                 payload = jwt.decode(
                     token,
                     self.jwt_secret,
-                    algorithms=[self.jwt algorithm]
+                    algorithms=[self.jwt_algorithm]
                 )
             except jwt.ExpiredSignatureError:
                 raise WebSocketAuthError("Token has expired")

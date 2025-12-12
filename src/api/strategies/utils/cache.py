@@ -50,12 +50,15 @@ class CacheManager:
 
         return self._cache.get(key)
 
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None, expire_after: Optional[int] = None) -> None:
         """设置缓存值"""
         self._cache[key] = value
 
-        if ttl is not None:
-            self._ttl[key] = datetime.now() + timedelta(seconds=ttl)
+        # Support both ttl and expire_after parameters for compatibility
+        actual_ttl = expire_after if expire_after is not None else ttl
+
+        if actual_ttl is not None:
+            self._ttl[key] = datetime.now() + timedelta(seconds=actual_ttl)
         else:
             self._ttl[key] = datetime.now() + timedelta(seconds=self._default_ttl)
 
@@ -100,6 +103,34 @@ class CacheManager:
             ]),
             "memory_usage": len(str(self._cache))  # Rough estimate
         }
+
+    async def increment(self, key: str, amount: int = 1) -> int:
+        """递增缓存值（适用于数字类型）"""
+        current_value = await self.get(key)
+        if current_value is None:
+            new_value = amount
+        else:
+            if not isinstance(current_value, (int, float)):
+                raise TypeError(f"Cannot increment non-numeric value: {type(current_value)}")
+            new_value = current_value + amount
+
+        await self.set(key, new_value)
+        return new_value
+
+    async def ttl(self, key: str) -> Optional[int]:
+        """获取键的剩余TTL（秒）"""
+        if key not in self._cache:
+            return None
+
+        if key not in self._ttl:
+            return self._default_ttl
+
+        remaining = self._ttl[key] - datetime.now()
+        if remaining.total_seconds() <= 0:
+            await self.delete(key)
+            return None
+
+        return int(remaining.total_seconds())
 
 
 def cache_result(ttl: int = 300, key_func=None):
