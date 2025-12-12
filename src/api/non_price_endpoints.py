@@ -36,7 +36,13 @@ from .models.non_price_responses import (
 )
 
 from .services.non_price_service import get_non_price_service, NonPriceAPIService
-from .cache_service import cache_service
+
+# Import cache_service with fallback for testing
+try:
+    from .cache_service import cache_service
+except ImportError:
+    logger.warning("cache_service not available, using dummy cache")
+    cache_service = None
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +127,10 @@ async def get_latest_hibor_rates(service: NonPriceAPIService = Depends(get_servi
     try:
         # Try to get from cache first
         cache_key = "non_price:hkma:hibor:latest"
-        cached_data = await cache_service.get(cache_key)
+        cached_data = None
+
+        if cache_service:
+            cached_data = await cache_service.get(cache_key)
 
         if cached_data:
             logger.info("Returning cached HIBOR data")
@@ -135,7 +144,8 @@ async def get_latest_hibor_rates(service: NonPriceAPIService = Depends(get_servi
         data = await service.get_latest_hibor_rates()
 
         # Cache for 5 minutes
-        await cache_service.set(cache_key, data, ttl=300)
+        if cache_service:
+            await cache_service.set(cache_key, data, ttl=300)
 
         return HIBORResponse(
             success=True,
@@ -152,7 +162,10 @@ async def get_latest_monetary_base(service: NonPriceAPIService = Depends(get_ser
     """获取最新货币基础数据"""
     try:
         cache_key = "non_price:hkma:monetary_base:latest"
-        cached_data = await cache_service.get(cache_key)
+        cached_data = None
+
+        if cache_service:
+            cached_data = await cache_service.get(cache_key)
 
         if cached_data:
             return MonetaryBaseResponse(
@@ -162,7 +175,9 @@ async def get_latest_monetary_base(service: NonPriceAPIService = Depends(get_ser
             )
 
         data = await service.get_latest_monetary_base()
-        await cache_service.set(cache_key, data, ttl=300)
+
+        if cache_service:
+            await cache_service.set(cache_key, data, ttl=300)
 
         return MonetaryBaseResponse(
             success=True,
