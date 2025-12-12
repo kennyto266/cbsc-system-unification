@@ -7,8 +7,8 @@ priority: "P0"
 created: "2025-12-10T01:58:00Z"
 updated: "2025-12-12T10:00:00Z"
 last_sync: "2025-12-12T10:00:00Z"
-github_url: "https://github.com/kennyto266/cbsc-system-unification/issues/28"
-github_number: 28
+github_url: "https://github.com/kennyto266/cbsc-system-unification/issues/41"
+github_number: 41
 lead: "technical-architect"
 team: ["frontend-lead", "backend-lead", "data-engineer", "devops-lead"]
 tags: ["system-integration", "technical-debt", "architecture"]
