@@ -6,18 +6,34 @@ branch: epic/non-price-strategy-integration
 # Execution Status
 
 ## Active Agents
-- Agent-API: Issue #29 Stream A (HKMA API Endpoints) - Starting
-- Agent-API: Issue #29 Stream B (Sentiment Analysis Endpoints) - Starting
-- Agent-API: Issue #29 Stream C (WebSocket Implementation) - Starting
-
-## Queued Issues
-- Issue #30: Frontend Dashboard Integration (depends on #29)
-- Issue #31: Data Flow Unification (depends on #29, #30)
-- Issue #32: Security & Access Control (depends on #29, #30, #31)
-- Issue #33: Testing & Deployment (depends on all tasks)
+- None currently
 
 ## Completed
-- None yet
+- Issue #29: API Integration - Non-Price Strategy Endpoints (Completed by Agent-d60c9e44)
+  ✅ All HKMA macro data endpoints implemented
+  ✅ Sentiment analysis API integration complete
+  ✅ WebSocket real-time signaling ready
+  ✅ Service layer with caching and error handling
+  ✅ Comprehensive test suite created
+
+- Issue #30: Frontend Dashboard Integration (Completed by Agent-fa8aa202)
+  ✅ NonPriceDataProvider with WebSocket integration
+  ✅ HIBORDisplay, MonetaryBaseChart, SentimentGauge components
+  ✅ PerformanceComparison with multi-chart analysis
+  ✅ Unified NonPriceDashboard with tabbed navigation
+  ✅ Responsive design and TypeScript types
+  ✅ Mock data generators for testing
+
+- Issue #31: Data Flow Unification (Completed by Agent-abe87c9c)
+  ✅ UnifiedCacheManager with L1+L2 multi-level caching
+  ✅ DataQualityValidator with 8-dimensional quality checks
+  ✅ DataSynchronizer for concurrent multi-source sync
+  ✅ Extended backtesting engine for mixed strategies
+  ✅ Complete unified data pipeline with comprehensive tests
+
+## Queued Issues
+- Issue #32: Security & Access Control (depends on #29)
+- Issue #33: Testing & Deployment (depends on all tasks)
 
 ## Current Focus
 Task 01: API Integration - Non-Price Strategy Endpoints
