@@ -25,7 +25,7 @@ import { selectUI, toggleSidebar, toggleTheme } from '../../store/slices/uiSlice
 // Import enhanced page components
 import DashboardOverview from '../pages/DashboardOverview'
 import StrategiesManagement from '../pages/StrategiesManagement'
-import RealTimeMonitoring from '../pages/RealTimeMonitoring'
+import RealTimeMonitoring from '../../pages/monitoring/RealTimeMonitoring'
 import DataAnalytics from '../pages/DataAnalytics'
 import Settings from '../pages/Settings'
 import UserProfile from '../pages/UserProfile'

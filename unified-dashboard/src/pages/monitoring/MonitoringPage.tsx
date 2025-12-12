@@ -1,12 +1,9 @@
 import React from 'react'
+import RealTimeMonitoring from './RealTimeMonitoring'
 
+// Use the new RealTimeMonitoring component for backward compatibility
 const MonitoringPage: React.FC = () => {
-  return (
-    <div style={{ padding: '20px' }}>
-      <h2>监控中心</h2>
-      <p>系统监控页面开发中...</p>
-    </div>
-  )
+  return <RealTimeMonitoring />
 }
 
 export default MonitoringPage
