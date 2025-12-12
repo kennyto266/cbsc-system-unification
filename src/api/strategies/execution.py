@@ -231,7 +231,7 @@ async def get_strategy_performance(
 @router.get("/{strategy_id}/reports", response_model=ExecutionReport)
 async def get_strategy_report(
     strategy_id: str,
-    report_type: str = Query("summary", regex="^(summary|detailed|trade|risk)$", description="报告类型"),
+    report_type: str = Query("summary", pattern="^(summary|detailed|trade|risk)$", description="报告类型"),
     current_user: User = Depends(get_current_user),
     execution_service: ExecutionService = Depends(get_execution_service)
 ):

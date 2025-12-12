@@ -17,11 +17,11 @@ from ..schemas import StrategyCreate, StrategyUpdate
 
 
 @pytest.fixture
-async def strategy_service():
+def strategy_service():
     """创建策略服务测试fixture"""
     strategy_repo = StrategyRepository()
     user_repo = UserRepository()
-    cache_manager = CacheManager(use_memory=True)
+    cache_manager = CacheManager()
     validator = StrategyValidator()
 
     service = BaseStrategyService(strategy_repo, user_repo, cache_manager, validator)

@@ -18,10 +18,13 @@ from datetime import datetime
 
 from .services.websocket_service import WebSocketService
 from .utils.permissions import authenticate_websocket
-from .utils.cache import cache_manager
+from .utils.cache import CacheManager
 from .models import User
 
 logger = logging.getLogger(__name__)
+
+# 创建缓存管理器实例
+cache_manager = CacheManager()
 
 # 创建路由器
 router = APIRouter()

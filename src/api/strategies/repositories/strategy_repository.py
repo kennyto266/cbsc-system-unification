@@ -192,6 +192,21 @@ class StrategyRepository:
             return {}
         return strategy.parameters
 
+    async def get_execution_history(
+        self,
+        strategy_id: str,
+        limit: int = 10
+    ) -> List[StrategyExecution]:
+        """
+        获取策略执行历史
+        """
+        executions = self._executions.get(strategy_id, [])
+
+        # 按时间倒序排序
+        executions.sort(key=lambda x: x.start_time, reverse=True)
+
+        return executions[:limit]
+
     # ============================================================================
     # 信号相关操作
     # ============================================================================

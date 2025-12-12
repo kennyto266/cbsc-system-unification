@@ -6,7 +6,7 @@ Business Service Layer
 from .strategy_service import BaseStrategyService
 from .execution_service import ExecutionService
 from .personal_service import PersonalService
-from .websocket_service import WebSocketService, websocket_manager, websocket_service
+from .websocket_service import WebSocketService, websocket_manager, get_websocket_service
 
 __all__ = [
     "BaseStrategyService",
@@ -14,5 +14,5 @@ __all__ = [
     "PersonalService",
     "WebSocketService",
     "websocket_manager",
-    "websocket_service"
+    "get_websocket_service"
 ]

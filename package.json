@@ -1,0 +1,146 @@
+{
+  "name": "cbsc-strategy-management-system",
+  "version": "1.0.0",
+  "description": "CBSC量化交易策略管理系統 - Computer-Based Strategy Control System",
+  "main": "index.js",
+  "scripts": {
+    "dev": "./scripts/dev-start.sh",
+    "dev:win": "scripts\\dev-start.bat",
+    "dev:stop": "docker-compose -f docker-compose.dev.yml -p cbsc-dev down",
+    "dev:restart": "./scripts/dev-start.sh --restart",
+    "dev:logs": "docker-compose -f docker-compose.dev.yml -p cbsc-dev logs -f",
+    "dev:status": "./scripts/health-check.sh",
+    "dev:watch": "./scripts/health-check.sh --watch",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:e2e": "jest tests/e2e",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "type-check": "tsc --noEmit",
+    "pre-commit": "lint-staged",
+    "prepare": "husky install",
+    "docs:dev": "cd docs && npm run dev",
+    "docs:build": "cd docs && npm run build",
+    "migration:run": "./scripts/migration/run.sh",
+    "migration:create": "./scripts/migration/create.sh",
+    "migration:rollback": "./scripts/migration/rollback.sh",
+    "db:seed": "./scripts/dev/seed-db.sh",
+    "db:backup": "./scripts/dev/backup-db.sh",
+    "db:restore": "./scripts/dev/restore-db.sh",
+    "docker:build": "docker-compose -f docker-compose.dev.yml build",
+    "docker:clean": "docker system prune -f",
+    "docker:logs": "docker-compose -f docker-compose.dev.yml logs -f --tail=100",
+    "port:check": "netstat -tulpn | grep -E ':(300[0-9]|800[0-9]|5432|6379)'",
+    "port:kill": "./scripts/dev/kill-ports.sh",
+    "setup": "npm install && cd frontend && npm install && cd ../unified-dashboard && npm install",
+    "clean": "npm run clean:build && npm run clean:deps",
+    "clean:build": "rm -rf dist build .next out coverage",
+    "clean:deps": "rm -rf node_modules */node_modules package-lock.json */package-lock.json",
+    "security:audit": "npm audit",
+    "security:fix": "npm audit fix",
+    "analyze": "npm run analyze:bundle && npm run analyze:size",
+    "analyze:bundle": "npx webpack-bundle-analyzer frontend/build/static/js/*.js",
+    "analyze:size": "du -sh node_modules/* | sort -hr | head -20"
+  },
+  "keywords": [
+    "quantitative-trading",
+    "strategy-management",
+    "cbsc",
+    "docker",
+    "react",
+    "typescript",
+    "fastapi",
+    "postgresql",
+    "redis",
+    "api-gateway"
+  ],
+  "author": "CBSC Development Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/CBSC-System.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/CBSC-System/issues"
+  },
+  "homepage": "https://github.com/your-org/CBSC-System#readme",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "husky": "^8.0.3",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.1",
+    "typescript": "^5.3.3",
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.10.6"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.4"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.{py}": [
+      "black",
+      "isort"
+    ]
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "moduleNameMapping": {
+      "^@/(.*)$": "<rootDir>/src/$1",
+      "^@components/(.*)$": "<rootDir>/src/components/$1",
+      "^@utils/(.*)$": "<rootDir>/src/utils/$1",
+      "^@hooks/(.*)$": "<rootDir>/src/hooks/$1",
+      "^@services/(.*)$": "<rootDir>/src/services/$1",
+      "^@types/(.*)$": "<rootDir>/src/types/$1"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx,ts,tsx}",
+      "!src/**/*.d.ts",
+      "!src/index.tsx",
+      "!src/reportWebVitals.ts"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    },
+    "testMatch": [
+      "**/__tests__/**/*.(js|jsx|ts|tsx)",
+      "**/*.(test|spec).(js|jsx|ts|tsx)"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "volta": {
+    "node": "18.19.0",
+    "npm": "10.2.3"
+  }
+}

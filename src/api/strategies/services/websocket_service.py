@@ -404,9 +404,18 @@ class WebSocketService:
         初始化WebSocket服务
         """
         self.manager = WebSocketManager()
+        self._cleanup_task_started = False
 
-        # 启动清理任务
-        asyncio.create_task(self._cleanup_task())
+    def _ensure_cleanup_task(self):
+        """确保清理任务已启动"""
+        if not self._cleanup_task_started:
+            try:
+                # 尝试创建清理任务
+                asyncio.create_task(self._cleanup_task())
+                self._cleanup_task_started = True
+            except RuntimeError:
+                # 没有运行的事件循环，延迟初始化
+                pass
 
     async def handle_connection(
         self,
@@ -575,5 +584,13 @@ class WebSocketService:
 # 全局WebSocket管理器实例
 websocket_manager = WebSocketManager()
 
-# 全局WebSocket服务实例
-websocket_service = WebSocketService()
+# 全局WebSocket服务实例（延迟初始化）
+websocket_service = None
+
+def get_websocket_service():
+    """获取WebSocket服务实例（延迟初始化）"""
+    global websocket_service
+    if websocket_service is None:
+        websocket_service = WebSocketService()
+        websocket_service._ensure_cleanup_task()
+    return websocket_service

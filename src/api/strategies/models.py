@@ -70,9 +70,7 @@ class Strategy(BaseModel):
     updated_at: Optional[datetime] = None
     last_executed: Optional[datetime] = None
 
-    class Config:
-        orm_mode = True
-        use_enum_values = True
+    model_config = {"from_attributes": True, "use_enum_values": True}
 
 
 class StrategySignal(BaseModel):
@@ -88,9 +86,7 @@ class StrategySignal(BaseModel):
     parameters: Dict[str, Any] = Field(default_factory=dict)
     metadata: Optional[Dict[str, Any]] = None
 
-    class Config:
-        orm_mode = True
-        use_enum_values = True
+    model_config = {"from_attributes": True, "use_enum_values": True}
 
 
 class StrategyPerformance(BaseModel):
@@ -110,8 +106,7 @@ class StrategyPerformance(BaseModel):
     daily_pnl: float = 0.0
     last_updated: datetime = Field(default_factory=datetime.now)
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class StrategyExecution(BaseModel):
@@ -121,16 +116,14 @@ class StrategyExecution(BaseModel):
     status: ExecutionStatus = ExecutionStatus.PENDING
     start_time: datetime = Field(default_factory=datetime.now)
     end_time: Optional[datetime] = None
-    execution_mode: str = Field(default="backtest", regex="^(backtest|real_time)$")
+    execution_mode: str = Field(default="backtest", pattern="^(backtest|real_time)$")
     data_source: Optional[str] = None
     signals: List[StrategySignal] = Field(default_factory=list)
     performance: Optional[StrategyPerformance] = None
     error_message: Optional[str] = None
     execution_metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    class Config:
-        orm_mode = True
-        use_enum_values = True
+    model_config = {"from_attributes": True, "use_enum_values": True}
 
 
 class User(BaseModel):
@@ -144,8 +137,7 @@ class User(BaseModel):
     last_login: Optional[datetime] = None
     preferences: Optional[Dict[str, Any]] = None
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class StrategyTemplate(BaseModel):
@@ -161,9 +153,7 @@ class StrategyTemplate(BaseModel):
     created_by: Optional[int] = None
     created_at: datetime = Field(default_factory=datetime.now)
 
-    class Config:
-        orm_mode = True
-        use_enum_values = True
+    model_config = {"from_attributes": True, "use_enum_values": True}
 
 
 class StrategyParameters(BaseModel):
@@ -180,7 +170,7 @@ class StrategyParameters(BaseModel):
 class StrategyExecutionRequest(BaseModel):
     """策略执行请求"""
     strategy_id: str
-    execution_mode: str = Field(default="backtest", regex="^(backtest|real_time)$")
+    execution_mode: str = Field(default="backtest", pattern="^(backtest|real_time)$")
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     data_source: Optional[str] = None
@@ -240,16 +230,16 @@ class StrategyDetailResponse(BaseModel):
 class BatchStrategyOperation(BaseModel):
     """批量策略操作"""
     strategy_ids: List[str]
-    operation: str = Field(..., regex="^(activate|deactivate|delete|execute)$")
+    operation: str = Field(..., pattern="^(activate|deactivate|delete|execute)$")
     parameters: Optional[Dict[str, Any]] = None
 
 
 class StrategyOptimizationRequest(BaseModel):
     """策略优化请求"""
     strategy_id: str
-    optimization_type: str = Field(default="grid_search", regex="^(grid_search|random_search|bayesian)$")
+    optimization_type: str = Field(default="grid_search", pattern="^(grid_search|random_search|bayesian)$")
     parameter_ranges: Dict[str, List[float]]
-    objective_function: str = Field(default="sharpe_ratio", regex="^(sharpe_ratio|total_return|profit_factor)$")
+    objective_function: str = Field(default="sharpe_ratio", pattern="^(sharpe_ratio|total_return|profit_factor)$")
     constraints: Optional[Dict[str, Any]] = None
 
 

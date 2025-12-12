@@ -10,7 +10,7 @@ API Response Schemas
 
 from datetime import datetime
 from typing import List, Optional, Dict, Any, Generic, TypeVar
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from .models import (
     Strategy, StrategySignal, StrategyPerformance, StrategyExecution,
     StrategyType, StrategyStatus, RiskLevel, SignalType
@@ -46,7 +46,8 @@ class StrategyCreate(BaseModel):
     template_id: Optional[str] = None
     risk_level: RiskLevel = RiskLevel.MEDIUM
 
-    @validator('name')
+    @field_validator('name')
+    @classmethod
     def validate_name(cls, v):
         if not v.strip():
             raise ValueError('策略名称不能为空')
@@ -66,7 +67,7 @@ class StrategyUpdate(BaseModel):
 class ExecutionRequest(BaseModel):
     """执行策略请求"""
     strategy_id: str
-    execution_mode: str = Field("backtest", regex="^(backtest|real_time)$")
+    execution_mode: str = Field("backtest", pattern="^(backtest|real_time)$")
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     data_source: Optional[str] = None
@@ -75,8 +76,16 @@ class ExecutionRequest(BaseModel):
 
 class StrategyControlRequest(BaseModel):
     """策略控制请求"""
-    action: str = Field(..., regex="^(enable|disable|start|stop|pause)$")
+    action: str = Field(..., pattern="^(enable|disable|start|stop|pause)$")
     reason: Optional[str] = None
+    confirm: bool = False
+
+
+class BatchStrategyOperation(BaseModel):
+    """批量策略操作请求"""
+    strategy_ids: List[str] = Field(..., min_length=1, max_length=100)
+    operation: str = Field(..., pattern="^(activate|deactivate|delete|execute)$")
+    parameters: Optional[Dict[str, Any]] = None
     confirm: bool = False
 
 
@@ -98,15 +107,19 @@ class StrategyResponse(BaseModel):
     strategy_type: StrategyType
     status: StrategyStatus
     is_active: bool
+    user_id: int
     risk_level: RiskLevel
     created_at: datetime
     updated_at: Optional[datetime]
     last_executed: Optional[datetime]
     performance_summary: Optional[Dict[str, float]] = None
 
-    class Config:
-        orm_mode = True
-        use_enum_values = True
+    model_config = {"from_attributes": True, "use_enum_values": True}
+
+
+class StrategyListResponse(PaginatedResponse[StrategyResponse]):
+    """策略列表响应"""
+    pass
 
 
 class StrategyDetailResponse(BaseModel):
@@ -117,9 +130,7 @@ class StrategyDetailResponse(BaseModel):
     execution_history: List[StrategyExecution] = Field(default_factory=list)
     risk_metrics: Optional[Dict[str, float]] = None
 
-    class Config:
-        orm_mode = True
-        use_enum_values = True
+    model_config = {"from_attributes": True, "use_enum_values": True}
 
 
 class ExecutionResponse(BaseModel):
@@ -132,8 +143,7 @@ class ExecutionResponse(BaseModel):
     estimated_completion: Optional[datetime]
     progress: float = Field(0.0, ge=0.0, le=1.0)
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class ExecutionStatusResponse(BaseModel):
@@ -148,8 +158,7 @@ class ExecutionStatusResponse(BaseModel):
     error_message: Optional[str] = None
     performance_summary: Optional[Dict[str, float]] = None
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class PerformanceMetrics(BaseModel):
@@ -168,8 +177,7 @@ class PerformanceMetrics(BaseModel):
     daily_pnl: float = 0.0
     last_updated: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class ExecutionReport(BaseModel):
@@ -185,8 +193,7 @@ class ExecutionReport(BaseModel):
     risk_analysis: Dict[str, Any]
     recommendations: List[str] = Field(default_factory=list)
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class DashboardResponse(BaseModel):
@@ -201,9 +208,7 @@ class DashboardResponse(BaseModel):
     market_overview: Dict[str, Any] = Field(default_factory=dict)
     performance_chart: List[Dict[str, Any]] = Field(default_factory=list)
 
-    class Config:
-        orm_mode = True
-        use_enum_values = True
+    model_config = {"from_attributes": True, "use_enum_values": True}
 
 
 class ControlResponse(BaseModel):
@@ -225,8 +230,7 @@ class OperationHistoryResponse(BaseModel):
     total_count: int
     has_more: bool
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class StrategyRecommendations(BaseModel):
@@ -237,8 +241,7 @@ class StrategyRecommendations(BaseModel):
     confidence_scores: Dict[str, float]
     last_updated: datetime = Field(default_factory=datetime.now)
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class WebSocketMessage(BaseModel):
@@ -258,9 +261,7 @@ class RealTimeUpdate(BaseModel):
     alerts: List[Dict[str, Any]] = Field(default_factory=list)
     timestamp: datetime = Field(default_factory=datetime.now)
 
-    class Config:
-        orm_mode = True
-        use_enum_values = True
+    model_config = {"from_attributes": True, "use_enum_values": True}
 
 
 class ErrorResponse(BaseModel):
@@ -345,5 +346,4 @@ class AnalyticsDataResponse(BaseModel):
     time_range: Dict[str, datetime]
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
