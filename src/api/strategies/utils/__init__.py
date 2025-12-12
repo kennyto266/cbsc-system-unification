@@ -12,10 +12,8 @@ from .permissions import (
 )
 from .cache import (
     CacheManager,
-    cache_manager,
     CacheKeys,
-    cache_result,
-    invalidate_cache
+    cache_result
 )
 from .validators import (
     BaseValidator,
@@ -53,10 +51,8 @@ __all__ = [
 
     # Cache
     "CacheManager",
-    "cache_manager",
     "CacheKeys",
     "cache_result",
-    "invalidate_cache",
 
     # Validators
     "BaseValidator",

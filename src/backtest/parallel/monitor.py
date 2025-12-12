@@ -13,6 +13,7 @@ import asyncio
 import json
 import logging
 import time
+import os
 from collections import defaultdict, deque
 from dataclasses import dataclass, asdict
 from datetime import datetime, timedelta
@@ -171,21 +172,50 @@ class ResourceMonitor:
 
 
 class ProgressTracker:
-    """Tracks progress of parallel tasks and calculates ETAs."""
+    """Enhanced progress tracker with intelligent ETA calculation and persistence."""
 
-    def __init__(self):
+    def __init__(self, persistence_file: Optional[str] = None, enable_persistence: bool = True):
         self.tasks: Dict[str, TaskProgress] = {}
         self.task_history: List[TaskProgress] = []
         self._completion_times = defaultdict(list)  # task_type -> list of completion times
+        self._task_durations = defaultdict(list)  # task_id -> list of duration samples
+        self._eta_history = deque(maxlen=100)  # Recent ETA accuracy
+        self.persistence_file = persistence_file
+        self.enable_persistence = enable_persistence
+
+        # Enhanced metrics
+        self._total_tasks_registered = 0
+        self._total_tasks_completed = 0
+        self._total_execution_time = 0.0
+
+        # Load persisted data if available
+        if self.enable_persistence and self.persistence_file:
+            self._load_persisted_state()
 
     def register_task(self, task_id: str, task_type: str, estimated_duration: Optional[float] = None):
         """Register a new task for tracking."""
-        self.tasks[task_id] = TaskProgress(
-            task_id=task_id,
-            task_type=task_type,
-            status="pending",
-            progress_percent=0.0
-        )
+        self._total_tasks_registered += 1
+
+        # Check if task was persisted and restore state
+        persisted_task = None
+        if self.enable_persistence and self.persistence_file:
+            persisted_task = self._get_persisted_task(task_id)
+
+        if persisted_task:
+            self.tasks[task_id] = persisted_task
+            self.task_history.append(persisted_task)
+        else:
+            self.tasks[task_id] = TaskProgress(
+                task_id=task_id,
+                task_type=task_type,
+                status="pending",
+                progress_percent=0.0,
+                estimated_completion=datetime.now() + timedelta(seconds=estimated_duration or 60) if estimated_duration else None
+            )
+
+        # Persist new task registration
+        if self.enable_persistence:
+            self._persist_task_state(task_id)
 
     def start_task(self, task_id: str):
         """Mark task as started."""
@@ -261,6 +291,186 @@ class ProgressTracker:
     def get_all_tasks(self) -> List[TaskProgress]:
         """Get all current tasks."""
         return list(self.tasks.values())
+
+    def calculate_intelligent_eta(self, task_id: str) -> Optional[timedelta]:
+        """Calculate intelligent ETA using multiple algorithms."""
+        task = self.tasks.get(task_id)
+        if not task or task.status != "running":
+            return None
+
+        # Method 1: Historical average for this task type
+        eta_method1 = None
+        if task.task_type in self._completion_times:
+            avg_duration = sum(self._completion_times[task.task_type]) / len(self._completion_times[task.type])
+            eta_method1 = timedelta(seconds=avg_duration)
+
+        # Method 2: Current progress-based extrapolation
+        eta_method2 = None
+        if task.started_at and task.progress_percent > 0:
+            elapsed = datetime.now() - task.started_at
+            if task.progress_percent > 0:
+                estimated_total = elapsed.total_seconds() / (task.progress_percent / 100)
+                remaining_time = estimated_total - elapsed.total_seconds()
+                eta_method2 = timedelta(seconds=remaining_time)
+
+        # Method 3: Weighted combination
+        if eta_method1 and eta_method2:
+            # Weight historical more heavily as we get more data
+            historical_weight = 0.7
+            current_weight = 0.3
+            combined_seconds = (eta_method1.total_seconds() * historical_weight +
+                              eta_method2.total_seconds() * current_weight)
+            return timedelta(seconds=combined_seconds)
+        elif eta_method1:
+            return eta_method1
+        elif eta_method2:
+            return eta_method2
+
+        return None
+
+    def get_eta_accuracy_stats(self) -> Dict[str, float]:
+        """Calculate ETA prediction accuracy statistics."""
+        if not self._eta_history:
+            return {"accuracy": 0.0, "count": 0}
+
+        accuracies = []
+        for eta_actual, eta_predicted in self._eta_history:
+            if eta_total_seconds > 0:
+                accuracy = 1.0 - abs(eta_actual - eta_predicted) / eta_total_seconds
+                accuracies.append(max(0, min(1, accuracy)))
+
+        return {
+            "accuracy": sum(accuracies) / len(accuracies) if accuracies else 0.0,
+            "count": len(accuracies),
+            "recent_accuracy": sum(accuracies[-10:]) / len(accuracies[-10:]) if len(accuracies) >= 10 else sum(accuracies) / len(accuracies)
+        }
+
+    def record_eta_accuracy(self, task_id: str, actual_duration: float, predicted_eta: Optional[timedelta]):
+        """Record ETA prediction accuracy for learning."""
+        if predicted_eta:
+            self._eta_history.append((actual_duration, predicted_eta.total_seconds()))
+
+    def get_performance_metrics(self) -> Dict[str, Any]:
+        """Get comprehensive performance metrics."""
+        task_type_stats = {}
+        for task_type, durations in self._completion_times.items():
+            if durations:
+                task_type_stats[task_type] = {
+                    "avg_duration": sum(durations) / len(durations),
+                    "min_duration": min(durations),
+                    "max_duration": max(durations),
+                    "count": len(durations)
+                }
+
+        return {
+            "total_registered": self._total_tasks_registered,
+            "total_completed": self._total_tasks_completed,
+            "total_execution_time": self._total_execution_time,
+            "avg_task_time": self._total_execution_time / max(1, self._total_tasks_completed),
+            "task_type_stats": task_type_stats,
+            "eta_accuracy": self.get_eta_accuracy_stats(),
+            "persistence_enabled": self.enable_persistence,
+            "persistence_file": self.persistence_file
+        }
+
+    # Persistence methods
+    def _persist_task_state(self, task_id: str):
+        """Persist individual task state."""
+        if not self.enable_persistence or not self.persistence_file:
+            return
+
+        try:
+            task = self.tasks.get(task_id)
+            if task:
+                state = {
+                    "task_id": task.task_id,
+                    "task_type": task.task_type,
+                    "status": task.status,
+                    "progress_percent": task.progress_percent,
+                    "started_at": task.started_at.isoformat() if task.started_at else None,
+                    "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+                    "estimated_completion": task.estimated_completion.isoformat() if task.estimated_completion else None,
+                    "error_message": task.error_message
+                }
+
+                with open(f"{self.persistence_file}.{task_id}", 'w') as f:
+                    json.dump(state, f, indent=2)
+
+        except Exception as e:
+            logging.error(f"Error persisting task state for {task_id}: {e}")
+
+    def _get_persisted_task(self, task_id: str) -> Optional[TaskProgress]:
+        """Restore task state from persistence."""
+        if not self.enable_persistence or not self.persistence_file:
+            return None
+
+        try:
+            file_path = f"{self.persistence_file}.{task_id}"
+            if os.path.exists(file_path):
+                with open(file_path, 'r') as f:
+                    state = json.load(f)
+
+                return TaskProgress(
+                    task_id=state["task_id"],
+                    task_type=state["task_type"],
+                    status=state["status"],
+                    progress_percent=state["progress_percent"],
+                    started_at=datetime.fromisoformat(state["started_at"]) if state.get("started_at") else None,
+                    completed_at=datetime.fromisoformat(state["completed_at"]) if state.get("completed_at") else None,
+                    estimated_completion=datetime.fromisoformat(state["estimated_completion"]) if state.get("estimated_completion") else None,
+                    error_message=state.get("error_message")
+                )
+
+        except Exception as e:
+            logging.error(f"Error restoring task state for {task_id}: {e}")
+            return None
+
+    def _load_persisted_state(self):
+        """Load all persisted task states."""
+        if not self.enable_persistence or not self.persistence_file:
+            return
+
+        try:
+            # Find all task persistence files
+            pattern = f"{self.persistence_file}.*"
+            for file_path in Path('.').glob(pattern):
+                if file_path.is_file() and file_path.name != self.persistence_file:
+                    task_id = file_path.name.split('.', 1)[-1]
+                    task = self._get_persisted_task(task_id)
+                    if task:
+                        self.tasks[task_id] = task
+                        self._total_tasks_registered += 1
+                        if task.status in ["completed", "failed"]:
+                            self.task_history.append(task)
+                            self._total_tasks_completed += 1
+
+        except Exception as e:
+            logging.error(f"Error loading persisted state: {e}")
+
+    def cleanup_old_persisted_tasks(self, max_age_days: int = 30):
+        """Clean up old persisted task files."""
+        if not self.enable_persistence or not self.persistence_file:
+            return
+
+        try:
+            cutoff_time = datetime.now() - timedelta(days=max_age_days)
+            pattern = f"{self.persistence_file}.*"
+
+            for file_path in Path('.').glob(pattern):
+                if file_path.is_file():
+                    # Get modification time
+                    mtime = datetime.fromtimestamp(file_path.stat().st_mtime)
+                    if mtime < cutoff_time:
+                        file_path.unlink()
+                        logging.info(f"Cleaned up old persisted task: {file_path.name}")
+
+        except Exception as e:
+            logging.error(f"Error cleaning up old persisted tasks: {e}")
+
+    def force_persist_all(self):
+        """Force persist all current task states."""
+        for task_id in list(self.tasks.keys()):
+            self._persist_task_state(task_id)
 
 
 class AlertManager:

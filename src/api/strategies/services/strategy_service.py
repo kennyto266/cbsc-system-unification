@@ -97,7 +97,7 @@ class BaseStrategyService:
         total_pages = (total_count + page_size - 1) // page_size
 
         result = {
-            "strategies": [StrategyResponse.from_orm(s) for s in strategies],
+            "strategies": [StrategyResponse.model_validate(s) for s in strategies],
             "total_count": total_count,
             "page": page,
             "page_size": page_size,
@@ -135,8 +135,9 @@ class BaseStrategyService:
                 # 合并模板默认参数
                 parameters = {**template.default_parameters, **parameters}
 
-        # 生成策略ID
-        strategy_id = f"{request.strategy_type.value}_{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        # 生成策略ID - 使用微秒精度避免重複
+        import time
+        strategy_id = f"{request.strategy_type.value}_{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{int(time.time() * 1000000) % 1000000}"
 
         # 创建策略对象
         strategy = Strategy(
@@ -159,7 +160,7 @@ class BaseStrategyService:
 
         logger.info(f"创建策略成功: {strategy.id} by user {user_id}")
 
-        return StrategyResponse.from_orm(strategy)
+        return StrategyResponse.model_validate(strategy)
 
     async def get_strategy_detail(self, strategy_id: str, user_id: Optional[int] = None) -> Dict[str, Any]:
         """
@@ -198,7 +199,7 @@ class BaseStrategyService:
         execution_history = await self.strategy_repo.get_execution_history(strategy_id, limit=5)
 
         # 转换为响应格式
-        strategy_response = StrategyResponse.from_orm(strategy)
+        strategy_response = StrategyResponse.model_validate(strategy)
         if performance:
             strategy_response.performance_summary = {
                 "total_return": performance.total_return,
@@ -256,7 +257,7 @@ class BaseStrategyService:
                 raise ValueError(f"策略名称已存在: {request.name}")
 
         # 更新字段
-        update_data = request.dict(exclude_unset=True)
+        update_data = request.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             if field == 'name':
                 setattr(strategy, field, value.strip())
@@ -277,7 +278,7 @@ class BaseStrategyService:
 
         logger.info(f"更新策略成功: {strategy_id}")
 
-        return StrategyResponse.from_orm(strategy)
+        return StrategyResponse.model_validate(strategy)
 
     async def delete_strategy(self, strategy_id: str, user_id: Optional[int] = None) -> None:
         """
