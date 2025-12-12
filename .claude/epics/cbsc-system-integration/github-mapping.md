@@ -34,9 +34,21 @@
 - Epic: 本地 ↔ GitHub 已同步
 - Task 001-002: 本地 ↔ GitHub 已同步
 - Task 003-004: 本地 ↔ GitHub 已同步
-- Subtasks (#23-27): GitHub存在，需要建立關聯
+- Subtasks (#23-27): GitHub存在，已建立父子任務關聯
 
 ## Notes
 - 所有主要epic和task已建立GitHub映射
-- GitHub子任務（#23-27）需要與父任務建立關聯
-- 同步完成，系統狀態一致
+- ✅ GitHub子任務（#23-27）已與父任務建立關聯
+- ✅ 雙向引用關係已建立（父任務→子任務，子任務→父任務）
+- ✅ 同步完成，系統狀態一致
+
+## Task Hierarchy Established
+
+### Task 003 (#17) - 後端服務整合
+├── #26: WebSocket连接池实现
+└── #27: WebSocket压力测试与监控
+
+### Task 004 (#18) - 數據架構重構
+├── #23: CacheManager核心实现
+├── #24: 缓存集成与监控
+└── #25: 数据库分区与归档系统
