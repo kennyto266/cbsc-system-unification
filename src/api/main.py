@@ -24,6 +24,7 @@ from api.personal_strategy_endpoints import router as personal_strategy_router
 from api.cbsc_strategy_api import router as cbsc_strategy_router
 from api.unified_strategy_endpoints import router as unified_strategy_router
 from api.websocket_server import websocket_router
+from api.non_price_endpoints import router as non_price_router
 
 # 导入服务
 from auth_simple import init_auth_service
@@ -79,6 +80,7 @@ app.include_router(personal_strategy_router)
 app.include_router(cbsc_strategy_router)
 app.include_router(unified_strategy_router)
 app.include_router(websocket_router)
+app.include_router(non_price_router)
 
 # 全局异常处理器
 @app.exception_handler(Exception)
@@ -222,6 +224,9 @@ async def startup_event():
         logger.info("🔌 WebSocket端点: ws://localhost:3004/ws/strategies")
         logger.info("🧠 CBSC策略管理API: http://localhost:3004/api/strategies")
         logger.info("🚀 统一策略管理API: http://localhost:3004/api/v1/strategies")
+        logger.info("🏛️ 非价格策略API: http://localhost:3004/api/non-price")
+        logger.info("📈 HKMA宏观数据: http://localhost:3004/api/non-price/hkma")
+        logger.info("💭 情绪分析API: http://localhost:3004/api/non-price/sentiment")
 
     except Exception as e:
         logger.error(f"❌ 应用启动失败: {e}")
