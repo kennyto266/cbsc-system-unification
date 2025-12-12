@@ -474,6 +474,191 @@ class CacheService:
             logger.error(f"获取缓存信息失败: {e}")
             return {"connected": False, "error": str(e)}
 
+    # ============================================================================
+    # 统一数据缓存操作 (Unified Data Cache Operations)
+    # ============================================================================
+
+    async def cache_unified_data_point(
+        self,
+        data_point: Dict[str, Any],
+        source: str,
+        expire: Optional[int] = None
+    ) -> bool:
+        """缓存统一数据点"""
+        try:
+            # Generate cache key based on timestamp and symbol
+            symbol = data_point.get('symbol', 'unknown')
+            timestamp = data_point.get('timestamp', datetime.now().isoformat())
+            cache_key = f"unified_data:{source}:{symbol}:{timestamp}"
+
+            # Set default expiration based on source type
+            if expire is None:
+                expire = self._get_default_ttl_for_source(source)
+
+            return await self.set(cache_key, data_point, expire=expire, use_pickle=True)
+
+        except Exception as e:
+            logger.error(f"缓存统一数据点失败: {e}")
+            return False
+
+    async def get_unified_data_point(
+        self,
+        symbol: str,
+        source: str,
+        timestamp: str
+    ) -> Optional[Dict[str, Any]]:
+        """获取缓存的统一数据点"""
+        try:
+            cache_key = f"unified_data:{source}:{symbol}:{timestamp}"
+            return await self.get(cache_key, use_pickle=True)
+
+        except Exception as e:
+            logger.error(f"获取统一数据点失败: {e}")
+            return None
+
+    async def cache_unified_data_series(
+        self,
+        symbol: str,
+        source: str,
+        data_series: List[Dict[str, Any]],
+        expire: Optional[int] = None
+    ) -> bool:
+        """缓存统一数据序列"""
+        try:
+            cache_key = f"unified_series:{source}:{symbol}"
+
+            # Set default expiration based on source type
+            if expire is None:
+                expire = self._get_default_ttl_for_source(source)
+
+            # Sort data by timestamp for efficient querying
+            sorted_data = sorted(data_series, key=lambda x: x.get('timestamp', ''))
+
+            return await self.set(cache_key, sorted_data, expire=expire, use_pickle=True)
+
+        except Exception as e:
+            logger.error(f"缓存统一数据序列失败: {e}")
+            return False
+
+    async def get_unified_data_series(
+        self,
+        symbol: str,
+        source: str
+    ) -> Optional[List[Dict[str, Any]]]:
+        """获取缓存的统一数据序列"""
+        try:
+            cache_key = f"unified_series:{source}:{symbol}"
+            return await self.get(cache_key, use_pickle=True)
+
+        except Exception as e:
+            logger.error(f"获取统一数据序列失败: {e}")
+            return None
+
+    async def cache_hkma_data(
+        self,
+        indicator: str,
+        data: Dict[str, Any],
+        expire: int = 3600
+    ) -> bool:
+        """缓存HKMA数据"""
+        cache_key = f"hkma_data:{indicator}"
+        return await self.set(cache_key, data, expire=expire, use_pickle=True)
+
+    async def get_hkma_data(self, indicator: str) -> Optional[Dict[str, Any]]:
+        """获取缓存的HKMA数据"""
+        cache_key = f"hkma_data:{indicator}"
+        return await self.get(cache_key, use_pickle=True)
+
+    async def cache_sentiment_data(
+        self,
+        symbol: str,
+        sentiment_data: Dict[str, Any],
+        expire: int = 900
+    ) -> bool:
+        """缓存情绪数据"""
+        cache_key = f"sentiment_data:{symbol}"
+        return await self.set(cache_key, sentiment_data, expire=expire, use_pickle=True)
+
+    async def get_sentiment_data(self, symbol: str) -> Optional[Dict[str, Any]]:
+        """获取缓存的情绪数据"""
+        cache_key = f"sentiment_data:{symbol}"
+        return await self.get(cache_key, use_pickle=True)
+
+    async def cache_quality_score(
+        self,
+        data_type: str,
+        symbol: str,
+        quality_result: Dict[str, Any],
+        expire: int = 300
+    ) -> bool:
+        """缓存数据质量评分"""
+        cache_key = f"quality_score:{data_type}:{symbol}"
+        return await self.set(cache_key, quality_result, expire=expire, use_pickle=True)
+
+    async def get_quality_score(
+        self,
+        data_type: str,
+        symbol: str
+    ) -> Optional[Dict[str, Any]]:
+        """获取缓存的数据质量评分"""
+        cache_key = f"quality_score:{data_type}:{symbol}"
+        return await self.get(cache_key, use_pickle=True)
+
+    async def cache_backtest_result(
+        self,
+        strategy_id: str,
+        backtest_data: Dict[str, Any],
+        expire: int = 86400
+    ) -> bool:
+        """缓存回测结果"""
+        cache_key = f"backtest_result:{strategy_id}"
+        return await self.set(cache_key, backtest_data, expire=expire, use_pickle=True)
+
+    async def get_backtest_result(self, strategy_id: str) -> Optional[Dict[str, Any]]:
+        """获取缓存的回测结果"""
+        cache_key = f"backtest_result:{strategy_id}"
+        return await self.get(cache_key, use_pickle=True)
+
+    async def invalidate_symbol_cache(self, symbol: str) -> int:
+        """清除指定股票代码的所有缓存"""
+        patterns = [
+            f"unified_data:*:{symbol}:*",
+            f"unified_series:*:{symbol}",
+            f"market_data:{symbol}",
+            f"sentiment_data:{symbol}"
+        ]
+
+        deleted_count = 0
+        for pattern in patterns:
+            deleted_count += await self.delete_pattern(pattern)
+
+        return deleted_count
+
+    async def invalidate_source_cache(self, source: str) -> int:
+        """清除指定数据源的所有缓存"""
+        patterns = [
+            f"unified_data:{source}:*",
+            f"unified_series:{source}:*",
+            f"quality_score:{source}:*"
+        ]
+
+        deleted_count = 0
+        for pattern in patterns:
+            deleted_count += await self.delete_pattern(pattern)
+
+        return deleted_count
+
+    def _get_default_ttl_for_source(self, source: str) -> int:
+        """根据数据源类型获取默认TTL"""
+        ttl_mapping = {
+            'price': 30,         # 30 seconds for price data
+            'hkma': 3600,        # 1 hour for HKMA data
+            'sentiment': 900,    # 15 minutes for sentiment data
+            'alternative': 1800, # 30 minutes for alternative data
+            'backtest': 86400    # 24 hours for backtest results
+        }
+        return ttl_mapping.get(source, 300)  # Default 5 minutes
+
     async def close(self):
         """关闭连接"""
         try:
