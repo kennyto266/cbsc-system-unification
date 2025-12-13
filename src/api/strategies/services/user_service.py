@@ -17,12 +17,8 @@ from datetime import datetime
 import logging
 
 from .base_business_service import BaseBusinessService
-from ..models.user import User, UserStatus, UserRole
-from ..schemas.user import (
-    UserCreate, UserUpdate, UserResponse,
-    UserPreferenceCreate, UserPreferenceUpdate,
-    UserProfileResponse
-)
+from ..models import User
+from ..schemas import UserPreferences
 from ..utils.validators import UserValidator
 from ..utils.permissions import UserPermissionChecker
 from ..utils.events import EventBus
@@ -206,7 +202,7 @@ class UserService(BaseBusinessService[User, UserCreate, UserUpdate, UserResponse
     async def change_user_status(
         self,
         user_id: str,
-        new_status: UserStatus,
+        new_status: str,  # "active", "inactive", "suspended"
         operator_id: int,
         reason: Optional[str] = None
     ) -> None:
@@ -249,12 +245,12 @@ class UserService(BaseBusinessService[User, UserCreate, UserUpdate, UserResponse
             "reason": reason
         })
 
-        logger.info(f"用戶狀態變更: {user_id} {old_status.value} -> {new_status.value}")
+        logger.info(f"用戶狀態變更: {user_id} {old_status} -> {new_status}")
 
     async def assign_user_role(
         self,
         user_id: str,
-        role: UserRole,
+        role: str,  # "user", "admin", "moderator"
         assigner_id: int,
         expires_at: Optional[datetime] = None
     ) -> None:
