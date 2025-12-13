@@ -16,10 +16,10 @@ from .execution_service import ExecutionService
 from .personal_service import PersonalService
 from .websocket_service import WebSocketService, websocket_manager, get_websocket_service
 
-# New business services
-from .user_service import UserService
-from .permission_service import PermissionService
-from .audit_service import AuditService
+# New business services (暂时注释，需要解决依赖问题)
+# from .user_service import UserService
+# from .permission_service import PermissionService
+# from .audit_service import AuditService
 
 # Cache management
 from .cache_manager import CacheManager
@@ -37,10 +37,10 @@ __all__ = [
     "websocket_manager",
     "get_websocket_service",
 
-    # New business services
-    "UserService",
-    "PermissionService",
-    "AuditService",
+    # New business services (暂时注释)
+    # "UserService",
+    # "PermissionService",
+    # "AuditService",
 
     # Cache management
     "CacheManager",

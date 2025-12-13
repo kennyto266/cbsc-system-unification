@@ -14,6 +14,7 @@
 ## 認證
 
 所有需要認證的請求都必須在請求頭中包含：
+
 ```
 Authorization: Bearer <your-jwt-token>
 ```
@@ -29,10 +30,12 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 **描述**: 獲取所有可用策略的列表
 
 **查詢參數**:
+
 - `page` (可選): 頁碼，默認為 1
 - `page_size` (可選): 每頁大小，默認為 50
 
 **響應示例**:
+
 ```json
 {
   "strategies": [
@@ -65,9 +68,11 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 **描述**: 獲取所有策略的性能指標
 
 **查詢參數**:
+
 - `strategy_name` (可選): 特定策略名稱，不提供則返回所有策略
 
 **響應示例**:
+
 ```json
 [
   {
@@ -77,7 +82,7 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
     "total_return": 0.25,
     "win_rate": 0.65,
     "status": "enabled",
-    "daily_pnl": 1500.00,
+    "daily_pnl": 1500.0,
     "volatility": 0.12,
     "calmar_ratio": 1.67,
     "profit_factor": 1.8,
@@ -93,9 +98,11 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 **描述**: 獲取特定策略的完整詳細信息
 
 **路徑參數**:
+
 - `strategy_name`: 策略名稱
 
 **響應示例**:
+
 ```json
 {
   "name": "DirectRSIStrategy",
@@ -120,9 +127,11 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 **描述**: 獲取特定策略的性能數據
 
 **路徑參數**:
+
 - `strategy_name`: 策略名稱
 
 **響應示例**:
+
 ```json
 {
   "name": "DirectRSIStrategy",
@@ -131,7 +140,7 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
   "total_return": 0.25,
   "win_rate": 0.65,
   "status": "enabled",
-  "daily_pnl": 1500.00,
+  "daily_pnl": 1500.0,
   "volatility": 0.12,
   "calmar_ratio": 1.67,
   "profit_factor": 1.8,
@@ -146,15 +155,17 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 **描述**: 獲取策略的最後交易信號
 
 **路徑參數**:
+
 - `strategy_name`: 策略名稱
 
 **響應示例**:
+
 ```json
 {
   "type": "buy",
   "strength": 75,
   "timestamp": "2025-12-10T08:30:00Z",
-  "price": 45000.00,
+  "price": 45000.0,
   "reason": "RSI超賣區反彈"
 }
 ```
@@ -166,9 +177,11 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 **描述**: 啟用或禁用策略
 
 **路徑參數**:
+
 - `strategy_name`: 策略名稱
 
 **請求體**:
+
 ```json
 {
   "enabled": true
@@ -176,6 +189,7 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 ```
 
 **響應示例**:
+
 ```json
 {
   "success": true,
@@ -193,12 +207,13 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 **描述**: 獲取所有策略的性能摘要統計
 
 **響應示例**:
+
 ```json
 {
   "total_strategies": 5,
   "active_strategies": 3,
   "total_return": 0.45,
-  "daily_pnl": 5000.00,
+  "daily_pnl": 5000.0,
   "sharpe_ratio": 1.35,
   "max_drawdown": -0.12,
   "win_rate": 0.62,
@@ -232,6 +247,7 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 **描述**: 建立WebSocket連接以接收實時數據更新
 
 **訂閱消息格式**:
+
 ```json
 {
   "type": "subscribe",
@@ -242,13 +258,14 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 ```
 
 **實時更新消息格式**:
+
 ```json
 {
   "type": "performance_update",
   "strategy_name": "DirectRSIStrategy",
   "performance": {
     "sharpe_ratio": 1.24,
-    "daily_pnl": 1550.00,
+    "daily_pnl": 1550.0,
     "timestamp": "2025-12-10T08:31:00Z"
   }
 }
@@ -263,6 +280,7 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 **描述**: 檢查API服務健康狀態
 
 **響應示例**:
+
 ```json
 {
   "status": "healthy",
@@ -278,15 +296,12 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 **描述**: 獲取系統信息
 
 **響應示例**:
+
 ```json
 {
   "version": "1.0.0",
   "environment": "development",
-  "supported_features": [
-    "real_time_updates",
-    "strategy_management",
-    "performance_analysis"
-  ]
+  "supported_features": ["real_time_updates", "strategy_management", "performance_analysis"]
 }
 ```
 
@@ -309,21 +324,22 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 
 ### 常見錯誤碼
 
-| 狀態碼 | 錯誤碼 | 描述 |
-|--------|--------|------|
-| 400 | VALIDATION_ERROR | 請求參數驗證失敗 |
-| 401 | AUTHENTICATION_ERROR | 未提供有效的認證令牌 |
-| 403 | AUTHORIZATION_ERROR | 沒有權限執行此操作 |
-| 404 | NOT_FOUND | 請求的資源不存在 |
-| 429 | RATE_LIMIT_ERROR | 請求頻率過高 |
-| 500 | INTERNAL_ERROR | 服務器內部錯誤 |
-| 503 | SERVICE_UNAVAILABLE | 服務暫時不可用 |
+| 狀態碼 | 錯誤碼               | 描述                 |
+| ------ | -------------------- | -------------------- |
+| 400    | VALIDATION_ERROR     | 請求參數驗證失敗     |
+| 401    | AUTHENTICATION_ERROR | 未提供有效的認證令牌 |
+| 403    | AUTHORIZATION_ERROR  | 沒有權限執行此操作   |
+| 404    | NOT_FOUND            | 請求的資源不存在     |
+| 429    | RATE_LIMIT_ERROR     | 請求頻率過高         |
+| 500    | INTERNAL_ERROR       | 服務器內部錯誤       |
+| 503    | SERVICE_UNAVAILABLE  | 服務暫時不可用       |
 
 ## 數據驗證
 
 前端會對所有API響應進行數據驗證，確保數據完整性和類型正確性。驗證規則包括：
 
 ### 策略性能數據
+
 - `sharpe_ratio`: -10 到 10 之間的數字
 - `max_drawdown`: -1 到 0 之間的數字
 - `total_return`: -10 到 10 之間的數字
@@ -331,6 +347,7 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 - `status`: 必須是 "enabled" 或 "disabled"
 
 ### 策略配置數據
+
 - `name`: 非空字符串
 - `enabled`: 布爾值
 - `description`: 字符串，至少10個字符
@@ -347,6 +364,7 @@ Token存儲在 `localStorage` 的 `auth_token` 鍵中。
 - **策略詳細信息**: 2分鐘緩存
 
 緩存會在以下情況下自動清除：
+
 1. 接收到WebSocket實時更新
 2. 執行策略操作（如啟用/禁用）
 3. 緩存過期
@@ -397,16 +415,16 @@ function MyComponent() {
 ### 直接API調用示例
 
 ```typescript
-import strategyDataService from '../services/strategyDataService';
+import strategyDataService from '../services/strategyDataService'
 
 // 獲取策略列表
-const strategies = await strategyDataService.getStrategyList();
+const strategies = await strategyDataService.getStrategyList()
 
 // 獲取性能數據
-const performances = await strategyDataService.getStrategyPerformance();
+const performances = await strategyDataService.getStrategyPerformance()
 
 // 切換策略
-await strategyDataService.toggleStrategy('MyStrategy', true);
+await strategyDataService.toggleStrategy('MyStrategy', true)
 ```
 
 ## 注意事項

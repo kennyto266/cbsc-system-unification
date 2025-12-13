@@ -6,34 +6,34 @@
 /* CSS Variables - Design System */
 :root {
   /* Color Palette */
-  --primary-color: #2c3e50;        /* Deep blue-gray */
-  --secondary-color: #3498db;      /* Blue accent */
-  --success-color: #27ae60;        /* Green */
-  --warning-color: #f39c12;        /* Orange */
-  --danger-color: #e74c3c;         /* Red */
-  --info-color: #3498db;           /* Info blue */
-  --light-color: #ecf0f1;          /* Light gray */
-  --dark-color: #2c3e50;           /* Dark */
-  --muted-color: #7f8c8d;          /* Muted gray */
+  --primary-color: #2c3e50; /* Deep blue-gray */
+  --secondary-color: #3498db; /* Blue accent */
+  --success-color: #27ae60; /* Green */
+  --warning-color: #f39c12; /* Orange */
+  --danger-color: #e74c3c; /* Red */
+  --info-color: #3498db; /* Info blue */
+  --light-color: #ecf0f1; /* Light gray */
+  --dark-color: #2c3e50; /* Dark */
+  --muted-color: #7f8c8d; /* Muted gray */
 
   /* Extended Palette */
-  --bg-primary: #ffffff;           /* Main background */
-  --bg-secondary: #f8f9fa;         /* Secondary background */
-  --bg-tertiary: #f1f3f4;          /* Tertiary background */
-  --border-color: #dee2e6;         /* Border color */
+  --bg-primary: #ffffff; /* Main background */
+  --bg-secondary: #f8f9fa; /* Secondary background */
+  --bg-tertiary: #f1f3f4; /* Tertiary background */
+  --border-color: #dee2e6; /* Border color */
   --shadow-color: rgba(0, 0, 0, 0.1); /* Shadow color */
 
   /* Typography */
-  --font-family-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  --font-family-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, monospace;
-  --font-size-xs: 0.75rem;         /* 12px */
-  --font-size-sm: 0.875rem;        /* 14px */
-  --font-size-base: 1rem;          /* 16px */
-  --font-size-lg: 1.125rem;        /* 18px */
-  --font-size-xl: 1.25rem;         /* 20px */
-  --font-size-2xl: 1.5rem;         /* 24px */
-  --font-size-3xl: 1.875rem;       /* 30px */
-  --font-size-4xl: 2.25rem;        /* 36px */
+  --font-family-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem; /* 16px */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.25rem; /* 20px */
+  --font-size-2xl: 1.5rem; /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-4xl: 2.25rem; /* 36px */
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
@@ -43,24 +43,24 @@
   --line-height-relaxed: 1.75;
 
   /* Spacing System (8px base grid) */
-  --spacing-1: 0.25rem;            /* 4px */
-  --spacing-2: 0.5rem;             /* 8px */
-  --spacing-3: 0.75rem;            /* 12px */
-  --spacing-4: 1rem;               /* 16px */
-  --spacing-5: 1.25rem;            /* 20px */
-  --spacing-6: 1.5rem;             /* 24px */
-  --spacing-8: 2rem;               /* 32px */
-  --spacing-10: 2.5rem;            /* 40px */
-  --spacing-12: 3rem;              /* 48px */
-  --spacing-16: 4rem;              /* 64px */
-  --spacing-20: 5rem;              /* 80px */
+  --spacing-1: 0.25rem; /* 4px */
+  --spacing-2: 0.5rem; /* 8px */
+  --spacing-3: 0.75rem; /* 12px */
+  --spacing-4: 1rem; /* 16px */
+  --spacing-5: 1.25rem; /* 20px */
+  --spacing-6: 1.5rem; /* 24px */
+  --spacing-8: 2rem; /* 32px */
+  --spacing-10: 2.5rem; /* 40px */
+  --spacing-12: 3rem; /* 48px */
+  --spacing-16: 4rem; /* 64px */
+  --spacing-20: 5rem; /* 80px */
 
   /* Border Radius */
-  --radius-sm: 0.25rem;            /* 4px */
-  --radius-md: 0.5rem;             /* 8px */
-  --radius-lg: 0.75rem;            /* 12px */
-  --radius-xl: 1rem;               /* 16px */
-  --radius-full: 9999px;           /* Full circle */
+  --radius-sm: 0.25rem; /* 4px */
+  --radius-md: 0.5rem; /* 8px */
+  --radius-lg: 0.75rem; /* 12px */
+  --radius-xl: 1rem; /* 16px */
+  --radius-full: 9999px; /* Full circle */
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -120,7 +120,9 @@ body {
   justify-content: center;
   align-items: center;
   z-index: var(--z-modal);
-  transition: opacity var(--transition-slow), visibility var(--transition-slow);
+  transition:
+    opacity var(--transition-slow),
+    visibility var(--transition-slow);
 }
 
 .loading-screen.hidden {
@@ -146,7 +148,9 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Main Application Container */
@@ -156,7 +160,9 @@ body {
   flex-direction: column;
   opacity: 0;
   visibility: hidden;
-  transition: opacity var(--transition-slow), visibility var(--transition-slow);
+  transition:
+    opacity var(--transition-slow),
+    visibility var(--transition-slow);
 }
 
 .app-container.loaded {
@@ -356,8 +362,13 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Main Content Area */
@@ -383,8 +394,14 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Section Headers */
@@ -433,11 +450,21 @@ body {
   background: var(--border-color);
 }
 
-.stat-card.primary::before { background: var(--primary-color); }
-.stat-card.success::before { background: var(--success-color); }
-.stat-card.warning::before { background: var(--warning-color); }
-.stat-card.info::before { background: var(--info-color); }
-.stat-card.danger::before { background: var(--danger-color); }
+.stat-card.primary::before {
+  background: var(--primary-color);
+}
+.stat-card.success::before {
+  background: var(--success-color);
+}
+.stat-card.warning::before {
+  background: var(--warning-color);
+}
+.stat-card.info::before {
+  background: var(--info-color);
+}
+.stat-card.danger::before {
+  background: var(--danger-color);
+}
 
 .stat-card:hover {
   box-shadow: var(--shadow-lg);
@@ -476,9 +503,15 @@ body {
   font-weight: var(--font-weight-medium);
 }
 
-.stat-change.positive { color: var(--success-color); }
-.stat-change.negative { color: var(--danger-color); }
-.stat-change.neutral { color: var(--muted-color); }
+.stat-change.positive {
+  color: var(--success-color);
+}
+.stat-change.negative {
+  color: var(--danger-color);
+}
+.stat-change.neutral {
+  color: var(--muted-color);
+}
 
 /* Two Column Layout */
 .content-columns {
@@ -612,13 +645,21 @@ body {
 }
 
 .strategy-grade.A-plus,
-.strategy-grade.A { background-color: var(--success-color); }
+.strategy-grade.A {
+  background-color: var(--success-color);
+}
 .strategy-grade.B-plus,
-.strategy-grade.B { background-color: var(--info-color); }
+.strategy-grade.B {
+  background-color: var(--info-color);
+}
 .strategy-grade.C-plus,
-.strategy-grade.C { background-color: var(--warning-color); }
+.strategy-grade.C {
+  background-color: var(--warning-color);
+}
 .strategy-grade.D-plus,
-.strategy-grade.D { background-color: var(--danger-color); }
+.strategy-grade.D {
+  background-color: var(--danger-color);
+}
 
 .strategy-description {
   color: var(--muted-color);

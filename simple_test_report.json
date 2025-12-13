@@ -1,7 +1,7 @@
 {
   "test_suite": "CBSC Multiprocessing Simple Tests",
-  "timestamp": "2025-12-12T11:14:54.635256",
-  "duration_seconds": 0.794996,
+  "timestamp": "2025-12-13T10:17:18.957967",
+  "duration_seconds": 0.972415,
   "test_results": {
     "Basic Functionality": false,
     "Performance Scaling": false,
