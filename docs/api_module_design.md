@@ -1,763 +1,405 @@
-# CBSC策略管理系统统一API模块设计文档
+# API模块设计文档
+## API Module Design Document
 
-## 📋 执行摘要
+## 目录
+1. [概述](#概述)
+2. [架构设计](#架构设计)
+3. [分层架构](#分层架构)
+4. [依赖注入设计](#依赖注入设计)
+5. [统一数据模型](#统一数据模型)
+6. [权限控制设计](#权限控制设计)
+7. [缓存策略设计](#缓存策略设计)
+8. [WebSocket集成设计](#websocket集成设计)
+9. [模块结构图](#模块结构图)
+10. [API路由设计](#api路由设计)
+11. [设计原则](#设计原则)
+12. [实施建议](#实施建议)
 
-本文档基于现有`src/api/strategies/`统一架构，提供完整的API模块化设计方案。通过分析发现，新的统一API架构已经实现，本文档将进一步完善设计细节，并提供具体的实施指导。
+## 概述
+
+基于对现有代码的分析，设计一个统一、可扩展的API模块架构。通过分析发现，`src/api/strategies/`目录已经实现了一个较好的统一架构基础，但仍需进一步完善和优化。
 
 **架构现状**：
-- ✅ **统一架构已实现**：`src/api/strategies/`包含完整的模块化结构
-- ✅ **服务层分离**：execution_service.py、personal_service.py等已实现
+- ✅ **基础架构已实现**：`src/api/strategies/`包含模块化的目录结构
+- ✅ **服务层分离**：execution_service.py、personal_service.py等业务服务已实现
 - ✅ **数据模型统一**：models.py提供了标准化数据结构
-- ✅ **依赖注入框架**：base.py提供了DI容器支持
+- ✅ **缓存管理**：cache_manager.py实现了统一的缓存策略
+- ✅ **WebSocket支持**：websocket_service.py提供实时通信能力
 
-## 🎯 设计目标
+**需要完善的部分**：
+- 🔧 Repository层需要进一步抽象和统一
+- 🔧 Controller层需要规范化
+- 🔧 权限控制系统需要完善
+- 🔧 API响应格式需要标准化
+- 🔧 错误处理机制需要统一
 
-1. **完善现有架构**：基于已实现的统一架构进行优化和补充
-2. **标准化接口**：确保所有API遵循统一的设计规范
-3. **提升可维护性**：建立清晰的模块边界和职责分工
-4. **支持扩展性**：为未来功能扩展提供灵活的架构基础
+## 架构设计
 
-## 设计原则
-
-### 1. 单一职责原则 (SRP)
-- 每个模块只负责一个明确的功能域
-- 避免功能交叉和职责混淆
-
-### 2. 依赖倒置原则 (DIP)
-- 高层模块不依赖低层模块
-- 通过抽象接口定义依赖关系
-
-### 3. 开闭原则 (OCP)
-- 对扩展开放，对修改关闭
-- 通过插件化架构支持功能扩展
-
-### 4. 接口隔离原则 (ISP)
-- 客户端不应依赖不需要的接口
-- 提供细粒度的功能接口
-
-## 🏗️ 现有统一架构分析
-
-### 实际目录结构
-
-通过分析`src/api/strategies/`目录，发现以下已实现的架构：
+### 整体架构
 
 ```
-src/api/strategies/
-├── __init__.py                    # 统一导出模块 ✅ 已实现
-├── base.py                        # 基础服务类 ✅ 已实现
-├── personal.py                    # 个人策略服务 ✅ 已实现
-├── websocket_pool_api.py          # WebSocket API ✅ 已实现
-├── execution.py                   # 执行服务 ✅ 已实现
-├── models.py                      # 统一数据模型 ✅ 已实现
-├── services/                      # 服务层目录 ✅ 已实现
-│   ├── __init__.py
-│   ├── execution_service.py       # 执行业务服务 ✅ 已实现
-│   ├── personal_service.py        # 个性化服务 ✅ 已实现
-│   └── strategy_service.py        # 策略业务服务 ✅ 已实现
+┌─────────────────────────────────────────────────────────────┐
+│                        API Gateway                          │
+│                    (统一入口点 /api/v1)                      │
+└─────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────┐
+│                     Controller Layer                        │
+│  (处理HTTP请求，参数验证，响应序列化)                        │
+├─────────────────┬─────────────────┬─────────────────────────┤
+│   Strategy      │   Execution     │      WebSocket          │
+│   Controller    │   Controller    │      Controller         │
+└─────────────────┴─────────────────┴─────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────┐
+│                      Service Layer                          │
+│    (业务逻辑实现，事务管理，缓存协调)                        │
+├─────────────────┬─────────────────┬─────────────────────────┤
+│  Strategy       │   Execution     │      Personal           │
+│  Service        │   Service       │      Service            │
+└─────────────────┴─────────────────┴─────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────┐
+│                     Repository Layer                        │
+│      (数据访问抽象，ORM操作，查询优化)                       │
+├─────────────────┬─────────────────┬─────────────────────────┤
+│   Strategy      │   Execution     │      Cache              │
+│   Repository    │   Repository    │      Repository         │
+└─────────────────┴─────────────────┴─────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────┐
+│                    Infrastructure                           │
+│  (数据库、缓存、消息队列、监控等基础服务)                    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 架构优势分析
+### 核心设计理念
 
-#### 1. 已实现的核心特性
-- ✅ **模块化设计**：清晰的目录结构和职责分工
-- ✅ **服务层分离**：业务逻辑与API端点分离
-- ✅ **统一数据模型**：models.py提供标准化数据结构
-- ✅ **WebSocket集成**：websocket_pool_api.py统一实时通信
-- ✅ **依赖注入支持**：base.py提供基础服务类
+1. **分层解耦**：清晰的职责分离，每层只处理自己的逻辑
+2. **依赖注入**：通过DI容器管理依赖，提高可测试性
+3. **统一接口**：标准化的CRUD操作和业务接口
+4. **插件化设计**：支持功能模块的独立开发和部署
+5. **异步优先**：充分利用异步编程提高并发性能
 
-#### 2. 需要完善的模块
-基于对比分析，建议补充以下模块：
+## 分层架构
 
-```
-src/api/strategies/
-├── repositories/                  # 数据访问层 🔧 需要补充
-│   ├── __init__.py
-│   ├── strategy_repository.py     # 策略数据访问
-│   ├── execution_repository.py    # 执行数据访问
-│   └── user_repository.py         # 用户数据访问
-├── utils/                         # 工具模块 🔧 需要补充
-│   ├── __init__.py
-│   ├── validators.py              # 验证工具
-│   ├── permissions.py             # 权限管理
-│   ├── cache.py                   # 缓存工具
-│   └── errors.py                  # 错误处理
-├── config/                        # 配置模块 🔧 需要补充
-│   ├── __init__.py
-│   ├── settings.py                # 配置设置
-│   └── constants.py               # 常量定义
-└── schemas.py                     # API响应模型 🔧 需要补充
-```
+### 1. Controller层 (控制器层)
 
-## 核心模块设计
+**职责**：
+- 接收和验证HTTP请求
+- 调用Service层处理业务逻辑
+- 序列化响应数据
+- 处理错误和异常
 
-### 1. `__init__.py` - 模块路由聚合
-
+**设计模式**：
 ```python
-"""
-策略管理API模块 - 统一路由入口
-Strategy Management API Module - Unified Router Entry
-"""
+# src/api/strategies/controllers/base_controller.py
+from abc import ABC
+from typing import TypeVar, Generic, Type, List
+from fastapi import APIRouter, Depends, Query
+from ..services.base_service import BaseService
+from ..schemas import BaseResponse, PaginatedResponse
 
-from fastapi import APIRouter
-from .base import router as base_router
-from .execution import router as execution_router
-from .personal import router as personal_router
-from .websocket import router as websocket_router
+T = TypeVar('T')  # Model Type
+C = TypeVar('C')  # Create Schema Type
+U = TypeVar('U')  # Update Schema Type
+R = TypeVar('R')  # Response Schema Type
 
-# 创建主路由器
-router = APIRouter(prefix="/api/strategies", tags=["策略管理"])
+class BaseController(Generic[T, C, U, R], ABC):
+    """基础控制器"""
 
-# 注册子路由
-router.include_router(base_router, prefix="/base", tags=["基础操作"])
-router.include_router(execution_router, prefix="/execution", tags=["策略执行"])
-router.include_router(personal_router, prefix="/personal", tags=["个性化功能"])
-router.include_router(websocket_router, prefix="/ws", tags=["实时通信"])
+    def __init__(self, service: BaseService, router: APIRouter):
+        self.service = service
+        self.router = router
+        self._register_routes()
 
-__all__ = ["router"]
+    def _register_routes(self):
+        """注册标准CRUD路由"""
+        self.router.add_api_route(
+            "/",
+            self.list_items,
+            methods=["GET"],
+            response_model=PaginatedResponse[R]
+        )
+        self.router.add_api_route(
+            "/",
+            self.create_item,
+            methods=["POST"],
+            response_model=BaseResponse[R]
+        )
+        self.router.add_api_route(
+            "/{item_id}",
+            self.get_item,
+            methods=["GET"],
+            response_model=BaseResponse[R]
+        )
+        self.router.add_api_route(
+            "/{item_id}",
+            self.update_item,
+            methods=["PUT"],
+            response_model=BaseResponse[R]
+        )
+        self.router.add_api_route(
+            "/{item_id}",
+            self.delete_item,
+            methods=["DELETE"]
+        )
 ```
 
-### 2. `base.py` - 基础CRUD操作
+### 2. Service层 (服务层)
 
+**职责**：
+- 实现核心业务逻辑
+- 协调多个Repository
+- 管理事务
+- 缓存策略实施
+- 业务规则验证
+
+**基础服务类**：
 ```python
-"""
-策略基础CRUD操作
-Strategy Base CRUD Operations
+# src/api/strategies/services/base_service.py
+from abc import ABC, abstractmethod
+from typing import Optional, Dict, Any, List
+from ..repositories.base_repository import BaseRepository
+from ..utils.cache import CacheManager
+from ..utils.events import EventBus
+from ..utils.permissions import PermissionChecker
 
-职责：
-- 策略的增删改查
-- 策略列表和详情
-- 基础验证和权限检查
-"""
+class BaseService(Generic[ModelType], ABC):
+    """基础服务类"""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from typing import List, Optional
-from .services.strategy_service import StrategyService
-from .services.template_service import TemplateService
-from .utils.permissions import require_strategy_permission
-from .utils.validators import validate_strategy_request
-from .schemas import (
-    StrategyCreate, StrategyUpdate, StrategyResponse,
-    StrategyListResponse, StrategyDetailResponse
-)
-
-router = APIRouter()
-
-@router.get("/", response_model=StrategyListResponse)
-async def list_strategies(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    strategy_type: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
-    strategy_service: StrategyService = Depends()
-):
-    """获取策略列表"""
-    return await strategy_service.list_strategies(
-        page=page, page_size=page_size,
-        strategy_type=strategy_type, status=status
-    )
-
-@router.post("/", response_model=StrategyResponse, status_code=201)
-async def create_strategy(
-    request: StrategyCreate,
-    strategy_service: StrategyService = Depends()
-):
-    """创建策略"""
-    await validate_strategy_request(request)
-    return await strategy_service.create_strategy(request)
-
-@router.get("/{strategy_id}", response_model=StrategyDetailResponse)
-async def get_strategy(
-    strategy_id: str,
-    strategy_service: StrategyService = Depends()
-):
-    """获取策略详情"""
-    return await strategy_service.get_strategy_detail(strategy_id)
-
-@router.put("/{strategy_id}", response_model=StrategyResponse)
-async def update_strategy(
-    strategy_id: str,
-    request: StrategyUpdate,
-    strategy_service: StrategyService = Depends()
-):
-    """更新策略"""
-    await require_strategy_permission(strategy_id, "update")
-    return await strategy_service.update_strategy(strategy_id, request)
-
-@router.delete("/{strategy_id}", status_code=204)
-async def delete_strategy(
-    strategy_id: str,
-    strategy_service: StrategyService = Depends()
-):
-    """删除策略"""
-    await require_strategy_permission(strategy_id, "delete")
-    await strategy_service.delete_strategy(strategy_id)
-```
-
-### 3. `execution.py` - 策略执行引擎
-
-```python
-"""
-策略执行引擎
-Strategy Execution Engine
-
-职责：
-- 策略执行管理
-- 执行状态跟踪
-- 性能分析和报告
-"""
-
-from fastapi import APIRouter, Depends, BackgroundTasks
-from .services.execution_service import ExecutionService
-from .services.analytics_service import AnalyticsService
-from .utils.permissions import require_strategy_permission
-from .schemas import (
-    ExecutionRequest, ExecutionResponse, ExecutionStatusResponse,
-    PerformanceMetrics, ExecutionReport
-)
-
-router = APIRouter()
-
-@router.post("/{strategy_id}/execute", response_model=ExecutionResponse)
-async def execute_strategy(
-    strategy_id: str,
-    request: ExecutionRequest,
-    background_tasks: BackgroundTasks,
-    execution_service: ExecutionService = Depends()
-):
-    """执行策略"""
-    await require_strategy_permission(strategy_id, "execute")
-    return await execution_service.execute_strategy(
-        strategy_id, request, background_tasks
-    )
-
-@router.get("/{strategy_id}/executions/{execution_id}", response_model=ExecutionStatusResponse)
-async def get_execution_status(
-    strategy_id: str,
-    execution_id: str,
-    execution_service: ExecutionService = Depends()
-):
-    """获取执行状态"""
-    return await execution_service.get_execution_status(execution_id)
-
-@router.post("/{strategy_id}/stop")
-async def stop_strategy_execution(
-    strategy_id: str,
-    execution_id: Optional[str] = None,
-    execution_service: ExecutionService = Depends()
-):
-    """停止策略执行"""
-    await require_strategy_permission(strategy_id, "control")
-    return await execution_service.stop_execution(strategy_id, execution_id)
-
-@router.get("/{strategy_id}/performance", response_model=PerformanceMetrics)
-async def get_strategy_performance(
-    strategy_id: str,
-    time_range: int = Query(30, ge=1, le=365),
-    analytics_service: AnalyticsService = Depends()
-):
-    """获取策略性能指标"""
-    return await analytics_service.calculate_performance_metrics(
-        strategy_id, time_range
-    )
-
-@router.get("/{strategy_id}/reports", response_model=ExecutionReport)
-async def get_strategy_report(
-    strategy_id: str,
-    report_type: str = Query("summary"),
-    analytics_service: AnalyticsService = Depends()
-):
-    """获取策略报告"""
-    return await analytics_service.generate_strategy_report(
-        strategy_id, report_type
-    )
-```
-
-### 4. `personal.py` - 用户个性化功能
-
-```python
-"""
-用户个性化功能
-Personal Features
-
-职责：
-- 个人仪表板
-- 用户偏好设置
-- 策略推荐
-- 操作历史
-"""
-
-from fastapi import APIRouter, Depends
-from .services.personal_service import PersonalService
-from .services.strategy_service import StrategyService
-from .utils.permissions import get_current_user
-from .schemas import (
-    DashboardResponse, UserPreferences, StrategyControlRequest,
-    OperationHistoryResponse, StrategyRecommendations
-)
-
-router = APIRouter()
-
-@router.get("/dashboard", response_model=DashboardResponse)
-async def get_personal_dashboard(
-    current_user = Depends(get_current_user),
-    personal_service: PersonalService = Depends()
-):
-    """获取个人仪表板"""
-    return await personal_service.get_dashboard_data(current_user.id)
-
-@router.get("/preferences", response_model=UserPreferences)
-async def get_user_preferences(
-    current_user = Depends(get_current_user),
-    personal_service: PersonalService = Depends()
-):
-    """获取用户偏好设置"""
-    return await personal_service.get_user_preferences(current_user.id)
-
-@router.put("/preferences")
-async def update_user_preferences(
-    preferences: UserPreferences,
-    current_user = Depends(get_current_user),
-    personal_service: PersonalService = Depends()
-):
-    """更新用户偏好设置"""
-    return await personal_service.update_user_preferences(
-        current_user.id, preferences
-    )
-
-@router.post("/strategies/{strategy_id}/control")
-async def control_strategy(
-    strategy_id: str,
-    request: StrategyControlRequest,
-    current_user = Depends(get_current_user),
-    personal_service: PersonalService = Depends()
-):
-    """控制策略"""
-    return await personal_service.control_strategy(
-        current_user.id, strategy_id, request
-    )
-
-@router.get("/strategies/{strategy_id}/history", response_model=OperationHistoryResponse)
-async def get_strategy_history(
-    strategy_id: str,
-    limit: int = Query(50, ge=1, le=200),
-    current_user = Depends(get_current_user),
-    personal_service: PersonalService = Depends()
-):
-    """获取策略操作历史"""
-    return await personal_service.get_strategy_history(
-        current_user.id, strategy_id, limit
-    )
-
-@router.get("/recommendations", response_model=StrategyRecommendations)
-async def get_strategy_recommendations(
-    current_user = Depends(get_current_user),
-    personal_service: PersonalService = Depends()
-):
-    """获取策略推荐"""
-    return await personal_service.get_strategy_recommendations(current_user.id)
-```
-
-### 5. `websocket.py` - WebSocket处理
-
-```python
-"""
-WebSocket实时通信
-WebSocket Real-time Communication
-
-职责：
-- 实时数据推送
-- 策略状态更新
-- 市场数据广播
-- 连接管理
-"""
-
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
-from typing import Dict, List
-import json
-import asyncio
-from .services.websocket_service import WebSocketService
-from .utils.permissions import authenticate_websocket
-
-router = APIRouter()
-
-@router.websocket("/realtime/{user_id}")
-async def websocket_realtime_endpoint(
-    websocket: WebSocket,
-    user_id: int,
-    websocket_service: WebSocketService = Depends()
-):
-    """实时数据WebSocket端点"""
-    await authenticate_websocket(websocket, user_id)
-    await websocket_service.handle_connection(websocket, user_id)
-
-@router.websocket("/strategy/{strategy_id}")
-async def websocket_strategy_updates(
-    websocket: WebSocket,
-    strategy_id: str,
-    websocket_service: WebSocketService = Depends()
-):
-    """策略特定更新WebSocket端点"""
-    await authenticate_websocket(websocket, strategy_id=strategy_id)
-    await websocket_service.handle_strategy_connection(websocket, strategy_id)
-```
-
-## 服务层设计
-
-### 1. `services/strategy_service.py`
-
-```python
-"""
-策略业务服务
-Strategy Business Service
-
-职责：
-- 策略业务逻辑
-- 数据验证和转换
-- 权限检查
-- 缓存管理
-"""
-
-from typing import List, Optional, Dict, Any
-from ..repositories.strategy_repository import StrategyRepository
-from ..repositories.user_repository import UserRepository
-from ..utils.cache import cache_manager
-from ..utils.validators import StrategyValidator
-from ..models import Strategy, StrategyType, StrategyStatus
-from ..schemas import StrategyCreate, StrategyUpdate, StrategyResponse
-
-class StrategyService:
     def __init__(
         self,
-        strategy_repo: StrategyRepository,
-        user_repo: UserRepository,
-        validator: StrategyValidator
+        repository: BaseRepository,
+        cache_manager: CacheManager,
+        event_bus: EventBus,
+        permission_checker: PermissionChecker
     ):
-        self.strategy_repo = strategy_repo
-        self.user_repo = user_repo
-        self.validator = validator
+        self.repo = repository
         self.cache = cache_manager
+        self.events = event_bus
+        self.permission = permission_checker
 
-    async def list_strategies(
-        self,
-        page: int = 1,
-        page_size: int = 20,
-        strategy_type: Optional[str] = None,
-        status: Optional[str] = None,
-        user_id: Optional[int] = None
-    ) -> Dict[str, Any]:
-        """获取策略列表"""
-        # 缓存键
-        cache_key = f"strategies:list:{page}:{page_size}:{strategy_type}:{status}:{user_id}"
+    async def get_by_id(self, item_id: str) -> Optional[ModelType]:
+        """根据ID获取项"""
+        # 先查缓存
+        cache_key = f"{self.__class__.__name__}:{item_id}"
+        cached_item = await self.cache.get(cache_key)
+        if cached_item:
+            return cached_item
 
-        # 尝试从缓存获取
-        cached_result = await self.cache.get(cache_key)
-        if cached_result:
-            return cached_result
+        # 查数据库
+        item = await self.repo.get_by_id(item_id)
+        if item:
+            # 更新缓存
+            await self.cache.set(cache_key, item, ttl=300)
 
-        # 从数据库获取
-        strategies, total_count = await self.strategy_repo.list_strategies(
-            page=page, page_size=page_size,
-            strategy_type=strategy_type, status=status,
-            user_id=user_id
-        )
+        return item
 
-        result = {
-            "strategies": [StrategyResponse.from_orm(s) for s in strategies],
-            "total_count": total_count,
-            "page": page,
-            "page_size": page_size
-        }
+    async def create(self, item_data: Dict[str, Any]) -> ModelType:
+        """创建项"""
+        # 权限检查
+        await self.permission.check_create_permission(item_data)
 
-        # 缓存结果
-        await self.cache.set(cache_key, result, ttl=300)  # 5分钟缓存
-
-        return result
-
-    async def create_strategy(self, request: StrategyCreate) -> StrategyResponse:
-        """创建策略"""
-        # 验证请求
-        await self.validator.validate_create_request(request)
-
-        # 检查名称唯一性
-        if await self.strategy_repo.name_exists(request.name, request.user_id):
-            raise ValueError(f"策略名称已存在: {request.name}")
-
-        # 创建策略对象
-        strategy = Strategy(
-            name=request.name,
-            description=request.description,
-            strategy_type=request.strategy_type,
-            parameters=request.parameters,
-            user_id=request.user_id,
-            status=StrategyStatus.INACTIVE,
-            is_active=False
-        )
-
-        # 保存到数据库
-        strategy = await self.strategy_repo.create(strategy)
+        # 创建
+        item = await self.repo.create(item_data)
 
         # 清除相关缓存
-        await self._clear_user_strategy_cache(request.user_id)
+        await self._clear_list_cache()
 
-        return StrategyResponse.from_orm(strategy)
+        # 发布事件
+        await self.events.emit("item_created", {
+            "type": self.__class__.__name__,
+            "item_id": item.id
+        })
 
-    async def get_strategy_detail(self, strategy_id: str) -> Dict[str, Any]:
-        """获取策略详情"""
-        # 缓存键
-        cache_key = f"strategy:detail:{strategy_id}"
+        return item
 
-        # 尝试从缓存获取
-        cached_result = await self.cache.get(cache_key)
-        if cached_result:
-            return cached_result
+    async def update(self, item_id: str, update_data: Dict[str, Any]) -> ModelType:
+        """更新项"""
+        # 权限检查
+        await self.permission.check_update_permission(item_id)
 
-        # 从数据库获取
-        strategy = await self.strategy_repo.get_by_id(strategy_id)
-        if not strategy:
-            raise ValueError(f"策略不存在: {strategy_id}")
+        # 更新
+        item = await self.repo.update(item_id, update_data)
 
-        # 获取相关信息
-        recent_signals = await self.strategy_repo.get_recent_signals(strategy_id)
-        performance = await self.strategy_repo.get_performance(strategy_id)
-        execution_history = await self.strategy_repo.get_execution_history(strategy_id)
+        # 清除缓存
+        cache_key = f"{self.__class__.__name__}:{item_id}"
+        await self.cache.delete(cache_key)
+        await self._clear_list_cache()
 
-        result = {
-            "strategy": StrategyResponse.from_orm(strategy),
-            "recent_signals": recent_signals,
-            "performance": performance,
-            "execution_history": execution_history
-        }
+        # 发布事件
+        await self.events.emit("item_updated", {
+            "type": self.__class__.__name__,
+            "item_id": item_id
+        })
 
-        # 缓存结果
-        await self.cache.set(cache_key, result, ttl=600)  # 10分钟缓存
-
-        return result
-
-    async def update_strategy(
-        self,
-        strategy_id: str,
-        request: StrategyUpdate
-    ) -> StrategyResponse:
-        """更新策略"""
-        # 获取现有策略
-        strategy = await self.strategy_repo.get_by_id(strategy_id)
-        if not strategy:
-            raise ValueError(f"策略不存在: {strategy_id}")
-
-        # 验证更新请求
-        await self.validator.validate_update_request(request, strategy)
-
-        # 检查名称唯一性（如果更新了名称）
-        if request.name and request.name != strategy.name:
-            if await self.strategy_repo.name_exists(request.name, strategy.user_id):
-                raise ValueError(f"策略名称已存在: {request.name}")
-
-        # 更新字段
-        update_data = request.dict(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(strategy, field, value)
-
-        # 保存更新
-        strategy = await self.strategy_repo.update(strategy)
-
-        # 清除相关缓存
-        await self._clear_strategy_cache(strategy_id)
-        await self._clear_user_strategy_cache(strategy.user_id)
-
-        return StrategyResponse.from_orm(strategy)
-
-    async def delete_strategy(self, strategy_id: str) -> None:
-        """删除策略"""
-        # 获取策略信息
-        strategy = await self.strategy_repo.get_by_id(strategy_id)
-        if not strategy:
-            raise ValueError(f"策略不存在: {strategy_id}")
-
-        # 检查是否正在运行
-        if await self.strategy_repo.is_running(strategy_id):
-            raise ValueError("无法删除正在运行的策略")
-
-        # 删除策略及相关数据
-        await self.strategy_repo.delete(strategy_id)
-
-        # 清除相关缓存
-        await self._clear_strategy_cache(strategy_id)
-        await self._clear_user_strategy_cache(strategy.user_id)
-
-    async def _clear_strategy_cache(self, strategy_id: str) -> None:
-        """清除策略相关缓存"""
-        patterns = [
-            f"strategy:detail:{strategy_id}",
-            f"strategy:performance:{strategy_id}",
-            f"strategy:signals:{strategy_id}"
-        ]
-        for pattern in patterns:
-            await self.cache.delete(pattern)
-
-    async def _clear_user_strategy_cache(self, user_id: int) -> None:
-        """清除用户策略相关缓存"""
-        pattern = f"strategies:list:*:*:*:*:{user_id}"
-        await self.cache.delete_pattern(pattern)
+        return item
 ```
 
-## 数据模型统一设计
+### 3. Repository层 (仓储层)
 
-### `models.py` - 核心数据模型
+**职责**：
+- 抽象数据访问
+- ORM操作封装
+- 查询优化
+- 数据库连接管理
+
+**基础仓储类**：
+```python
+# src/api/strategies/repositories/base_repository.py
+from abc import ABC, abstractmethod
+from typing import List, Optional, Dict, Any, TypeVar
+from sqlalchemy.orm import Session
+from sqlalchemy import select, update, delete
+
+ModelType = TypeVar('ModelType')
+
+class BaseRepository(Generic[ModelType], ABC):
+    """基础仓储类"""
+
+    def __init__(self, db_session: Session, model_class: Type[ModelType]):
+        self.db = db_session
+        self.model_class = model_class
+
+    async def create(self, obj_data: Dict[str, Any]) -> ModelType:
+        """创建记录"""
+        db_obj = self.model_class(**obj_data)
+        self.db.add(db_obj)
+        await self.db.commit()
+        await self.db.refresh(db_obj)
+        return db_obj
+
+    async def get_by_id(self, item_id: str) -> Optional[ModelType]:
+        """根据ID获取记录"""
+        stmt = select(self.model_class).where(
+            self.model_class.id == item_id
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_multi(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        filters: Optional[Dict[str, Any]] = None
+    ) -> List[ModelType]:
+        """获取多条记录"""
+        stmt = select(self.model_class)
+
+        # 应用过滤器
+        if filters:
+            for field, value in filters.items():
+                if hasattr(self.model_class, field):
+                    stmt = stmt.where(getattr(self.model_class, field) == value)
+
+        stmt = stmt.offset(skip).limit(limit)
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
+```
+
+## 依赖注入设计
+
+使用FastAPI的依赖注入系统，结合自定义DI容器实现更灵活的管理。
 
 ```python
-"""
-统一数据模型
-Unified Data Models
+# src/api/strategies/container.py
+from dependency_injector import containers, providers
+from ..services import StrategyService, ExecutionService
+from ..repositories import StrategyRepository, ExecutionRepository
+from ..utils import CacheManager, EventBus, PermissionChecker
 
-职责：
-- 定义核心数据结构
-- 提供数据转换方法
-- 确保数据一致性
-"""
+class Container(containers.DeclarativeContainer):
+    """依赖注入容器"""
 
+    # Configuration
+    config = providers.Configuration()
+
+    # Database
+    db = providers.Singleton(create_db_session, config.db.url)
+
+    # Cache
+    cache = providers.Singleton(
+        CacheManager,
+        redis_url=config.redis.url
+    )
+
+    # Event Bus
+    events = providers.Singleton(EventBus)
+
+    # Permission Checker
+    permissions = providers.Singleton(PermissionChecker)
+
+    # Repositories
+    strategy_repo = providers.Factory(
+        StrategyRepository,
+        db_session=db,
+        model_class=StrategyModel
+    )
+
+    execution_repo = providers.Factory(
+        ExecutionRepository,
+        db_session=db,
+        model_class=ExecutionModel
+    )
+
+    # Services
+    strategy_service = providers.Factory(
+        StrategyService,
+        repository=strategy_repo,
+        cache_manager=cache,
+        event_bus=events,
+        permission_checker=permissions
+    )
+
+    execution_service = providers.Factory(
+        ExecutionService,
+        repository=execution_repo,
+        cache_manager=cache,
+        event_bus=events,
+        permission_checker=permissions
+    )
+
+# 初始化容器
+container = Container()
+container.config.from_yaml("config.yaml")
+```
+
+## 统一数据模型
+
+### 1. 基础模型类
+
+```python
+# src/api/strategies/models/base.py
+from sqlalchemy import Column, String, DateTime, Boolean
+from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
-from typing import Optional, Dict, Any, List
-from enum import Enum
+import uuid
+
+Base = declarative_base()
+
+class BaseModel(Base):
+    """基础模型类"""
+    __abstract__ = True
+
+    id = Column(String(36), primary_key=True, default=lambda: uuid.uuid4().hex)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted = Column(Boolean, default=False)
+
+    def soft_delete(self):
+        """软删除"""
+        self.is_deleted = True
+        self.updated_at = datetime.utcnow()
+```
+
+### 2. 统一响应模型
+
+```python
+# src/api/strategies/schemas/responses.py
 from pydantic import BaseModel, Field
-
-class StrategyType(str, Enum):
-    """策略类型"""
-    DIRECT_RSI = "direct_rsi"
-    DUAL_RSI = "dual_rsi"
-    COMPOSITE = "composite"
-    CUSTOM = "custom"
-
-class StrategyStatus(str, Enum):
-    """策略状态"""
-    INACTIVE = "inactive"
-    ACTIVE = "active"
-    PAUSED = "paused"
-    ERROR = "error"
-
-class RiskLevel(str, Enum):
-    """风险等级"""
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-
-class Strategy(BaseModel):
-    """策略模型"""
-    id: str
-    name: str
-    description: str
-    strategy_type: StrategyType
-    parameters: Dict[str, Any]
-    status: StrategyStatus
-    is_active: bool
-    user_id: int
-    risk_level: RiskLevel = RiskLevel.MEDIUM
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    last_executed: Optional[datetime] = None
-
-    class Config:
-        orm_mode = True
-
-class StrategySignal(BaseModel):
-    """策略信号"""
-    signal_id: str
-    strategy_id: str
-    strategy_type: StrategyType
-    signal_type: str  # BUY, SELL, HOLD
-    strength: float
-    confidence: float
-    timestamp: datetime
-    market_data: Dict[str, Any]
-    parameters: Dict[str, Any]
-    metadata: Optional[Dict[str, Any]] = None
-
-    class Config:
-        orm_mode = True
-
-class StrategyPerformance(BaseModel):
-    """策略性能"""
-    strategy_id: str
-    total_return: float
-    annual_return: float
-    sharpe_ratio: float
-    max_drawdown: float
-    win_rate: float
-    profit_factor: float
-    calmar_ratio: float
-    total_trades: int
-    profit_trades: int
-    avg_profit: float
-    avg_loss: float
-    daily_pnl: float = 0.0
-    last_updated: datetime
-
-    class Config:
-        orm_mode = True
-
-class StrategyExecution(BaseModel):
-    """策略执行"""
-    execution_id: str
-    strategy_id: str
-    status: str  # running, completed, failed, stopped
-    start_time: datetime
-    end_time: Optional[datetime] = None
-    execution_mode: str  # backtest, real_time
-    data_source: Optional[str] = None
-    signals: List[StrategySignal] = []
-    performance: Optional[StrategyPerformance] = None
-    error_message: Optional[str] = None
-    execution_metadata: Dict[str, Any] = {}
-
-    class Config:
-        orm_mode = True
-
-class User(BaseModel):
-    """用户模型"""
-    id: int
-    username: str
-    email: str
-    is_active: bool
-    created_at: datetime
-    last_login: Optional[datetime] = None
-    preferences: Optional[Dict[str, Any]] = None
-
-    class Config:
-        orm_mode = True
-
-class StrategyTemplate(BaseModel):
-    """策略模板"""
-    id: str
-    name: str
-    description: str
-    strategy_type: StrategyType
-    category: str
-    default_parameters: Dict[str, Any]
-    parameter_constraints: Dict[str, Any]
-    is_system_template: bool = True
-    created_by: Optional[int] = None
-    created_at: datetime
-
-    class Config:
-        orm_mode = True
-```
-
-### `schemas.py` - API响应模型
-
-```python
-"""
-API响应模型
-API Response Schemas
-
-职责：
-- 定义API请求和响应格式
-- 数据验证和序列化
-- API文档生成支持
-"""
-
+from typing import Generic, TypeVar, Optional, List
 from datetime import datetime
-from typing import List, Optional, Dict, Any, Generic, TypeVar
-from pydantic import BaseModel, Field, validator
-from .models import Strategy, StrategySignal, StrategyPerformance, StrategyExecution
 
 T = TypeVar('T')
 
@@ -766,516 +408,807 @@ class BaseResponse(BaseModel, Generic[T]):
     success: bool = True
     data: Optional[T] = None
     message: str = ""
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    request_id: Optional[str] = None
 
 class PaginatedResponse(BaseModel, Generic[T]):
     """分页响应模型"""
     items: List[T]
-    total_count: int
+    total: int
     page: int
     page_size: int
     total_pages: int
+    has_next: bool
+    has_prev: bool
 
-# 请求模型
-class StrategyCreate(BaseModel):
-    """创建策略请求"""
-    name: str = Field(..., min_length=1, max_length=100)
-    description: str = Field(..., min_length=1, max_length=500)
-    strategy_type: StrategyType
-    parameters: Dict[str, Any]
-    template_id: Optional[str] = None
-    risk_level: RiskLevel = RiskLevel.MEDIUM
-
-    @validator('name')
-    def validate_name(cls, v):
-        if not v.strip():
-            raise ValueError('策略名称不能为空')
-        return v.strip()
-
-class StrategyUpdate(BaseModel):
-    """更新策略请求"""
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, min_length=1, max_length=500)
-    parameters: Optional[Dict[str, Any]] = None
-    status: Optional[StrategyStatus] = None
-    is_active: Optional[bool] = None
-    risk_level: Optional[RiskLevel] = None
-
-class ExecutionRequest(BaseModel):
-    """执行策略请求"""
-    strategy_id: str
-    execution_mode: str = Field("backtest", regex="^(backtest|real_time)$")
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-    data_source: Optional[str] = None
-    parameters_override: Optional[Dict[str, Any]] = None
-
-# 响应模型
-class StrategyResponse(BaseModel):
-    """策略响应"""
-    id: str
-    name: str
-    description: str
-    strategy_type: StrategyType
-    status: StrategyStatus
-    is_active: bool
-    risk_level: RiskLevel
-    created_at: datetime
-    updated_at: Optional[datetime]
-    last_executed: Optional[datetime]
-    performance_summary: Optional[Dict[str, float]] = None
-
-    class Config:
-        orm_mode = True
-
-class StrategyDetailResponse(BaseModel):
-    """策略详情响应"""
-    strategy: StrategyResponse
-    recent_signals: List[StrategySignal]
-    performance: Optional[StrategyPerformance]
-    execution_history: List[StrategyExecution]
-    risk_metrics: Optional[Dict[str, float]]
-
-    class Config:
-        orm_mode = True
-
-class ExecutionResponse(BaseModel):
-    """执行响应"""
-    execution_id: str
-    strategy_id: str
-    status: str
-    start_time: datetime
-    end_time: Optional[datetime]
-    estimated_completion: Optional[datetime]
-    progress: float = Field(0.0, ge=0.0, le=1.0)
-
-    class Config:
-        orm_mode = True
-
-class DashboardResponse(BaseModel):
-    """仪表板响应"""
-    total_strategies: int
-    active_strategies: int
-    total_return: float
-    daily_pnl: float
-    best_performing: Optional[StrategyResponse]
-    worst_performing: Optional[StrategyResponse]
-    recent_signals: List[StrategySignal]
-    market_overview: Dict[str, Any]
-    performance_chart: List[Dict[str, Any]]
-
-class UserPreferences(BaseModel):
-    """用户偏好设置"""
-    default_strategy_type: Optional[StrategyType] = None
-    risk_tolerance: RiskLevel = RiskLevel.MEDIUM
-    notification_settings: Dict[str, bool]
-    dashboard_layout: Dict[str, Any]
-    auto_refresh_interval: int = Field(30, ge=5, le=300)
-
-class StrategyControlRequest(BaseModel):
-    """策略控制请求"""
-    action: str = Field(..., regex="^(enable|disable|start|stop|pause)$")
-    reason: Optional[str] = None
-    confirm: bool = False
-
-class ControlResponse(BaseModel):
-    """控制响应"""
-    strategy_id: str
-    success: bool
-    action: str
-    previous_status: bool
-    new_status: bool
+class ErrorResponse(BaseModel):
+    """错误响应模型"""
+    success: bool = False
+    error_code: str
     message: str
-    timestamp: datetime
-    requires_confirmation: bool = False
+    details: Optional[dict] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
 ```
 
-## 工具模块设计
+## 权限控制设计
 
-### `utils/permissions.py` - 权限管理
+### 1. RBAC权限模型
 
 ```python
-"""
-权限管理工具
-Permission Management Utilities
+# src/api/strategies/models/permissions.py
+from sqlalchemy import Column, String, Integer, Boolean, JSON, ForeignKey
+from sqlalchemy.orm import relationship
 
-职责：
-- 用户身份验证
-- 策略权限检查
-- 操作权限验证
-"""
+class Role(BaseModel):
+    """角色表"""
+    __tablename__ = "roles"
 
-from fastapi import Depends, HTTPException, status
-from typing import Optional, Callable
+    name = Column(String(50), unique=True, nullable=False)
+    description = Column(String(200))
+    permissions = Column(JSON)  # 权限列表
+    is_system_role = Column(Boolean, default=False)
+
+    users = relationship("UserRole", back_populates="role")
+
+class Permission(BaseModel):
+    """权限表"""
+    __tablename__ = "permissions"
+
+    name = Column(String(100), unique=True, nullable=False)
+    resource = Column(String(50), nullable=False)  # 资源类型
+    action = Column(String(50), nullable=False)    # 操作类型
+    description = Column(String(200))
+
+class UserRole(BaseModel):
+    """用户角色关联表"""
+    __tablename__ = "user_roles"
+
+    user_id = Column(String(36), ForeignKey("users.id"), primary_key=True)
+    role_id = Column(String(36), ForeignKey("roles.id"), primary_key=True)
+    assigned_at = Column(DateTime, default=datetime.utcnow)
+    assigned_by = Column(String(36), ForeignKey("users.id"))
+
+    user = relationship("User", back_populates="roles")
+    role = relationship("Role", back_populates="users")
+```
+
+### 2. 权限装饰器
+
+```python
+# src/api/strategies/utils/decorators.py
 from functools import wraps
-from ..repositories.user_repository import UserRepository
+from fastapi import HTTPException, Depends
+from .permissions import PermissionChecker
 
-class PermissionManager:
-    def __init__(self, user_repo: UserRepository):
-        self.user_repo = user_repo
+def require_permission(resource: str, action: str):
+    """权限检查装饰器"""
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            # 获取当前用户
+            current_user = kwargs.get('current_user')
+            if not current_user:
+                raise HTTPException(status_code=401, detail="未认证")
 
-    async def get_current_user(self) -> User:
-        """获取当前用户"""
-        # 实现JWT token验证
-        pass
-
-    async def require_authentication(self) -> User:
-        """要求用户认证"""
-        user = await self.get_current_user()
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="未授权访问"
+            # 检查权限
+            permission_checker = PermissionChecker()
+            has_permission = await permission_checker.check_user_permission(
+                current_user.id, resource, action
             )
-        return user
 
-    async def check_strategy_permission(
-        self,
-        strategy_id: str,
-        user: User,
-        action: str
-    ) -> bool:
-        """检查策略权限"""
-        strategy = await self.strategy_repo.get_by_id(strategy_id)
-        if not strategy:
-            return False
+            if not has_permission:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"没有权限执行 {action} 操作"
+                )
 
-        # 检查是否为策略所有者
-        if strategy.user_id != user.id:
-            # 检查是否为管理员
-            if not user.is_admin:
-                return False
+            return await func(*args, **kwargs)
+        return wrapper
+    return decorator
 
-        # 检查操作权限
-        if action == "delete" and strategy.is_active:
-            return False
-
-        return True
-
-# 依赖注入函数
-async def get_current_user() -> User:
-    """获取当前用户依赖"""
-    permission_manager = get_permission_manager()
-    return await permission_manager.require_authentication()
-
-async def require_strategy_permission(
-    strategy_id: str,
-    action: str
-) -> None:
-    """策略权限检查装饰器"""
-    async def checker(user: User = Depends(get_current_user)):
-        permission_manager = get_permission_manager()
-        has_permission = await permission_manager.check_strategy_permission(
-            strategy_id, user, action
-        )
-        if not has_permission:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"无权限执行操作: {action}"
-            )
-        return user
-    return checker
+# 使用示例
+@require_permission("strategy", "create")
+async def create_strategy(
+    request: StrategyCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """创建策略"""
+    pass
 ```
 
-### `utils/cache.py` - 缓存管理
+## 缓存策略设计
+
+### 1. 多级缓存架构
 
 ```python
-"""
-缓存管理工具
-Cache Management Utilities
-
-职责：
-- 缓存操作封装
-- 缓存策略管理
-- 缓存失效处理
-"""
-
+# src/api/strategies/utils/cache.py
+from abc import ABC, abstractmethod
+from typing import Any, Optional
+import redis
 import json
-import redis.asyncio as redis
-from typing import Any, Optional, List, Dict
 from datetime import timedelta
 
-class CacheManager:
+class CacheBackend(ABC):
+    """缓存后端接口"""
+
+    @abstractmethod
+    async def get(self, key: str) -> Optional[Any]:
+        pass
+
+    @abstractmethod
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+        pass
+
+    @abstractmethod
+    async def delete(self, key: str) -> None:
+        pass
+
+    @abstractmethod
+    async def clear_pattern(self, pattern: str) -> None:
+        pass
+
+class RedisBackend(CacheBackend):
+    """Redis缓存后端"""
+
     def __init__(self, redis_url: str):
-        self.redis = redis.from_url(redis_url, decode_responses=True)
-        self.default_ttl = 300  # 5分钟
+        self.redis = redis.from_url(redis_url)
 
     async def get(self, key: str) -> Optional[Any]:
-        """获取缓存"""
-        try:
-            value = await self.redis.get(key)
-            if value:
-                return json.loads(value)
-            return None
-        except Exception as e:
-            # 缓存错误不影响主流程
-            return None
+        value = await self.redis.get(key)
+        if value:
+            return json.loads(value)
+        return None
 
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
-        """设置缓存"""
-        try:
-            ttl = ttl or self.default_ttl
-            serialized_value = json.dumps(value, default=str)
-            await self.redis.setex(key, ttl, serialized_value)
-            return True
-        except Exception as e:
-            return False
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+        serialized = json.dumps(value, default=str)
+        if ttl:
+            await self.redis.setex(key, ttl, serialized)
+        else:
+            await self.redis.set(key, serialized)
 
-    async def delete(self, key: str) -> bool:
-        """删除缓存"""
-        try:
-            await self.redis.delete(key)
-            return True
-        except Exception as e:
-            return False
+class CacheManager:
+    """缓存管理器"""
 
-    async def delete_pattern(self, pattern: str) -> int:
-        """删除匹配模式的所有缓存"""
-        try:
-            keys = await self.redis.keys(pattern)
-            if keys:
-                return await self.redis.delete(*keys)
-            return 0
-        except Exception as e:
-            return 0
+    def __init__(self, backend: CacheBackend):
+        self.backend = backend
+        self.local_cache = {}  # L1缓存（内存）
+        self.stats = {
+            "hits": 0,
+            "misses": 0
+        }
 
-    async def invalidate_user_cache(self, user_id: int) -> None:
-        """清除用户相关缓存"""
-        patterns = [
-            f"strategies:list:*:*:*:*:{user_id}",
-            f"dashboard:*:{user_id}",
-            f"preferences:{user_id}"
+    async def get(self, key: str) -> Optional[Any]:
+        # L1缓存检查
+        if key in self.local_cache:
+            self.stats["hits"] += 1
+            return self.local_cache[key]
+
+        # L2缓存检查
+        value = await self.backend.get(key)
+        if value:
+            self.stats["hits"] += 1
+            # 更新L1缓存
+            self.local_cache[key] = value
+            return value
+
+        self.stats["misses"] += 1
+        return None
+
+    async def set(
+        self,
+        key: str,
+        value: Any,
+        ttl: Optional[int] = None,
+        l1_ttl: int = 60  # L1缓存默认60秒
+    ) -> None:
+        # 更新L1缓存
+        self.local_cache[key] = value
+
+        # 更新L2缓存
+        await self.backend.set(key, value, ttl)
+
+    async def invalidate(self, pattern: str) -> None:
+        """清除缓存"""
+        # 清除L1缓存
+        keys_to_remove = [
+            k for k in self.local_cache.keys()
+            if self._match_pattern(k, pattern)
         ]
-        for pattern in patterns:
-            await self.delete_pattern(pattern)
+        for key in keys_to_remove:
+            del self.local_cache[key]
 
-    async def invalidate_strategy_cache(self, strategy_id: str) -> None:
-        """清除策略相关缓存"""
-        patterns = [
-            f"strategy:*:{strategy_id}",
-            f"execution:*:{strategy_id}",
-            f"performance:*:{strategy_id}"
-        ]
-        for pattern in patterns:
-            await self.delete_pattern(pattern)
-
-# 全局缓存管理器实例
-cache_manager = CacheManager("redis://localhost:6379/0")
+        # 清除L2缓存
+        await self.backend.clear_pattern(pattern)
 ```
 
-## 🚀 基于现有架构的完善计划
+### 2. 缓存策略配置
 
-### 阶段1: 补充缺失模块（1天）
-- [ ] 创建`repositories/`数据访问层
-- [ ] 实现`utils/`工具模块
-- [ ] 添加`config/`配置模块
-- [ ] 完善`schemas.py`API响应模型
-
-### 阶段2: 优化现有模块（1天）
-- [ ] 重构`services/`中的服务类
-- [ ] 优化`base.py`依赖注入框架
-- [ ] 完善WebSocket连接池管理
-- [ ] 统一错误处理机制
-
-### 阶段3: API整合（1天）
-- [ ] 整合旧API到新架构
-- [ ] 实现向后兼容的路由
-- [ ] 添加API版本控制
-- [ ] 更新API文档
-
-### 阶段4: 测试和部署（1天）
-- [ ] 编写单元测试
-- [ ] 集成测试验证
-- [ ] 性能测试优化
-- [ ] 生产环境部署
-
-## 📋 具体实施建议
-
-### 1. 立即可执行的任务
-
-#### 利用现有架构
-由于`src/api/strategies/`已经实现，可以立即开始：
-
-```bash
-# 1. 基于现有架构创建API路由
-from src.api.strategies import router as strategies_router
-
-# 2. 在主应用中注册路由
-app.include_router(strategies_router, prefix="/api/v1")
-
-# 3. 配置WebSocket端点
-app.include_router(strategies_router, prefix="/ws")
-```
-
-#### 废弃旧API文件
-```bash
-# 逐步废弃以下文件
-src/api/strategy_endpoints.py
-src/api/cbsc_strategy_api.py
-src/api/personal_strategy_endpoints.py
-```
-
-### 2. 代码复用策略
-
-#### 直接迁移
-- ✅ `models.py`：统一数据模型可直接使用
-- ✅ `services/`：业务服务层已实现完整功能
-- ✅ `websocket_pool_api.py`：WebSocket连接池可直接集成
-
-#### 需要适配
-- 🔧 路由前缀统一为`/api/v1/strategies/`
-- 🔧 响应格式标准化
-- 🔧 错误处理机制统一
-
-### 3. 渐进式迁移路径
-
-#### 第一步：并行运行
 ```python
-# 保持旧API运行，同时暴露新API
-app.include_router(old_strategy_router, prefix="/api/strategies")
-app.include_router(new_strategies_router, prefix="/api/v1/strategies")
+# src/api/strategies/config/cache.py
+from dataclasses import dataclass
+from typing import Dict, Optional
+
+@dataclass
+class CacheConfig:
+    """缓存配置"""
+    # 默认TTL（秒）
+    default_ttl: int = 300
+
+    # 特定资源的TTL配置
+    ttl_config: Dict[str, int] = None
+
+    # 缓存键前缀
+    key_prefix: str = "cbsc_api"
+
+    # 是否启用L1缓存
+    enable_l1_cache: bool = True
+
+    # L1缓存最大条目数
+    l1_max_size: int = 1000
+
+    def __post_init__(self):
+        if self.ttl_config is None:
+            self.ttl_config = {
+                "strategy_list": 60,       # 策略列表缓存1分钟
+                "strategy_detail": 300,    # 策略详情缓存5分钟
+                "execution_status": 30,    # 执行状态缓存30秒
+                "performance_metrics": 600, # 性能指标缓存10分钟
+                "user_permissions": 1800,  # 用户权限缓存30分钟
+            }
 ```
 
-#### 第二步：流量切换
+## WebSocket集成设计
+
+### 1. 连接管理
+
 ```python
-# 使用API网关逐步切换流量
-# 1. 10%流量到新API
-# 2. 50%流量到新API
-# 3. 100%流量到新API
+# src/api/strategies/websocket/manager.py
+from typing import Dict, List, Set
+from fastapi import WebSocket
+import json
+import asyncio
+from datetime import datetime
+
+class ConnectionManager:
+    """WebSocket连接管理器"""
+
+    def __init__(self):
+        # 活跃连接 {user_id: {connection_id: WebSocket}}
+        self.active_connections: Dict[str, Dict[str, WebSocket]] = {}
+
+        # 订阅关系 {channel: {user_ids}}
+        self.subscriptions: Dict[str, Set[str]] = {}
+
+        # 连接元数据
+        self.connection_metadata: Dict[str, Dict] = {}
+
+    async def connect(
+        self,
+        websocket: WebSocket,
+        user_id: str,
+        connection_id: str
+    ):
+        """建立连接"""
+        await websocket.accept()
+
+        if user_id not in self.active_connections:
+            self.active_connections[user_id] = {}
+
+        self.active_connections[user_id][connection_id] = websocket
+
+        # 保存连接元数据
+        self.connection_metadata[connection_id] = {
+            "user_id": user_id,
+            "connected_at": datetime.utcnow(),
+            "subscriptions": set()
+        }
+
+    def disconnect(self, user_id: str, connection_id: str):
+        """断开连接"""
+        if user_id in self.active_connections:
+            self.active_connections[user_id].pop(connection_id, None)
+
+            # 如果用户没有其他连接，清理订阅
+            if not self.active_connections[user_id]:
+                del self.active_connections[user_id]
+                self._cleanup_user_subscriptions(user_id)
+
+        # 清理元数据
+        if connection_id in self.connection_metadata:
+            del self.connection_metadata[connection_id]
+
+    async def subscribe(self, user_id: str, connection_id: str, channel: str):
+        """订阅频道"""
+        # 更新连接元数据
+        if connection_id in self.connection_metadata:
+            self.connection_metadata[connection_id]["subscriptions"].add(channel)
+
+        # 更新订阅关系
+        if channel not in self.subscriptions:
+            self.subscriptions[channel] = set()
+        self.subscriptions[channel].add(user_id)
+
+    async def unsubscribe(self, user_id: str, connection_id: str, channel: str):
+        """取消订阅"""
+        # 更新连接元数据
+        if connection_id in self.connection_metadata:
+            self.connection_metadata[connection_id]["subscriptions"].discard(channel)
+
+        # 更新订阅关系
+        if channel in self.subscriptions:
+            self.subscriptions[channel].discard(user_id)
+
+            # 如果没有订阅者，删除频道
+            if not self.subscriptions[channel]:
+                del self.subscriptions[channel]
+
+    async def broadcast_to_channel(self, channel: str, message: dict):
+        """向频道广播消息"""
+        if channel not in self.subscriptions:
+            return
+
+        # 构建消息
+        message_data = {
+            "type": "broadcast",
+            "channel": channel,
+            "data": message,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+        # 发送给所有订阅用户
+        for user_id in self.subscriptions[channel]:
+            await self.send_to_user(user_id, message_data)
+
+    async def send_to_user(self, user_id: str, message: dict):
+        """发送消息给特定用户"""
+        if user_id not in self.active_connections:
+            return
+
+        message_json = json.dumps(message, default=str)
+
+        # 发送给用户的所有连接
+        connections_to_remove = []
+        for connection_id, websocket in self.active_connections[user_id].items():
+            try:
+                await websocket.send_text(message_json)
+            except Exception as e:
+                # 连接已断开，标记清理
+                connections_to_remove.append(connection_id)
+
+        # 清理无效连接
+        for connection_id in connections_to_remove:
+            self.disconnect(user_id, connection_id)
 ```
 
-#### 第三步：旧API废弃
+### 2. 消息处理
+
 ```python
-# 保留旧API3个月作为兼容期
-# 添加废弃警告
-# 最终移除旧API代码
+# src/api/strategies/websocket/handlers.py
+from typing import Dict, Any
+from ..events import EventBus
+from ..utils.auth import authenticate_websocket
+
+class WebSocketHandler:
+    """WebSocket消息处理器"""
+
+    def __init__(self, manager: ConnectionManager, event_bus: EventBus):
+        self.manager = manager
+        self.event_bus = event_bus
+        self.handlers = {
+            "subscribe": self._handle_subscribe,
+            "unsubscribe": self._handle_unsubscribe,
+            "ping": self._handle_ping,
+            "strategy_control": self._handle_strategy_control,
+        }
+
+        # 注册事件监听
+        self._register_event_handlers()
+
+    async def handle_message(
+        self,
+        websocket: WebSocket,
+        user_id: str,
+        connection_id: str,
+        message: Dict[str, Any]
+    ):
+        """处理接收到的消息"""
+        message_type = message.get("type")
+
+        if message_type in self.handlers:
+            await self.handlers[message_type](
+                websocket, user_id, connection_id, message
+            )
+        else:
+            await self._send_error(
+                websocket,
+                f"未知消息类型: {message_type}"
+            )
+
+    async def _handle_subscribe(
+        self,
+        websocket: WebSocket,
+        user_id: str,
+        connection_id: str,
+        message: Dict[str, Any]
+    ):
+        """处理订阅请求"""
+        channel = message.get("channel")
+        if not channel:
+            await self._send_error(websocket, "订阅频道不能为空")
+            return
+
+        # 验证权限
+        if not await self._check_subscription_permission(user_id, channel):
+            await self._send_error(websocket, "没有权限订阅该频道")
+            return
+
+        await self.manager.subscribe(user_id, connection_id, channel)
+
+        await websocket.send_json({
+            "type": "subscribe_success",
+            "channel": channel
+        })
+
+    async def _handle_strategy_control(
+        self,
+        websocket: WebSocket,
+        user_id: str,
+        connection_id: str,
+        message: Dict[str, Any]
+    ):
+        """处理策略控制请求"""
+        strategy_id = message.get("strategy_id")
+        action = message.get("action")
+
+        # 验证权限
+        has_permission = await self._check_strategy_permission(
+            user_id, strategy_id, action
+        )
+
+        if not has_permission:
+            await self._send_error(websocket, "没有权限执行该操作")
+            return
+
+        # 发布策略控制事件
+        await self.event_bus.emit("strategy_control", {
+            "strategy_id": strategy_id,
+            "action": action,
+            "user_id": user_id,
+            "connection_id": connection_id
+        })
 ```
 
-## 📊 预期收益量化
+## 模块结构图
 
-### 代码质量指标
-| 指标 | 现状 | 迁移后 | 改善幅度 |
-|------|------|--------|----------|
-| 代码重复率 | 85% | <10% | 75% ↓ |
-| 圈复杂度 | 15-20 | <10 | 50% ↓ |
-| 测试覆盖率 | 20% | >80% | 300% ↑ |
-| 文档完整性 | 30% | >90% | 200% ↑ |
+```
+src/api/strategies/
+├── __init__.py                 # 模块入口，路由注册
+├── controllers/                # 控制器层
+│   ├── __init__.py
+│   ├── base_controller.py     # 基础控制器
+│   ├── strategy_controller.py # 策略控制器
+│   ├── execution_controller.py# 执行控制器
+│   ├── personal_controller.py # 个性化功能控制器
+│   └── websocket_controller.py# WebSocket控制器
+├── services/                   # 服务层
+│   ├── __init__.py
+│   ├── base_service.py        # 基础服务类
+│   ├── strategy_service.py    # 策略服务
+│   ├── execution_service.py   # 执行服务
+│   ├── personal_service.py    # 个性化服务
+│   ├── websocket_service.py   # WebSocket服务
+│   └── business/              # 业务服务
+│       ├── user_service.py
+│       ├── permission_service.py
+│       └── audit_service.py
+├── repositories/               # 仓储层
+│   ├── __init__.py
+│   ├── base_repository.py     # 基础仓储
+│   ├── strategy_repository.py # 策略仓储
+│   ├── execution_repository.py# 执行仓储
+│   └── cache_repository.py    # 缓存仓储
+├── models/                     # 数据模型
+│   ├── __init__.py
+│   ├── base.py               # 基础模型
+│   ├── strategy.py           # 策略模型
+│   ├── execution.py          # 执行模型
+│   ├── user.py               # 用户模型
+│   └── permissions.py        # 权限模型
+├── schemas/                    # API模式
+│   ├── __init__.py
+│   ├── requests/             # 请求模式
+│   │   ├── strategy.py
+│   │   ├── execution.py
+│   │   └── personal.py
+│   ├── responses/            # 响应模式
+│   │   ├── base.py
+│   │   ├── strategy.py
+│   │   └── execution.py
+│   └── common.py             # 通用模式
+├── utils/                      # 工具模块
+│   ├── __init__.py
+│   ├── auth.py               # 认证工具
+│   ├── permissions.py        # 权限工具
+│   ├── cache.py              # 缓存工具
+│   ├── validators.py         # 验证器
+│   ├── errors.py             # 错误处理
+│   └── decorators.py         # 装饰器
+├── config/                     # 配置
+│   ├── __init__.py
+│   ├── settings.py           # 设置
+│   ├── cache.py              # 缓存配置
+│   └── database.py           # 数据库配置
+├── websocket/                  # WebSocket
+│   ├── __init__.py
+│   ├── manager.py            # 连接管理
+│   ├── handlers.py           # 消息处理
+│   └── events.py             # 事件定义
+└── database/                   # 数据库
+    ├── __init__.py
+    ├── migrations/           # 数据库迁移
+    ├── seeds/               # 种子数据
+    └── views/               # 视图定义
+```
 
-### 性能指标
-| 指标 | 现状 | 迁移后 | 改善幅度 |
-|------|------|--------|----------|
-| API响应时间 | 200ms | 140ms | 30% ↓ |
-| 内存使用 | 100% | 75% | 25% ↓ |
-| 并发处理能力 | 100 req/s | 150 req/s | 50% ↑ |
-| 缓存命中率 | 30% | >80% | 167% ↑ |
+## API路由设计
 
-### 开发效率指标
-| 指标 | 现状 | 迁移后 | 改善幅度 |
-|------|------|--------|----------|
-| 新功能开发时间 | 3天 | 1.5天 | 50% ↓ |
-| Bug修复时间 | 2小时 | 45分钟 | 62% ↓ |
-| 代码审查时间 | 1小时 | 30分钟 | 50% ↓ |
-| 部署频率 | 每周 | 每天 | 700% ↑ |
+### 1. 版本化路由
 
-## ⚡ 技术债务清理
+```
+/api/v1/
+├── strategies/                 # 策略管理
+│   ├── GET    /              # 获取策略列表
+│   ├── POST   /              # 创建策略
+│   ├── GET    /{id}          # 获取策略详情
+│   ├── PUT    /{id}          # 更新策略
+│   ├── DELETE /{id}          # 删除策略
+│   ├── POST   /{id}/execute  # 执行策略
+│   ├── POST   /{id}/stop     # 停止策略
+│   ├── GET    /{id}/status   # 获取策略状态
+│   ├── GET    /{id}/metrics  # 获取性能指标
+│   ├── POST   /{id}/clone    # 克隆策略
+│   └── POST   /batch         # 批量操作
+├── executions/                # 执行管理
+│   ├── GET    /              # 获取执行历史
+│   ├── GET    /{id}          # 获取执行详情
+│   ├── POST   /{id}/cancel   # 取消执行
+│   └── GET    /{id}/logs     # 获取执行日志
+├── templates/                 # 策略模板
+│   ├── GET    /              # 获取模板列表
+│   ├── GET    /{id}          # 获取模板详情
+│   └── POST   /{id}/use      # 使用模板创建策略
+├── personal/                  # 个性化功能
+│   ├── GET    /preferences   # 获取用户偏好
+│   ├── PUT    /preferences   # 更新用户偏好
+│   ├── GET    /dashboard     # 获取仪表板数据
+│   └── GET    /recommendations # 获取推荐
+├── users/                     # 用户管理
+│   ├── GET    /profile       # 获取用户资料
+│   ├── PUT    /profile       # 更新用户资料
+│   ├── GET    /permissions   # 获取用户权限
+│   └── GET    /activity      # 获取用户活动
+└── ws/                        # WebSocket端点
+    ├── /strategies           # 策略实时更新
+    ├── /executions           # 执行实时状态
+    └── /notifications        # 通知推送
+```
 
-### 高优先级清理项
-1. **重复代码消除**
-   - 85%的重复CRUD操作
-   - 相同的WebSocket连接管理
-   - 重复的权限验证逻辑
+### 2. 路由注册
 
-2. **路由标准化**
-   - 统一API前缀为`/api/v1/strategies/`
-   - RESTful设计规范
-   - 版本控制机制
+```python
+# src/api/strategies/router.py
+from fastapi import APIRouter
+from .controllers import (
+    StrategyController,
+    ExecutionController,
+    PersonalController,
+    WebSocketController
+)
 
-3. **数据模型统一**
-   - 标准化请求/响应格式
-   - 统一错误处理
-   - 一致的分页机制
+# 创建主路由器
+api_router = APIRouter(prefix="/api/v1")
 
-### 中优先级清理项
-1. **性能优化**
-   - 缓存策略优化
-   - 数据库查询优化
-   - 异步处理机制
+# 注册模块路由
+api_router.include_router(
+    StrategyController().router,
+    prefix="/strategies",
+    tags=["strategies"]
+)
 
-2. **可观测性增强**
-   - 统一日志格式
-   - 性能监控指标
-   - 错误追踪机制
+api_router.include_router(
+    ExecutionController().router,
+    prefix="/executions",
+    tags=["executions"]
+)
 
-## 🔮 未来扩展规划
+api_router.include_router(
+    PersonalController().router,
+    prefix="/personal",
+    tags=["personal"]
+)
 
-### 短期扩展（3个月内）
-- [ ] 策略模板市场
-- [ ] 高级回测功能
-- [ ] 机器学习策略支持
+api_router.include_router(
+    WebSocketController().router,
+    prefix="/ws",
+    tags=["websocket"]
+)
+```
 
-### 中期扩展（6个月内）
-- [ ] 多资产策略支持
-- [ ] 实时风险监控
-- [ ] 策略性能排行榜
+## 设计原则
 
-### 长期扩展（1年内）
-- [ ] 分布式策略执行
-- [ ] 云原生架构
-- [ ] AI驱动的策略优化
+### 1. 单一职责原则 (SRP)
 
-## 🎯 总结与建议
+每个类和模块都有明确的单一职责：
 
-### 核心结论
+- **Controller**: 只负责HTTP请求处理
+- **Service**: 只负责业务逻辑实现
+- **Repository**: 只负责数据访问
+- **Model**: 只负责数据结构定义
 
-1. **统一架构已就绪**：`src/api/strategies/`提供了完整的模块化API框架
-2. **迁移成本极低**：90%的功能已经实现，只需要补充和完善
-3. **技术债务显著**：现有API存在85%重复代码，急需重构
-4. **收益巨大**：代码质量、性能、开发效率都将大幅提升
+### 2. 开闭原则 (OCP)
 
-### 立即行动项
+系统对扩展开放，对修改关闭：
 
-#### 高优先级（本周内完成）
-1. **启用新架构**：将`src/api/strategies/`集成到主应用
-2. **废弃旧API**：标记旧API文件为废弃状态
-3. **路由整合**：实现统一的API路径设计
-4. **文档更新**：更新API文档和开发指南
+```python
+# 示例：策略类型扩展
+class StrategyTypeRegistry:
+    """策略类型注册表"""
 
-#### 中优先级（2周内完成）
-1. **补充缺失模块**：完善repositories、utils、config等模块
-2. **性能优化**：实施缓存策略和数据库优化
-3. **测试覆盖**：建立完整的测试体系
-4. **监控集成**：添加性能监控和告警
+    def __init__(self):
+        self._strategies = {}
 
-### 关键成功因素
+    def register(self, strategy_type: str, strategy_class: Type[BaseStrategy]):
+        """注册新的策略类型"""
+        self._strategies[strategy_type] = strategy_class
 
-1. **渐进式迁移**：避免大爆炸式重构，采用分阶段迁移
-2. **向后兼容**：保持旧API在过渡期内可用
-3. **充分测试**：确保每个阶段都有完整的测试验证
-4. **文档同步**：及时更新技术文档和用户指南
+    def get_strategy(self, strategy_type: str) -> Type[BaseStrategy]:
+        """获取策略类"""
+        if strategy_type not in self._strategies:
+            raise ValueError(f"未知的策略类型: {strategy_type}")
+        return self._strategies[strategy_type]
 
-### 风险缓解措施
+# 扩展新策略类型不需要修改现有代码
+registry = StrategyTypeRegistry()
+registry.register("rsi", RSIStrategy)
+registry.register("macd", MACDStrategy)
+registry.register("custom", CustomStrategy)
+```
 
-1. **回滚计划**：准备快速回滚到旧架构的方案
-2. **灰度发布**：逐步切换流量，降低风险
-3. **监控告警**：实时监控性能指标和错误率
-4. **团队培训**：确保开发团队熟悉新架构
+### 3. 依赖倒置原则 (DIP)
 
-### 技术决策记录
+高层模块不依赖低层模块，都依赖于抽象：
 
-- **架构选择**：基于现有`src/api/strategies/`架构，避免重复开发
-- **技术栈**：继续使用FastAPI + PostgreSQL + Redis组合
-- **迁移策略**：采用渐进式迁移，确保系统稳定性
-- **版本控制**：实施API版本管理，支持平滑过渡
+```python
+# 抽象接口
+class CacheInterface(Protocol):
+    async def get(self, key: str) -> Optional[Any]: ...
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None): ...
 
----
+# 高层模块依赖抽象
+class ServiceLayer:
+    def __init__(self, cache: CacheInterface):
+        self.cache = cache  # 依赖抽象，不是具体实现
 
-**文档完成时间**：2025年12月13日
-**架构师**：API技术负责人
-**下次更新**：迁移实施完成后
+# 可以注入不同的实现
+redis_cache = RedisCache()
+memory_cache = MemoryCache()
+service1 = ServiceLayer(redis_cache)
+service2 = ServiceLayer(memory_cache)
+```
 
-## 📞 联系与支持
+### 4. 接口隔离原则 (ISP)
 
-- **技术负责人**：tech-lead@cbsc.com
-- **开发团队**：dev-team@cbsc.com
-- **架构评审**：architecture@cbsc.com
-- **紧急支持**：ops@cbsc.com
+不应该强迫客户端依赖它们不使用的接口：
+
+```python
+# 不好的设计 - 大而全的接口
+class StrategyService(ABC):
+    @abstractmethod
+    async def create(self): ...
+    @abstractmethod
+    async def execute(self): ...
+    @abstractmethod
+    async def optimize(self): ...
+    @abstractmethod
+    async def backtest(self): ...
+
+# 好的设计 - 小而专的接口
+class Creatable(Protocol):
+    async def create(self): ...
+
+class Executable(Protocol):
+    async def execute(self): ...
+
+class Optimizable(Protocol):
+    async def optimize(self): ...
+
+class Backtestable(Protocol):
+    async def backtest(self): ...
+
+# 类只实现需要的接口
+class SimpleStrategy:
+    async def create(self): ...  # 只实现创建功能
+
+class AdvancedStrategy:
+    async def create(self): ...
+    async def execute(self): ...
+    async def optimize(self): ...
+    async def backtest(self): ...
+```
+
+## 实施建议
+
+### 1. 迁移策略
+
+1. **并行运行期**
+   - 保持现有API运行
+   - 新架构并行开发
+   - 逐步迁移功能模块
+
+2. **功能模块迁移顺序**
+   - 策略管理（基础CRUD）
+   - 执行管理（状态控制）
+   - 个性化功能
+   - 实时通信（WebSocket）
+
+3. **数据迁移**
+   - 使用统一的数据模型适配器
+   - 实现数据兼容性检查
+   - 提供回滚机制
+
+### 2. 性能优化建议
+
+1. **数据库优化**
+   - 添加适当的索引
+   - 使用数据库连接池
+   - 实现读写分离
+
+2. **缓存优化**
+   - 热数据预加载
+   - 缓存预热策略
+   - 缓存穿透防护
+
+3. **API优化**
+   - 实现请求合并
+   - 批量操作接口
+   - 响应压缩
+
+### 3. 监控和日志
+
+1. **性能监控**
+   - API响应时间监控
+   - 数据库查询性能
+   - 缓存命中率统计
+
+2. **业务监控**
+   - 策略执行成功率
+   - 用户行为分析
+   - 错误率统计
+
+3. **日志规范**
+   - 结构化日志格式
+   - 请求追踪ID
+   - 日志级别管理
+
+### 4. 安全建议
+
+1. **认证授权**
+   - JWT Token刷新机制
+   - 权限细粒度控制
+   - API访问频率限制
+
+2. **数据安全**
+   - 敏感数据加密
+   - SQL注入防护
+   - XSS防护
+
+3. **网络安全**
+   - HTTPS强制使用
+   - CORS策略配置
+   - 请求大小限制
+
+## 总结
+
+本设计文档提供了一个统一、可扩展的API模块架构，通过分层设计、依赖注入、统一接口等设计模式，解决了现有代码重复、耦合度高的问题。新架构具有良好的可维护性、可测试性和可扩展性，能够支持业务的快速发展。
+
+实施过程中需要注意平滑迁移，保证系统稳定运行，同时逐步优化性能和完善监控体系。建议采用敏捷开发方式，分阶段实施，及时收集反馈并调整设计。

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useRef, useCallback } from 'react'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -7,9 +7,11 @@ import {
   Title,
   Tooltip,
   Legend
-} from 'chart.js';
-import { Bar } from 'react-chartjs-2';
-import { ChartContainer } from '../common/ChartContainer';
+} from 'chart.js'
+import { Bar } from 'react-chartjs-2'
+import type { ChartData, ChartOptions } from 'chart.js'
+import { BaseChartProps } from '../../../types/chart'
+import { getTheme, getChartJsDefaults } from '../../Charts/utils/chartThemes'
 
 // Register Chart.js components
 ChartJS.register(
@@ -19,242 +21,228 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend
-);
+)
 
-// Data point interface
-interface DataPoint {
-  label: string;
-  value: number;
-  backgroundColor?: string;
-  borderColor?: string;
+// Extended props for BarChart
+export interface BarChartProps extends Omit<BaseChartProps<'bar'>, 'type'> {
+  // Orientation props
+  horizontal?: boolean
+
+  // Stacking props
+  stacked?: boolean
+  groupMode?: 'grouped' | 'stacked'
+
+  // Style props
+  barPercentage?: number
+  categoryPercentage?: number
+  borderWidth?: number
+  borderRadius?: number
+
+  // Value display props
+  showValues?: boolean
+  valuePosition?: 'top' | 'bottom' | 'inside' | 'outside'
+  valueFormat?: Intl.NumberFormatOptions
+
+  // Grid props
+  showGrid?: boolean
+  gridColor?: string
+
+  // Animation props
+  animationDuration?: number
 }
 
-// Dataset interface
-interface Dataset {
-  label: string;
-  data: DataPoint[];
-  backgroundColor?: string | string[];
-  borderColor?: string | string[];
-  borderWidth?: number;
-  barPercentage?: number;
-  categoryPercentage?: number;
-}
-
-// Props interface
-interface BarChartProps {
-  title?: string;
-  subtitle?: string;
-  datasets: Dataset[];
-  height?: number;
-  className?: string;
-  horizontal?: boolean;
-  stacked?: boolean;
-  showGrid?: boolean;
-  showLegend?: boolean;
-  showTooltip?: boolean;
-  animation?: boolean;
-  theme?: 'light' | 'dark';
-  onDataPointClick?: (datasetIndex: number, pointIndex: number, value: DataPoint) => void;
-  yAxisConfig?: {
-    label?: string;
-    min?: number;
-    max?: number;
-    ticks?: {
-      callback?: (value: number) => string;
-    };
-  };
-  xAxisConfig?: {
-    label?: string;
-    ticks?: {
-      callback?: (value: string) => string;
-    };
-  };
-}
-
-export const BarChart: React.FC<BarChartProps> = ({
-  title,
-  subtitle,
-  datasets,
-  height = 400,
+const BarChart: React.FC<BarChartProps> = ({
+  data,
+  options = {},
+  width,
+  height,
   className = '',
-  horizontal = false,
-  stacked = false,
-  showGrid = true,
-  showLegend = true,
-  showTooltip = true,
-  animation = true,
   theme = 'light',
   onDataPointClick,
-  yAxisConfig,
-  xAxisConfig
+  onLegendClick,
+  horizontal = false,
+  stacked = false,
+  groupMode = 'grouped',
+  barPercentage = 0.8,
+  categoryPercentage = 0.9,
+  borderWidth = 1,
+  borderRadius = 0,
+  showValues = false,
+  valuePosition = 'top',
+  valueFormat,
+  showGrid = true,
+  gridColor,
+  animationDuration = 300
 }) => {
-  // Generate chart data
-  const chartData = useMemo(() => {
-    // Get all unique labels
-    const allLabels = new Set<string>();
-    datasets.forEach(dataset => {
-      dataset.data.forEach(point => {
-        allLabels.add(point.label);
-      });
-    });
+  const chartRef = useRef<ChartJS<'bar'>>(null)
+  const currentTheme = getTheme(theme)
 
-    const labels = Array.from(allLabels);
+  // Handle click events
+  const handleClick = useCallback((event: any, elements: any[]) => {
+    if (elements.length > 0 && onDataPointClick) {
+      const { datasetIndex, index } = elements[0]
+      const dataset = data.datasets[datasetIndex]
+      const point = {
+        dataset,
+        value: dataset.data[index],
+        label: data.labels?.[index],
+        datasetIndex,
+        index
+      }
+      onDataPointClick(point, elements[0])
+    }
+  }, [data, onDataPointClick])
 
-    // Transform datasets for Chart.js
-    const chartDatasets = datasets.map((dataset, datasetIndex) => ({
-      label: dataset.label,
-      data: labels.map(label => {
-        const point = dataset.data.find(p => p.label === label);
-        return point ? point.value : 0;
-      }),
-      backgroundColor: dataset.backgroundColor || (theme === 'dark' ? '#60a5fa' : '#3b82f6'),
-      borderColor: dataset.borderColor || (theme === 'dark' ? '#3b82f6' : '#1d4ed8'),
-      borderWidth: dataset.borderWidth ?? 1,
-      barPercentage: dataset.barPercentage ?? 0.8,
-      categoryPercentage: dataset.categoryPercentage ?? 0.9
-    }));
+  // Determine if stacking is enabled
+  const isStacked = stacked || groupMode === 'stacked'
 
-    return {
-      labels,
-      datasets: chartDatasets
-    };
-  }, [datasets, theme]);
-
-  // Chart options
-  const options = useMemo(() => {
-    const isDark = theme === 'dark';
-    const textColor = isDark ? '#e5e7eb' : '#374151';
-    const gridColor = isDark ? '#374151' : '#f3f4f6';
-
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      indexAxis: horizontal ? 'y' as const : 'x' as const,
-      animation: animation ? {
-        duration: 750,
-        easing: 'easeInOutQuart'
-      } : false,
-      interaction: {
-        mode: 'index' as const,
-        intersect: false
-      },
-      plugins: {
-        legend: {
-          display: showLegend,
-          position: 'top' as const,
-          labels: {
-            color: textColor,
-            usePointStyle: true,
-            padding: 15,
-            font: {
-              size: 12,
-              weight: '500'
-            }
-          }
-        },
-        tooltip: {
-          enabled: showTooltip,
-          backgroundColor: isDark ? '#1f2937' : '#ffffff',
-          titleColor: textColor,
-          bodyColor: textColor,
-          borderColor: isDark ? '#4b5563' : '#e5e7eb',
-          borderWidth: 1,
-          padding: 12,
-          displayColors: true,
-          callbacks: {
-            label: function(context) {
-              let label = context.dataset.label || '';
-              if (label) {
-                label += ': ';
-              }
-              if (context.parsed.y !== null) {
-                label += new Intl.NumberFormat('zh-CN', {
-                  style: 'decimal',
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2
-                }).format(context.parsed.y);
-              }
-              return label;
-            }
+  // Default options with theme
+  const defaultOptions: ChartOptions<'bar'> = {
+    ...getChartJsDefaults(currentTheme),
+    animation: {
+      duration: animationDuration,
+      easing: 'easeInOutQuad'
+    },
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: 'index',
+      intersect: false
+    },
+    onClick: handleClick,
+    plugins: {
+      ...getChartJsDefaults(currentTheme).plugins,
+      legend: {
+        ...getChartJsDefaults(currentTheme).plugins.legend,
+        onClick: (e, legendItem, legend) => {
+          if (onLegendClick) {
+            onLegendClick(legendItem, legend)
+          } else {
+            // Default toggle behavior
+            const index = legendItem.datasetIndex
+            const chart = legend.chart
+            const meta = chart.getDatasetMeta(index)
+            meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null
+            chart.update()
           }
         }
       },
-      scales: {
-        x: {
-          stacked,
-          grid: {
-            display: showGrid,
-            color: gridColor,
-            drawBorder: false
-          },
-          ticks: {
-            color: textColor,
-            callback: xAxisConfig?.ticks?.callback
-          },
-          title: {
-            display: !!xAxisConfig?.label,
-            text: xAxisConfig?.label,
-            color: textColor
-          }
-        },
-        y: {
-          stacked,
-          title: {
-            display: !!yAxisConfig?.label,
-            text: yAxisConfig?.label,
-            color: textColor
-          },
-          min: yAxisConfig?.min,
-          max: yAxisConfig?.max,
-          grid: {
-            display: showGrid,
-            color: gridColor,
-            drawBorder: false
-          },
-          ticks: {
-            color: textColor,
-            callback: yAxisConfig?.ticks?.callback || function(value) {
-              return new Intl.NumberFormat('zh-CN').format(value);
+      tooltip: {
+        ...getChartJsDefaults(currentTheme).plugins.tooltip,
+        callbacks: {
+          label: (context) => {
+            let label = context.dataset.label || ''
+            if (label) {
+              label += ': '
             }
-          }
-        }
-      },
-      onClick: (event: any, elements: any[]) => {
-        if (onDataPointClick && elements.length > 0) {
-          const { datasetIndex, index } = elements[0];
-          const label = chartData.labels[index];
-          const dataset = datasets[datasetIndex];
-          const point = dataset.data.find(p => p.label === label);
-          if (point) {
-            onDataPointClick(datasetIndex, index, point);
+            if (context.parsed.y !== null) {
+              const formatOptions = valueFormat || {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              }
+              label += new Intl.NumberFormat('en-US', formatOptions).format(context.parsed.y)
+            }
+            return label
           }
         }
       }
-    };
-  }, [
-    theme,
-    horizontal,
-    stacked,
-    showLegend,
-    showTooltip,
-    showGrid,
-    animation,
-    yAxisConfig,
-    xAxisConfig,
-    datasets,
-    chartData,
-    onDataPointClick
-  ]);
+    },
+    scales: {
+      x: {
+        stacked: isStacked,
+        grid: {
+          display: false,
+          color: gridColor || currentTheme.gridColor,
+          borderDash: [2, 2]
+        },
+        ticks: {
+          color: currentTheme.textColor,
+          font: {
+            size: currentTheme.fontSize,
+            family: currentTheme.fontFamily
+          }
+        },
+        border: {
+          color: currentTheme.borderColor
+        }
+      },
+      y: {
+        stacked: isStacked,
+        grid: {
+          display: showGrid,
+          color: gridColor || currentTheme.gridColor,
+          borderDash: [2, 2]
+        },
+        ticks: {
+          color: currentTheme.textColor,
+          font: {
+            size: currentTheme.fontSize,
+            family: currentTheme.fontFamily
+          },
+          callback: (value) => {
+            const formatOptions = valueFormat || {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2
+            }
+            return new Intl.NumberFormat('en-US', formatOptions).format(value as number)
+          }
+        },
+        border: {
+          color: currentTheme.borderColor
+        }
+      }
+    },
+    indexAxis: horizontal ? 'y' as const : 'x' as const
+  }
+
+  // Process datasets with default values
+  const processedData = {
+    ...data,
+    datasets: data.datasets.map((dataset, index) => {
+      // Handle both single color and color array
+      const backgroundColor = Array.isArray(dataset.backgroundColor)
+        ? dataset.backgroundColor
+        : [dataset.backgroundColor || currentTheme.colors[index % currentTheme.colors.length]]
+
+      const borderColor = Array.isArray(dataset.borderColor)
+        ? dataset.borderColor
+        : [dataset.borderColor || currentTheme.colors[index % currentTheme.colors.length]]
+
+      return {
+        ...dataset,
+        backgroundColor,
+        borderColor,
+        borderWidth,
+        borderRadius,
+        barPercentage,
+        categoryPercentage
+      }
+    })
+  }
+
+  // Merge options
+  const mergedOptions = {
+    ...defaultOptions,
+    ...options,
+    plugins: {
+      ...defaultOptions.plugins,
+      ...options.plugins
+    },
+    scales: {
+      ...defaultOptions.scales,
+      ...options.scales
+    }
+  }
 
   return (
-    <ChartContainer
-      title={title}
-      subtitle={subtitle}
-      className={className}
-    >
-      <div style={{ height }}>
-        <Bar data={chartData} options={options} />
-      </div>
-    </ChartContainer>
-  );
-};
+    <div className={`w-full ${className}`} style={{ width, height }}>
+      <Bar
+        ref={chartRef}
+        data={processedData}
+        options={mergedOptions}
+      />
+    </div>
+  )
+}
+
+export default BarChart

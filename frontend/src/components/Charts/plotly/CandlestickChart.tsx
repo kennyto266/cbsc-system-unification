@@ -1,179 +1,143 @@
 import React, { useMemo, Suspense, lazy } from 'react';
+import { OHLCDataPoint, TechnicalIndicator, BaseChartProps } from '../../../types/chart';
+import { getPlotlyDefaults, getTheme, colorSchemes } from '../utils/chartThemes';
 
 // Dynamically import Plotly to avoid SSR issues
 const Plot = lazy(() => import('react-plotly.js'));
 
-// K线数据接口
-interface CandlestickData {
-  x: string[]; // 日期时间
-  open: number[];
-  high: number[];
-  low: number[];
-  close: number[];
-  volume?: number[];
-}
-
-// 技术指标接口
-interface TechnicalIndicator {
-  name: string;
-  data: number[];
-  color?: string;
-  type?: 'scatter' | 'line';
-}
-
-// Props接口
-interface CandlestickChartProps {
+interface CandlestickChartProps extends Omit<BaseChartProps, 'data'> {
+  data: OHLCDataPoint[];
+  showVolume?: boolean;
+  showMovingAverages?: number[];
+  indicators?: TechnicalIndicator[];
+  timeRange?: [Date, Date];
+  onTimeRangeChange?: (range: [Date, Date]) => void;
+  bullishColor?: string;
+  bearishColor?: string;
+  volumeOpacity?: number;
+  showLegend?: boolean;
   title?: string;
   subtitle?: string;
-  data: CandlestickData;
-  height?: number;
-  className?: string;
-  showVolume?: boolean;
-  showMA?: boolean;
-  technicalIndicators?: TechnicalIndicator[];
-  theme?: 'light' | 'dark';
-  onCandleClick?: (date: string, ohlc: { open: number; high: number; low: number; close: number }) => void;
-  yAxisConfig?: {
-    title?: string;
-    range?: [number, number];
-  };
-  annotations?: Array<{
-    x: string;
-    y: number;
-    text: string;
-    arrowhead?: number;
-  }>;
 }
 
 export const CandlestickChart: React.FC<CandlestickChartProps> = ({
+  data,
+  showVolume = false,
+  showMovingAverages = [],
+  indicators = [],
+  timeRange,
+  onTimeRangeChange,
+  bullishColor = '#10b981',
+  bearishColor = '#ef4444',
+  volumeOpacity = 0.5,
+  showLegend = true,
   title,
   subtitle,
-  data,
   height = 600,
   className = '',
-  showVolume = true,
-  showMA = false,
-  technicalIndicators = [],
   theme = 'light',
-  onCandleClick,
-  yAxisConfig,
-  annotations = []
+  onDataPointClick
 }) => {
-  // 计算移动平均线
-  const ma5 = useMemo(() => {
-    const ma: number[] = [];
-    for (let i = 0; i < data.close.length; i++) {
-      if (i < 4) {
-        ma.push(null);
-      } else {
-        const sum = data.close.slice(i - 4, i + 1).reduce((a, b) => a + b, 0);
-        ma.push(sum / 5);
-      }
-    }
-    return ma;
-  }, [data.close]);
+  // Calculate moving averages
+  const movingAverages = useMemo(() => {
+    const maMap = new Map<number, number[]>();
 
-  const ma10 = useMemo(() => {
-    const ma: number[] = [];
-    for (let i = 0; i < data.close.length; i++) {
-      if (i < 9) {
-        ma.push(null);
-      } else {
-        const sum = data.close.slice(i - 9, i + 1).reduce((a, b) => a + b, 0);
-        ma.push(sum / 10);
+    showMovingAverages.forEach(period => {
+      const ma: number[] = [];
+      for (let i = 0; i < data.length; i++) {
+        if (i < period - 1) {
+          ma.push(null);
+        } else {
+          const sum = data.slice(i - period + 1, i + 1).reduce((acc, d) => acc + d.close, 0);
+          ma.push(sum / period);
+        }
       }
-    }
-    return ma;
-  }, [data.close]);
+      maMap.set(period, ma);
+    });
 
-  // 构建图表数据
+    return maMap;
+  }, [data, showMovingAverages]);
+
+  // Prepare chart data
   const plotlyData = useMemo(() => {
     const traces: any[] = [];
+    const chartTheme = getTheme(theme);
 
-    // K线图
+    // Candlestick trace
     traces.push({
       type: 'candlestick',
-      x: data.x,
-      open: data.open,
-      high: data.high,
-      low: data.low,
-      close: data.close,
-      name: 'K线',
+      x: data.map(d => d.timestamp),
+      open: data.map(d => d.open),
+      high: data.map(d => d.high),
+      low: data.map(d => d.low),
+      close: data.map(d => d.close),
+      name: 'Price',
       increasing: {
-        line: { color: '#10b981' },
-        fillcolor: '#10b981'
+        line: { color: bullishColor },
+        fillcolor: bullishColor
       },
       decreasing: {
-        line: { color: '#ef4444' },
-        fillcolor: '#ef4444'
+        line: { color: bearishColor },
+        fillcolor: bearishColor
       },
       xaxis: 'x',
       yaxis: 'y'
     });
 
-    // 移动平均线
-    if (showMA) {
-      traces.push({
-        x: data.x,
-        y: ma5,
-        type: 'scatter',
-        mode: 'lines',
-        name: 'MA5',
-        line: {
-          color: '#f59e0b',
-          width: 1
-        },
-        xaxis: 'x',
-        yaxis: 'y'
-      });
-
-      traces.push({
-        x: data.x,
-        y: ma10,
-        type: 'scatter',
-        mode: 'lines',
-        name: 'MA10',
-        line: {
-          color: '#8b5cf6',
-          width: 1
-        },
-        xaxis: 'x',
-        yaxis: 'y'
-      });
-    }
-
-    // 技术指标
-    technicalIndicators.forEach(indicator => {
-      traces.push({
-        x: data.x,
-        y: indicator.data,
-        type: indicator.type || 'scatter',
-        mode: 'lines',
-        name: indicator.name,
-        line: {
-          color: indicator.color || '#3b82f6',
-          width: 1
-        },
-        xaxis: 'x',
-        yaxis: 'y'
-      });
+    // Moving averages
+    showMovingAverages.forEach((period, index) => {
+      const maData = movingAverages.get(period);
+      if (maData) {
+        traces.push({
+          x: data.map(d => d.timestamp),
+          y: maData,
+          type: 'scatter',
+          mode: 'lines',
+          name: `MA${period}`,
+          line: {
+            color: chartTheme.colors[index % chartTheme.colors.length],
+            width: 1.5
+          },
+          xaxis: 'x',
+          yaxis: 'y'
+        });
+      }
     });
 
-    // 成交量
-    if (showVolume && data.volume) {
-      const colors = data.close.map((close, i) => {
+    // Technical indicators
+    indicators.forEach((indicator, index) => {
+      if (indicator.type === 'overlay' && indicator.data.length === data.length) {
+        traces.push({
+          x: data.map(d => d.timestamp),
+          y: indicator.data,
+          type: 'scatter',
+          mode: 'lines',
+          name: indicator.name,
+          line: {
+            color: indicator.color || chartTheme.colors[(showMovingAverages.length + index) % chartTheme.colors.length],
+            width: 1
+          },
+          xaxis: 'x',
+          yaxis: 'y'
+        });
+      }
+    });
+
+    // Volume bars
+    if (showVolume && data.every(d => d.volume !== undefined)) {
+      const volumeColors = data.map((d, i) => {
         if (i === 0) return '#94a3b8';
-        return close >= data.close[i - 1] ? '#10b981' : '#ef4444';
+        return d.close >= data[i - 1].close ? bullishColor : bearishColor;
       });
 
       traces.push({
-        x: data.x,
-        y: data.volume,
+        x: data.map(d => d.timestamp),
+        y: data.map(d => d.volume || 0),
         type: 'bar',
-        name: '成交量',
+        name: 'Volume',
         marker: {
-          color: colors,
-          opacity: 0.5
+          color: volumeColors,
+          opacity: volumeOpacity
         },
         xaxis: 'x',
         yaxis: 'y2'
@@ -181,82 +145,72 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     }
 
     return traces;
-  }, [data, showMA, showVolume, ma5, ma10, technicalIndicators]);
+  }, [data, showVolume, showMovingAverages, indicators, movingAverages, bullishColor, bearishColor, volumeOpacity, theme]);
 
-  // 图表布局配置
+  // Chart layout
   const layout = useMemo(() => {
-    const isDark = theme === 'dark';
-    const textColor = isDark ? '#e5e7eb' : '#374151';
-    const gridColor = isDark ? '#374151' : '#f3f4f6';
-    const bgColor = isDark ? '#1f2937' : '#ffffff';
+    const baseLayout = getPlotlyDefaults(getTheme(theme));
 
     return {
+      ...baseLayout,
       title: title ? {
         text: title,
         font: {
-          color: textColor,
-          size: 18
+          size: 18,
+          ...baseLayout.font
         }
       } : undefined,
       height,
-      plot_bgcolor: bgColor,
-      paper_bgcolor: bgColor,
-      font: {
-        color: textColor
-      },
-      showlegend: true,
-      legend: {
-        x: 0,
-        y: 1,
-        bgcolor: 'rgba(255,255,255,0)',
-        bordercolor: 'rgba(255,255,255,0)',
-        orientation: 'h'
-      },
+      showlegend: showLegend,
       xaxis: {
-        type: 'category',
+        ...baseLayout.xaxis,
+        type: 'date',
         rangeslider: {
           visible: false
         },
-        gridcolor: gridColor,
-        showgrid: false
+        range: timeRange ? [timeRange[0].toISOString(), timeRange[1].toISOString()] : undefined
       },
       yaxis: {
-        title: yAxisConfig?.title || '价格',
-        gridcolor: gridColor,
-        showgrid: true,
-        autorange: !yAxisConfig?.range,
-        range: yAxisConfig?.range,
+        ...baseLayout.yaxis,
+        title: 'Price',
         domain: showVolume ? [0.3, 1] : [0, 1]
       },
-      yaxis2: {
-        title: '成交量',
-        gridcolor: gridColor,
-        showgrid: false,
-        anchor: 'x',
+      yaxis2: showVolume ? {
+        ...baseLayout.yaxis,
+        title: 'Volume',
+        domain: [0, 0.2],
+        anchor: 'free',
         overlaying: 'y',
         side: 'right',
-        domain: showVolume ? [0, 0.2] : [0, 0],
-        visible: showVolume
-      },
-      annotations: annotations.map(ann => ({
-        x: ann.x,
-        y: ann.y,
-        text: ann.text,
-        showarrow: true,
-        arrowhead: ann.arrowhead || 2,
-        ax: 0,
-        ay: -40
-      })),
+        position: 0.98,
+        showgrid: false
+      } : undefined,
       margin: {
         l: 60,
-        r: 60,
-        t: 40,
-        b: 40
-      }
+        r: showVolume ? 80 : 30,
+        t: title ? 50 : 20,
+        b: 50
+      },
+      annotations: subtitle ? [
+        {
+          xref: 'paper',
+          yref: 'paper',
+          x: 0,
+          y: 1.1,
+          xanchor: 'left',
+          yanchor: 'bottom',
+          text: subtitle,
+          showarrow: false,
+          font: {
+            size: 12,
+            color: baseLayout.font.color
+          }
+        }
+      ] : undefined
     };
-  }, [theme, title, height, yAxisConfig, annotations, showVolume]);
+  }, [theme, title, subtitle, height, showLegend, showVolume, timeRange]);
 
-  // 图表配置选项
+  // Chart config
   const config = useMemo(() => ({
     displayModeBar: true,
     displaylogo: false,
@@ -264,10 +218,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       'pan2d',
       'select2d',
       'lasso2d',
-      'autoScale2d',
-      'toggleSpikelines',
-      'hoverClosestCartesian',
-      'hoverCompareCartesian'
+      'toggleSpikelines'
     ],
     toImageButtonOptions: {
       format: 'png',
@@ -279,40 +230,41 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     responsive: true
   }), [height]);
 
-  // 处理K线点击事件
+  // Handle click events
   const handlePlotClick = (event: any) => {
-    if (onCandleClick && event.points && event.points.length > 0) {
+    if (onDataPointClick && event.points && event.points.length > 0) {
       const point = event.points[0];
       const index = point.pointIndex;
-      if (index !== undefined) {
-        const date = data.x[index];
-        const ohlc = {
-          open: data.open[index],
-          high: data.high[index],
-          low: data.low[index],
-          close: data.close[index]
-        };
-        onCandleClick(date, ohlc);
+      if (index !== undefined && data[index]) {
+        onDataPointClick(data[index], point);
       }
     }
   };
 
+  // Handle range selection
+  const handleRelayout = (event: any) => {
+    if (onTimeRangeChange && event['xaxis.range']) {
+      const [start, end] = event['xaxis.range'];
+      onTimeRangeChange([new Date(start), new Date(end)]);
+    }
+  };
+
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-96">加载图表中...</div>}>
-      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
-        {subtitle && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            {subtitle}
-          </p>
-        )}
+    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 ${className}`}>
+      <Suspense fallback={<div className="flex items-center justify-center h-96">Loading chart...</div>}>
         <Plot
           data={plotlyData}
           layout={layout}
           config={config}
           onClick={handlePlotClick}
+          onRelayout={handleRelayout}
           className="w-full"
+          useResizeHandler={true}
+          style={{ width: '100%', height: '100%' }}
         />
-      </div>
-    </Suspense>
+      </Suspense>
+    </div>
   );
 };
+
+export default CandlestickChart;

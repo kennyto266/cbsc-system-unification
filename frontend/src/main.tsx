@@ -8,6 +8,7 @@ import zhCN from 'antd/locale/zh_CN'
 import { store } from './store'
 import App from './App.tsx'
 import './styles/globals.css'
+import './styles/mobile.css'
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -26,6 +27,19 @@ const theme = {
     colorPrimary: '#1890ff',
     borderRadius: 8,
   },
+}
+
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('SW registered: ', registration);
+      })
+      .catch((registrationError) => {
+        console.log('SW registration failed: ', registrationError);
+      });
+  });
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

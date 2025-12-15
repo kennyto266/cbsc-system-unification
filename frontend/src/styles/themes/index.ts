@@ -3,6 +3,7 @@
  * 主题系统导出文件
  */
 
+import React from 'react'
 import lightTheme from './light'
 import darkTheme from './dark'
 
@@ -219,6 +220,3 @@ export const useTheme = () => {
     toggleTheme: themeManager.toggleTheme.bind(themeManager),
   }
 }
-
-// Import React for the hook
-import React

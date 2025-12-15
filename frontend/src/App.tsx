@@ -1,7 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import MainLayout from './pages/MainLayout'
+import ResponsiveLayout from './components/layout/ResponsiveLayout'
 import { Dashboard } from './pages/Dashboard'
 import { Login } from './pages/Login'
+import Strategies from './pages/strategies'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { useAppSelector } from './hooks/redux'
 
@@ -19,12 +20,11 @@ function App() {
           path="/*"
           element={
             <ProtectedRoute>
-              <MainLayout>
+              <ResponsiveLayout>
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/strategies" element={<div>策略管理页面</div>} />
-                  <Route path="/strategies/*" element={<div>策略管理详情页面</div>} />
+                  <Route path="/strategies/*" element={<Strategies />} />
                   <Route path="/backtest" element={<div>回测页面</div>} />
                   <Route path="/portfolio" element={<div>投资组合页面</div>} />
                   <Route path="/monitoring" element={<div>系统监控页面</div>} />
@@ -33,7 +33,7 @@ function App() {
                   <Route path="/settings" element={<div>设置页面</div>} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
-              </MainLayout>
+              </ResponsiveLayout>
             </ProtectedRoute>
           }
         />

@@ -1,43 +1,91 @@
 import React from 'react';
 import { clsx } from 'clsx';
 
-export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+interface CardProps {
+  className?: string;
   children: React.ReactNode;
-  variant?: 'default' | 'outlined' | 'elevated';
-  padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
-export const Card: React.FC<CardProps> = ({
-  children,
-  variant = 'default',
-  padding = 'md',
-  className,
-  ...props
-}) => {
-  const baseClasses = 'rounded-lg transition-all duration-200';
+interface CardHeaderProps {
+  className?: string;
+  children: React.ReactNode;
+}
 
-  const variantClasses = {
-    default: 'bg-white border border-neutral-200 shadow-sm',
-    outlined: 'bg-white border-2 border-neutral-300',
-    elevated: 'bg-white shadow-lg border border-neutral-100'
-  };
+interface CardTitleProps {
+  className?: string;
+  children: React.ReactNode;
+}
 
-  const paddingClasses = {
-    none: '',
-    sm: 'p-3',
-    md: 'p-4',
-    lg: 'p-6'
-  };
+interface CardContentProps {
+  className?: string;
+  children: React.ReactNode;
+}
 
-  const classes = clsx(
-    baseClasses,
-    variantClasses[variant],
-    paddingClasses[padding],
-    className
-  );
+interface CardFooterProps {
+  className?: string;
+  children: React.ReactNode;
+}
 
+export const Card: React.FC<CardProps> = ({ className, children }) => {
   return (
-    <div className={classes} {...props}>
+    <div
+      className={clsx(
+        'rounded-lg border border-gray-200 bg-white shadow-sm',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+};
+
+export const CardHeader: React.FC<CardHeaderProps> = ({ className, children }) => {
+  return (
+    <div
+      className={clsx(
+        'flex flex-col space-y-1.5 p-6',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+};
+
+export const CardTitle: React.FC<CardTitleProps> = ({ className, children }) => {
+  return (
+    <h3
+      className={clsx(
+        'text-2xl font-semibold leading-none tracking-tight',
+        className
+      )}
+    >
+      {children}
+    </h3>
+  );
+};
+
+export const CardContent: React.FC<CardContentProps> = ({ className, children }) => {
+  return (
+    <div
+      className={clsx(
+        'p-6 pt-0',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+};
+
+export const CardFooter: React.FC<CardFooterProps> = ({ className, children }) => {
+  return (
+    <div
+      className={clsx(
+        'flex items-center p-6 pt-0',
+        className
+      )}
+    >
       {children}
     </div>
   );
