@@ -1,0 +1,128 @@
+# Multi-stage Dockerfile for API Gateway
+# Optimized for production builds with security best practices
+
+# ============ Build Stage ============
+FROM node:18-alpine AS builder
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV npm_config_production=false
+
+# Install build dependencies
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    musl-dev \
+    giflib-dev \
+    pixman-dev \
+    pangomm-dev \
+    libjpeg-turbo-dev \
+    freetype-dev
+
+# Set work directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Install dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy source code
+COPY src/ ./src/
+COPY public/ ./public/
+
+# Build the application
+RUN npm run build
+
+# ============ Production Stage ============
+FROM node:18-alpine AS production
+
+# Set security labels
+LABEL maintainer="CBSC Team <dev@cbsc.com>"
+LABEL version="1.0.0"
+LABEL description="CBSC API Gateway"
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=8000
+ENV HOST=0.0.0.0
+
+# Set work directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install only production dependencies
+RUN npm ci --only=production && \
+    npm cache clean --force && \
+    rm -rf /root/.npm
+
+# Copy built application from builder stage
+COPY --from=builder /app/dist ./dist
+
+# Copy configuration files
+COPY config/ ./config/
+COPY scripts/ ./scripts/
+
+# Create logs directory
+RUN mkdir -p /app/logs && \
+    chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Start the application
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "dist/main.js"]
+
+# ============ Development Stage ============
+FROM node:18-alpine AS development
+
+# Install development dependencies
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    curl
+
+# Set work directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 8000
+
+# Start development server
+CMD ["npm", "run", "dev"]

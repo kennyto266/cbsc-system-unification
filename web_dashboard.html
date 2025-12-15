@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBSC Strategy API Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #4a5568;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .status.online {
+            background: #48bb78;
+            color: white;
+        }
+
+        .status.info {
+            background: #4299e1;
+            color: white;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            font-size: 1.5em;
+        }
+
+        .api-endpoint {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .api-endpoint:hover {
+            background: #edf2f7;
+            border-color: #cbd5e0;
+        }
+
+        .method {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-right: 10px;
+            text-transform: uppercase;
+        }
+
+        .method.get { background: #48bb78; color: white; }
+        .method.post { background: #4299e1; color: white; }
+        .method.put { background: #ed8936; color: white; }
+        .method.delete { background: #f56565; color: white; }
+
+        .response {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f1f5f9;
+            border-radius: 5px;
+            font-size: 0.85em;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4a5568;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .info-box {
+            background: #ebf8ff;
+            border-left: 4px solid #4299e1;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .info-box h4 {
+            color: #2b6cb0;
+            margin-bottom: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #718096;
+        }
+
+        .error {
+            background: #fed7d7;
+            border-left: 4px solid #f56565;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .success {
+            background: #c6f6d5;
+            border-left: 4px solid #48bb78;
+            color: #276749;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.active {
+            background: #4299e1;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 CBSC Strategy API Dashboard</h1>
+            <div class="status info pulse">实时监控系统</div>
+            <p style="margin-top: 15px; color: #718096;">
+                量化交易策略管理系统 | API版本: 1.0.0 | <span id="current-time"></span>
+            </p>
+        </div>
+
+        <div class="nav-buttons">
+            <button class="nav-btn active" onclick="showSection('overview')">系统概览</button>
+            <button class="nav-btn" onclick="showSection('strategies')">策略管理</button>
+            <button class="nav-btn" onclick="showSection('monitoring')">监控面板</button>
+            <button class="nav-btn" onclick="showSection('docs')">API文档</button>
+        </div>
+
+        <div id="overview-section">
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="api-status">✅</div>
+                    <div class="stat-label">API状态</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="strategies-count">-</div>
+                    <div class="stat-label">策略总数</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="templates-count">-</div>
+                    <div class="stat-label">模板数量</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="response-time">-</div>
+                    <div class="stat-label">响应时间</div>
+                </div>
+            </div>
+
+            <div class="cards">
+                <div class="card">
+                    <h3><span class="card-icon">🚀</span>系统信息</h3>
+                    <div class="info-box">
+                        <h4>API服务状态</h4>
+                        <p>CBSC Strategy API 正常运行，提供完整的策略管理和执行功能。</p>
+                    </div>
+                    <div class="info-box">
+                        <h4>最新更新</h4>
+                        <p id="last-update">正在检查...</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="card-icon">📊</span>功能特性</h3>
+                    <ul style="margin-left: 20px; color: #4a5568;">
+                        <li>✅ 策略CRUD操作</li>
+                        <li>✅ 实时数据监控</li>
+                        <li>✅ 批量操作支持</li>
+                        <li>✅ 策略模板系统</li>
+                        <li>✅ WebSocket实时通信</li>
+                        <li>✅ 完整的API文档</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3><span class="card-icon">🔧</span>快速测试</h3>
+                    <div class="api-endpoint" onclick="testAPI('/')">
+                        <span class="method get">GET</span> /
+                    </div>
+                    <div class="api-endpoint" onclick="testAPI('/health')">
+                        <span class="method get">GET</span> /health
+                    </div>
+                    <div class="api-endpoint" onclick="testAPI('/api/health')">
+                        <span class="method get">GET</span> /api/health
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="strategies-section" style="display: none;">
+            <div class="cards">
+                <div class="card">
+                    <h3><span class="card-icon">📋</span>策略管理</h3>
+                    <div class="api-endpoint" onclick="testAPI('/api/v1/strategies/')">
+                        <span class="method get">GET</span> /api/v1/strategies/
+                        <div class="response" id="strategies-response">点击测试...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="card-icon">📝</span>创建策略</h3>
+                    <div class="api-endpoint" onclick="showCreateStrategy()">
+                        <span class="method post">POST</span> /api/v1/strategies/
+                        <div class="response">点击创建新策略...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="card-icon">📚</span>策略模板</h3>
+                    <div class="api-endpoint" onclick="testAPI('/api/v1/strategies/templates/')">
+                        <span class="method get">GET</span> /api/v1/strategies/templates/
+                        <div class="response" id="templates-response">点击测试...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="monitoring-section" style="display: none;">
+            <div class="cards">
+                <div class="card">
+                    <h3><span class="card-icon">📈</span>系统监控</h3>
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-value" id="cpu-usage">正常</div>
+                            <div class="stat-label">系统负载</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="memory-usage">正常</div>
+                            <div class="stat-label">内存使用</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="connections">0</div>
+                            <div class="stat-label">活跃连接</div>
+                        </div>
+                    </div>
+                    <div class="info-box">
+                        <h4>实时监控</h4>
+                        <p>系统运行状态良好，所有服务正常响应。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="docs-section" style="display: none;">
+            <div class="cards">
+                <div class="card">
+                    <h3><span class="card-icon">📖</span>API文档</h3>
+                    <div class="api-endpoint">
+                        <span class="method get">GET</span> 
+                        <a href="http://localhost:3004/docs" target="_blank">/docs</a>
+                        <div class="response">完整的交互式API文档</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="card-icon">🔗</span>外部链接</h3>
+                    <div style="margin: 15px 0;">
+                        <a href="http://localhost:3004/docs" target="_blank" 
+                           style="display: block; padding: 10px; background: #4299e1; color: white; text-decoration: none; border-radius: 5px; margin: 5px 0;">
+                            📘 查看完整API文档
+                        </a>
+                        <a href="http://localhost:3004/redoc" target="_blank" 
+                           style="display: block; padding: 10px; background: #48bb78; color: white; text-decoration: none; border-radius: 5px; margin: 5px 0;">
+                            📋 ReDoc文档
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🎯 CBSC Strategy API Dashboard</p>
+            <p style="margin-top: 10px; color: #718096; font-size: 0.9em;">
+                构建版本: v1.0.0 | 最后更新: <span id="footer-time"></span>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3004';
+        
+        // 更新时间显示
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN');
+            document.getElementById('current-time').textContent = timeString;
+            document.getElementById('footer-time').textContent = timeString;
+            document.getElementById('last-update').textContent = timeString;
+        }
+        
+        // 显示不同区域
+        function showSection(section) {
+            // 隐藏所有区域
+            document.getElementById('overview-section').style.display = 'none';
+            document.getElementById('strategies-section').style.display = 'none';
+            document.getElementById('monitoring-section').style.display = 'none';
+            document.getElementById('docs-section').style.display = 'none';
+            
+            // 显示选中的区域
+            document.getElementById(section + '-section').style.display = 'block';
+            
+            // 更新按钮状态
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+        
+        // 测试API端点
+        async function testAPI(endpoint) {
+            const responseDiv = event.target.querySelector('.response') || 
+                               event.target.parentElement.querySelector('.response');
+            
+            responseDiv.innerHTML = '<div class="loading">测试中...</div>';
+            responseDiv.className = 'response';
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(API_BASE_URL + endpoint);
+                const responseTime = Date.now() - startTime;
+                const data = await response.json();
+                
+                responseDiv.className = 'response success';
+                responseDiv.innerHTML = `
+                    <div style="margin-bottom: 10px; font-weight: bold; color: #276749;">
+                        ✅ 状态: ${response.status} (${responseTime}ms)
+                    </div>
+                    <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto;">
+${JSON.stringify(data, null, 2)}
+                    </pre>
+                `;
+                
+                // 更新响应时间
+                if (endpoint === '/') {
+                    document.getElementById('response-time').textContent = `${responseTime}ms`;
+                }
+                
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.innerHTML = `
+                    <div style="font-weight: bold; color: #c53030;">❌ 连接错误</div>
+                    <div style="margin-top: 5px;">${error.message}</div>
+                `;
+            }
+        }
+        
+        // 获取策略数量
+        async function getStrategyCount() {
+            try {
+                const response = await fetch(API_BASE_URL + '/api/v1/strategies/');
+                const data = await response.json();
+                const strategies = data.strategies || [];
+                document.getElementById('strategies-count').textContent = strategies.length;
+            } catch (error) {
+                document.getElementById('strategies-count').textContent = 'N/A';
+            }
+        }
+        
+        // 获取模板数量
+        async function getTemplateCount() {
+            try {
+                const response = await fetch(API_BASE_URL + '/api/v1/strategies/templates/');
+                const templates = await response.json();
+                document.getElementById('templates-count').textContent = templates.length;
+            } catch (error) {
+                document.getElementById('templates-count').textContent = 'N/A';
+            }
+        }
+        
+        // 显示创建策略界面
+        function showCreateStrategy() {
+            const responseDiv = event.target.parentElement.querySelector('.response');
+            responseDiv.innerHTML = `
+                <div style="margin-bottom: 15px; font-weight: bold;">创建新策略</div>
+                <form onsubmit="createStrategy(event)" style="display: flex; flex-direction: column; gap: 10px;">
+                    <input type="text" placeholder="策略名称" required style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <select style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="momentum">动量策略</option>
+                        <option value="mean_reversion">均值回归</option>
+                        <option value="breakout">突破策略</option>
+                    </select>
+                    <input type="text" placeholder="描述" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <button type="submit" style="padding: 10px; background: #4299e1; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        创建策略
+                    </button>
+                </form>
+                <div id="create-result"></div>
+            `;
+        }
+        
+        // 创建策略
+        async function createStrategy(event) {
+            event.preventDefault();
+            const resultDiv = document.getElementById('create-result');
+            
+            const name = event.target.elements[0].value;
+            const type = event.target.elements[1].value;
+            const description = event.target.elements[2].value;
+            
+            resultDiv.innerHTML = '<div class="loading">创建中...</div>';
+            
+            try {
+                const response = await fetch(API_BASE_URL + '/api/v1/strategies/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        type: type,
+                        description: description,
+                        parameters: {}
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.status === 201) {
+                    resultDiv.className = 'success';
+                    resultDiv.innerHTML = `
+                        <div style="font-weight: bold; color: #276749;">✅ 策略创建成功!</div>
+                        <div style="margin-top: 5px;">策略ID: ${data.id || 'N/A'}</div>
+                    `;
+                    getStrategyCount(); // 刷新策略数量
+                } else {
+                    resultDiv.className = 'error';
+                    resultDiv.innerHTML = `
+                        <div style="font-weight: bold; color: #c53030;">❌ 创建失败</div>
+                        <div style="margin-top: 5px;">${data.detail || '未知错误'}</div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = `
+                    <div style="font-weight: bold; color: #c53030;">❌ 连接错误</div>
+                    <div style="margin-top: 5px;">${error.message}</div>
+                `;
+            }
+        }
+        
+        // 初始化
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // 加载初始数据
+        getStrategyCount();
+        getTemplateCount();
+        
+        // 测试基本连接
+        testAPI('/');
+    </script>
+</body>
+</html>

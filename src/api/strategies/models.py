@@ -21,6 +21,10 @@ class StrategyType(str, Enum):
     DUAL_RSI = "dual_rsi"
     COMPOSITE = "composite"
     CUSTOM = "custom"
+    AI_ML = "ai_ml"
+    TECHNICAL = "technical"
+    FUNDAMENTAL = "fundamental"
+    QUANTITATIVE = "quantitative"
 
 
 class StrategyStatus(str, Enum):

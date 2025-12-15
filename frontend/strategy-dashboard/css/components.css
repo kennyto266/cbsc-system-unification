@@ -192,12 +192,12 @@
   font-weight: var(--font-weight-medium);
 }
 
-.strategy-status[data-status="active"] {
+.strategy-status[data-status='active'] {
   background: rgba(39, 174, 96, 0.1);
   color: var(--success-color);
 }
 
-.strategy-status[data-status="inactive"] {
+.strategy-status[data-status='inactive'] {
   background: rgba(127, 140, 141, 0.1);
   color: var(--muted-color);
 }
@@ -210,11 +210,11 @@
   animation: statusPulse 2s infinite;
 }
 
-.strategy-status[data-status="active"] .status-indicator {
+.strategy-status[data-status='active'] .status-indicator {
   background: var(--success-color);
 }
 
-.strategy-status[data-status="inactive"] .status-indicator {
+.strategy-status[data-status='inactive'] .status-indicator {
   background: var(--muted-color);
   animation: none;
 }
@@ -659,7 +659,7 @@
 
 /* Status Colors */
 .status-indicator.loading,
-.status-indicator[data-status="loading"] {
+.status-indicator[data-status='loading'] {
   background: var(--info-color);
   animation: statusSpin 1.5s linear infinite;
 }
@@ -668,46 +668,46 @@
 .status-indicator.running,
 .status-indicator.success,
 .status-indicator.completed,
-.status-indicator[data-status="active"],
-.status-indicator[data-status="running"],
-.status-indicator[data-status="success"],
-.status-indicator[data-status="completed"] {
+.status-indicator[data-status='active'],
+.status-indicator[data-status='running'],
+.status-indicator[data-status='success'],
+.status-indicator[data-status='completed'] {
   background: var(--success-color);
 }
 
 .status-indicator.inactive,
 .status-indicator.stopped,
 .status-indicator.disabled,
-.status-indicator[data-status="inactive"],
-.status-indicator[data-status="stopped"],
-.status-indicator[data-status="disabled"] {
+.status-indicator[data-status='inactive'],
+.status-indicator[data-status='stopped'],
+.status-indicator[data-status='disabled'] {
   background: var(--muted-color);
 }
 
 .status-indicator.error,
 .status-indicator.failed,
-.status-indicator[data-status="error"],
-.status-indicator[data-status="failed"] {
+.status-indicator[data-status='error'],
+.status-indicator[data-status='failed'] {
   background: var(--danger-color);
   animation: statusPulse 2s infinite;
 }
 
 .status-indicator.warning,
 .status-indicator.caution,
-.status-indicator[data-status="warning"],
-.status-indicator[data-status="caution"] {
+.status-indicator[data-status='warning'],
+.status-indicator[data-status='caution'] {
   background: var(--warning-color);
 }
 
 .status-indicator.info,
-.status-indicator[data-status="info"] {
+.status-indicator[data-status='info'] {
   background: var(--info-color);
 }
 
 .status-indicator.neutral,
 .status-indicator.unknown,
-.status-indicator[data-status="neutral"],
-.status-indicator[data-status="unknown"] {
+.status-indicator[data-status='neutral'],
+.status-indicator[data-status='unknown'] {
   background: var(--light-color);
   border: 1px solid var(--border-color);
 }
@@ -1112,7 +1112,8 @@
 }
 
 @keyframes togglePulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

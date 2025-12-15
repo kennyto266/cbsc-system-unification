@@ -1,0 +1,370 @@
+/* Mobile-specific styles for CBSC Dashboard */
+
+/* Base mobile styles */
+@media (max-width: 767px) {
+  /* Hide desktop elements */
+  .desktop-only {
+    display: none !important;
+  }
+
+  /* Show mobile elements */
+  .mobile-only {
+    display: block !important;
+  }
+
+  /* Body adjustments */
+  body {
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Touch-friendly spacing */
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px 16px;
+  }
+
+  /* Form inputs */
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="number"],
+  select,
+  textarea {
+    min-height: 44px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  /* Card adjustments */
+  .card {
+    margin: 0 -16px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .card:first-child {
+    margin-top: -16px;
+    border-top: none;
+  }
+
+  .card:last-child {
+    margin-bottom: -16px;
+    border-bottom: none;
+  }
+
+  /* Table adjustments */
+  .table {
+    font-size: 12px;
+  }
+
+  .table th,
+  .table td {
+    padding: 8px 4px;
+  }
+
+  /* Modal adjustments */
+  .modal {
+    margin: 0;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-content {
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+
+  /* Navigation adjustments */
+  .navbar {
+    padding: 8px 16px;
+  }
+
+  .navbar-brand {
+    font-size: 18px;
+  }
+
+  /* Sidebar becomes overlay */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: 280px;
+    height: 100vh;
+    z-index: 9999;
+    transition: left 0.3s ease;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .sidebar-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Bottom navigation */
+  .bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: white;
+    border-top: 1px solid #e5e7eb;
+    z-index: 1000;
+  }
+
+  /* Add bottom padding to main content when bottom nav is present */
+  .has-bottom-nav {
+    padding-bottom: 60px;
+  }
+
+  /* Header adjustments */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  /* Safe area support for notched devices */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Pull to refresh indicator */
+  .pull-to-refresh {
+    position: absolute;
+    top: -60px;
+    left: 0;
+    right: 0;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    transition: transform 0.3s ease;
+  }
+
+  .pull-to-refresh.active {
+    transform: translateY(60px);
+  }
+
+  /* Infinite scroll loading */
+  .infinite-scroll-loader {
+    padding: 20px;
+    text-align: center;
+  }
+
+  /* Chart adjustments */
+  .chart-container {
+    padding: 16px;
+    margin: 0 -16px;
+  }
+
+  .chart-legend {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* List view for cards */
+  .card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: #e5e7eb;
+    margin: 0 -16px;
+  }
+
+  .card-list .card {
+    margin: 0;
+    border-radius: 0;
+    border: none;
+  }
+
+  /* Swipeable actions */
+  .swipeable-item {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .swipeable-actions {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+  }
+
+  .swipeable-item.opened .swipeable-actions {
+    transform: translateX(0);
+  }
+
+  /* Tab adjustments */
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-list {
+    display: flex;
+    min-width: fit-content;
+  }
+
+  .tab-item {
+    flex: 0 0 auto;
+    min-width: 100px;
+    text-align: center;
+  }
+
+  /* Floating Action Button */
+  .fab {
+    position: fixed;
+    bottom: 80px; /* Above bottom nav */
+    right: 16px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #3b82f6;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 999;
+  }
+
+  /* Input group adjustments */
+  .input-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .input-group .input-group-addon {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Dropdown adjustments */
+  .dropdown-menu {
+    position: fixed;
+    top: 50%;
+    left: 16px;
+    right: 16px;
+    transform: translateY(-50%);
+    max-height: 80vh;
+    overflow-y: auto;
+    border-radius: 8px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Pagination adjustments */
+  .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .pagination-item {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-width: 767px) and (orientation: landscape) {
+  .header {
+    min-height: 44px;
+  }
+
+  .bottom-nav {
+    height: 50px;
+  }
+
+  .has-bottom-nav {
+    padding-bottom: 50px;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Adjust border widths for sharper appearance */
+  .border {
+    border-width: 0.5px;
+  }
+}
+
+/* Dark mode support for mobile */
+@media (prefers-color-scheme: dark) {
+  @media (max-width: 767px) {
+    body {
+      background-color: #111827;
+      color: #f3f4f6;
+    }
+
+    .card {
+      background-color: #1f2937;
+      border-color: #374151;
+      color: #f3f4f6;
+    }
+
+    .header {
+      background-color: #1f2937;
+      border-color: #374151;
+    }
+
+    .bottom-nav {
+      background-color: #1f2937;
+      border-color: #374151;
+    }
+
+    .sidebar {
+      background-color: #1f2937;
+    }
+
+    .sidebar-backdrop {
+      background: rgba(0, 0, 0, 0.7);
+    }
+  }
+}

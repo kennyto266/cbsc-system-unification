@@ -415,3 +415,97 @@ def require_rate_limit(limit: int = 100, window: int = 3600):
         return user
 
     return rate_limiter_checker
+
+
+class PermissionChecker:
+    """
+    权限检查器类 - 提供统一的权限检查接口
+    """
+
+    def __init__(self, user_repo: UserRepository = None):
+        self.user_repo = user_repo
+        self.permission_manager = PermissionManager(user_repo) if user_repo else None
+
+    async def check_user_permission(self, user_id: int, action: str, resource: str = None) -> bool:
+        """
+        检查用户权限
+
+        Args:
+            user_id: 用户ID
+            action: 操作类型 (read, write, delete, execute)
+            resource: 资源ID (可选)
+
+        Returns:
+            bool: 是否有权限
+        """
+        if not self.permission_manager:
+            return False
+
+        try:
+            user = await self.user_repo.get_by_id(user_id)
+            if not user:
+                return False
+
+            # 检查基本权限
+            if not user.is_active:
+                return False
+
+            # 检查具体操作权限
+            if action == "admin" and not user.is_admin:
+                return False
+
+            # 检查资源权限
+            if resource:
+                # 检查是否为资源所有者
+                return await self._check_resource_ownership(user, resource)
+
+            return True
+
+        except Exception as e:
+            logger.error(f"权限检查失败: {e}")
+            return False
+
+    async def _check_resource_ownership(self, user: User, resource_id: str) -> bool:
+        """
+        检查资源所有权
+        """
+        try:
+            # 根据资源类型检查所有权
+            if resource_id.startswith("strategy_"):
+                strategy = await self.user_repo.get_strategy(resource_id)
+                return strategy and strategy.user_id == user.id
+            elif resource_id.startswith("portfolio_"):
+                portfolio = await self.user_repo.get_portfolio(resource_id)
+                return portfolio and portfolio.user_id == user.id
+
+            # 默认允许
+            return True
+
+        except Exception as e:
+            logger.error(f"资源所有权检查失败: {e}")
+            return False
+
+    async def get_user_permissions(self, user_id: int) -> dict:
+        """
+        获取用户权限列表
+        """
+        try:
+            user = await self.user_repo.get_by_id(user_id)
+            if not user:
+                return {}
+
+            role = "admin" if user.is_admin else "user"
+            return {
+                "role": role,
+                "permissions": ROLE_PERMISSIONS.get(role, []),
+                "is_admin": user.is_admin,
+                "is_active": user.is_active
+            }
+
+        except Exception as e:
+            logger.error(f"获取用户权限失败: {e}")
+            return {}
+
+
+# 创建全局权限检查器实例
+permission_checker = PermissionChecker()

@@ -1,0 +1,71 @@
+uid=26_0 RootWebArea "CBSC量化交易系統" url="http://localhost:3001/"
+  uid=26_1 ignored
+    uid=26_2 ignored
+      uid=26_3 ignored
+        uid=26_4 heading "🚀 CBSC量化交易系統" level="1"
+          uid=26_5 StaticText "🚀 CBSC量化交易系統"
+            uid=26_6 InlineTextBox "🚀 CBSC量化交易系統"
+        uid=26_7 generic
+          uid=26_8 StaticText "System Integration Complete - Enterprise Grade Architecture"
+            uid=26_9 InlineTextBox "System Integration Complete - Enterprise Grade Architecture"
+      uid=26_10 ignored
+        uid=26_11 ignored
+          uid=26_12 generic
+            uid=26_13 generic
+            uid=26_14 StaticText "系統運行正常"
+              uid=26_15 InlineTextBox "系統運行正常"
+          uid=26_16 generic
+            uid=26_17 StaticText "服務器運行時間: "
+              uid=26_18 InlineTextBox "服務器運行時間: "
+            uid=26_19 generic
+              uid=26_20 StaticText "11秒"
+                uid=26_21 InlineTextBox "11秒"
+        uid=26_22 ignored
+          uid=26_23 ignored
+            uid=26_24 generic
+              uid=26_25 StaticText "系統整合完成度"
+                uid=26_26 InlineTextBox "系統整合完成度"
+            uid=26_27 generic
+              uid=26_28 StaticText "85%"
+                uid=26_29 InlineTextBox "85%"
+          uid=26_30 ignored
+            uid=26_31 generic
+              uid=26_32 StaticText "技術債務減少"
+                uid=26_33 InlineTextBox "技術債務減少"
+            uid=26_34 generic
+              uid=26_35 StaticText "75%"
+                uid=26_36 InlineTextBox "75%"
+          uid=26_37 ignored
+            uid=26_38 generic
+              uid=26_39 StaticText "服務整合優化"
+                uid=26_40 InlineTextBox "服務整合優化"
+            uid=26_41 generic
+              uid=26_42 StaticText "87.5%"
+                uid=26_43 InlineTextBox "87.5%"
+          uid=26_44 ignored
+            uid=26_45 generic
+              uid=26_46 StaticText "API響應時間"
+                uid=26_47 InlineTextBox "API響應時間"
+            uid=26_48 generic
+              uid=26_49 StaticText "<100ms"
+                uid=26_50 InlineTextBox "<100ms"
+        uid=26_51 ignored
+          uid=26_52 link "📚 API文檔" url="http://localhost:3001/docs"
+            uid=26_53 StaticText "📚 API文檔"
+              uid=26_54 InlineTextBox "📚 API文檔"
+          uid=26_55 link "📖 ReDoc文檔" url="http://localhost:3001/redoc"
+            uid=26_56 StaticText "📖 ReDoc文檔"
+              uid=26_57 InlineTextBox "📖 ReDoc文檔"
+          uid=26_58 link "💚 健康檢查" url="http://localhost:3001/health"
+            uid=26_59 StaticText "💚 健康檢查"
+              uid=26_60 InlineTextBox "💚 健康檢查"
+          uid=26_61 link "⚙️ 系統狀態" url="http://localhost:3001/api/v1/system/status"
+            uid=26_62 StaticText "⚙️ 系統狀態"
+              uid=26_63 InlineTextBox "⚙️ 系統狀態"
+      uid=26_64 ignored
+        uid=26_65 generic
+          uid=26_66 StaticText "© 2025 CBSC量化交易系統 - 基於Epic系統整合架構"
+            uid=26_67 InlineTextBox "© 2025 CBSC量化交易系統 - 基於Epic系統整合架構"
+        uid=26_68 generic
+          uid=26_69 StaticText "Powered by FastAPI + React + PostgreSQL + Redis"
+            uid=26_70 InlineTextBox "Powered by FastAPI + React + PostgreSQL + Redis"
