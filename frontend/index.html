@@ -3,12 +3,52 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="CBSC量化" />
+    <meta name="application-name" content="CBSC量化" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-167x167.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
+
     <title>CBSC 量化交易策略管理系统</title>
     <meta name="description" content="CBSC量化交易策略管理系统 - 专业的量化交易策略管理平台" />
+
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/src/main.tsx" as="script" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- No-script fallback -->
+    <noscript>
+      <div style="text-align: center; padding: 50px;">
+        <h1>需要啟用 JavaScript</h1>
+        <p>此應用程序需要 JavaScript 才能正常運行。</p>
+        <p>請在瀏覽器設置中啟用 JavaScript，然後刷新頁面。</p>
+      </div>
+    </noscript>
+
+    <!-- PWA Install Prompt (hidden by default) -->
+    <div id="pwa-install-prompt" style="display: none;">
+      <!-- Will be shown by JavaScript when appropriate -->
+    </div>
   </body>
 </html>

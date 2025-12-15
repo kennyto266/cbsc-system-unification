@@ -5,7 +5,7 @@ User Management System API Main Application
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 import logging
@@ -89,6 +89,10 @@ if MONITORING_ENABLED:
 if os.path.exists("uploads"):
     app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
+# 挂载API静态文件目录 (用于dashboard.html等)
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # 包含路由
 app.include_router(auth_router)
 app.include_router(user_router)
@@ -135,6 +139,19 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         }
     )
 
+# Dashboard 路由
+@app.get("/web_dashboard.html")
+async def dashboard():
+    """返回 Web 仪表板"""
+    dashboard_path = os.path.join(os.path.dirname(__file__), "static", "dashboard.html")
+    if os.path.exists(dashboard_path):
+        return FileResponse(dashboard_path)
+    else:
+        return JSONResponse(
+            status_code=404,
+            content={"error": "Dashboard not found"}
+        )
+
 # 根路径
 @app.get("/")
 async def root():
@@ -143,7 +160,8 @@ async def root():
         "message": "CBSC 用户管理系统 API",
         "version": "1.0.0",
         "status": "running",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
+        "dashboard": "访问 /web_dashboard.html 查看策略管理仪表板"
     }
 
 # 健康检查

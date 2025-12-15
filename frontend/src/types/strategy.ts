@@ -1,17 +1,51 @@
+export interface PersonalStrategyConfig {
+  userId: string;
+  customParameters: Record<string, any>;
+  riskTolerance: 'conservative' | 'moderate' | 'aggressive';
+  capitalAllocation: number;
+  maxPositionSize: number;
+  stopLoss: number;
+  takeProfit: number;
+  notifications: NotificationSettings;
+  autoTrading: boolean;
+  customName?: string;
+  notes?: string;
+}
+
+export interface NotificationSettings {
+  email: boolean;
+  sms: boolean;
+  push: boolean;
+  signalAlert: boolean;
+  riskAlert: boolean;
+  performanceReport: boolean;
+  frequency: 'realtime' | 'hourly' | 'daily' | 'weekly';
+}
+
 export interface Strategy {
-  id: number;
+  id: string; // Changed from number to string for consistency
   name: string;
-  category: string;
-  subcategory: string;
-  annual_return: number;
-  sharpe_ratio: number | null;
-  max_drawdown: number;
-  win_rate: number;
-  volatility: number;
-  trading_frequency: 'low' | 'medium' | 'high' | 'monthly' | 'daily' | 'weekly';
-  risk_level: 'low' | 'medium' | 'high';
-  grade: string;
+  type: string;
+  category: 'core_cbsc' | 'multi_factor' | 'multi_strategy' | 'monthly' | 'other';
+  status: 'active' | 'inactive' | 'testing' | 'archived' | 'error' | 'processing';
+  performance?: PerformanceMetrics;
+  parameters: Record<string, any>;
+  latestSignal?: TradingSignal;
   description: string;
+  createdAt: string;
+  updatedAt: string;
+  riskLevel: 'low' | 'medium' | 'high' | 'extreme';
+  tags?: string[];
+  assignedBy?: string;
+  personalConfig?: PersonalStrategyConfig;
+  subcategory?: string;
+  annual_return?: number;
+  sharpe_ratio?: number | null;
+  max_drawdown?: number;
+  win_rate?: number;
+  volatility?: number;
+  trading_frequency?: 'low' | 'medium' | 'high' | 'monthly' | 'daily' | 'weekly';
+  grade?: string;
 }
 
 // 向後兼容的策略接口

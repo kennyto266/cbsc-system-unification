@@ -1,211 +1,245 @@
-import React, { useMemo } from 'react';
+import React, { useRef, useCallback } from 'react'
 import {
   Chart as ChartJS,
   ArcElement,
   Tooltip,
   Legend
-} from 'chart.js';
-import { Pie } from 'react-chartjs-2';
-import { ChartContainer } from '../common/ChartContainer';
+} from 'chart.js'
+import { Pie, Doughnut } from 'react-chartjs-2'
+import type { ChartData, ChartOptions } from 'chart.js'
+import { BaseChartProps } from '../../../types/chart'
+import { getTheme, getChartJsDefaults } from '../../Charts/utils/chartThemes'
 
 // Register Chart.js components
 ChartJS.register(
   ArcElement,
   Tooltip,
   Legend
-);
+)
 
-// Data point interface
-interface DataPoint {
-  label: string;
-  value: number;
-  color?: string;
-}
+// Extended props for PieChart
+export interface PieChartProps extends Omit<BaseChartProps<'pie'>, 'type'> {
+  // Chart type
+  doughnut?: boolean
 
-// Props interface
-interface PieChartProps {
-  title?: string;
-  subtitle?: string;
-  data: DataPoint[];
-  height?: number;
-  className?: string;
-  showLegend?: boolean;
-  showTooltip?: boolean;
-  animation?: boolean;
-  theme?: 'light' | 'dark';
-  onDataPointClick?: (pointIndex: number, value: DataPoint) => void;
+  // Display props
+  showPercentage?: boolean
+  percentagePosition?: 'label' | 'tooltip' | 'both'
+
+  // Legend props
+  legendPosition?: 'top' | 'bottom' | 'left' | 'right'
+
+  // Style props
+  borderWidth?: number
+  hoverOffset?: number
+  spacing?: number
+
+  // Animation props
+  animationDuration?: number
+  animateRotate?: boolean
+  animateScale?: boolean
+
+  // Center text for doughnut charts
   centerText?: {
-    text: string;
-    subtext?: string;
-  };
-  colors?: string[];
+    text: string
+    subtext?: string
+    fontSize?: number
+    subFontSize?: number
+  }
 }
 
-export const PieChart: React.FC<PieChartProps> = ({
-  title,
-  subtitle,
+const PieChart: React.FC<PieChartProps> = ({
   data,
-  height = 400,
+  options = {},
+  width,
+  height,
   className = '',
-  showLegend = true,
-  showTooltip = true,
-  animation = true,
   theme = 'light',
   onDataPointClick,
-  centerText,
-  colors
+  onLegendClick,
+  doughnut = false,
+  showPercentage = true,
+  percentagePosition = 'both',
+  legendPosition = 'right',
+  borderWidth = 2,
+  hoverOffset = 4,
+  spacing = 0,
+  animationDuration = 300,
+  animateRotate = true,
+  animateScale = false,
+  centerText
 }) => {
-  // Default color palette
-  const defaultColors = [
-    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
-    '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
-    '#06b6d4', '#a855f7', '#f43f5e', '#22c55e', '#0ea5e9'
-  ];
+  const chartRef = useRef<ChartJS<'pie' | 'doughnut'>>(null)
+  const currentTheme = getTheme(theme)
 
-  // Generate chart data
-  const chartData = useMemo(() => {
-    const labels = data.map(d => d.label);
-    const values = data.map(d => d.value);
-    const backgroundColor = data.map((d, index) =>
-      d.color || colors?.[index] || defaultColors[index % defaultColors.length]
-    );
-
-    return {
-      labels,
-      datasets: [{
-        data: values,
-        backgroundColor,
-        borderColor: theme === 'dark' ? '#1f2937' : '#ffffff',
-        borderWidth: 2,
-        hoverOffset: 4
-      }]
-    };
-  }, [data, colors, theme]);
-
-  // Chart options
-  const options = useMemo(() => {
-    const isDark = theme === 'dark';
-    const textColor = isDark ? '#e5e7eb' : '#374151';
-
-    // Calculate total for percentage display
-    const total = data.reduce((sum, d) => sum + d.value, 0);
-
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: animation ? {
-        animateRotate: true,
-        animateScale: false,
-        duration: 750,
-        easing: 'easeInOutQuart'
-      } : false,
-      plugins: {
-        legend: {
-          display: showLegend,
-          position: 'right' as const,
-          labels: {
-            color: textColor,
-            usePointStyle: true,
-            padding: 15,
-            font: {
-              size: 12,
-              weight: '500'
-            },
-            generateLabels: function(chart: any) {
-              const data = chart.data;
-              if (data.labels.length && data.datasets.length) {
-                const dataset = data.datasets[0];
-                const total = dataset.data.reduce((a: number, b: number) => a + b, 0);
-                return data.labels.map((label: string, i: number) => {
-                  const value = dataset.data[i];
-                  const percentage = ((value / total) * 100).toFixed(1);
-                  return {
-                    text: `${label} (${percentage}%)`,
-                    fillStyle: dataset.backgroundColor[i],
-                    hidden: false,
-                    index: i
-                  };
-                });
-              }
-              return [];
-            }
-          }
-        },
-        tooltip: {
-          enabled: showTooltip,
-          backgroundColor: isDark ? '#1f2937' : '#ffffff',
-          titleColor: textColor,
-          bodyColor: textColor,
-          borderColor: isDark ? '#4b5563' : '#e5e7eb',
-          borderWidth: 1,
-          padding: 12,
-          displayColors: true,
-          callbacks: {
-            label: function(context) {
-              const label = context.label || '';
-              const value = context.parsed;
-              const percentage = ((value / total) * 100).toFixed(1);
-              return `${label}: ${new Intl.NumberFormat('zh-CN', {
-                style: 'decimal',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              }).format(value)} (${percentage}%)`;
-            }
-          }
-        },
-        // Center text plugin
-        ...(centerText && {
-          datalabels: {
-            display: false
-          },
-          beforeDraw: function(chart: any) {
-            const ctx = chart.ctx;
-            const width = chart.width;
-            const height = chart.height;
-
-            ctx.restore();
-            const fontSize = (height / 114).toFixed(2);
-            ctx.font = `${fontSize * 2}em sans-serif`;
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = textColor;
-
-            const text = centerText.text;
-            const textX = Math.round((width - ctx.measureText(text).width) / 2);
-            const textY = height / 2 - 20;
-
-            ctx.fillText(text, textX, textY);
-
-            if (centerText.subtext) {
-              ctx.font = `${fontSize}em sans-serif`;
-              const subtext = centerText.subtext;
-              const subtextX = Math.round((width - ctx.measureText(subtext).width) / 2);
-              const subtextY = height / 2 + 10;
-              ctx.fillText(subtext, subtextX, subtextY);
-            }
-
-            ctx.save();
-          }
-        })
-      },
-      onClick: (event: any, elements: any[]) => {
-        if (onDataPointClick && elements.length > 0) {
-          const { index } = elements[0];
-          const point = data[index];
-          onDataPointClick(index, point);
-        }
+  // Handle click events
+  const handleClick = useCallback((event: any, elements: any[]) => {
+    if (elements.length > 0 && onDataPointClick) {
+      const { datasetIndex, index } = elements[0]
+      const dataset = data.datasets[datasetIndex]
+      const point = {
+        dataset,
+        value: dataset.data[index],
+        label: data.labels?.[index],
+        datasetIndex,
+        index
       }
-    };
-  }, [theme, showLegend, showTooltip, animation, centerText, data, onDataPointClick]);
+      onDataPointClick(point, elements[0])
+    }
+  }, [data, onDataPointClick])
+
+  // Calculate total for percentage calculations
+  const total = data.datasets[0]?.data.reduce((sum, val) => sum + val, 0) || 0
+
+  // Default options with theme
+  const defaultOptions: ChartOptions<'pie' | 'doughnut'> = {
+    ...getChartJsDefaults(currentTheme),
+    animation: {
+      animateRotate,
+      animateScale,
+      duration: animationDuration,
+      easing: 'easeInOutQuad'
+    },
+    responsive: true,
+    maintainAspectRatio: false,
+    onClick: handleClick,
+    plugins: {
+      ...getChartJsDefaults(currentTheme).plugins,
+      legend: {
+        ...getChartJsDefaults(currentTheme).plugins.legend,
+        display: true,
+        position: legendPosition,
+        onClick: (e, legendItem, legend) => {
+          if (onLegendClick) {
+            onLegendClick(legendItem, legend)
+          } else {
+            // Default toggle behavior
+            const index = legendItem.datasetIndex
+            const chart = legend.chart
+            const meta = chart.getDatasetMeta(index)
+            meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null
+            chart.update()
+          }
+        },
+        labels: {
+          ...getChartJsDefaults(currentTheme).plugins.legend.labels,
+          generateLabels: (chart) => {
+            const dataset = chart.data.datasets[0]
+            return (chart.data.labels || []).map((label, i) => {
+              const value = dataset.data[i]
+              const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'
+              const displayLabel = showPercentage && (percentagePosition === 'label' || percentagePosition === 'both')
+                ? `${label} (${percentage}%)`
+                : label
+
+              return {
+                text: displayLabel,
+                fillStyle: dataset.backgroundColor[i] as string,
+                strokeStyle: dataset.borderColor[i] as string,
+                lineWidth: dataset.borderWidth,
+                hidden: false,
+                index: i
+              }
+            })
+          }
+        }
+      },
+      tooltip: {
+        ...getChartJsDefaults(currentTheme).plugins.tooltip,
+        callbacks: {
+          label: (context) => {
+            let label = context.label || ''
+            if (label) {
+              label += ': '
+            }
+
+            const value = context.parsed
+            label += new Intl.NumberFormat('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            }).format(value)
+
+            if (showPercentage && (percentagePosition === 'tooltip' || percentagePosition === 'both')) {
+              const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'
+              label += ` (${percentage}%)`
+            }
+
+            return label
+          }
+        }
+      },
+      // Center text plugin for doughnut charts
+      ...(doughnut && centerText && {
+        beforeDraw: (chart) => {
+          const ctx = chart.ctx
+          const width = chart.width
+          const height = chart.height
+
+          ctx.restore()
+          const mainFontSize = centerText.fontSize || Math.round(height / 16)
+          const subFontSize = centerText.subFontSize || Math.round(height / 24)
+
+          ctx.font = `${mainFontSize}px ${currentTheme.fontFamily || 'sans-serif'}`
+          ctx.textBaseline = 'middle'
+          ctx.textAlign = 'center'
+          ctx.fillStyle = currentTheme.textColor
+
+          const text = centerText.text
+          const textY = height / 2 - (centerText.subtext ? subFontSize / 2 : 0)
+          ctx.fillText(text, width / 2, textY)
+
+          if (centerText.subtext) {
+            ctx.font = `${subFontSize}px ${currentTheme.fontFamily || 'sans-serif'}`
+            ctx.fillStyle = currentTheme.textColor + '80'
+            const subtext = centerText.subtext
+            const subtextY = height / 2 + mainFontSize / 2
+            ctx.fillText(subtext, width / 2, subtextY)
+          }
+
+          ctx.save()
+        }
+      })
+    },
+    spacing,
+    cutout: doughnut ? '50%' : '0%'
+  }
+
+  // Process datasets with default values
+  const processedData = {
+    ...data,
+    datasets: data.datasets.map((dataset, datasetIndex) => ({
+      ...dataset,
+      borderWidth,
+      hoverOffset,
+      borderColor: dataset.borderColor || (theme === 'dark' ? '#1f2937' : '#ffffff'),
+      // Apply theme colors if not provided
+      backgroundColor: dataset.backgroundColor || data.labels?.map((_, i) =>
+        currentTheme.colors[i % currentTheme.colors.length]
+      ) || currentTheme.colors
+    }))
+  }
+
+  // Merge options
+  const mergedOptions = {
+    ...defaultOptions,
+    ...options,
+    plugins: {
+      ...defaultOptions.plugins,
+      ...options.plugins
+    }
+  }
+
+  const ChartComponent = doughnut ? Doughnut : Pie
 
   return (
-    <ChartContainer
-      title={title}
-      subtitle={subtitle}
-      className={className}
-    >
-      <div style={{ height }}>
-        <Pie data={chartData} options={options} />
-      </div>
-    </ChartContainer>
-  );
-};
+    <div className={`w-full ${className}`} style={{ width, height }}>
+      <ChartComponent
+        ref={chartRef}
+        data={processedData}
+        options={mergedOptions}
+      />
+    </div>
+  )
+}
+
+export default PieChart

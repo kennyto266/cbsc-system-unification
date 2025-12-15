@@ -7,16 +7,19 @@ Strategy Business Service
 - 数据验证和转换
 - 权限检查
 - 缓存管理
+- 统一的错误处理和响应格式
 """
 
 from typing import List, Optional, Dict, Any
 import logging
 from datetime import datetime
+import traceback
 
 from ..repositories.strategy_repository import StrategyRepository
 from ..repositories.user_repository import UserRepository
 from ..utils.cache import CacheManager
 from ..utils.validators import StrategyValidator
+from ..utils.response import APIError, NotFoundError, PermissionError, InternalError, ResponseBuilder
 from ..models import (
     Strategy, StrategyType, StrategyStatus, StrategyTemplate,
     StrategyTemplates, DataCompatibilityAdapter

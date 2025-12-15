@@ -1,7 +1,9 @@
 import React from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
-import { Button, ButtonGroup } from '../Button'
+import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { Button, ButtonGroup, Fab } from '../Button'
 import { ThemeProvider } from '@/styles/themes'
+import type { ButtonProps } from '../Button'
 
 // Test wrapper - 测试包装器
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -179,6 +181,83 @@ describe('Button Component', () => {
     const icon = screen.getByTestId('test-icon')
     expect(icon.parentElement).toHaveClass('ml-2')
   })
+
+  // Additional edge case tests
+  it('does not show ripple when disabled', () => {
+    render(
+      <TestWrapper>
+        <Button ripple disabled>Ripple Disabled</Button>
+      </TestWrapper>
+    )
+
+    const button = screen.getByRole('button')
+    fireEvent.mouseDown(button)
+
+    const ripple = button.querySelector('.animate-ping')
+    expect(ripple).not.toBeInTheDocument()
+  })
+
+  it('handles all variant types', () => {
+    const variants: ButtonProps['variant'][] = ['primary', 'secondary', 'outline', 'ghost', 'danger', 'success']
+
+    variants.forEach(variant => {
+      const { unmount } = render(
+        <TestWrapper>
+          <Button variant={variant} data-testid={`btn-${variant}`}>
+            {variant}
+          </Button>
+        </TestWrapper>
+      )
+
+      const button = screen.getByTestId(`btn-${variant}`)
+      expect(button).toBeInTheDocument()
+      expect(button).toHaveClass(variant)
+      unmount()
+    })
+  })
+
+  it('passes through HTML button attributes', () => {
+    render(
+      <TestWrapper>
+        <Button
+          type="submit"
+          form="test-form"
+          name="test-name"
+          value="test-value"
+        >
+          Submit
+        </Button>
+      </TestWrapper>
+    )
+
+    const button = screen.getByRole('button')
+    expect(button).toHaveAttribute('type', 'submit')
+    expect(button).toHaveAttribute('form', 'test-form')
+    expect(button).toHaveAttribute('name', 'test-name')
+    expect(button).toHaveAttribute('value', 'test-value')
+  })
+
+  // Accessibility tests
+  it('supports keyboard navigation', async () => {
+    const handleClick = jest.fn()
+    const user = userEvent.setup()
+
+    render(
+      <TestWrapper>
+        <Button onClick={handleClick}>Keyboard Test</Button>
+      </TestWrapper>
+    )
+
+    const button = screen.getByRole('button')
+    button.focus()
+    expect(button).toHaveFocus()
+
+    await user.keyboard('{Enter}')
+    expect(handleClick).toHaveBeenCalledTimes(1)
+
+    await user.keyboard('{ }')
+    expect(handleClick).toHaveBeenCalledTimes(2)
+  })
 })
 
 // Button Group tests - 按钮组测试
@@ -226,4 +305,133 @@ describe('ButtonGroup Component', () => {
     const group = container.firstChild
     expect(group).toHaveClass('justify-center')
   })
+})
+
+// FAB Component tests - 浮动操作按钮测试
+describe('Fab Component', () => {
+  it('renders with default props', () => {
+    render(
+      <TestWrapper>
+        <Fab>FAB</Fab>
+      </TestWrapper>
+    )
+
+    const fab = screen.getByRole('button')
+    expect(fab).toBeInTheDocument()
+    expect(fab).toHaveTextContent('FAB')
+    expect(fab).toHaveClass('fixed', 'bottom-6', 'right-6', 'rounded-full')
+  })
+
+  it('renders with different positions', () => {
+    const positions: Array<'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'> = [
+      'bottom-right',
+      'bottom-left',
+      'top-right',
+      'top-left'
+    ]
+
+    positions.forEach(position => {
+      const { unmount } = render(
+        <TestWrapper>
+          <Fab position={position} data-testid={`fab-${position}`}>
+            FAB
+          </Fab>
+        </TestWrapper>
+      )
+
+      const fab = screen.getByTestId(`fab-${position}`)
+      expect(fab).toHaveClass('fixed', 'rounded-full')
+
+      // Check position classes
+      if (position.includes('bottom')) expect(fab).toHaveClass('bottom-6')
+      if (position.includes('top')) expect(fab).toHaveClass('top-6')
+      if (position.includes('right')) expect(fab).toHaveClass('right-6')
+      if (position.includes('left')) expect(fab).toHaveClass('left-6')
+
+      unmount()
+    })
+  })
+
+  it('renders as extended FAB', () => {
+    render(
+      <TestWrapper>
+        <Fab extended label="Extended FAB" />
+      </TestWrapper>
+    )
+
+    const fab = screen.getByRole('button')
+    expect(fab).toHaveTextContent('Extended FAB')
+    expect(fab).toHaveClass('px-6', 'py-3')
+    expect(fab).not.toHaveClass('w-14', 'h-14')
+  })
+
+  it('renders with icon', () => {
+    const TestIcon = () => <span data-testid="fab-icon">🔥</span>
+    render(
+      <TestWrapper>
+        <Fab icon={<TestIcon />}>FAB with Icon</Fab>
+      </TestWrapper>
+    )
+
+    const icon = screen.getByTestId('fab-icon')
+    expect(icon).toBeInTheDocument()
+  })
+
+  it('renders extended FAB with icon', () => {
+    const TestIcon = () => <span data-testid="fab-icon">🚀</span>
+    render(
+      <TestWrapper>
+        <Fab extended icon={<TestIcon />} label="Launch" />
+      </TestWrapper>
+    )
+
+    const icon = screen.getByTestId('fab-icon')
+    expect(icon).toBeInTheDocument()
+    expect(icon.parentElement).toHaveClass('mr-2')
+  })
+
+  it('handles click events', async () => {
+    const handleClick = jest.fn()
+    const user = userEvent.setup()
+
+    render(
+      <TestWrapper>
+        <Fab onClick={handleClick}>Clickable FAB</Fab>
+      </TestWrapper>
+    )
+
+    const fab = screen.getByRole('button')
+    await user.click(fab)
+    expect(handleClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('inherits Button props', () => {
+    render(
+      <TestWrapper>
+        <Fab disabled className="custom-fab">
+          Disabled FAB
+        </Fab>
+      </TestWrapper>
+    )
+
+    const fab = screen.getByRole('button')
+    expect(fab).toBeDisabled()
+    expect(fab).toHaveClass('custom-fab')
+  })
+
+  it('has proper accessibility attributes', () => {
+    render(
+      <TestWrapper>
+        <Fab aria-label="Add new item">+</Fab>
+      </TestWrapper>
+    )
+
+    const fab = screen.getByRole('button')
+    expect(fab).toHaveAttribute('aria-label', 'Add new item')
+  })
+})
+
+// Cleanup after each test
+afterEach(() => {
+  cleanup()
 })
