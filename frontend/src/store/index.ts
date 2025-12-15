@@ -1,98 +1,87 @@
-import { configureStore } from '@reduxjs/toolkit'
-import { setupListeners } from '@reduxjs/toolkit/query'
-import { authSlice } from './slices/authSlice'
-import { strategySlice } from './slices/strategySlice'
-import { dashboardSlice } from './slices/dashboardSlice'
-import { uiSlice } from './slices/uiSlice'
-import { apiSlice } from './api/apiSlice'
+/**
+ * Redux Store Configuration
+ * 版本: 1.0.0
+ * 描述: Redux Toolkit store 配置和設置
+ */
 
-// Configure store with enhanced middleware
+import { configureStore } from '@reduxjs/toolkit';
+import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
+import { setupListeners } from '@reduxjs/toolkit/query';
+
+// Import slices
+import authSlice from './slices/authSlice';
+import uiSlice from './slices/uiSlice';
+import dashboardSlice from './slices/dashboardSlice';
+import strategySlice from './slices/strategySlice';
+
+// Import API services
+import { authApi } from './services/authApi';
+import { strategyApi } from './services/strategyApi';
+import { dashboardApi } from './services/dashboardApi';
+import { userApi } from './services/userApi';
+
+// Store configuration
 export const store = configureStore({
   reducer: {
-    auth: authSlice.reducer,
-    strategy: strategySlice.reducer,
-    dashboard: dashboardSlice.reducer,
-    ui: uiSlice.reducer,
-    api: apiSlice.reducer,
+    // UI state
+    auth: authSlice,
+    ui: uiSlice,
+    dashboard: dashboardSlice,
+    strategy: strategySlice,
+
+    // API services
+    [authApi.reducerPath]: authApi.reducer,
+    [strategyApi.reducerPath]: strategyApi.reducer,
+    [dashboardApi.reducerPath]: dashboardApi.reducer,
+    [userApi.reducerPath]: userApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore these action types
         ignoredActions: [
-          'persist/PERSIST',
-          'persist/REHYDRATE',
-          'persist/PAUSE',
-          'persist/PURGE',
-          'persist/REGISTER',
+          // RTK Query actions
+          'authApi/executeQuery/pending',
+          'authApi/executeQuery/fulfilled',
+          'authApi/executeQuery/rejected',
+          'strategyApi/executeQuery/pending',
+          'strategyApi/executeQuery/fulfilled',
+          'strategyApi/executeQuery/rejected',
+          'dashboardApi/executeQuery/pending',
+          'dashboardApi/executeQuery/fulfilled',
+          'dashboardApi/executeQuery/rejected',
+          'userApi/executeQuery/pending',
+          'userApi/executeQuery/fulfilled',
+          'userApi/executeQuery/rejected',
         ],
-        // Ignore these paths in the state
-        ignoredPaths: ['api'],
-      },
-      // Configure immutable check
-      immutableCheck: {
-        ignoredPaths: ['api'],
+        // Ignore these field paths in all actions
+        ignoredPaths: [
+          'api',
+          'strategyApi',
+          'dashboardApi',
+          'userApi',
+        ],
       },
     })
-      .concat(apiSlice.middleware)
       .concat(
-        // Custom middleware for session management
-        (store) => (next) => (action) => {
-          // Handle auth-related session management
-          if (action.type?.startsWith('auth/')) {
-            // Update last activity timestamp
-            const currentState = store.getState()
-            if (currentState.auth?.isAuthenticated) {
-              store.dispatch({
-                type: 'auth/updateLastActivity',
-                payload: undefined
-              })
-            }
-          }
-
-          return next(action)
-        }
-      )
-      .concat(
-        // Custom middleware for notifications
-        (store) => (next) => (action) => {
-          const result = next(action)
-
-          // Auto-remove success notifications after 3 seconds
-          if (action.type === 'ui/addNotification' &&
-              action.payload?.type === 'success' &&
-              !action.payload?.persistent) {
-            setTimeout(() => {
-              const currentState = store.getState()
-              const notification = currentState.ui.notifications.find(
-                (n: any) => n.timestamp === action.payload.timestamp
-              )
-              if (notification) {
-                store.dispatch({
-                  type: 'ui/removeNotification',
-                  payload: notification.id
-                })
-              }
-            }, 3000)
-          }
-
-          return result
-        }
+        authApi.middleware,
+        strategyApi.middleware,
+        dashboardApi.middleware,
+        userApi.middleware
       ),
   devTools: process.env.NODE_ENV !== 'production',
-})
+});
 
-// Enable refetchOnFocus/refetchOnReconnect behaviors
-setupListeners(store.dispatch)
+// Setup listeners for refetchOnFocus/refetchOnReconnect behaviors
+setupListeners(store.dispatch);
 
-export type RootState = ReturnType<typeof store.getState>
-export type AppDispatch = typeof store.dispatch
+// Export types
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
 
-// Export specific actions to avoid conflicts
-export { authSlice } from './slices/authSlice'
-export { strategySlice } from './slices/strategySlice'
-export { uiSlice } from './slices/uiSlice'
-export { dashboardSlice } from './slices/dashboardSlice'
-export { apiSlice } from './api/apiSlice'
+// Export typed hooks
+export const useAppDispatch = () => useDispatch<AppDispatch>();
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
-// Types are already exported above
+// Export store instance
+export default store;
