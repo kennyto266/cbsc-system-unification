@@ -1,38 +1,65 @@
-# Analytics API
+# Analytics API Implementation
 
-高性能的策略分析API，提供实时和历史策略性能指标、投资组合分析和风险管理功能。
+## Overview
 
-## 功能特性
+This module provides comprehensive analytics endpoints for the CBSC quantitative trading system, supporting:
 
-### 📊 性能分析
-- 策略性能指标计算（夏普比率、最大回撤、波动率等）
-- 支持多时间周期（1D、1W、1M、3M、6M、1Y、ALL）
-- 基准比较和相关性分析
-- 风险调整后收益指标
+- Strategy performance metrics calculation
+- Portfolio analysis and allocation
+- Real-time data streaming via WebSocket
+- Historical returns data
+- Risk metrics and diversification analysis
+- Rebalancing suggestions
 
-### 📈 历史数据
-- 时间序列数据查询
-- 可配置粒度（日、周、月）
-- 高效分页支持
-- 多指标组合查询
+## Architecture
 
-### 💼 投资组合分析
-- 资产配置分解
-- 行业分布分析
-- 风险价值(VaR)计算
-- 相关性矩阵
+### Services
 
-### ⚡ 实时指标
-- 当前持仓追踪
-- 实时盈亏计算
-- 暴露和杠杆监控
-- 50ms响应时间
+1. **PerformanceCalculationService** (`services/performance_service.py`)
+   - Calculates comprehensive performance metrics (Sharpe, Sortino, VaR, etc.)
+   - Supports multiple timeframes and benchmark comparisons
+   - Includes caching layer for performance optimization
 
-### 🚀 性能优化
-- Redis缓存层
-- 异步后台计算
-- 数据库查询优化
-- 支持1000并发请求
+2. **PortfolioAnalysisService** (`services/portfolio_service.py`)
+   - Portfolio overview and allocation analysis
+   - Risk metrics calculation
+   - Diversification analysis
+   - Rebalancing suggestions generation
+
+3. **RealTimeDataService** (`services/realtime_service.py`)
+   - WebSocket connection management
+   - Real-time data streaming
+   - Subscription management for strategies and channels
+   - Connection health monitoring
+
+### Models
+
+- **PerformanceMetrics**: Comprehensive strategy performance data
+- **ReturnsData**: Time-series returns with benchmark comparison
+- **PortfolioOverview**: Complete portfolio snapshot
+- **RealTimeUpdate**: WebSocket message format
+
+## Key Features
+
+### Performance Metrics
+- Total and annualized returns
+- Risk-adjusted ratios (Sharpe, Sortino, Calmar)
+- Drawdown analysis
+- Value at Risk (VaR)
+- Trading statistics (win rate, profit factor)
+
+### Portfolio Analysis
+- Asset and sector allocation
+- Top performers identification
+- Risk metrics (portfolio volatility, VaR)
+- Diversification score
+- Rebalancing algorithm
+
+### Real-time Streaming
+- Connection management with user authentication
+- Strategy-specific subscriptions
+- Channel-based broadcasting
+- Automatic connection health monitoring
 
 ## API端点
 
