@@ -53,6 +53,17 @@ export { default as ChartsDemo } from '../Charts/ChartsDemo';
 export { RealTimeDashboard } from '../Charts/RealTimeDashboard';
 
 // ============================================================================
+// Real-time Chart Components
+// ============================================================================
+export {
+  RealTimeLineChart,
+  RealTimeBarChart,
+  RealTimeRadarChart,
+  RealTimeHeatmap
+} from '../Charts/realtime';
+export { default as RealTimeChartManager } from '../Charts/realtime/RealTimeChartManager';
+
+// ============================================================================
 // Chart Manager and State Management
 // ============================================================================
 export {
@@ -68,6 +79,7 @@ export {
 // ============================================================================
 export { useRealTimeChart } from '../Charts/hooks/useRealTimeChart';
 export { useChartExport } from '../Charts/hooks/useChartExport';
+export { useRealTimeDataProcessor } from '../../hooks/useRealTimeDataProcessor';
 
 // ============================================================================
 // Chart Themes and Utilities

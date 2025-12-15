@@ -311,8 +311,54 @@
                 </div>
 
                 <div id="performance-page" class="page-content">
-                    <h2>績效分析頁面</h2>
-                    <p>詳細的績效分析功能即將推出...</p>
+                    <div class="performance-page-container">
+                        <div class="page-header">
+                            <h2 class="page-title">策略績效分析</h2>
+                            <div class="page-controls">
+                                <button class="btn btn-primary" id="refresh-charts-btn">
+                                    <span class="icon">🔄</span>
+                                    刷新數據
+                                </button>
+                                <button class="btn btn-secondary" id="export-charts-btn">
+                                    <span class="icon">📥</span>
+                                    導出報告
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 圖表網格 -->
+                        <div class="charts-grid">
+                            <!-- Sharpe比率圖表 -->
+                            <div class="chart-section">
+                                <div class="chart-container" id="performance-sharpe-chart">
+                                    <div class="loading-overlay">
+                                        <div class="loading-spinner"></div>
+                                        <p>載入Sharpe比率圖表...</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 最大回撤圖表 -->
+                            <div class="chart-section">
+                                <div class="chart-container" id="performance-drawdown-chart">
+                                    <div class="loading-overlay">
+                                        <div class="loading-spinner"></div>
+                                        <p>載入回撤趨勢圖表...</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 策略雷達圖 -->
+                            <div class="chart-section full-width">
+                                <div class="chart-container" id="performance-radar-chart">
+                                    <div class="loading-overlay">
+                                        <div class="loading-spinner"></div>
+                                        <p>載入策略對比圖表...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="settings-page" class="page-content">
@@ -352,8 +398,14 @@
     <!-- Load enhanced dashboard -->
     <script src="js/dashboard-enhanced.js"></script>
 
-    <!-- Chart.js Library (for future use) -->
+    <!-- Chart.js Library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Chart Components -->
+    <script src="js/components/ChartManager.js"></script>
+    <script src="js/components/SharpeRatioChart.js"></script>
+    <script src="js/components/MaxDrawdownChart.js"></script>
+    <script src="js/components/StrategyRadarChart.js"></script>
 
     <!-- Initialize Enhanced Application -->
     <script>
@@ -461,6 +513,267 @@
                 window.dashboard.updateConnectionStatus(false);
             }
         });
+
+        // Initialize Charts when Performance page is activated
+        let performanceChartsInitialized = false;
+
+        function initializePerformanceCharts() {
+            if (performanceChartsInitialized) return;
+
+            try {
+                // 模擬策略數據
+                const mockStrategies = [
+                    { id: 1, name: 'DirectRSIStrategy', sharpeRatio: 1.35, maxDrawdown: 0.12, winRate: 0.65, profitFactor: 2.1, volatilityControl: 0.78 },
+                    { id: 2, name: 'SentimentMomentumStrategy', sharpeRatio: 0.95, maxDrawdown: 0.18, winRate: 0.58, profitFactor: 1.6, volatilityControl: 0.65 },
+                    { id: 3, name: 'CompositeIndexStrategy', sharpeRatio: 1.52, maxDrawdown: 0.08, winRate: 0.72, profitFactor: 2.8, volatilityControl: 0.85 },
+                    { id: 4, name: 'VolatilityAdjustedStrategy', sharpeRatio: 0.78, maxDrawdown: 0.22, winRate: 0.51, profitFactor: 1.3, volatilityControl: 0.72 }
+                ];
+
+                // 模擬歷史數據生成函數
+                function generateHistoricalData() {
+                    const dates = [];
+                    const today = new Date();
+                    for (let i = 365; i >= 0; i--) {
+                        const date = new Date(today);
+                        date.setDate(date.getDate() - i);
+                        dates.push(date.toISOString().split('T')[0]);
+                    }
+
+                    const strategies = mockStrategies.map(strategy => ({
+                        name: strategy.name,
+                        drawdowns: generateDrawdowns(strategy.maxDrawdown, strategy.volatilityControl, dates.length)
+                    }));
+
+                    return { dates, strategies };
+                }
+
+                function generateDrawdowns(baseValue, volatility, count) {
+                    const drawdowns = [];
+                    let current = 0;
+                    for (let i = 0; i < count; i++) {
+                        const change = (Math.random() - 0.5) * volatility * 0.1;
+                        current = Math.max(0, Math.min(baseValue, current + change));
+                        drawdowns.push(current * 100); // 轉換為百分比
+                    }
+                    return drawdowns;
+                }
+
+                // 初始化 Sharpe 比率圖表
+                const sharpeContainer = document.getElementById('performance-sharpe-chart');
+                if (sharpeContainer && !sharpeContainer.querySelector('canvas')) {
+                    sharpeContainer.innerHTML = '';
+                    const sharpeChart = new SharpeRatioChart(sharpeContainer, {
+                        height: 350,
+                        onClick: (strategy) => {
+                            console.log('Sharpe chart clicked:', strategy);
+                        }
+                    });
+                    sharpeChart.createChart(mockStrategies);
+                    window.chartManager.registerChart('performance-sharpe', sharpeChart, {
+                        type: 'bar',
+                        autoUpdate: true
+                    });
+                }
+
+                // 初始化最大回撤圖表
+                const drawdownContainer = document.getElementById('performance-drawdown-chart');
+                if (drawdownContainer && !drawdownContainer.querySelector('canvas')) {
+                    drawdownContainer.innerHTML = '';
+                    const drawdownChart = new MaxDrawdownChart(drawdownContainer, {
+                        height: 350,
+                        onTimeRangeChange: (range) => {
+                            console.log('Time range changed:', range);
+                        }
+                    });
+                    drawdownChart.createChart(generateHistoricalData());
+                    window.chartManager.registerChart('performance-drawdown', drawdownChart, {
+                        type: 'line',
+                        autoUpdate: true
+                    });
+                }
+
+                // 初始化策略雷達圖
+                const radarContainer = document.getElementById('performance-radar-chart');
+                if (radarContainer && !radarContainer.querySelector('canvas')) {
+                    radarContainer.innerHTML = '';
+                    const radarChart = new StrategyRadarChart(radarContainer, {
+                        height: 400,
+                        onStrategySelect: (strategy) => {
+                            console.log('Strategy selected:', strategy);
+                        }
+                    });
+                    radarChart.createChart(mockStrategies);
+                    window.chartManager.registerChart('performance-radar', radarChart, {
+                        type: 'radar',
+                        autoUpdate: true
+                    });
+                }
+
+                performanceChartsInitialized = true;
+
+                // 綁定刷新和導出按鈕
+                const refreshBtn = document.getElementById('refresh-charts-btn');
+                const exportBtn = document.getElementById('export-charts-btn');
+
+                if (refreshBtn) {
+                    refreshBtn.addEventListener('click', async () => {
+                        refreshBtn.disabled = true;
+                        refreshBtn.innerHTML = '<span class="icon">⏳</span> 刷新中...';
+
+                        await window.chartManager.updateAllCharts();
+
+                        setTimeout(() => {
+                            refreshBtn.disabled = false;
+                            refreshBtn.innerHTML = '<span class="icon">🔄</span> 刷新數據';
+                        }, 1000);
+                    });
+                }
+
+                if (exportBtn) {
+                    exportBtn.addEventListener('click', async () => {
+                        const exports = await window.chartManager.exportAllCharts();
+
+                        exports.forEach((imageData, name) => {
+                            const link = document.createElement('a');
+                            link.download = `performance-${name}-chart.png`;
+                            link.href = imageData;
+                            link.click();
+                        });
+                    });
+                }
+
+            } catch (error) {
+                console.error('Failed to initialize performance charts:', error);
+            }
+        }
+
+        // 監聽頁面切換
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const page = e.currentTarget.getAttribute('data-page');
+                if (page === 'performance') {
+                    // 延迟初始化以確保頁面已顯示
+                    setTimeout(initializePerformanceCharts, 100);
+                }
+            });
+        });
+
+        // 添加性能頁面的樣式
+        const performanceStyles = document.createElement('style');
+        performanceStyles.textContent = `
+            .performance-page-container {
+                padding: 20px;
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+
+            .page-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 24px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            .page-title {
+                font-size: 24px;
+                font-weight: 600;
+                color: #2c3e50;
+                margin: 0;
+            }
+
+            .page-controls {
+                display: flex;
+                gap: 12px;
+            }
+
+            .charts-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+                gap: 24px;
+            }
+
+            .chart-section {
+                background: #fff;
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                overflow: hidden;
+            }
+
+            .chart-section.full-width {
+                grid-column: 1 / -1;
+            }
+
+            .chart-container {
+                position: relative;
+            }
+
+            .loading-overlay {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 40px;
+                color: #666;
+            }
+
+            .loading-spinner {
+                width: 40px;
+                height: 40px;
+                border: 3px solid #e0e0e0;
+                border-top-color: #3498db;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-bottom: 16px;
+            }
+
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+                text-decoration: none;
+            }
+
+            .btn-primary {
+                background: #3498db;
+                color: #fff;
+            }
+
+            .btn-primary:hover {
+                background: #2980b9;
+            }
+
+            .btn-primary:disabled {
+                background: #95a5a6;
+                cursor: not-allowed;
+            }
+
+            .btn-secondary {
+                background: #95a5a6;
+                color: #fff;
+            }
+
+            .btn-secondary:hover {
+                background: #7f8c8d;
+            }
+
+            .icon {
+                font-size: 16px;
+            }
+        `;
+        document.head.appendChild(performanceStyles);
     </script>
 </body>
 </html>
