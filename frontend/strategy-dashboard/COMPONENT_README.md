@@ -9,61 +9,67 @@
 ### 1. StrategyList (策略列表組件)
 
 **功能描述：**
+
 - 以表格和卡片兩種視圖展示策略列表
 - 支持按多個欄位排序（夏普比率、最大回撤、勝率等）
 - 內置搜索和分類篩選功能
 - 響應式設計，適配各種屏幕尺寸
 
 **主要方法：**
+
 ```javascript
 // 創建策略列表
-const strategyList = new StrategyList(containerElement);
+const strategyList = new StrategyList(containerElement)
 
 // 設置策略數據
-strategyList.setStrategies(strategies);
+strategyList.setStrategies(strategies)
 
 // 篩選策略
-strategyList.filterByCategory('monthly_low_frequency');
+strategyList.filterByCategory('monthly_low_frequency')
 
 // 排序策略
-strategyList.sortStrategies('sharpeRatio');
+strategyList.sortStrategies('sharpeRatio')
 
 // 更新策略狀態
-strategyList.updateStrategyStatus(strategyId, enabled);
+strategyList.updateStrategyStatus(strategyId, enabled)
 ```
 
 **事件監聽：**
+
 ```javascript
 containerElement.addEventListener('strategy-list:toggle', (e) => {
-  console.log('策略切換:', e.detail);
-});
+  console.log('策略切換:', e.detail)
+})
 
 containerElement.addEventListener('strategy-list:show-details', (e) => {
-  console.log('查看詳情:', e.detail);
-});
+  console.log('查看詳情:', e.detail)
+})
 ```
 
 ### 2. PerformanceCards (性能數值卡片組件)
 
 **功能描述：**
+
 - 展示策略綜合評分、夏普比率、最大回撤、勝率等關鍵指標
 - 支持動畫數值變化效果
 - 包含趨勢指示器和風險等級評估
 - 實時數據更新視覺化
 
 **主要方法：**
+
 ```javascript
 // 創建性能卡片
-const performanceCards = new PerformanceCards(containerElement);
+const performanceCards = new PerformanceCards(containerElement)
 
 // 更新指標數據
-performanceCards.updateMetrics(strategies);
+performanceCards.updateMetrics(strategies)
 
 // 刷新動畫效果
-performanceCards.refreshAnimations();
+performanceCards.refreshAnimations()
 ```
 
 **支持的指標：**
+
 - 綜合評分（0-100分）
 - 平均夏普比率
 - 最大回撤與風險等級
@@ -74,39 +80,42 @@ performanceCards.refreshAnimations();
 ### 3. StatusIndicator (狀態指示器組件)
 
 **功能描述：**
+
 - 提供多種狀態視覺指示（運行中、載入中、錯誤、警告等）
 - 支持工具提示顯示詳細信息
 - 響應式尺寸調整
 - 無障礙訪問支持
 
 **使用示例：**
+
 ```javascript
 // 創建狀態指示器
 const indicator = new StatusIndicator(containerElement, {
-  size: 'medium',        // small, medium, large
+  size: 'medium', // small, medium, large
   showText: true,
   showIcon: true,
-  animated: true
-});
+  animated: true,
+})
 
 // 設置狀態
 indicator.setActive('策略運行中', {
   lastUpdate: new Date().toISOString(),
   strategyId: 123,
-  performance: '+15.6%'
-});
+  performance: '+15.6%',
+})
 
 // 設置載入狀態
-indicator.setLoading('正在處理請求...');
+indicator.setLoading('正在處理請求...')
 
 // 設置錯誤狀態
 indicator.setError('連接失敗', {
   errorCode: 'NETWORK_ERROR',
-  retryCount: 3
-});
+  retryCount: 3,
+})
 ```
 
 **支持的狀態類型：**
+
 - `loading` - 載入中
 - `active`/`running` - 運行中
 - `success`/`completed` - 成功/完成
@@ -119,49 +128,52 @@ indicator.setError('連接失敗', {
 ### 4. StrategyToggle (策略切換開關組件)
 
 **功能描述：**
+
 - 提供 iOS 風格的切換開關界面
 - 支持停用確認對話框
 - 觸摸友好的交互設計
 - 狀態變化動畫效果
 
 **使用示例：**
+
 ```javascript
 // 創建切換開關
 const toggle = new StrategyToggle(containerElement, '策略名稱', {
-  size: 'medium',           // small, medium, large
+  size: 'medium', // small, medium, large
   showLabel: true,
   showIcon: true,
   animated: true,
-  confirmDisable: true,     // 停用時顯示確認對話框
+  confirmDisable: true, // 停用時顯示確認對話框
   confirmMessage: '確定要停用此策略嗎？',
   onToggle: async (enabled) => {
     // 處理切換邏輯
-    console.log('切換到狀態:', enabled);
-    return true; // 返回 false 可以取消切換
-  }
-});
+    console.log('切換到狀態:', enabled)
+    return true // 返回 false 可以取消切換
+  },
+})
 
 // 設置初始狀態
-toggle.setState(true, false); // enabled, animate
+toggle.setState(true, false) // enabled, animate
 
 // 程序化切換
-await toggle.toggle();
+await toggle.toggle()
 
 // 監聽切換事件
 toggle.onToggle((strategyName, newState) => {
-  console.log(`${strategyName} 切換到 ${newState ? '啟用' : '禁用'}`);
-});
+  console.log(`${strategyName} 切換到 ${newState ? '啟用' : '禁用'}`)
+})
 ```
 
 **批量創建切換開關：**
+
 ```javascript
 const toggles = StrategyToggle.createToggles(container, strategies, {
   size: 'small',
   onToggle: async (strategyName, enabled) => {
     // 批量處理邏輯
-    return true;
-  }
-});
+    return true
+  },
+})
 ```
 
 ## 集成指南
@@ -169,12 +181,14 @@ const toggles = StrategyToggle.createToggles(container, strategies, {
 ### 基本集成步驟
 
 1. **引入CSS樣式：**
+
 ```html
-<link rel="stylesheet" href="css/dashboard.css">
-<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/dashboard.css" />
+<link rel="stylesheet" href="css/components.css" />
 ```
 
 2. **加載JavaScript組件：**
+
 ```html
 <script src="js/components/StrategyList.js"></script>
 <script src="js/components/PerformanceCards.js"></script>
@@ -183,6 +197,7 @@ const toggles = StrategyToggle.createToggles(container, strategies, {
 ```
 
 3. **創建HTML容器：**
+
 ```html
 <!-- 策略列表 -->
 <div id="strategy-list"></div>
@@ -198,33 +213,34 @@ const toggles = StrategyToggle.createToggles(container, strategies, {
 ```
 
 4. **初始化組件：**
+
 ```javascript
 // 初始化策略列表
-const strategyList = new StrategyList(document.getElementById('strategy-list'));
-strategyList.setStrategies(strategiesData);
+const strategyList = new StrategyList(document.getElementById('strategy-list'))
+strategyList.setStrategies(strategiesData)
 
 // 初始化性能卡片
-const performanceCards = new PerformanceCards(document.getElementById('performance-cards'));
-performanceCards.updateMetrics(strategiesData);
+const performanceCards = new PerformanceCards(document.getElementById('performance-cards'))
+performanceCards.updateMetrics(strategiesData)
 
 // 初始化狀態指示器
-strategiesData.forEach(strategy => {
-  const container = document.createElement('div');
-  document.getElementById('status-indicators').appendChild(container);
+strategiesData.forEach((strategy) => {
+  const container = document.createElement('div')
+  document.getElementById('status-indicators').appendChild(container)
 
-  const indicator = new StatusIndicator(container);
+  const indicator = new StatusIndicator(container)
   if (strategy.isActive) {
-    indicator.setActive('運行中');
+    indicator.setActive('運行中')
   } else {
-    indicator.setInactive('已停止');
+    indicator.setInactive('已停止')
   }
-});
+})
 
 // 初始化策略切換
 const toggles = StrategyToggle.createToggles(
   document.getElementById('strategy-toggles'),
   strategiesData
-);
+)
 ```
 
 ### 使用增強版Dashboard
@@ -234,10 +250,10 @@ const toggles = StrategyToggle.createToggles(
 <script src="js/dashboard-enhanced.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const dashboard = new EnhancedDashboard();
-  dashboard.init();
-});
+  document.addEventListener('DOMContentLoaded', function () {
+    const dashboard = new EnhancedDashboard()
+    dashboard.init()
+  })
 </script>
 ```
 
@@ -285,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 /* 自定義狀態指示器動畫 */
-.status-indicator[data-status="active"] .status-pulse {
+.status-indicator[data-status='active'] .status-pulse {
   animation-duration: 1s;
 }
 ```
@@ -360,6 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
 ## 更新日誌
 
 ### v1.0.0 (2025-12-11)
+
 - 初始版本發布
 - 四個核心組件完成開發
 - 完整的文檔和測試頁面

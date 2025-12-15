@@ -22,9 +22,11 @@ strategy-dashboard/
 ## 🚀 快速開始
 
 ### 1. 直接打開
+
 在瀏覽器中打開 `index.html` 文件即可查看Dashboard。
 
 ### 2. 本地服務器
+
 推薦使用本地HTTP服務器來避免跨域問題：
 
 ```bash
@@ -44,6 +46,7 @@ php -S localhost:8080
 ## 🎨 設計系統
 
 ### 色彩方案
+
 - **主色調**: `#2c3e50` (深藍灰)
 - **強調色**: `#3498db` (藍色)
 - **成功色**: `#27ae60` (綠色)
@@ -51,14 +54,17 @@ php -S localhost:8080
 - **危險色**: `#e74c3c` (紅色)
 
 ### 字體系統
+
 ```css
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
 ```
 
 ### 間距系統
+
 基於8px網格系統：4px, 8px, 12px, 16px, 20px, 24px, 32px, 40px, 48px, 64px, 80px
 
 ### 響應式斷點
+
 - **桌面**: ≥1200px
 - **平板**: 768px-1199px
 - **手機**: ≤767px
@@ -66,6 +72,7 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-
 ## 📊 功能特性
 
 ### ✅ 已實現功能
+
 - [x] 響應式頁面布局
 - [x] 導航菜單系統
 - [x] 策略列表展示
@@ -78,6 +85,7 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-
 - [x] 性能優化
 
 ### 🔄 集成準備
+
 - [ ] Chart.js圖表集成
 - [ ] WebSocket實時數據
 - [ ] 後端API連接
@@ -87,29 +95,31 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-
 ## 🛠 開發指南
 
 ### HTML結構
+
 頁面採用語義化HTML5標籤，支持無障礙訪問：
 
 ```html
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-  <!-- Meta tags and styles -->
-</head>
-<body>
-  <header class="app-header">
-    <!-- Navigation -->
-  </header>
-  <main class="app-main">
-    <!-- Main content -->
-  </main>
-  <footer class="app-footer">
-    <!-- Footer -->
-  </footer>
-</body>
+  <head>
+    <!-- Meta tags and styles -->
+  </head>
+  <body>
+    <header class="app-header">
+      <!-- Navigation -->
+    </header>
+    <main class="app-main">
+      <!-- Main content -->
+    </main>
+    <footer class="app-footer">
+      <!-- Footer -->
+    </footer>
+  </body>
 </html>
 ```
 
 ### CSS架構
+
 使用CSS變量和BEM命名規範：
 
 ```css
@@ -134,6 +144,7 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-
 ```
 
 ### JavaScript架構
+
 採用ES6類的模塊化設計：
 
 ```javascript
@@ -153,16 +164,19 @@ class Dashboard {
 ## 📱 響應式設計
 
 ### 桌面端 (1920x1080+)
+
 - 雙列布局
 - 完整功能展示
 - 豐富的交互效果
 
 ### 平板端 (768px-1199px)
+
 - 單列布局
 - 簡化導航
 - 觸摸優化
 
 ### 手機端 (≤767px)
+
 - 垂直布局
 - 漢堡菜單
 - 簡潔界面
@@ -170,6 +184,7 @@ class Dashboard {
 ## 🔧 自定義配置
 
 ### 修改顏色主題
+
 在 `css/dashboard.css` 中修改CSS變量：
 
 ```css
@@ -181,6 +196,7 @@ class Dashboard {
 ```
 
 ### 調整布局
+
 修改 `.main-container` 的最大寬度：
 
 ```css
@@ -190,6 +206,7 @@ class Dashboard {
 ```
 
 ### 添加新頁面
+
 1. 在 `index.html` 中添加新的頁面容器：
 
 ```html
@@ -212,9 +229,11 @@ class Dashboard {
 ## 🧪 測試
 
 ### 功能測試
+
 打開 `test.html` 查看所有功能的完成狀態。
 
 ### 響應式測試
+
 在瀏覽器開發者工具中測試不同屏幕尺寸：
 
 1. 打開開發者工具 (F12)
@@ -222,6 +241,7 @@ class Dashboard {
 3. 選擇不同設備或自定義尺寸
 
 ### 性能測試
+
 使用瀏覽器開發者工具的Performance和Network面板：
 
 1. 記錄頁面加載性能
@@ -231,12 +251,14 @@ class Dashboard {
 ## 📈 性能優化
 
 ### 已實現優化
+
 - CSS變量減少重複
 - 圖片懶加載準備
 - JavaScript防抖處理
 - 資源預加載
 
 ### 建議優化
+
 - [ ] 圖片壓縮和WebP格式
 - [ ] CSS和JS文件壓縮
 - [ ] CDN加速
@@ -245,28 +267,32 @@ class Dashboard {
 ## 🔌 API集成
 
 ### WebSocket連接
+
 ```javascript
 // 在 dashboard.js 中配置
 this.config = {
   wsUrl: 'ws://localhost:3005/ws',
   // ...
-};
+}
 ```
 
 ### REST API
+
 ```javascript
 // 策略數據API
 fetch('/api/strategies')
-  .then(response => response.json())
-  .then(data => console.log(data));
+  .then((response) => response.json())
+  .then((data) => console.log(data))
 ```
 
 ## 🚀 部署
 
 ### 靜態文件部署
+
 直接將 `strategy-dashboard` 文件夾部署到Web服務器。
 
 ### Docker部署
+
 ```dockerfile
 FROM nginx:alpine
 COPY . /usr/share/nginx/html
@@ -277,17 +303,21 @@ CMD ["nginx", "-g", "daemon off;"]
 ## 🐛 常見問題
 
 ### Q: 頁面顯示空白？
+
 A: 檢查瀏覽器控制台是否有JavaScript錯誤。
 
 ### Q: 樣式顯示異常？
+
 A: 確保CSS文件路徑正確，檢查瀏覽器緩存。
 
 ### Q: WebSocket連接失敗？
+
 A: 檢查後端服務是否運行在指定端口。
 
 ## 📝 更新日誌
 
 ### v1.0.0 (2025-12-11)
+
 - ✅ 完成基礎頁面結構
 - ✅ 實現響應式設計
 - ✅ 添加基礎交互功能
@@ -313,4 +343,4 @@ A: 檢查後端服務是否運行在指定端口。
 
 ---
 
-*最後更新: 2025-12-11*
+_最後更新: 2025-12-11_

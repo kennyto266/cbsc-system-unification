@@ -8,7 +8,8 @@ Strategy Data Access Layer
 - 数据持久化管理
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
+from enum import Enum
 import logging
 from datetime import datetime, timedelta
 import json
@@ -19,6 +20,15 @@ from ..models import (
 )
 
 logger = logging.getLogger(__name__)
+
+def get_enum_value(enum_field: Union[str, Enum]) -> str:
+    """
+    获取枚举值的字符串表示
+    处理可能已经是字符串的情况
+    """
+    if hasattr(enum_field, 'value'):
+        return enum_field.value
+    return enum_field
 
 
 class StrategyRepository:
@@ -140,9 +150,9 @@ class StrategyRepository:
         # 应用过滤条件
         if filters:
             if "strategy_type" in filters:
-                strategies = [s for s in strategies if s.strategy_type.value == filters["strategy_type"]]
+                strategies = [s for s in strategies if get_enum_value(s.strategy_type) == filters["strategy_type"]]
             if "status" in filters:
-                strategies = [s for s in strategies if s.status.value == filters["status"]]
+                strategies = [s for s in strategies if get_enum_value(s.status) == filters["status"]]
             if "is_active" in filters:
                 strategies = [s for s in strategies if s.is_active == filters["is_active"]]
 
@@ -318,12 +328,15 @@ class StrategyRepository:
         """
         self._executions[execution.execution_id] = execution
 
+        # 处理status值（可能是字符串或枚举）
+        status_value = get_enum_value(execution.status)
+
         # 更新运行中的执行列表
-        if execution.status.value == "running":
+        if status_value == "running":
             if execution.strategy_id not in self._running_executions:
                 self._running_executions[execution.strategy_id] = []
             self._running_executions[execution.strategy_id].append(execution.execution_id)
-        elif execution.status.value in ["completed", "failed", "cancelled"]:
+        elif status_value in ["completed", "failed", "cancelled"]:
             # 从运行列表中移除
             if execution.strategy_id in self._running_executions:
                 if execution.execution_id in self._running_executions[execution.strategy_id]:
@@ -382,7 +395,7 @@ class StrategyRepository:
         if strategy_id:
             executions = [e for e in executions if e.strategy_id == strategy_id]
         if status:
-            executions = [e for e in executions if e.status.value == status]
+            executions = [e for e in executions if get_enum_value(e.status) == status]
 
         # 排序
         executions.sort(key=lambda x: x.start_time, reverse=True)
@@ -442,19 +455,19 @@ class StrategyRepository:
         # 按类型统计
         type_stats = {}
         for strategy in strategies:
-            type_name = strategy.strategy_type.value
+            type_name = get_enum_value(strategy.strategy_type)
             type_stats[type_name] = type_stats.get(type_name, 0) + 1
 
         # 按状态统计
         status_stats = {}
         for strategy in strategies:
-            status_name = strategy.status.value
+            status_name = get_enum_value(strategy.status)
             status_stats[status_name] = status_stats.get(status_name, 0) + 1
 
         # 按风险等级统计
         risk_stats = {}
         for strategy in strategies:
-            risk_name = strategy.risk_level.value
+            risk_name = get_enum_value(strategy.risk_level)
             risk_stats[risk_name] = risk_stats.get(risk_name, 0) + 1
 
         return {

@@ -19,6 +19,7 @@ frontend/js/
 ### 2. API客戶端模塊 (api.js)
 
 #### 主要特性：
+
 - **統一API接口**：支持CBSC策略API和非價格策略API
 - **智能緩存機制**：10秒TTL內存緩存，避免重複請求
 - **自動重試機制**：網絡錯誤自動重試3次，指數退避算法
@@ -28,6 +29,7 @@ frontend/js/
 #### 核心類：
 
 **APIClient類**：
+
 ```javascript
 class APIClient {
     // 通用HTTP請求方法，支持緩存和重試
@@ -42,6 +44,7 @@ class APIClient {
 ```
 
 **StrategyAPI類**：
+
 ```javascript
 class StrategyAPI extends APIClient {
     // 策略表現數據
@@ -67,12 +70,14 @@ class StrategyAPI extends APIClient {
 #### API端點支持：
 
 **CBSC策略API**：
+
 - `/api/strategies/performance` - 策略表現數據
 - `/api/strategies/list` - 策略清單
 - `/api/strategies/{strategy_name}/toggle` - 策略切換
 - `/api/strategies/{strategy_name}/details` - 策略詳情
 
 **非價格策略API**：
+
 - `/api/non-price/strategies/available` - 可用策略
 - `/api/non-price/strategies/performance/{strategy_id}` - 策略表現
 - `/api/non-price/hkma/hibor/latest` - HIBOR利率
@@ -84,6 +89,7 @@ class StrategyAPI extends APIClient {
 #### 數據模型：
 
 **StrategyPerformance類**：
+
 ```javascript
 class StrategyPerformance {
     constructor(name, sharpeRatio, maxDrawdown, totalReturn, winRate, status)
@@ -101,6 +107,7 @@ class StrategyPerformance {
 ```
 
 **StrategyConfig類**：
+
 ```javascript
 class StrategyConfig {
     constructor(name, enabled, parameters, description)
@@ -211,38 +218,44 @@ class Dashboard {
 ### 1. 緩存策略
 
 **實現方式**：
+
 - 使用Map結構存儲緩存數據
 - 每個緩存項設置獨立的過期定時器
 - 10秒TTL自動過期清理
 - 支持手動清除和批量操作
 
 **緩存鍵生成**：
+
 ```javascript
-const cacheKey = `${fullUrl}_${JSON.stringify(options)}`;
+const cacheKey = `${fullUrl}_${JSON.stringify(options)}`
 ```
 
 ### 2. 錯誤處理策略
 
 **錯誤分類**：
+
 - **網絡錯誤**：自動重試，指數退避
 - **HTTP錯誤**：根據狀態碼處理，4xx不重試
 - **數據錯誤**：驗證和默認值處理
 - **超時錯誤**：5秒超時控制
 
 **重試機制**：
+
 ```javascript
 // 指數退避算法
-const delay = this.config.retryDelay * Math.pow(2, attempt - 1);
+const delay = this.config.retryDelay * Math.pow(2, attempt - 1)
 ```
 
 ### 3. 性能優化
 
 **請求優化**：
+
 - 並行加載多個API端點
 - GET請求自動緩存
 - 變更操作(POST/PUT/DELETE)跳過緩存
 
 **UI更新優化**：
+
 - 防抖動處理用戶輸入
 - 節流控制更新頻率
 - 事件驅動的響應式更新
@@ -250,6 +263,7 @@ const delay = this.config.retryDelay * Math.pow(2, attempt - 1);
 ### 4. 數據格式化
 
 **統一數據模型**：
+
 ```javascript
 // 策略表現數據格式
 {
@@ -336,28 +350,28 @@ const delay = this.config.retryDelay * Math.pow(2, attempt - 1);
 <script src="js/dashboard.js"></script>
 
 <script>
-// 等待Dashboard初始化
-window.dashboard.on('initialized', () => {
-    console.log('Dashboard ready');
+  // 等待Dashboard初始化
+  window.dashboard.on('initialized', () => {
+    console.log('Dashboard ready')
 
     // 獲取策略數據
-    const strategies = window.dashboard.getStrategies();
-    console.log('Strategies:', strategies);
+    const strategies = window.dashboard.getStrategies()
+    console.log('Strategies:', strategies)
 
     // 獲取指標
-    const metrics = window.dashboard.getMetrics();
-    console.log('Metrics:', metrics);
-});
+    const metrics = window.dashboard.getMetrics()
+    console.log('Metrics:', metrics)
+  })
 
-// 監聽數據更新
-window.dashboard.on('dataLoaded', () => {
-    console.log('Data refreshed');
-});
+  // 監聽數據更新
+  window.dashboard.on('dataLoaded', () => {
+    console.log('Data refreshed')
+  })
 
-// 監聽錯誤
-window.dashboard.on('error', (error) => {
-    console.error('Dashboard error:', error);
-});
+  // 監聽錯誤
+  window.dashboard.on('error', (error) => {
+    console.error('Dashboard error:', error)
+  })
 </script>
 ```
 
@@ -366,22 +380,22 @@ window.dashboard.on('error', (error) => {
 ```javascript
 // 獲取策略表現
 async function getPerformance() {
-    try {
-        const data = await window.strategyAPI.getStrategyPerformance();
-        console.log('Performance data:', data);
-    } catch (error) {
-        console.error('Failed to get performance:', error);
-    }
+  try {
+    const data = await window.strategyAPI.getStrategyPerformance()
+    console.log('Performance data:', data)
+  } catch (error) {
+    console.error('Failed to get performance:', error)
+  }
 }
 
 // 切換策略狀態
 async function toggleStrategy(name) {
-    try {
-        const result = await window.dashboard.toggleStrategy(name);
-        console.log('Strategy toggled:', result);
-    } catch (error) {
-        console.error('Failed to toggle strategy:', error);
-    }
+  try {
+    const result = await window.dashboard.toggleStrategy(name)
+    console.log('Strategy toggled:', result)
+  } catch (error) {
+    console.error('Failed to toggle strategy:', error)
+  }
 }
 ```
 
@@ -390,15 +404,15 @@ async function toggleStrategy(name) {
 ```javascript
 // 策略更新事件
 window.dashboard.on('strategyUpdated', (data) => {
-    console.log('Strategy updated:', data.name);
-    // 更新UI...
-});
+  console.log('Strategy updated:', data.name)
+  // 更新UI...
+})
 
 // 指標更新事件
 window.dashboard.on('metricsUpdated', (metrics) => {
-    console.log('New metrics:', metrics);
-    // 更新指標顯示...
-});
+  console.log('New metrics:', metrics)
+  // 更新指標顯示...
+})
 ```
 
 ## 部署和配置
@@ -414,20 +428,20 @@ window.dashboard.on('metricsUpdated', (metrics) => {
 ```javascript
 // API配置
 const API_CONFIG = {
-    BASE_URL: 'http://localhost:3004',
-    TIMEOUT: 5000,
-    RETRY_ATTEMPTS: 3,
-    RETRY_DELAY: 1000,
-    CACHE_TTL: 10000
-};
+  BASE_URL: 'http://localhost:3004',
+  TIMEOUT: 5000,
+  RETRY_ATTEMPTS: 3,
+  RETRY_DELAY: 1000,
+  CACHE_TTL: 10000,
+}
 
 // Dashboard配置
 const dashboardConfig = {
-    refreshInterval: 10000,    // 10秒自動刷新
-    retryAttempts: 3,
-    retryDelay: 2000,
-    maxRetries: 5
-};
+  refreshInterval: 10000, // 10秒自動刷新
+  retryAttempts: 3,
+  retryDelay: 2000,
+  maxRetries: 5,
+}
 ```
 
 ### 3. CORS配置

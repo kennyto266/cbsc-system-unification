@@ -194,14 +194,23 @@ class TestStrategyRepository:
             filters={"strategy_type": "direct_rsi"}
         )
         assert len(result) == 2
-        assert all(s.strategy_type.value == "direct_rsi" for s in result)
+        # 检查类型，处理字符串或枚举的情况
+        assert all(
+            (s.strategy_type == "direct_rsi" if isinstance(s.strategy_type, str)
+             else s.strategy_type.value == "direct_rsi")
+            for s in result
+        )
 
         # 測試狀態過濾
         result, total = await repository.list_strategies(
             filters={"status": "active"}
         )
         assert len(result) == 2
-        assert all(s.status.value == "active" for s in result)
+        assert all(
+            (s.status == "active" if isinstance(s.status, str)
+             else s.status.value == "active")
+            for s in result
+        )
 
     @pytest.mark.asyncio
     async def test_add_signal(self, repository, sample_signal):
