@@ -3,8 +3,12 @@
  * Exports all WebSocket related functionality
  */
 
-// Core service
+// Core services
 export { WebSocketService, getWebSocketService } from './WebSocketService';
+export { EnhancedWebSocketService, enhancedWS } from './EnhancedWebSocketService';
+
+// Legacy manager
+export { WebSocketManager, wsManager } from '../websocketManager';
 
 // Managers
 export { ConnectionManager } from './ConnectionManager';
@@ -16,6 +20,11 @@ export {
   NetworkAwareReconnectionStrategy,
   AdaptiveReconnectionStrategy
 } from './ReconnectStrategy';
+
+// Hooks
+export { useWebSocketService } from '../../hooks/useWebSocketService';
+export { useRealTimeMarketData } from '../../hooks/useRealTimeMarketData';
+export { useRealTimeStrategyUpdates } from '../../hooks/useRealTimeStrategyUpdates';
 
 // Types
 export type {
