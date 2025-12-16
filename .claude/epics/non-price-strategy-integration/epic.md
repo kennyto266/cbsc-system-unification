@@ -1,9 +1,11 @@
 ---
 name: non-price-strategy-integration
 description: Complete integration of non-price data strategies into the main CBSC trading system
-status: backlog
+status: active
 created: 2025-12-12T00:28:27Z
-updated: 2025-12-12T00:49:31Z
+updated: 2025-12-16T03:00:00Z
+github: https://github.com/kennyto266/cbsc-system-unification/issues/71
+progress: 60%
 ---
 
 # Epic: Non-Price Strategy Integration
