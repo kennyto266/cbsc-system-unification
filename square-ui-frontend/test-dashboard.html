@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .button {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: #2563eb;
+        }
+        .button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .info {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        #console {
+            background-color: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>儀表板功能測試</h1>
+
+        <div class="section">
+            <h2>快速操作按鈕測試</h2>
+            <button class="button" onclick="testCreateStrategy()">創建新策略</button>
+            <button class="button" onclick="testMarketData()">查看市場數據</button>
+            <button class="button" onclick="testBacktest()">運行回測</button>
+            <button class="button" onclick="testExportReport()">導出報告</button>
+            <div id="button-status"></div>
+        </div>
+
+        <div class="section">
+            <h2>API 端點測試</h2>
+            <button class="button" onclick="testAPI('/api/data/stocks')">測試股票數據 API</button>
+            <button class="button" onclick="testAPI('/api/government/monetary-base')">測試貨幣基礎 API</button>
+            <button class="button" onclick="testAPI('/api/government/hibor')">測試 HIBOR API</button>
+            <button class="button" onclick="testAPI('/api/government/exchange-rate')">測試匯率 API</button>
+            <button class="button" onclick="testAPI('/api/v1/strategies')">測試策略 API</button>
+            <div id="api-status"></div>
+        </div>
+
+        <div class="section">
+            <h2>實際儀表板鏈接</h2>
+            <a href="http://localhost:3001/dashboard" target="_blank" class="button">在新標籤頁打開儀表板</a>
+            <p class="info">注意：請確保前端服務正在端口 3001 上運行</p>
+        </div>
+
+        <div class="section">
+            <h2>控制台輸出</h2>
+            <div id="console"></div>
+        </div>
+    </div>
+
+    <script>
+        const consoleEl = document.getElementById('console');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = `[${timestamp}] ${type.toUpperCase()}: `;
+            consoleEl.textContent += prefix + message + '\n';
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function showStatus(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        async function testCreateStrategy() {
+            log('測試創建策略功能...');
+            try {
+                const response = await fetch('http://localhost:3001/dashboard/strategies');
+                if (response.ok) {
+                    showStatus('button-status', '✓ 策略管理頁面可訪問', 'success');
+                    log('成功訪問策略管理頁面');
+                } else {
+                    showStatus('button-status', '✗ 策略管理頁面返回錯誤', 'error');
+                    log(`策略管理頁面錯誤: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                showStatus('button-status', `✗ 無法連接到儀表板: ${error.message}`, 'error');
+                log(`創建策略測試失敗: ${error.message}`);
+            }
+        }
+
+        async function testMarketData() {
+            log('測試市場數據功能...');
+            try {
+                const response = await fetch('/api/data/stocks');
+                const data = await response.json();
+                if (response.ok && data.data) {
+                    showStatus('button-status', `✓ 獲取到 ${data.data.length} 支股票數據`, 'success');
+                    log(`成功獲取市場數據，共 ${data.data.length} 支股票`);
+                } else {
+                    showStatus('button-status', '✗ 獲取市場數據失敗', 'error');
+                    log(`市場數據錯誤: ${data.error || '未知錯誤'}`);
+                }
+            } catch (error) {
+                showStatus('button-status', `✗ 市場數據測試失敗: ${error.message}`, 'error');
+                log(`市場數據測試失敗: ${error.message}`);
+            }
+        }
+
+        async function testBacktest() {
+            log('測試回測功能...');
+            try {
+                const response = await fetch('/api/backtest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        strategy_id: 'test',
+                        start_date: '2023-01-01',
+                        end_date: '2023-12-31'
+                    })
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    showStatus('button-status', '✓ 回測請求已提交', 'success');
+                    log(`回測響應: ${JSON.stringify(data)}`);
+                } else {
+                    showStatus('button-status', '✗ 回測請求失敗', 'error');
+                    log(`回測錯誤: ${response.status}`);
+                }
+            } catch (error) {
+                showStatus('button-status', `✗ 回測測試失敗: ${error.message}`, 'error');
+                log(`回測測試失敗: ${error.message}`);
+            }
+        }
+
+        async function testExportReport() {
+            log('測試導出報告功能...');
+            try {
+                const response = await fetch('/api/export/strategy/1?format=pdf');
+                if (response.ok) {
+                    showStatus('button-status', '✓ 報告導出功能可用', 'success');
+                    log('報告導出功能正常');
+                } else {
+                    showStatus('button-status', '✗ 導出報告失敗', 'error');
+                    log(`導出錯誤: ${response.status}`);
+                }
+            } catch (error) {
+                showStatus('button-status', `✗ 導出測試失敗: ${error.message}`, 'error');
+                log(`導出測試失敗: ${error.message}`);
+            }
+        }
+
+        async function testAPI(endpoint) {
+            log(`測試 API: ${endpoint}`);
+            try {
+                const response = await fetch(endpoint);
+                const data = await response.json();
+
+                if (response.ok) {
+                    log(`✓ ${endpoint} - 成功`);
+                    if (data.data && Array.isArray(data.data)) {
+                        log(`  - 數據點數量: ${data.data.length}`);
+                    }
+                    if (data.latest) {
+                        log(`  - 最新數據: ${JSON.stringify(data.latest).substring(0, 100)}...`);
+                    }
+                    showStatus('api-status', `✓ ${endpoint} 測試成功`, 'success');
+                } else {
+                    log(`✗ ${endpoint} - 失敗: ${data.error || response.statusText}`);
+                    showStatus('api-status', `✗ ${endpoint} 測試失敗`, 'error');
+                }
+            } catch (error) {
+                log(`✗ ${endpoint} - 錯誤: ${error.message}`);
+                showStatus('api-status', `✗ ${endpoint} 連接失敗`, 'error');
+            }
+        }
+
+        // 檢查服務器狀態
+        async function checkServer() {
+            log('檢查儀表板服務器狀態...');
+            try {
+                const response = await fetch('http://localhost:3001/api/health');
+                if (response.ok) {
+                    log('✓ 儀表板服務器運行正常');
+                } else {
+                    log('⚠ 儀表板服務器響應異常');
+                }
+            } catch (error) {
+                log('⚠ 無法連接到儀表板服務器（這可能正常，如果沒有 health 端點）');
+            }
+        }
+
+        // 頁面加載時執行
+        window.onload = function() {
+            log('儀表板測試頁面已加載');
+            log('開始測試...');
+            checkServer();
+        };
+    </script>
+</body>
+</html>
