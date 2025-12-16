@@ -4,7 +4,7 @@ status: active
 created: 2025-12-12T13:43:48Z
 updated: 2025-12-12T13:43:48Z
 progress: 5%
-github: https://github.com/kennyto266/cbsc-system-unification/issues/41
+github: https://github.com/kennyto266/cbsc-system-unification/issues/11
 ---
 
 # Epic: CBSC系統統一整合
@@ -74,7 +74,7 @@ github: https://github.com/kennyto266/cbsc-system-unification/issues/41
 
 ## 🔗 GitHub任務映射
 
-- **Epic #41**: CBSC系統統一整合 (主要epic)
+- **Epic #11**: CBSC系統統一整合 (主要epic)
 - **Task #42**: Task #01: Core Multiprocessing Engine
 - **Task #40**: Task #02: Advanced Cache Manager with Multi-Level Support
 - **Task #39**: Task #03: Real-Time Data Streaming Service
@@ -84,7 +84,7 @@ github: https://github.com/kennyto266/cbsc-system-unification/issues/41
 ## 🚀 當前狀態
 
 ### 已完成
-- ✅ Epic #41 在GitHub上創建並配置
+- ✅ Epic #11 在GitHub上創建並配置
 - ✅ 5個核心任務已分解並創建
 - ✅ 本地epic目錄結構已建立
 
