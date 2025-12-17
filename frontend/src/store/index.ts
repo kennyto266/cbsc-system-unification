@@ -15,10 +15,7 @@ import dashboardSlice from './slices/dashboardSlice';
 import strategySlice from './slices/strategySlice';
 
 // Import API services
-import { authApi } from './services/authApi';
-import { strategyApi } from './services/strategyApi';
-import { dashboardApi } from './services/dashboardApi';
-import { userApi } from './services/userApi';
+import { authApi, strategyApi, dashboardApi, userApi, marketDataApi, realtimeApi } from './services';
 
 // Store configuration
 export const store = configureStore({
@@ -34,6 +31,8 @@ export const store = configureStore({
     [strategyApi.reducerPath]: strategyApi.reducer,
     [dashboardApi.reducerPath]: dashboardApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
+    [marketDataApi.reducerPath]: marketDataApi.reducer,
+    [realtimeApi.reducerPath]: realtimeApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -53,6 +52,12 @@ export const store = configureStore({
           'userApi/executeQuery/pending',
           'userApi/executeQuery/fulfilled',
           'userApi/executeQuery/rejected',
+          'marketDataApi/executeQuery/pending',
+          'marketDataApi/executeQuery/fulfilled',
+          'marketDataApi/executeQuery/rejected',
+          'realtimeApi/executeQuery/pending',
+          'realtimeApi/executeQuery/fulfilled',
+          'realtimeApi/executeQuery/rejected',
         ],
         // Ignore these field paths in all actions
         ignoredPaths: [
@@ -60,6 +65,8 @@ export const store = configureStore({
           'strategyApi',
           'dashboardApi',
           'userApi',
+          'marketDataApi',
+          'realtimeApi',
         ],
       },
     })
@@ -67,7 +74,9 @@ export const store = configureStore({
         authApi.middleware,
         strategyApi.middleware,
         dashboardApi.middleware,
-        userApi.middleware
+        userApi.middleware,
+        marketDataApi.middleware,
+        realtimeApi.middleware
       ),
   devTools: process.env.NODE_ENV !== 'production',
 });

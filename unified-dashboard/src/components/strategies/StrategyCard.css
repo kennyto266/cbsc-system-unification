@@ -1,0 +1,229 @@
+/* Strategy Card Styles */
+.strategy-card {
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+.strategy-card.selected {
+  border: 2px solid #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.strategy-card-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.strategy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.strategy-title {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.strategy-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  line-height: 1.4;
+}
+
+.strategy-status {
+  align-self: flex-start;
+  font-size: 12px;
+}
+
+.strategy-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.strategy-info {
+  margin-bottom: 16px;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.info-row .label {
+  color: #8c8c8c;
+  font-weight: 500;
+}
+
+.info-row .value {
+  color: #262626;
+  font-weight: 400;
+}
+
+.strategy-performance {
+  flex: 1;
+}
+
+.performance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.metric {
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.metric-value.negative {
+  color: #ff4d4f;
+}
+
+.execution-progress {
+  margin-top: 12px;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.progress-value {
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.compact-performance {
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.compact-metric {
+  font-size: 12px;
+  color: #595959;
+}
+
+.strategy-description {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.strategy-description p {
+  margin: 0;
+  font-size: 13px;
+  color: #595959;
+  line-height: 1.5;
+}
+
+/* Compact mode styles */
+.strategy-card.compact .strategy-header {
+  margin-bottom: 8px;
+}
+
+.strategy-card.compact .strategy-name {
+  font-size: 14px;
+}
+
+.strategy-card.compact .performance-grid {
+  display: none;
+}
+
+.strategy-card.compact .execution-progress {
+  display: none;
+}
+
+.strategy-card.compact .strategy-description {
+  display: none;
+}
+
+/* Hover effects */
+.strategy-card:hover .strategy-name {
+  color: #1890ff;
+}
+
+.strategy-card:hover .ant-card {
+  border-color: #1890ff;
+}
+
+/* Status indicator animations */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.strategy-card .ant-badge-status-dot {
+  animation: pulse 2s infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .strategy-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .strategy-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .performance-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .metric {
+    padding: 8px 4px;
+  }
+
+  .metric-label {
+    font-size: 11px;
+  }
+
+  .metric-value {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 576px) {
+  .performance-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .info-row {
+    flex-wrap: wrap;
+  }
+}

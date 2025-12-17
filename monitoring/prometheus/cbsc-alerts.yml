@@ -1,18 +1,20 @@
-# CBSC System Alert Rules
+# CBSC System Production Alert Rules
+# CBSC系統生產環境告警規則
 groups:
 - name: cbsc-system.rules
   rules:
   # API Health Alerts
-  - alert: APIDown
-    expr: up{job="cbsc-services"} == 0
+  - alert: CBSCAPIDown
+    expr: up{job=~"cbsc-.*"} == 0
     for: 1m
     labels:
       severity: critical
-      service: "{{ $labels.kubernetes_name }}"
-      namespace: "{{ $labels.kubernetes_namespace }}"
+      service: "cbsc-api"
+      team: "devops"
     annotations:
-      summary: "API service {{ $labels.kubernetes_name }} is down"
-      description: "API service {{ $labels.kubernetes_name }} in namespace {{ $labels.kubernetes_namespace }} has been down for more than 1 minute."
+      summary: "CBSC服務 {{ $labels.instance }} 已宕機"
+      description: "CBSC {{ $labels.job }} 服務在 {{ $labels.instance }} 已無法訪問超過1分鐘"
+      runbook_url: "https://docs.cbsc.com/runbooks/service-down"
 
   - alert: HighErrorRate
     expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05

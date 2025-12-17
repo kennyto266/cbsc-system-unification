@@ -18,6 +18,7 @@ from .repositories.user_repository import UserRepository
 from .utils.cache import CacheManager
 from .utils.validators import StrategyValidator
 from .utils.permissions import get_current_user, require_strategy_permission
+from .container import get_strategy_service
 from .schemas import (
     StrategyCreate, StrategyUpdate, StrategyResponse,
     StrategyListResponse, StrategyDetailResponse,
@@ -31,16 +32,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# 依赖注入
-async def get_strategy_service() -> BaseStrategyService:
-    """获取策略服务实例"""
-    # 这里应该通过依赖注入容器获取
-    # 暂时使用简单的实例化
-    strategy_repo = StrategyRepository()
-    user_repo = UserRepository()
-    cache_manager = CacheManager()
-    validator = StrategyValidator()
-    return BaseStrategyService(strategy_repo, user_repo, cache_manager, validator)
+# 依赖注入 - 使用 DI 容器
+# 已在 container.py 中定义 get_strategy_service 函数
 
 
 # ============================================================================

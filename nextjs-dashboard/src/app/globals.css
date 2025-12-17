@@ -1,0 +1,326 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* 自定義滾動條 */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+
+  /* 圖表容器響應式 */
+  .chart-container {
+    @apply w-full h-full min-h-[300px];
+  }
+
+  /* 加載動畫 */
+  .loading-spinner {
+    @apply inline-block w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin;
+  }
+
+  /* 光暈效果 */
+  .glow-effect {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    }
+    to {
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+    }
+  }
+
+  /* 數字滾動效果 */
+  .number-scroll {
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: bottom;
+  }
+
+  .number-scroll-inner {
+    display: inline-block;
+    animation: numberScroll 1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes numberScroll {
+    0% {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* 條形圖動畫 */
+  .bar-animation {
+    animation: barGrow 1s ease-out;
+    transform-origin: left;
+  }
+
+  @keyframes barGrow {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* 餅圖動畫 */
+  .pie-animation {
+    animation: pieRotate 1s ease-out;
+  }
+
+  @keyframes pieRotate {
+    from {
+      transform: rotate(-90deg);
+    }
+    to {
+      transform: rotate(0);
+    }
+  }
+}
+
+@layer components {
+  /* Dashboard卡片樣式 */
+  .dashboard-card {
+    @apply bg-card text-card-foreground rounded-lg shadow-sm border border-border p-6 hover:shadow-cbsc transition-all duration-300;
+  }
+
+  /* Metric卡片樣式 */
+  .metric-card {
+    @apply dashboard-card relative overflow-hidden;
+  }
+
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    @apply bg-primary;
+  }
+
+  /* 策略狀態標籤 */
+  .strategy-status {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .strategy-status-active {
+    @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+  }
+
+  .strategy-status-inactive {
+    @apply bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200;
+  }
+
+  .strategy-status-paused {
+    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
+  }
+
+  /* 風險等級指示器 */
+  .risk-indicator {
+    @apply inline-flex items-center h-2 rounded-full;
+  }
+
+  .risk-low {
+    @apply w-1/4 bg-green-500;
+  }
+
+  .risk-medium {
+    @apply w-2/4 bg-yellow-500;
+  }
+
+  .risk-high {
+    @apply w-3/4 bg-orange-500;
+  }
+
+  .risk-extreme {
+    @apply w-full bg-red-500;
+  }
+
+  /* 圖表容器 */
+  .chart-wrapper {
+    @apply relative w-full h-[400px] bg-card rounded-lg border border-border p-4;
+  }
+
+  /* 表格樣式 */
+  .data-table {
+    @apply w-full border-collapse;
+  }
+
+  .data-table th {
+    @apply px-4 py-3 text-left text-sm font-semibold text-muted-foreground border-b border-border;
+  }
+
+  .data-table td {
+    @apply px-4 py-3 text-sm border-b border-border;
+  }
+
+  /* 按鈕變體 */
+  .btn-gradient {
+    @apply bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transition-all duration-300;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-accent hover:text-accent-foreground transition-colors duration-200;
+  }
+}
+
+@layer utilities {
+  /* 隱藏滾動條但保持功能 */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 文本省略 */
+  .text-ellipsis-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .text-ellipsis-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* 玻璃態效果 */
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20;
+  }
+
+  .glass-dark {
+    @apply bg-black/50 backdrop-blur-md border border-white/10;
+  }
+
+  /* 網格背景 */
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+}
+
+/* Ant Design主題覆蓋 */
+.ant-btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 border-blue-600 hover:border-blue-700;
+}
+
+.ant-table-thead > tr > th {
+  @apply bg-gray-50 dark:bg-gray-800;
+}
+
+.ant-card {
+  @apply shadow-sm;
+}
+
+.ant-input {
+  @apply border-gray-200;
+}
+
+/* 圖表響應式 */
+@media (max-width: 640px) {
+  .chart-container {
+    min-height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-container {
+    min-height: 200px;
+  }
+}

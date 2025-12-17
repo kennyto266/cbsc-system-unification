@@ -50,12 +50,13 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3004',
+        target: 'http://localhost:3003',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
       },
       '/ws': {
-        target: 'ws://localhost:3004',
+        target: 'ws://localhost:3003',
         ws: true,
         changeOrigin: true
       }
@@ -71,7 +72,9 @@ export default defineConfig({
           // 核心框架
           vendor: ['react', 'react-dom'],
           // UI 库
-          ui: ['antd', '@ant-design/colors', '@ant-design/icons'],
+          ui: ['@radix-ui/react-slot', '@radix-ui/react-icons', 'class-variance-authority', 'clsx', 'tailwind-merge'],
+          // Square-UI components
+          'square-ui': ['lucide-react', 'framer-motion'],
           // 图表库
           charts: ['chart.js', 'react-chartjs-2', 'recharts', 'plotly.js', 'react-plotly.js'],
           // 工具库

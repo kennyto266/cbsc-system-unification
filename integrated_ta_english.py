@@ -645,4 +645,4 @@ if __name__ == "__main__":
         sys.exit(1)
     except Exception as e:
         print(f"Fatal error: {e}")
-        sys.exit(1)
+ee        sys.exit(1)
