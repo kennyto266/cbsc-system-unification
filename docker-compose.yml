@@ -1,114 +1,244 @@
 version: '3.8'
 
 services:
-  # 主应用服务
-  quant-system:
-    build: .
+  # CBSC 策略管理系統 - 主應用服務
+  cbsc-strategy-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cbsc-strategy-api
     ports:
-      - "8001:8001"
+      - "3004:3004"
+      - "3005:3005"  # Metrics port
     environment:
-      - DATABASE_URL=postgresql://quant_user:quant_password@postgres:5432/quant_system
+      # Database configuration
+      - DATABASE_URL=postgresql://cbsc_user:cbsc_password@postgres:5432/cbsc_strategy
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=cbsc_strategy
+      - DATABASE_USER=cbsc_user
+      - DATABASE_PASSWORD=cbsc_password
+
+      # Redis configuration
       - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+      # API configuration
+      - STRATEGY_API_VERSION=2
+      - API_VERSION=v2
+      - API_PREFIX=/api/v2
+
+      # Feature flags
+      - ENABLE_V2_API=true
+      - ENABLE_WEBSOCKET_V2=true
+      - ENABLE_BATCH_OPERATIONS=true
+      - ENABLE_PERFORMANCE_ANALYTICS=true
+
+      # Performance settings
+      - WORKERS=4
+      - MAX_CONNECTIONS=100
       - CACHE_TTL=3600
-      - RATE_LIMIT_DEFAULT=100/minute
+      - RATE_LIMIT_DEFAULT=1000/minute
+
+      # Security
+      - SECRET_KEY=your-secret-key-change-in-production
+      - JWT_SECRET_KEY=your-jwt-secret-key-change
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:8888
+
+      # Logging
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+      - LOG_FILE=/app/logs/strategies/app.log
+
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
     volumes:
       - ./logs:/app/logs
-      - ./models:/app/models
+      - ./uploads:/app/uploads
+      - ./static:/app/static
+      - ./data:/app/data
+
     restart: unless-stopped
+
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3004/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
 
-  # PostgreSQL数据库
+    networks:
+      - cbsc-network
+
+  # PostgreSQL 數據庫
   postgres:
     image: postgres:15-alpine
+    container_name: cbsc-postgres
     environment:
-      POSTGRES_DB: quant_system
-      POSTGRES_USER: quant_user
-      POSTGRES_PASSWORD: quant_password
+      POSTGRES_DB: cbsc_strategy
+      POSTGRES_USER: cbsc_user
+      POSTGRES_PASSWORD: cbsc_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./monitoring/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./monitoring/postgres-config:/etc/postgresql/postgresql.conf
     ports:
       - "5432:5432"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U quant_user -d quant_system"]
+      test: ["CMD-SHELL", "pg_isready -U cbsc_user -d cbsc_strategy"]
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - cbsc-network
 
-  # Redis缓存
+  # Redis 緩存
   redis:
     image: redis:7-alpine
+    container_name: cbsc-redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+      - ./monitoring/redis.conf:/usr/local/etc/redis/redis.conf
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: redis-server /usr/local/etc/redis/redis.conf
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - cbsc-network
 
-  # Prometheus监控
+  # Prometheus 監控
   prometheus:
     image: prom/prometheus:latest
+    container_name: cbsc-prometheus
     ports:
       - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus-rules:/etc/prometheus/rules
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
+      - '--storage.tsdb.retention.time=30d'
       - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
     restart: unless-stopped
+    networks:
+      - cbsc-network
 
-  # Grafana可视化
+  # Grafana 可視化
   grafana:
     image: grafana/grafana:latest
+    container_name: cbsc-grafana
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=redis-datasource,grafana-piechart-panel,grafana-worldmap-panel
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_started
     restart: unless-stopped
+    networks:
+      - cbsc-network
 
-  # Nginx反向代理
+  # Nginx 反向代理
   nginx:
     image: nginx:alpine
+    container_name: cbsc-nginx
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
+      - ./monitoring/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./monitoring/nginx/conf.d:/etc/nginx/conf.d
+      - ./monitoring/nginx/ssl:/etc/nginx/ssl
+      - ./static:/var/www/static
+      - ./logs/nginx:/var/log/nginx
     depends_on:
-      - quant-system
+      cbsc-strategy-api:
+        condition: service_healthy
     restart: unless-stopped
+    networks:
+      - cbsc-network
+
+  # Jaeger 追蹤 (可選)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: cbsc-jaeger
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411
+    restart: unless-stopped
+    networks:
+      - cbsc-network
+
+  # Elasticsearch + Kibana for logging (可選)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.5.0
+    container_name: cbsc-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    restart: unless-stopped
+    networks:
+      - cbsc-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.5.0
+    container_name: cbsc-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+    networks:
+      - cbsc-network
 
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
   prometheus_data:
+    driver: local
   grafana_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
 
 networks:
-  default:
+  cbsc-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
