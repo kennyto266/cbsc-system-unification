@@ -22,6 +22,7 @@ sns = None
 PLOTTING_AVAILABLE = False
 
 from .base_backtest import BaseBacktestEngine, BacktestConfig, BacktestResult
+from .enhanced_risk_metrics import EnhancedRiskMetrics
 from ..risk_management.risk_calculator import RiskCalculator, RiskMetrics
 from ..data_adapters.data_service import DataService
 
@@ -88,11 +89,12 @@ pnl: Optional[float] = FieldNone, description="損益"
 class EnhancedBacktestEngineBaseBacktestEngine:
 """增強型回測引擎"""
 
-def __init__self, config: BacktestConfig:
+def __init__self, config: BacktestConfig):
 super().__init__config
 self.logger = logging.getLogger"hk_quant_system.enhanced_backtest"
 
 self.risk_calculator = RiskCalculator()
+self.enhanced_risk_metrics = EnhancedRiskMetrics(risk_free_rate=config.config.get('risk_free_rate', 0.02))
 self.data_service = DataService()
 
 self.transaction_cost = TransactionCost(**config.config.get'transaction_cost', {})
@@ -387,20 +389,42 @@ covariance = np.covreturns_series, benchmark_series[0, 1]
 benchmark_variance = np.varbenchmark_series
 beta = covariance / benchmark_variance if benchmark_variance > 0 else 0
 
-alpha = annualized_return - (0.02 + beta * (benchmark_series.mean() * 252 - 0.02))
+# Calculate enhanced metrics
+returns_series = pd.Series(self.daily_returns)
+benchmark_series = pd.Series(self.benchmark_returns)
+
+# Enhanced risk calculations with Buy & Hold comparison
+enhanced_metrics = self.enhanced_risk_metrics.calculate_all_metrics(
+    returns=returns_series,
+    benchmark_returns=benchmark_series,
+    periods_per_year=252
+)
+
+# Calculate Buy & Hold benchmark returns
+buy_hold_returns = price_series.pct_change().dropna()
+buy_hold_metrics = self.enhanced_risk_metrics.calculate_all_metrics(
+    returns=buy_hold_returns,
+    periods_per_year=252
+)
+
+# Relative Sharpe ratio
+relative_sharpe = enhanced_metrics['sharpe_ratio'] - buy_hold_metrics['sharpe_ratio']
+
+# Alpha with enhanced calculation
+alpha = enhanced_metrics.get('jensen_alpha', annualized_return - (self.risk_free_rate + beta * (benchmark_series.mean() * 252 - self.risk_free_rate)))
 
 backtest_metrics = BacktestMetrics(
 total_return=total_return,
 annualized_return=annualized_return,
-volatility=risk_metrics.volatility,
-sharpe_ratio=risk_metrics.sharpe_ratio,
-sortino_ratio=risk_metrics.sortino_ratio,
-calmar_ratio=risk_metrics.calmar_ratio,
-max_drawdown=risk_metrics.max_drawdown,
-max_drawdown_duration=0, # 需要額外計算
-var_95=risk_metrics.var_95,
-var_99=risk_metrics.var_99,
-expected_shortfall_95=risk_metrics.expected_shortfall_95,
+volatility=enhanced_metrics['annual_volatility'],
+sharpe_ratio=enhanced_metrics['sharpe_ratio'],
+sortino_ratio=enhanced_metrics.get('sortino_ratio', risk_metrics.sortino_ratio),
+calmar_ratio=enhanced_metrics.get('calmar_ratio', risk_metrics.calmar_ratio),
+max_drawdown=enhanced_metrics.get('max_drawdown', risk_metrics.max_drawdown),
+max_drawdown_duration=enhanced_metrics.get('max_drawdown_duration', 0),
+var_95=enhanced_metrics.get('var_95_historical', risk_metrics.var_95),
+var_99=enhanced_metrics.get('var_99_historical', risk_metrics.var_99),
+expected_shortfall_95=enhanced_metrics.get('cvar_95', risk_metrics.expected_shortfall_95),
 total_trades=total_trades,
 winning_trades=winning_count,
 losing_trades=losing_count,
@@ -422,6 +446,23 @@ trading_days=trading_days,
 initial_capital=initial_value
 )
 
+# Include enhanced metrics in result
+enhanced_result_metrics = backtest_metrics.dict()
+enhanced_result_metrics.update({
+    'relative_sharpe_ratio': relative_sharpe,
+    'buy_hold_sharpe': buy_hold_metrics['sharpe_ratio'],
+    'enhanced_calmar': enhanced_metrics.get('calmar_ratio'),
+    'enhanced_sortino': enhanced_metrics.get('sortino_ratio'),
+    'information_ratio_enhanced': enhanced_metrics.get('information_ratio'),
+    'treynor_ratio': enhanced_metrics.get('treynor_ratio'),
+    'jensen_alpha': enhanced_metrics.get('jensen_alpha'),
+    'omega_ratio': self.enhanced_risk_metrics.calculate_omega_ratio(returns_series),
+    'upside_capture': self.enhanced_risk_metrics.calculate_upside_capture(returns_series, benchmark_series),
+    'downside_capture': self.enhanced_risk_metrics.calculate_downside_capture(returns_series, benchmark_series),
+    'gain_loss_ratio': self.enhanced_risk_metrics.calculate_gain_loss_ratio(returns_series),
+    'profit_factor_enhanced': self.enhanced_risk_metrics.calculate_profit_factor(returns_series)
+})
+
 result = BacktestResult(
 strategy_name=self.config.strategy_name,
 start_date=self.config.start_date,
@@ -430,9 +471,9 @@ initial_capital=self.config.initial_capital,
 final_capital=final_value,
 total_return=total_return,
 annualized_return=annualized_return,
-sharpe_ratio=risk_metrics.sharpe_ratio,
-max_drawdown=risk_metrics.max_drawdown,
-metrics=backtest_metrics.dict(),
+sharpe_ratio=enhanced_metrics['sharpe_ratio'],
+max_drawdown=enhanced_metrics.get('max_drawdown', risk_metrics.max_drawdown),
+metrics=enhanced_result_metrics,
 trades=[trade.dict() for trade in self.trades],
 portfolio_values=self.portfolio_values,
 daily_returns=self.daily_returns
