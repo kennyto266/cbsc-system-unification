@@ -1,154 +1,351 @@
 /**
- * WebSocket Hook for React Components
- * 為React組件提供WebSocket功能的Hook
+ * WebSocket Hook
+ * Provides a convenient way to use WebSocket functionality
  */
 
-import { useEffect, useRef, useCallback } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { RootState } from '../store'
-import { setWebSocketStatus, clearRealtimeData } from '../store/slices/uiSlice'
-import { getWebSocketService, WebSocketService } from '../services/websocketService'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { wsService, MarketWS, StrategyWS, NotificationWS } from '../api/services/websocket'
+import { MarketPrice, TradeData, OrderBookUpdate, StrategyUpdate } from '../types/market'
+// Using local Notification type defined in uiSlice.ts
 
-interface UseWebSocketOptions {
-  autoConnect?: boolean
-  token?: string
-  reconnectInterval?: number
-}
-
+// Hook return type
 interface UseWebSocketReturn {
-  connect: (token?: string) => Promise<void>
-  disconnect: () => void
-  send: (message: any) => void
-  subscribe: (channel: string) => void
-  unsubscribe: (channel: string) => void
   isConnected: boolean
-  isReconnecting: boolean
-  lastError?: string
-  reconnectAttempts: number
+  error: Error | null
+  subscribe: <T = any>(channel: string, callback: (data: T) => void) => void
+  unsubscribe: (channel: string, callback?: (data: any) => void) => void
+  send: (data: any) => void
 }
 
-export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketReturn => {
-  const {
-    autoConnect = true,
-    token,
-    reconnectInterval = 3000
-  } = options
+/**
+ * Main WebSocket hook
+ */
+export function useWebSocket(): UseWebSocketReturn {
+  const [isConnected, setIsConnected] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+  const callbacksRef = useRef(new Map<string, Set<Function>>())
 
-  const dispatch = useDispatch()
-  const webSocketStatus = useSelector((state: RootState) => state.ui.webSocketStatus)
-  const webSocketServiceRef = useRef<WebSocketService | null>(null)
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  useEffect(() => {
+    // Connect to WebSocket
+    wsService.connect()
+      .then(() => {
+        setIsConnected(true)
+        setError(null)
+      })
+      .catch((err) => {
+        setIsConnected(false)
+        setError(err)
+      })
 
-  // 初始化WebSocket服務
-  const getWebSocketServiceInstance = useCallback(() => {
-    if (!webSocketServiceRef.current) {
-      webSocketServiceRef.current = getWebSocketService()
+    // Set up event listeners
+    const handleOpen = () => {
+      setIsConnected(true)
+      setError(null)
     }
-    return webSocketServiceRef.current
+
+    const handleClose = () => {
+      setIsConnected(false)
+    }
+
+    const handleError = (err: Error) => {
+      setIsConnected(false)
+      setError(err)
+    }
+
+    wsService.on('open', handleOpen)
+    wsService.on('close', handleClose)
+    wsService.on('error', handleError)
+
+    // Cleanup
+    return () => {
+      wsService.off('open', handleOpen)
+      wsService.off('close', handleClose)
+      wsService.off('error', handleError)
+
+      // Unsubscribe all channels
+      callbacksRef.current.forEach((callbacks, channel) => {
+        callbacks.forEach((callback) => {
+          wsService.unsubscribe(channel, callback as any)
+        })
+      })
+      callbacksRef.current.clear()
+    }
   }, [])
 
-  // 連接WebSocket
-  const connect = useCallback(async (authToken?: string) => {
-    try {
-      const wsService = getWebSocketServiceInstance()
-      const connectToken = authToken || token
+  const subscribe = useCallback(<T = any>(channel: string, callback: (data: T) => void) => {
+    wsService.subscribe(channel, callback)
 
-      dispatch(setWebSocketStatus({
-        connected: false,
-        reconnecting: true,
-        lastError: undefined,
-        reconnectAttempts: 0
-      }))
+    // Store callback for cleanup
+    if (!callbacksRef.current.has(channel)) {
+      callbacksRef.current.set(channel, new Set())
+    }
+    callbacksRef.current.get(channel)!.add(callback)
+  }, [])
 
-      await wsService.connect(connectToken)
+  const unsubscribe = useCallback((channel: string, callback?: (data: any) => void) => {
+    wsService.unsubscribe(channel, callback)
 
-    } catch (error) {
-      console.error('WebSocket connection failed:', error)
-      dispatch(setWebSocketStatus({
-        connected: false,
-        reconnecting: false,
-        lastError: error instanceof Error ? error.message : 'Connection failed'
-      }))
-
-      // 自動重連
-      if (autoConnect) {
-        reconnectTimeoutRef.current = setTimeout(() => {
-          connect(authToken)
-        }, reconnectInterval)
+    // Remove from stored callbacks
+    if (callback && callbacksRef.current.has(channel)) {
+      callbacksRef.current.get(channel)!.delete(callback)
+      if (callbacksRef.current.get(channel)!.size === 0) {
+        callbacksRef.current.delete(channel)
       }
     }
-  }, [token, autoConnect, reconnectInterval, dispatch, getWebSocketServiceInstance])
+  }, [])
 
-  // 斷開連接
-  const disconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current)
-      reconnectTimeoutRef.current = null
-    }
-
-    const wsService = getWebSocketServiceInstance()
-    wsService.disconnect()
-
-    dispatch(clearRealtimeData())
-    dispatch(setWebSocketStatus({
-      connected: false,
-      reconnecting: false,
-      reconnectAttempts: 0
-    }))
-  }, [dispatch, getWebSocketServiceInstance])
-
-  // 發送消息
-  const send = useCallback((message: any) => {
-    const wsService = getWebSocketServiceInstance()
-    wsService.send(message)
-  }, [getWebSocketServiceInstance])
-
-  // 訂閱頻道
-  const subscribe = useCallback((channel: string) => {
-    const wsService = getWebSocketServiceInstance()
-    wsService.subscribe(channel)
-  }, [getWebSocketServiceInstance])
-
-  // 取消訂閱頻道
-  const unsubscribe = useCallback((channel: string) => {
-    const wsService = getWebSocketServiceInstance()
-    wsService.unsubscribe(channel)
-  }, [getWebSocketServiceInstance])
-
-  // 自動連接
-  useEffect(() => {
-    if (autoConnect) {
-      connect(token)
-    }
-
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
-      }
-    }
-  }, [autoConnect, connect, token])
-
-  // 組件卸載時清理
-  useEffect(() => {
-    return () => {
-      if (webSocketServiceRef.current) {
-        webSocketServiceRef.current.cleanup()
-        webSocketServiceRef.current = null
-      }
-    }
+  const send = useCallback((data: any) => {
+    wsService.send(data)
   }, [])
 
   return {
-    connect,
-    disconnect,
-    send,
+    isConnected,
+    error,
     subscribe,
     unsubscribe,
-    isConnected: webSocketStatus.connected,
-    isReconnecting: webSocketStatus.reconnecting,
-    lastError: webSocketStatus.lastError,
-    reconnectAttempts: webSocketStatus.reconnectAttempts
+    send,
   }
 }
 
-export default useWebSocket
+/**
+ * Market data WebSocket hook
+ */
+export function useMarketData() {
+  const { subscribe, unsubscribe, isConnected } = useWebSocket()
+
+  const subscribePrices = useCallback((
+    symbols: string[],
+    callback: (prices: MarketPrice[]) => void
+  ) => {
+    MarketWS.subscribePrices(symbols, callback)
+  }, [])
+
+  const subscribeTrades = useCallback((
+    symbol: string,
+    callback: (trade: TradeData) => void
+  ) => {
+    MarketWS.subscribeTrades(symbol, callback)
+  }, [])
+
+  const subscribeDepth = useCallback((
+    symbol: string,
+    callback: (depth: OrderBookUpdate) => void
+  ) => {
+    MarketWS.subscribeDepth(symbol, callback)
+  }, [])
+
+  const unsubscribePrices = useCallback((symbols?: string[]) => {
+    MarketWS.unsubscribePrices(symbols)
+  }, [])
+
+  const unsubscribeTrades = useCallback((symbol: string) => {
+    MarketWS.unsubscribeTrades(symbol)
+  }, [])
+
+  const unsubscribeDepth = useCallback((symbol: string) => {
+    MarketWS.unsubscribeDepth(symbol)
+  }, [])
+
+  return {
+    isConnected,
+    subscribePrices,
+    subscribeTrades,
+    subscribeDepth,
+    unsubscribePrices,
+    unsubscribeTrades,
+    unsubscribeDepth,
+  }
+}
+
+/**
+ * Strategy WebSocket hook
+ */
+export function useStrategyWebSocket() {
+  const { subscribe, unsubscribe, isConnected } = useWebSocket()
+
+  const subscribeStrategyUpdates = useCallback((
+    callback: (update: StrategyUpdate) => void
+  ) => {
+    StrategyWS.subscribeStrategyUpdates(callback)
+  }, [])
+
+  const subscribeStrategy = useCallback((
+    strategyId: string,
+    callback: (update: StrategyUpdate) => void
+  ) => {
+    StrategyWS.subscribeStrategy(strategyId, callback)
+  }, [])
+
+  const unsubscribeStrategyUpdates = useCallback(() => {
+    StrategyWS.unsubscribeStrategyUpdates()
+  }, [])
+
+  const unsubscribeStrategy = useCallback((strategyId: string) => {
+    StrategyWS.unsubscribeStrategy(strategyId)
+  }, [])
+
+  return {
+    isConnected,
+    subscribeStrategyUpdates,
+    subscribeStrategy,
+    unsubscribeStrategyUpdates,
+    unsubscribeStrategy,
+  }
+}
+
+/**
+ * Notification WebSocket hook
+ */
+export function useNotifications() {
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const { subscribe, unsubscribe, isConnected } = useWebSocket()
+
+  useEffect(() => {
+    if (isConnected) {
+      NotificationWS.subscribe((notification: Notification) => {
+        setNotifications((prev) => [notification, ...prev.slice(0, 99)]) // Keep last 100
+
+        // Show browser notification if permission granted
+        if (Notification.permission === 'granted') {
+          new Notification(notification.title, {
+            body: notification.message,
+            icon: '/favicon.ico',
+          })
+        }
+      })
+    }
+
+    return () => {
+      NotificationWS.unsubscribe()
+    }
+  }, [isConnected, subscribe, unsubscribe])
+
+  const markAsRead = useCallback((id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    )
+  }, [])
+
+  const markAllAsRead = useCallback(() => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  }, [])
+
+  const clearNotifications = useCallback(() => {
+    setNotifications([])
+  }, [])
+
+  const unreadCount = notifications.filter((n) => !n.read).length
+
+  return {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearNotifications,
+  }
+}
+
+/**
+ * Real-time data hook with automatic reconnection
+ */
+export function useRealTimeData<T = any>(
+  channel: string,
+  dependencies: any[] = []
+) {
+  const [data, setData] = useState<T | null>(null)
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const { subscribe, unsubscribe, isConnected, error } = useWebSocket()
+
+  useEffect(() => {
+    if (isConnected && channel) {
+      const handler = (newData: T) => {
+        setData(newData)
+        setLastUpdate(new Date())
+      }
+
+      subscribe(channel, handler)
+
+      return () => {
+        unsubscribe(channel, handler)
+      }
+    }
+  }, [isConnected, channel, subscribe, unsubscribe, ...dependencies])
+
+  return {
+    data,
+    lastUpdate,
+    isConnected,
+    error,
+  }
+}
+
+/**
+ * WebSocket message history hook
+ */
+export function useWebSocketHistory(channel: string, maxMessages: number = 100) {
+  const [messages, setMessages] = useState<any[]>([])
+  const { subscribe, unsubscribe } = useWebSocket()
+
+  useEffect(() => {
+    if (channel) {
+      const handler = (message: any) => {
+        setMessages((prev) => {
+          const newMessages = [message, ...prev]
+          return newMessages.slice(0, maxMessages)
+        })
+      }
+
+      subscribe(channel, handler)
+
+      return () => {
+        unsubscribe(channel, handler)
+      }
+    }
+  }, [channel, subscribe, unsubscribe, maxMessages])
+
+  const clearHistory = useCallback(() => {
+    setMessages([])
+  }, [])
+
+  return {
+    messages,
+    clearHistory,
+  }
+}
+
+/**
+ * Debounced WebSocket messages hook
+ */
+export function useDebouncedWebSocket<T = any>(
+  channel: string,
+  delay: number = 300
+) {
+  const [data, setData] = useState<T | null>(null)
+  const timeoutRef = useRef<NodeJS.Timeout>()
+  const { subscribe, unsubscribe } = useWebSocket()
+
+  useEffect(() => {
+    if (channel) {
+      const handler = (newData: T) => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current)
+        }
+
+        timeoutRef.current = setTimeout(() => {
+          setData(newData)
+        }, delay)
+      }
+
+      subscribe(channel, handler)
+
+      return () => {
+        unsubscribe(channel, handler)
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current)
+        }
+      }
+    }
+  }, [channel, subscribe, unsubscribe, delay])
+
+  return data
+}

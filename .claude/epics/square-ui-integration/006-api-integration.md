@@ -1,11 +1,11 @@
 ---
 name: task-006-api-integration-layer
 title: 任務006：API集成層開發
-status: open
+status: completed
 assignee: backend-frontend-developer
 priority: P0
 created: 2025-12-14T03:32:09Z
-updated: 2025-12-14T03:32:09Z
+updated: 2025-12-17T14:02:48Z
 estimated: 4 days
 tags: [rtk-query, api-integration, fastapi, error-handling]
 dependsOn: [task-005-state-management-architecture]
@@ -260,3 +260,6 @@ src/
 
 **創建人**: Claude Code Assistant
 **最後更新**: 2025-12-14T03:32:09Z
+---
+## Completion
+This task has been completed on 2025-12-17T14:02:48Z

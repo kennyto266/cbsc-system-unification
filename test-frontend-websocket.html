@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket 連接測試</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .message {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        #messages {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #fafafa;
+        }
+        .timestamp {
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 WebSocket 連接測試</h1>
+
+        <div id="status" class="status disconnected">
+            狀態: 未連接
+        </div>
+
+        <div>
+            <button id="connectBtn" onclick="connect()">連接</button>
+            <button id="disconnectBtn" onclick="disconnect()" disabled>斷開連接</button>
+            <button onclick="clearMessages()">清除訊息</button>
+        </div>
+
+        <div>
+            <h3>訂閱頻道:</h3>
+            <button onclick="subscribe('strategy_performance')">策略表現</button>
+            <button onclick="subscribe('market_data')">市場數據</button>
+            <button onclick="subscribe('hibor_rates')">HIBOR 利率</button>
+            <button onclick="subscribe('cbsc_contracts')">CBSC 合約</button>
+            <button onclick="subscribe('government_data')">政府數據</button>
+            <button onclick="subscribe('system_status')">系統狀態</button>
+        </div>
+
+        <div id="messages">
+            <div class="message">等待連接...</div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        const wsUrl = 'ws://localhost:3004/ws';
+
+        function updateStatus(connected) {
+            const statusEl = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+
+            if (connected) {
+                statusEl.textContent = '狀態: 已連接';
+                statusEl.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusEl.textContent = '狀態: 未連接';
+                statusEl.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function addMessage(message, type = 'info') {
+            const messagesEl = document.getElementById('messages');
+            const timestamp = new Date().toLocaleTimeString();
+            const messageEl = document.createElement('div');
+            messageEl.className = 'message';
+            messageEl.innerHTML = `
+                <div class="timestamp">[${timestamp}]</div>
+                <div>${message}</div>
+            `;
+            messagesEl.appendChild(messageEl);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function connect() {
+            if (ws) {
+                ws.close();
+            }
+
+            addMessage('正在連接到 ' + wsUrl + '...');
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = function(event) {
+                updateStatus(true);
+                addMessage('✅ 連接成功！');
+            };
+
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    addMessage(`📨 收到訊息: ${data.type}`, 'success');
+
+                    switch(data.type) {
+                        case 'subscription_confirmed':
+                            addMessage(`✅ 訂閱確認: ${data.channel}`);
+                            break;
+                        case 'data':
+                            addMessage(`📊 數據更新 (${data.channel}):`);
+                            if (Array.isArray(data.data) && data.data.length > 0) {
+                                const firstItem = data.data[0];
+                                if (firstItem.name || firstItem.symbol) {
+                                    addMessage(`  - ${firstItem.name || firstItem.symbol}: ${JSON.stringify(firstItem).substring(0, 100)}...`);
+                                }
+                            }
+                            break;
+                        case 'heartbeat':
+                            addMessage('💓 心跳檢查');
+                            break;
+                        default:
+                            addMessage(`未知訊息類型: ${data.type}`);
+                    }
+                } catch (e) {
+                    addMessage('無法解析訊息: ' + event.data);
+                }
+            };
+
+            ws.onclose = function(event) {
+                updateStatus(false);
+                addMessage(`❌ 連接關閉: ${event.code} - ${event.reason || '未知原因'}`);
+            };
+
+            ws.onerror = function(event) {
+                updateStatus(false);
+                addMessage('❌ 連接錯誤');
+                console.error('WebSocket error:', event);
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function subscribe(channel) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addMessage('❌ 請先連接 WebSocket');
+                return;
+            }
+
+            const message = JSON.stringify({
+                action: 'subscribe',
+                channel: channel
+            });
+
+            ws.send(message);
+            addMessage(`📤 發送訂閱請求: ${channel}`);
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '<div class="message">訊息已清除</div>';
+        }
+
+        // 頁面加載完成後自動連接
+        window.onload = function() {
+            updateStatus(false);
+            addMessage('頁面已加載，點擊"連接"按鈕開始測試');
+        };
+
+        // 頁面關閉時斷開連接
+        window.onbeforeunload = function() {
+            disconnect();
+        };
+    </script>
+</body>
+</html>

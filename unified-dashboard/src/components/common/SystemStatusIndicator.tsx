@@ -86,7 +86,7 @@ const SystemStatusIndicator: React.FC<SystemStatusIndicatorProps> = ({
               {systemHealth && (
                 <Badge
                   color={systemStatus.color}
-                  text={systemHealth.cpuUsage.toFixed(0)}%
+                  text={`${systemHealth.cpuUsage.toFixed(0)}%`}
                 />
               )}
             </Space>
