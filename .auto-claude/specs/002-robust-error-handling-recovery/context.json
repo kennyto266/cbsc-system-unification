@@ -1,0 +1,24 @@
+{
+  "task_description": "# Robust Error Handling & Recovery\n\nImplement comprehensive error handling and automatic recovery mechanisms\n\n## Rationale\nSystem reliability is critical for teams depending on AI-assisted development workflows\n\n## User Stories\n- As a user, I want the system to automatically recover from errors so that my work isn't lost\n- As a developer, I want clear error messages so that I can quickly resolve issues\n\n## Acceptance Criteria\n- [ ] All API calls have retry logic with exponential backoff\n- [ ] Failed agent executions can be recovered\n- [ ] System gracefully handles Claude API limits\n- [ ] Users receive clear error messages and recovery options\n",
+  "scoped_services": ["backend", "auto-claude"],
+  "files_to_modify": {
+    "backend": [
+      "backend/main.py",
+      "backend/services/data_service.py",
+      "backend/api/data.py"
+    ],
+    "auto-claude": [
+      "Auto-Claude/auto-claude/services/orchestrator.py",
+      "Auto-Claude/auto-claude/agents/coder.py",
+      "Auto-Claude/auto-claude/runners/ai_analyzer/claude_client.py",
+      "Auto-Claude/auto-claude/recovery.py"
+    ]
+  },
+  "files_to_reference": [
+    "backend/services/data_service.py",
+    "backend/api/data.py",
+    "backend/main.py",
+    "Auto-Claude/auto-claude/recovery.py"
+  ],
+  "created_at": "2025-12-22T10:01:15.902245"
+}
