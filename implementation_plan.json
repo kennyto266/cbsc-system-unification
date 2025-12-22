@@ -1,0 +1,366 @@
+{
+  "feature": "Decision Capture & Tracking",
+  "workflow_type": "feature",
+  "workflow_rationale": "This is a new feature implementation requiring novel functionality for decision detection, database infrastructure, and API endpoints. The workflow follows service dependency order: database setup first, then core detection service, then API layer, finally integration.",
+  "phases": [
+    {
+      "id": "phase-1-database",
+      "name": "Database Schema & Migration",
+      "type": "implementation",
+      "description": "Set up PostgreSQL database schema for decision storage and migrate from SQLite",
+      "depends_on": [],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Create decision-related Pydantic models for data validation",
+          "service": "backend",
+          "files_to_modify": ["backend/models/"],
+          "files_to_create": ["backend/models/decision.py"],
+          "patterns_from": ["backend/models/strategy.py"],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"from backend.models.decision import Decision, DecisionCreate; print('Models imported successfully')\"",
+            "expected": "Models imported successfully"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-1-2",
+          "description": "Update database configuration to use PostgreSQL with async SQLAlchemy",
+          "service": "backend",
+          "files_to_modify": ["backend/config/database.py"],
+          "files_to_create": [],
+          "patterns_from": ["backend/config/database.py"],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"from backend.config.database import get_async_db; print('Async DB configured')\"",
+            "expected": "Async DB configured"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-1-3",
+          "description": "Add decision tables to database schema with full context fields",
+          "service": "backend",
+          "files_to_modify": ["backend/config/database.py"],
+          "files_to_create": [],
+          "patterns_from": ["backend/config/database.py"],
+          "verification": {
+            "type": "command",
+            "command": "python backend/config/database.py",
+            "expected": "Database initialization complete"
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-detection-service",
+      "name": "Decision Detection Service",
+      "type": "implementation",
+      "description": "Build core decision detection system using GitPython and spaCy",
+      "depends_on": ["phase-1-database"],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-2-1",
+          "description": "Create decision detection service with NLP processing using spaCy",
+          "service": "backend",
+          "files_to_modify": ["backend/services/"],
+          "files_to_create": ["backend/services/decision_service.py"],
+          "patterns_from": ["backend/services/analysis_service.py"],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"from backend.services.decision_service import DecisionDetectionService; print('Decision service created')\"",
+            "expected": "Decision service created"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-2-2",
+          "description": "Implement Git repository monitoring using GitPython",
+          "service": "backend",
+          "files_to_modify": ["backend/services/decision_service.py"],
+          "files_to_create": [],
+          "patterns_from": ["backend/services/analysis_service.py"],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"from backend.services.decision_service import DecisionDetectionService; d = DecisionDetectionService(); print('Git integration ready')\"",
+            "expected": "Git integration ready"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-2-3",
+          "description": "Add GitHub API integration for PR and issue linking using PyGithub",
+          "service": "backend",
+          "files_to_modify": ["backend/services/"],
+          "files_to_create": ["backend/services/github_service.py"],
+          "patterns_from": ["backend/services/analysis_service.py"],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"from backend.services.github_service import GitHubService; print('GitHub service created')\"",
+            "expected": "GitHub service created"
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-3-api-endpoints",
+      "name": "API Endpoints",
+      "type": "implementation",
+      "description": "Create FastAPI endpoints for decision CRUD operations and search",
+      "depends_on": ["phase-2-detection-service"],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-3-1",
+          "description": "Create decision API router with CRUD endpoints",
+          "service": "backend",
+          "files_to_modify": ["backend/api/"],
+          "files_to_create": ["backend/api/decisions.py"],
+          "patterns_from": ["backend/api/portfolio.py"],
+          "verification": {
+            "type": "api",
+            "method": "GET",
+            "url": "http://localhost:3004/api/decisions",
+            "expected_status": 200
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-3-2",
+          "description": "Add search and filtering functionality to decision endpoints",
+          "service": "backend",
+          "files_to_modify": ["backend/api/decisions.py"],
+          "files_to_create": [],
+          "patterns_from": ["backend/api/portfolio.py"],
+          "verification": {
+            "type": "api",
+            "method": "GET",
+            "url": "http://localhost:3004/api/decisions?search=test&limit=10",
+            "expected_status": 200
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-3-3",
+          "description": "Create webhook endpoint for real-time decision capture",
+          "service": "backend",
+          "files_to_modify": ["backend/api/decisions.py"],
+          "files_to_create": [],
+          "patterns_from": ["backend/api/portfolio.py"],
+          "verification": {
+            "type": "command",
+            "command": "curl -X POST http://localhost:3004/webhooks/github -H \"Content-Type: application/json\" -d '{\"test\": \"data\"}'",
+            "expected": "Accepted"
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-4-integration",
+      "name": "Integration & Main App",
+      "type": "integration",
+      "description": "Integrate decision capture system into main FastAPI application",
+      "depends_on": ["phase-3-api-endpoints"],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-4-1",
+          "description": "Update main.py to include decision router and startup initialization",
+          "service": "backend",
+          "files_to_modify": ["backend/main.py"],
+          "files_to_create": [],
+          "patterns_from": ["backend/main.py"],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3004/docs",
+            "checks": ["Decision endpoints visible in API docs", "No console errors"]
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-4-2",
+          "description": "Add required dependencies to requirements.txt",
+          "service": "backend",
+          "files_to_modify": ["backend/requirements.txt"],
+          "files_to_create": [],
+          "patterns_from": ["backend/requirements.txt"],
+          "verification": {
+            "type": "command",
+            "command": "cd backend && pip install -r requirements.txt",
+            "expected": "Successfully installed"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-4-3",
+          "description": "Update environment configuration with GitHub token and database settings",
+          "service": "backend",
+          "files_to_modify": [".env"],
+          "files_to_create": [],
+          "patterns_from": [".env"],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"import os; print('GITHUB_TOKEN' in os.environ or 'DATABASE_URL' in os.environ)\"",
+            "expected": "True"
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-5-testing",
+      "name": "Testing & Validation",
+      "type": "integration",
+      "description": "End-to-end testing of decision capture and tracking system",
+      "depends_on": ["phase-4-integration"],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-5-1",
+          "description": "Test decision detection from git commits",
+          "all_services": true,
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "e2e",
+            "steps": [
+              "Create test commit with decision keywords",
+              "Verify decision captured in database",
+              "Check decision appears in API response"
+            ]
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-5-2",
+          "description": "Test GitHub PR integration for decision highlighting",
+          "all_services": true,
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "e2e",
+            "steps": [
+              "Simulate PR webhook event",
+              "Verify decision analysis completes",
+              "Check PR comment generation works"
+            ]
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-5-3",
+          "description": "Verify search and filtering functionality works correctly",
+          "all_services": true,
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "e2e",
+            "steps": [
+              "Insert sample decision data",
+              "Test search by keyword",
+              "Test filter by author/date range",
+              "Verify accurate results returned"
+            ]
+          },
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_phases": 5,
+    "total_subtasks": 12,
+    "services_involved": ["backend"],
+    "parallelism": {
+      "max_parallel_phases": 2,
+      "parallel_groups": [
+        {
+          "phases": ["phase-3-api-endpoints"],
+          "reason": "API development can proceed in parallel once detection service is ready"
+        }
+      ],
+      "recommended_workers": 1,
+      "speedup_estimate": "Sequential execution recommended due to dependencies"
+    },
+    "startup_command": "source .venv/bin/activate && python auto-claude/run.py --spec 005 --parallel 1"
+  },
+  "verification_strategy": {
+    "risk_level": "high",
+    "skip_validation": false,
+    "test_creation_phase": "post_implementation",
+    "test_types_required": ["unit", "integration", "e2e"],
+    "security_scanning_required": true,
+    "staging_deployment_required": false,
+    "acceptance_criteria": [
+      "All existing tests pass",
+      "New code has test coverage",
+      "No security vulnerabilities detected",
+      "Decision detection accuracy > 80%",
+      "API response times < 500ms"
+    ],
+    "verification_steps": [
+      {
+        "name": "Unit Tests",
+        "command": "pytest tests/",
+        "expected_outcome": "All tests pass",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Integration Tests",
+        "command": "pytest tests/integration/",
+        "expected_outcome": "All integration tests pass",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Security Scan",
+        "command": "bandit -r backend/ -f json",
+        "expected_outcome": "No high severity issues",
+        "type": "security",
+        "required": true,
+        "blocking": true
+      }
+    ],
+    "reasoning": "High risk system handling sensitive development data with external API integrations requires comprehensive testing and security validation"
+  },
+  "qa_acceptance": {
+    "unit_tests": {
+      "required": true,
+      "commands": ["pytest tests/unit/"],
+      "minimum_coverage": 80
+    },
+    "integration_tests": {
+      "required": true,
+      "commands": ["pytest tests/integration/"],
+      "services_to_test": ["backend"]
+    },
+    "e2e_tests": {
+      "required": true,
+      "commands": ["pytest tests/e2e/"],
+      "flows": ["decision-detection", "github-integration", "search-functionality"]
+    },
+    "browser_verification": {
+      "required": true,
+      "pages": [
+        {"url": "http://localhost:3004/docs", "checks": ["all-endpoints-documented", "no-console-errors"]}
+      ]
+    },
+    "database_verification": {
+      "required": true,
+      "checks": ["decision-tables-exist", "sample-data-populated", "relationships-valid"]
+    }
+  },
+  "qa_signoff": null
+}

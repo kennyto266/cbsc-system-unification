@@ -1,0 +1,50 @@
+{
+  "files_to_modify": {
+    "backend": [
+      "backend/main.py",
+      "backend/config/database.py",
+      "backend/requirements.txt"
+    ]
+  },
+  "files_to_reference": [
+    "backend/api/portfolio.py",
+    "backend/models/strategy.py",
+    "backend/services/analysis_service.py"
+  ],
+  "patterns": {
+    "service_pattern": "All services use class-based structure with logging and error handling",
+    "route_pattern": "Routes use APIRouter with consistent response format: {success, data, message, timestamp}",
+    "model_pattern": "Pydantic models with Field descriptions and optional fields for nullable data"
+  },
+  "existing_implementations": {
+    "description": "FastAPI backend with SQLite database, WebSocket support, and financial trading system",
+    "relevant_files": [
+      "backend/main.py",
+      "backend/config/database.py",
+      "backend/api/portfolio.py"
+    ]
+  },
+  "tech_stack": {
+    "backend": {
+      "framework": "FastAPI",
+      "language": "Python",
+      "database": "SQLite (to be migrated to PostgreSQL)",
+      "current_dependencies": [
+        "fastapi==0.104.1",
+        "uvicorn[standard]==0.24.0",
+        "websockets==12.0",
+        "python-multipart==0.0.6",
+        "pydantic==2.5.0",
+        "python-dotenv==1.0.0"
+      ],
+      "required_dependencies": [
+        "GitPython",
+        "PyGithub",
+        "SQLAlchemy",
+        "asyncpg",
+        "spaCy",
+        "psycopg2-binary"
+      ]
+    }
+  }
+}
