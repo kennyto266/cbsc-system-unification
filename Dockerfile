@@ -30,14 +30,10 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 # Copy application code
 COPY src/ ./src/
-COPY api/ ./api/
-COPY migrations/ ./migrations/
-COPY tests/ ./tests/
+COPY backend/ ./backend/
 COPY scripts/ ./scripts/
-COPY config/ ./config/
-COPY .env.example .env
-COPY database_config.py ./
-COPY config_manager.py ./
+COPY docs/ ./docs/
+
 
 # Create necessary directories
 RUN mkdir -p /app/data /app/logs /app/uploads /app/static \
