@@ -21,7 +21,7 @@ prometheus-client==0.19.0
 redis==5.0.1
 slowapi==0.1.9
 aiofiles==23.2.1
-aiohttp==3.9.1
+aiohttp>=3.11.13
 psutil==5.9.6
 cryptography==41.0.7
 dask==2023.12.1
