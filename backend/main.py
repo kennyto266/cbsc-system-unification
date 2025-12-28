@@ -1,32 +1,57 @@
 """
-CBSC WebSocket 服務器
+CBSC WebSocket 服務器 - Personal Quantitative Trading System Backend
 為前端提供實時數據推送服務
 """
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime
 from typing import Dict, Set
 import uvicorn
+import sys
+
+# 添加项目根目录到Python路径
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# 導入API路由
+from api.portfolio import router as portfolio_router
+from api.data import router as data_router
+from api.analysis import router as analysis_router
+from api.backtest import router as backtest_router
+from api.persistent_context import router as persistent_context_router
+
+# 創建必要的目錄
+log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
+os.makedirs(log_dir, exist_ok=True)
 
 # 設置日誌
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(os.path.join(log_dir, 'backend.log')),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="CBSC WebSocket API",
-    description="CBSC 量化交易系統 WebSocket 實時數據服務",
-    version="1.0.0"
+    title="CBSC WebSocket API - Personal Quantitative Trading System",
+    description="CBSC 量化交易系統 WebSocket 實時數據服務 - Personal Quantitative Trading System Backend",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
 # CORS 配置
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001", "http://127.0.0.1:3001"],  # 允許前端訪問
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -241,6 +266,165 @@ class DataGenerator:
         }
 
 
+# 包含路由
+app.include_router(portfolio_router, prefix="/api/portfolio", tags=["投资组合"])
+app.include_router(data_router, prefix="/api/data", tags=["数据服务"])
+app.include_router(analysis_router, prefix="/api/analysis", tags=["分析服务"])
+app.include_router(backtest_router, prefix="/api/backtest", tags=["回测服务"])
+app.include_router(persistent_context_router, prefix="/api/persistent-context", tags=["持久化上下文"])
+
+# 全局异常处理器
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """全局异常处理"""
+    logger.error(f"全局异常: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "服务器内部错误"
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """HTTP异常处理"""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "error": {
+                "code": "HTTP_ERROR",
+                "message": exc.detail
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    )
+
+# 根路徑
+@app.get("/")
+async def root():
+    """根路径"""
+    return {
+        "message": "CBSC WebSocket API - 个人量化交易系统后端 API",
+        "version": "1.0.0",
+        "status": "running",
+        "timestamp": datetime.utcnow().isoformat(),
+        "services": {
+            "portfolio": "/api/portfolio",
+            "data": "/api/data",
+            "analysis": "/api/analysis",
+            "backtest": "/api/backtest",
+            "persistent_context": "/api/persistent-context"
+        },
+        "websocket": {
+            "endpoint": "/ws",
+            "channels": [
+                "strategy_performance",
+                "market_data",
+                "hibor_rates",
+                "cbsc_contracts",
+                "government_data",
+                "system_status"
+            ]
+        }
+    }
+
+# 健康檢查
+@app.get("/health")
+async def health_check():
+    """健康檢查端點"""
+    try:
+        return {
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "version": "1.0.0",
+            "active_connections": len(manager.active_connections),
+            "channel_subscriptions": {
+                channel: len(connections)
+                for channel, connections in manager.channel_subscriptions.items()
+            },
+            "services": {
+                "portfolio": {"status": "healthy"},
+                "data": {"status": "healthy"},
+                "analysis": {"status": "healthy"},
+                "backtest": {"status": "healthy"},
+                "persistent_context": {"status": "unknown"}  # 需要單獨檢查
+            }
+        }
+    except Exception as e:
+        logger.error(f"健康檢查失敗: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unhealthy",
+                "timestamp": datetime.utcnow().isoformat(),
+                "error": str(e)
+            }
+        )
+
+# 就緒檢查
+@app.get("/ready")
+async def readiness_check():
+    """就绪检查"""
+    try:
+        # 简单的就绪检查
+        return {"status": "ready"}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="服务未就绪")
+
+# 存活检查
+@app.get("/live")
+async def liveness_check():
+    """存活检查"""
+    return {"status": "alive"}
+
+# 系統狀態端點
+@app.get("/api/status")
+async def system_status():
+    """系統狀態端點"""
+    return {
+        "status": "running",
+        "service": "CBSC WebSocket API",
+        "version": "1.0.0",
+        "active_connections": len(manager.active_connections),
+        "supported_channels": [
+            "strategy_performance",
+            "market_data",
+            "hibor_rates",
+            "cbsc_contracts",
+            "government_data",
+            "system_status"
+        ]
+    }
+
+# 中間件：請求日誌
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """記錄請求日誌"""
+    start_time = datetime.utcnow()
+
+    # 記錄請求信息
+    logger.info(f"請求: {request.method} {request.url.path}")
+
+    # 處理請求
+    response = await call_next(request)
+
+    # 計算處理時間
+    process_time = (datetime.utcnow() - start_time).total_seconds()
+
+    # 記錄響應信息
+    logger.info(f"響應: {response.status_code} - {process_time:.3f}s")
+
+    # 添加處理時間到響應頭
+    response.headers["X-Process-Time"] = str(process_time)
+
+    return response
+
 # WebSocket 端點
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -368,65 +552,51 @@ async def data_pusher():
             await asyncio.sleep(5)
 
 
-# 健康檢查端點
-@app.get("/health")
-async def health_check():
-    """健康檢查端點"""
-    return {
-        "status": "healthy",
-        "active_connections": len(manager.active_connections),
-        "channel_subscriptions": {
-            channel: len(connections)
-            for channel, connections in manager.channel_subscriptions.items()
-        },
-        "timestamp": datetime.now().isoformat()
-    }
-
-
-# 系統狀態端點
-@app.get("/api/status")
-async def system_status():
-    """系統狀態端點"""
-    return {
-        "status": "running",
-        "service": "CBSC WebSocket API",
-        "version": "1.0.0",
-        "active_connections": len(manager.active_connections),
-        "supported_channels": [
-            "strategy_performance",
-            "market_data",
-            "hibor_rates",
-            "cbsc_contracts",
-            "government_data",
-            "system_status"
-        ]
-    }
-
-
 # 啟動時事件
 @app.on_event("startup")
 async def startup_event():
     """應用啟動時執行"""
     logger.info("Starting CBSC WebSocket Server...")
+    logger.info("正在啟動個人量化交易系統後端API...")
 
     # 啟動數據推送後台任務
     asyncio.create_task(data_pusher())
 
-    logger.info("WebSocket Server started successfully!")
+    try:
+        logger.info("✅ CBSC WebSocket Server 启動成功")
+        logger.info("✅ 個人量化交易系統後端API啟動成功")
+        logger.info("📚 API文档: http://localhost:3005/docs")
+        logger.info("🔍 健康检查: http://localhost:3005/health")
+        logger.info("🔗 持久化上下文服务: http://localhost:3007")
+        logger.info("🌐 WebSocket: ws://localhost:3005/ws")
 
+    except Exceptionas e:
+        logger.error(f"❌ 应用启动失败: {e}")
+        raise
 
+# 關閉時事件
 @app.on_event("shutdown")
 async def shutdown_event():
     """應用關閉時執行"""
+    logger.info("正在关闭个人量化交易系统后端API...")
     logger.info("Shutting down WebSocket Server...")
 
-
+# 開發服務器啟動
 if __name__ == "__main__":
-    # 運行服務器
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=3004,
-        reload=True,
-        log_level="info"
-    )
+    try:
+        logger.info("🚀 启动开发服务器...")
+
+        uvicorn.run(
+            "main:app",
+            host="0.0.0.0",
+            port=3005,
+            reload=True,
+            log_level="info",
+            access_log=True
+        )
+
+    except KeyboardInterrupt:
+        logger.info("👋 收到中断信号，正在关闭服务器...")
+    except Exception as e:
+        logger.error(f"❌ 服务器启动失败: {e}")
+        sys.exit(1)
