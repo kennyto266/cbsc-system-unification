@@ -2,5 +2,5 @@
  * RiskAnalysis Export
  */
 
-export { RiskRadarChart } from './RiskRadarChart';
-export { default as RiskRadarChart } from './RiskRadarChart';
+export * from './RiskRadarChart';
+export { default } from './RiskRadarChart';

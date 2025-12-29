@@ -2,5 +2,5 @@
  * PerformanceTab Export
  */
 
-export { PerformanceTab } from './PerformanceTab';
-export { default as PerformanceTab } from './PerformanceTab';
+export * from './PerformanceTab';
+export { default } from './PerformanceTab';
