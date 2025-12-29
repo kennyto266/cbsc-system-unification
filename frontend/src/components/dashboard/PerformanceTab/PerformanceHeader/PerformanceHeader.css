@@ -41,3 +41,28 @@
 .dark .performance-header-meta {
   color: #9ca3af;
 }
+
+/* Responsive Design - Mobile breakpoint */
+@media (max-width: 768px) {
+  .performance-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 12px 0;
+  }
+
+  .performance-header-section {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .performance-header-label {
+    width: 100%;
+    margin-bottom: 4px;
+  }
+
+  .performance-header-meta {
+    width: 100%;
+    font-size: 12px;
+  }
+}
