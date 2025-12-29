@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 // GitHub API token
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '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';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '[REDACTED]';
 
 // 任務映射配置
 const TASK_MAPPINGS = {
