@@ -8,7 +8,7 @@ import os
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.api.market_data_endpoints import (
+from src.services.market_indicator_service import (
     get_date_range,
     calculate_return_attribution,
     get_mock_data
