@@ -1,0 +1,207 @@
+# AlertManager Configuration for CBSC Production
+# CBSC生產環境告警管理器配置
+
+global:
+  # SMTP配置
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alerts@cbsc.com'
+  smtp_auth_username: 'alerts@cbsc.com'
+  smtp_auth_password: 'your_smtp_password'
+
+  # 通用模板
+  templates:
+    - 'templates/*.tmpl'
+
+  # 全局默認配置
+  resolve_timeout: 5m
+  http_config:
+    tls_config:
+      insecure_skip_verify: false
+
+# 路由配置
+route:
+  # 默認接收器
+  receiver: 'default-receiver'
+
+  # 分組配置
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+
+  # 路由規則
+  routes:
+    # 嚴重告警 (P0) - 立即通知
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      repeat_interval: 5m
+      continue: true
+
+    # 服務中斷告警
+    - match:
+        alertname: 'CBSCAPIDown'
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      repeat_interval: 2m
+      continue: true
+
+    # 477指標系統告警
+    - match_re:
+        service: 'cbsc-indicators|cbsc-frontend'
+      receiver: 'indicators-team'
+      group_by: ['alertname', 'service', 'instance']
+      continue: true
+
+    # 數據庫告警
+    - match_re:
+        service: 'postgres|redis'
+      receiver: 'database-team'
+      continue: true
+
+    # 系統資源告警
+    - match:
+        service: 'system'
+      receiver: 'devops-team'
+      continue: true
+
+    # 安全告警
+    - match_re:
+        alertname: '.*Security.*|.*Auth.*'
+      receiver: 'security-team'
+      continue: true
+
+    # 業務指標告警
+    - match_re:
+        alertname: '.*Strategy.*|.*Trading.*|.*Market.*'
+      receiver: 'business-team'
+      continue: true
+
+# 抑制規則 - 避免告警風暴
+inhibit_rules:
+  # 如果服務已宕機，抑制相關的性能告警
+  - source_match:
+      alertname: 'CBSCAPIDown'
+      severity: 'critical'
+    target_match_re:
+      alertname: '(HighErrorRate|HighResponseTime|WebSocketConnectionsTooHigh)'
+    equal: ['instance']
+
+  # 如果節點宕機，抑制相關的資源告警
+  - source_match:
+      alertname: 'InstanceDown'
+      severity: 'critical'
+    target_match_re:
+      alertname: '(HighMemoryUsage|HighCPUUsage|DiskSpaceLow)'
+    equal: ['instance']
+
+# 接收器配置
+receivers:
+  # 默認接收器
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'devops@cbsc.com'
+        subject: '[CBSC Alert] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ template "email.default.html" . }}
+
+  # 嚴重告警接收器 - 多管道通知
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'oncall@cbsc.com'
+        subject: '🚨 [CRITICAL] CBSC System Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ template "email.critical.html" . }}
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#cbsc-critical'
+        title: '🚨 Critical CBSC Alert'
+        text: '{{ .CommonAnnotations.summary }}'
+        send_resolved: true
+    webhook_configs:
+      - url: 'http://sms-gateway:8080/send'
+        send_resolved: false
+        http_config:
+          basic_auth:
+            username: 'cbsc-alerts'
+            password: 'sms_password'
+
+  # 指標團隊接收器
+  - name: 'indicators-team'
+    email_configs:
+      - to: 'indicators-team@cbsc.com'
+        subject: '[477 Indicators] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ template "email.indicators.html" . }}
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#cbsc-indicators'
+        title: '477 Indicators Alert'
+        text: '{{ .CommonAnnotations.summary }}'
+
+  # 數據庫團隊接收器
+  - name: 'database-team'
+    email_configs:
+      - to: 'database-team@cbsc.com'
+        subject: '[Database] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ template "email.database.html" . }}
+
+  # DevOps團隊接收器
+  - name: 'devops-team'
+    email_configs:
+      - to: 'devops@cbsc.com'
+        subject: '[DevOps] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ template "email.devops.html" . }}
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#cbsc-devops'
+        title: 'DevOps Alert'
+
+  # 安全團隊接收器
+  - name: 'security-team'
+    email_configs:
+      - to: 'security@cbsc.com'
+        subject: '🔒 [SECURITY] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ template "email.security.html" . }}
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#cbsc-security'
+        title: 'Security Alert'
+
+  # 業務團隊接收器
+  - name: 'business-team'
+    email_configs:
+      - to: 'business-team@cbsc.com'
+        subject: '[Business] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ template "email.business.html" . }}
+
+# 時間間隔配置
+time_intervals:
+  # 工作時間 (週一至週五 9:00-18:00)
+  - name: 'business-hours'
+    time_intervals:
+      - times:
+          - start_time: '09:00'
+            end_time: '18:00'
+        weekdays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+        location: 'Asia/Hong_Kong'
+
+  # 非工作時間
+  - name: 'after-hours'
+    time_intervals:
+      - times:
+          - start_time: '18:00'
+            end_time: '09:00'
+        weekdays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+        location: 'Asia/Hong_Kong'
+      - weekdays: ['saturday', 'sunday']
+        location: 'Asia/Hong_Kong'
+
+# 模板文件目錄
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'

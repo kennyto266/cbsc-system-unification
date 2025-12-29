@@ -1,0 +1,21 @@
+{
+  "project_type": "monorepo",
+  "services": {
+    "backend": {
+      "path": "./backend",
+      "tech_stack": ["python", "fastapi"],
+      "port": 3004,
+      "dev_command": "uvicorn main:app --host 0.0.0.0 --port 3004 --reload",
+      "test_command": "pytest"
+    }
+  },
+  "infrastructure": {
+    "docker": false,
+    "database": "postgresql"
+  },
+  "conventions": {
+    "linter": "ruff",
+    "formatter": "black",
+    "testing": "pytest"
+  }
+}

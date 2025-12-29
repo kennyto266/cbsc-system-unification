@@ -1,49 +1,67 @@
-import React, { ButtonHTMLAttributes, forwardRef } from 'react'
-import { cva, type VariantProps } from 'class-variance-authority'
-import { cn } from '@/utils/cn'
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: 'bg-primary-600 text-white hover:bg-primary-700',
-        destructive: 'bg-error-600 text-white hover:bg-error-700',
-        outline: 'border border-gray-300 bg-white hover:bg-gray-50',
-        secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200',
-        ghost: 'hover:bg-gray-100',
-        link: 'text-primary-600 underline-offset-4 hover:underline',
-        success: 'bg-success-600 text-white hover:bg-success-700',
-        warning: 'bg-warning-600 text-white hover:bg-warning-700',
+        default: "bg-primary-600 text-white hover:bg-primary-700",
+        destructive:
+          "bg-error-600 text-white hover:bg-error-700",
+        outline:
+          "border border-gray-300 bg-background hover:bg-accent hover:text-accent-foreground",
+        secondary:
+          "bg-gray-100 text-gray-900 hover:bg-gray-200",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary-600 underline-offset-4 hover:underline",
+        // CBSC specific variants
+        cbsc: "bg-gradient-to-r from-primary-500 to-cbsc-cyan text-white hover:from-primary-600 hover:to-cbsc-cyan/90 shadow-lg",
+        cbscOutline: "border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white",
+        success: "bg-green-600 text-white hover:bg-green-700",
+        danger: "bg-red-600 text-white hover:bg-red-700",
+        warning: "bg-yellow-600 text-white hover:bg-yellow-700",
+        info: "bg-blue-600 text-white hover:bg-blue-700",
+
+        // Financial trading variants
+        bullish: "bg-green-500 text-white hover:bg-green-600 border border-green-600",
+        bearish: "bg-red-500 text-white hover:bg-red-600 border border-red-600",
+        neutral: "bg-gray-500 text-white hover:bg-gray-600 border border-gray-600",
       },
       size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-9 rounded-md px-3',
-        lg: 'h-11 rounded-md px-8',
-        icon: 'h-10 w-10',
-        'icon-sm': 'h-8 w-8',
-        'icon-lg': 'h-12 w-12',
+        default: "h-10 px-4 py-2",
+        sm: "h-9 rounded-md px-3",
+        lg: "h-11 rounded-md px-8",
+        icon: "h-10 w-10",
+        xs: "h-8 rounded px-2 text-xs",
+        xl: "h-12 rounded-lg px-10 text-base",
       },
     },
     defaultVariants: {
-      variant: 'default',
-      size: 'default',
+      variant: "default",
+      size: "default",
     },
   }
 )
 
 export interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
+  asChild?: boolean
   loading?: boolean
   icon?: React.ReactNode
   iconPosition?: 'left' | 'right'
 }
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, loading = false, icon, iconPosition = 'left', children, disabled, ...props }, ref) => {
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, loading = false, icon, iconPosition = 'left', children, disabled, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
+
     return (
-      <button
+      <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         disabled={disabled || loading}
@@ -81,11 +99,58 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {!loading && icon && iconPosition === 'right' && (
           <span className="ml-2">{icon}</span>
         )}
-      </button>
+      </Comp>
     )
   }
 )
+Button.displayName = "Button"
 
-Button.displayName = 'Button'
+// CBSC-specific button presets
+export const TradingButton = {
+  Buy: (props: Omit<ButtonProps, 'variant' | 'children'>) => (
+    <Button variant="bullish" {...props}>
+      買入 {props.icon && <span className="ml-1">{props.icon}</span>}
+    </Button>
+  ),
+
+  Sell: (props: Omit<ButtonProps, 'variant' | 'children'>) => (
+    <Button variant="bearish" {...props}>
+      賣出 {props.icon && <span className="ml-1">{props.icon}</span>}
+    </Button>
+  ),
+
+  Hold: (props: Omit<ButtonProps, 'variant' | 'children'>) => (
+    <Button variant="neutral" {...props}>
+      持有 {props.icon && <span className="ml-1">{props.icon}</span>}
+    </Button>
+  ),
+}
+
+export const ActionButton = {
+  Create: (props: Omit<ButtonProps, 'variant' | 'children'>) => (
+    <Button variant="success" {...props}>
+      創建
+    </Button>
+  ),
+
+  Delete: (props: Omit<ButtonProps, 'variant' | 'children'>) => (
+    <Button variant="danger" {...props}>
+      刪除
+    </Button>
+  ),
+
+  Edit: (props: Omit<ButtonProps, 'variant' | 'children'>) => (
+    <Button variant="warning" {...props}>
+      編輯
+    </Button>
+  ),
+
+  View: (props: Omit<ButtonProps, 'variant' | 'children'>) => (
+    <Button variant="info" {...props}>
+      查看
+    </Button>
+  ),
+}
 
 export { Button, buttonVariants }
+export { TradingButton, ActionButton }

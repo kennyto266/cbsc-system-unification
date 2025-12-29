@@ -1,9 +1,102 @@
+// Export real-time chart components
+export { default as TimeSeriesChart } from './components/TimeSeriesChart'
+export { default as HeatmapChart } from './components/HeatmapChart'
+export { default as DistributionChart } from './components/DistributionChart'
+
+// Export Advanced Charts
+export { default as ScatterPlot } from './advanced/ScatterPlot'
+export { default as RadarChart } from './advanced/RadarChart'
+export { default as AdvancedHeatmapChart } from './advanced/HeatmapChart'
+export type { ScatterDataPoint, ScatterDataset, ScatterPlotProps } from './advanced/ScatterPlot'
+export type { RadarDataPoint, RadarDataset, RadarChartProps } from './advanced/RadarChart'
+export type { HeatmapDataPoint, HeatmapDataset, HeatmapChartProps } from './advanced/HeatmapChart'
+
+// Export Financial Charts
+export { default as CandlestickChart } from './financial/CandlestickChart'
+export type { OHLCData, CandlestickChartProps } from './financial/CandlestickChart'
+
+// Export Dashboard Components
+export { default as PerformanceGauge } from './dashboard/PerformanceGauge'
+export type { GaugeThreshold, PerformanceGaugeProps } from './dashboard/PerformanceGauge'
+
+// Export Shared Components
+export { default as AdvancedChartContainer, type ChartRef } from './shared/ChartContainer'
+export type { ChartContainerProps } from './shared/ChartContainer'
+
+// Export Data Components
+export { default as DataTable, type DataTableRef } from '../data/DataTable'
+export type { TableColumn, DataTableProps } from '../data/DataTable'
+
+// Export shared components
+export { default as ChartContainer } from './components/shared/ChartContainer'
+export { default as ChartTooltip } from './components/shared/ChartTooltip'
+export { default as ChartLegend } from './components/shared/ChartLegend'
+export { default as ChartControls } from './components/shared/ChartControls'
+
+// Export hooks
+export { default as useRealTimeData } from './hooks/useRealTimeData'
+export { default as useChartInteraction } from './hooks/useChartInteraction'
+export { default as useChartPerformance } from './hooks/useChartPerformance'
+export { useChartData, useChartSubscription, useMultipleChartSubscriptions } from './providers/ChartDataProvider'
+
+// Export providers
+export { default as ChartDataProvider } from './providers/ChartDataProvider'
+
+// Export types
+export * from './types/chart.types'
+export * from './types/data.types'
+
+// Export utils
+export * from './utils/chartUtils'
+export * from './utils/dataTransform'
+export * from './utils/performanceUtils'
+export {
+  transformTimeSeriesData,
+  aggregateTimeSeries,
+  resampleData,
+  calculateMovingAverage,
+  calculateStandardDeviation,
+  calculatePercentiles,
+  detectOutliers,
+  generateColorPalette,
+  formatNumber,
+  formatPercentage,
+  formatDate,
+  debounce,
+  throttle,
+  memoize
+} from '../../utils/chartUtils'
+
+// Export styles and themes
+export * from './styles/chartThemes'
+
 // 統一導出所有圖表組件
 export { default as StrategyPerformanceChart } from './StrategyPerformanceChart'
 export { default as AssetAllocationChart } from './AssetAllocationChart'
 export { default as StrategyComparisonChart } from './StrategyComparisonChart'
 export { default as RiskReturnScatterChart } from './RiskReturnScatterChart'
 export { default as RealTimePriceChart } from './RealTimePriceChart'
+
+// Real-time Chart Components - Task #65 Implementation
+// Note: Remove duplicate exports that are already exported above
+export {
+  TechnicalIndicatorChart,
+  DepthChart,
+  TechnicalIndicatorsManager,
+  RealTimeChartProvider,
+  useRealTimeChart,
+  useChart,
+  type ChartDataPoint as RealTimeChartDataPoint,
+  type IndicatorData,
+  type IndicatorConfig,
+  type ChartType,
+  type TimeframeOption,
+  type OrderBookLevel,
+  type OrderBookData
+} from './RealTime'
+
+// Performance Monitor
+export { default as ChartPerformanceMonitor, type PerformanceMetrics } from './RealTime/ChartPerformanceMonitor'
 
 // 圖表相關的工具函數和類型定義
 export interface ChartTheme {

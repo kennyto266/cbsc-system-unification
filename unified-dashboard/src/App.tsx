@@ -25,8 +25,11 @@ import AnalyticsPage from './pages/analytics/AnalyticsPage'
 import ReportsPage from './pages/reports/ReportsPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import ProfilePage from './pages/profile/ProfilePage'
+import IndicatorLibraryPage from './pages/technical-indicators/IndicatorLibraryPage'
 import Showcase from './pages/Showcase'
 import NotFoundPage from './pages/error/NotFoundPage'
+import ResponsiveDashboardPage from './pages/dashboard/ResponsiveDashboardPage'
+import DashboardExample from './pages/dashboard/DashboardExample'
 
 // Hooks
 import { useAuth } from '@hooks/useAuth'
@@ -119,6 +122,26 @@ const App: React.FC = () => {
         {/* Component Showcase */}
         <Route path="/showcase" element={<Showcase />} />
 
+        {/* Responsive Dashboard Example */}
+        <Route
+          path="/responsive-dashboard"
+          element={
+            <ProtectedRoute>
+              <ResponsiveDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Dashboard Grid Example */}
+        <Route
+          path="/dashboard-example"
+          element={
+            <ProtectedRoute>
+              <DashboardExample />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Unified Dashboard Routes */}
         <Route
           path="/"
@@ -173,6 +196,14 @@ const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <UnifiedDashboard defaultPage="profile" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/indicators"
+          element={
+            <ProtectedRoute>
+              <UnifiedDashboard defaultPage="indicators" />
             </ProtectedRoute>
           }
         />

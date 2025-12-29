@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBSC響應式網格系統演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .demo-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .demo-header {
+            background: #fff;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+        }
+
+        .demo-header h1 {
+            font-size: 28px;
+            color: #1890ff;
+            margin-bottom: 16px;
+        }
+
+        .demo-header p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #666;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .feature-card {
+            background: #fff;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .feature-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #333;
+        }
+
+        .feature-description {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .demo-links {
+            background: #fff;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+
+        .demo-links h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .link-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .demo-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #1890ff;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: background 0.3s ease;
+        }
+
+        .demo-button:hover {
+            background: #40a9ff;
+        }
+
+        .demo-button.secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .demo-button.secondary:hover {
+            background: #e6f7ff;
+        }
+
+        .code-example {
+            background: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+
+        @media (max-width: 768px) {
+            .demo-container {
+                padding: 12px;
+            }
+
+            .demo-header h1 {
+                font-size: 24px;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .link-buttons {
+                flex-direction: column;
+            }
+
+            .demo-button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <!-- Header -->
+        <div class="demo-header">
+            <h1>🚀 CBSC響應式網格系統</h1>
+            <p>
+                一個強大的響應式網格佈局系統，專為CBSC量化交易Dashboard設計。
+                支持拖拽、調整大小、持久化等高級功能，與477技術指標系統深度集成。
+            </p>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3 class="feature-title">響應式設計</h3>
+                <p class="feature-description">
+                    自動適應不同屏幕尺寸，從大屏顯示器到移動設備都能完美展示。
+                    支持5個響應式斷點：lg(12列)、md(10列)、sm(6列)、xs(4列)、xxs(2列)。
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3 class="feature-title">拖拽支持</h3>
+                <p class="feature-description">
+                    組件可以自由拖拽移動位置，實時預覽效果。
+                    支持多選、批量操作、對齊輔助等高級功能。
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📐</div>
+                <h3 class="feature-title">調整大小</h3>
+                <p class="feature-description">
+                    拖拽組件邊角即可調整大小，支持最小/最大尺寸限制。
+                    智能網格對齊，確保佈局整潔美觀。
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">💾</div>
+                <h3 class="feature-title">持久化存儲</h3>
+                <p class="feature-description">
+                    自動保存用戶的佈局設置到本地存儲。
+                    支持佈局導入導出，方便備份和分享。
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🎨</div>
+                <h3 class="feature-title">豐富組件</h3>
+                <p class="feature-description">
+                    內置多種Dashboard組件：市場概覽、技術指標、策略表現、資產配置等。
+                    支持自定義HTML、Markdown、iframe內容。
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">性能優化</h3>
+                <p class="feature-description">
+                    基於React的高性能渲染，支持虛擬化和懶加載。
+                    智能更新機制，避免不必要的重渲染。
+                </p>
+            </div>
+        </div>
+
+        <!-- Code Example -->
+        <div class="demo-header">
+            <h2>📝 快速開始</h2>
+            <p>只需幾行代碼即可創建響應式Dashboard：</p>
+            <div class="code-example">
+<pre><code>import { ResponsiveGridProvider, ResponsiveGrid } from './ResponsiveGrid'
+
+function Dashboard() {
+  return (
+    &lt;ResponsiveGridProvider&gt;
+      &lt;ResponsiveGrid
+        editable={true}
+        showToolbar={true}
+        onLayoutChange={(layout) => console.log(layout)}
+      /&gt;
+    &lt;/ResponsiveGridProvider&gt;
+  )
+}</code></pre>
+            </div>
+        </div>
+
+        <!-- Demo Links -->
+        <div class="demo-links">
+            <h2>🎮 體驗演示</h2>
+            <div class="link-buttons">
+                <a href="/responsive-dashboard" class="demo-button">
+                    查看完整Dashboard
+                </a>
+                <a href="/dashboard-example" class="demo-button secondary">
+                    網格系統示例
+                </a>
+                <a href="/showcase" class="demo-button secondary">
+                    組件展示
+                </a>
+            </div>
+        </div>
+
+        <!-- Additional Info -->
+        <div class="demo-header" style="margin-top: 32px;">
+            <h2>📚 技術文檔</h2>
+            <p>詳細的API文檔和使用指南請參考：</p>
+            <ul style="margin-top: 16px; margin-left: 24px; line-height: 1.8;">
+                <li><strong>源碼位置：</strong> <code>src/components/dashboard/ResponsiveGrid/</code></li>
+                <li><strong>主要組件：</strong> ResponsiveGridProvider, ResponsiveGrid, WidgetRenderer</li>
+                <li><strong>依賴包：</strong> react-grid-layout, react-resizable, react-hot-toast</li>
+                <li><strong>測試覆蓋：</strong> 單元測試、集成測試、E2E測試</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

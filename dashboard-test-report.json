@@ -1,0 +1,55 @@
+{
+  "timestamp": "2025-12-16T04:30:18.784Z",
+  "results": [
+    {
+      "test": "页面加载",
+      "status": "PASS",
+      "details": "状态码: 200"
+    },
+    {
+      "test": "快速操作按钮 - 創建新策略",
+      "status": "PASS",
+      "details": "可见: true, 可用: true, 模态框: false, 页面跳转: true"
+    },
+    {
+      "test": "快速操作按钮 - 執行回測",
+      "status": "FAIL",
+      "details": "错误: page.waitForSelector: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button:has-text(\"執行回測\")') to be visible\u001b[22m\n"
+    },
+    {
+      "test": "快速操作按钮 - 查看報告",
+      "status": "FAIL",
+      "details": "错误: page.waitForSelector: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button:has-text(\"查看報告\")') to be visible\u001b[22m\n"
+    },
+    {
+      "test": "快速操作按钮 - 系統設置",
+      "status": "FAIL",
+      "details": "错误: page.waitForSelector: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button:has-text(\"系統設置\")') to be visible\u001b[22m\n"
+    },
+    {
+      "test": "政府数据表格 - HIBOR",
+      "status": "FAIL",
+      "details": "表格未找到"
+    },
+    {
+      "test": "政府数据表格 - 貨幣基礎",
+      "status": "FAIL",
+      "details": "表格未找到"
+    },
+    {
+      "test": "政府数据表格 - 匯率",
+      "status": "FAIL",
+      "details": "表格未找到"
+    },
+    {
+      "test": "市场数据真实性",
+      "status": "FAIL",
+      "details": "未找到市场数据"
+    },
+    {
+      "test": "策略管理显示",
+      "status": "PASS",
+      "details": "策略数量: 8"
+    }
+  ]
+}

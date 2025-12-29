@@ -1,87 +1,61 @@
-/**
- * Redux Store Configuration
- * 版本: 1.0.0
- * 描述: Redux Toolkit store 配置和設置
- */
+// CBSC Trading System - Unified Redux Store Configuration
+// Centralized state management with RTK Query
 
-import { configureStore } from '@reduxjs/toolkit';
-import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
+import { useDispatch, useSelector } from 'react-redux';
 
-// Import slices
-import authSlice from './slices/authSlice';
-import uiSlice from './slices/uiSlice';
-import dashboardSlice from './slices/dashboardSlice';
+// Import feature slices
+import authReducer from './slices/authSlice';
+import strategiesReducer from './slices/strategiesSlice';
 import strategySlice from './slices/strategySlice';
+import dashboardSlice from './slices/dashboardSlice';
+import economicDataReducer from './slices/economicDataSlice';
+import monitoringReducer from './slices/monitoringSlice';
+import performanceAnalyticsReducer from './slices/performanceAnalyticsSlice';
 
-// Import API services
-import { authApi } from './services/authApi';
-import { strategyApi } from './services/strategyApi';
-import { dashboardApi } from './services/dashboardApi';
-import { userApi } from './services/userApi';
+// Import RTK Query API slice
+import { apiSlice, apiReducer, apiMiddleware } from './api/apiSlice';
 
-// Store configuration
+// Root reducer combining all slices and API reducers
+const rootReducer = combineReducers({
+  // Feature slices
+  auth: authReducer,
+  strategies: strategiesReducer,
+  strategy: strategySlice,
+  dashboard: dashboardSlice,
+  economicData: economicDataReducer,
+  monitoring: monitoringReducer,
+  performanceAnalytics: performanceAnalyticsReducer,
+
+  // RTK Query API reducer
+  [apiSlice.reducerPath]: apiReducer,
+});
+
+// Configure store with middleware
 export const store = configureStore({
-  reducer: {
-    // UI state
-    auth: authSlice,
-    ui: uiSlice,
-    dashboard: dashboardSlice,
-    strategy: strategySlice,
-
-    // API services
-    [authApi.reducerPath]: authApi.reducer,
-    [strategyApi.reducerPath]: strategyApi.reducer,
-    [dashboardApi.reducerPath]: dashboardApi.reducer,
-    [userApi.reducerPath]: userApi.reducer,
-  },
+  reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        // Ignore these action types
-        ignoredActions: [
-          // RTK Query actions
-          'authApi/executeQuery/pending',
-          'authApi/executeQuery/fulfilled',
-          'authApi/executeQuery/rejected',
-          'strategyApi/executeQuery/pending',
-          'strategyApi/executeQuery/fulfilled',
-          'strategyApi/executeQuery/rejected',
-          'dashboardApi/executeQuery/pending',
-          'dashboardApi/executeQuery/fulfilled',
-          'dashboardApi/executeQuery/rejected',
-          'userApi/executeQuery/pending',
-          'userApi/executeQuery/fulfilled',
-          'userApi/executeQuery/rejected',
-        ],
-        // Ignore these field paths in all actions
-        ignoredPaths: [
-          'api',
-          'strategyApi',
-          'dashboardApi',
-          'userApi',
-        ],
+        // Ignore RTK Query action types and some specific paths
+        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredPaths: ['auth.token', 'auth.refreshToken'],
       },
     })
-      .concat(
-        authApi.middleware,
-        strategyApi.middleware,
-        dashboardApi.middleware,
-        userApi.middleware
-      ),
-  devTools: process.env.NODE_ENV !== 'production',
+      .concat(apiMiddleware),
+  devTools: import.meta.env.DEV,
 });
 
-// Setup listeners for refetchOnFocus/refetchOnReconnect behaviors
+// Enable refetchOnFocus/refetchOnReconnect behaviors
 setupListeners(store.dispatch);
 
-// Export types
+// Export types for use in components
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
-// Export typed hooks
-export const useAppDispatch = () => useDispatch<AppDispatch>();
-export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
+// Export typed hooks - re-export from hooks to maintain single source of truth
+export { useAppDispatch, useAppSelector } from '../hooks/redux';
 
-// Export store instance
-export default store;
+// Re-export the API slice as 'api' for convenience
+export { api } from './api/apiSlice';

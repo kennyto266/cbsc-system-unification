@@ -2,6 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Square-UI design tokens */
+@import './styles/square-ui.css';
+
+@layer base {
+  :root {
+    /* shadcn/ui CSS Variables - Light Theme */
+    --background: 0 0% 100%;
+    --foreground: 210 40% 21%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 40% 21%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 40% 21%;
+
+    --primary: 211 100% 43%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 210 40% 21%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 210 40% 46%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 210 40% 21%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 40% 88%;
+    --input: 210 40% 88%;
+    --ring: 211 100% 43%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* shadcn/ui CSS Variables - Dark Theme */
+    --background: 210 40% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 210 40% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 210 40% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 211 100% 43%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 21%;
+    --secondary-foreground: 210 40% 88%;
+
+    --muted: 210 40% 21%;
+    --muted-foreground: 210 40% 62%;
+
+    --accent: 210 40% 21%;
+    --accent-foreground: 210 40% 88%;
+
+    --destructive: 0 63% 41%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 40% 21%;
+    --input: 210 40% 21%;
+    --ring: 211 100% 43%;
+  }
+}
+
 /* CSS Reset and Base Styles */
 @layer base {
   *,

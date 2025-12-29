@@ -67,3 +67,9 @@ htmlcov/
 
 # Node.js (if any)
 node_modules/
+
+# Auto Claude data directory
+.auto-claude/
+
+# Git worktrees
+.worktrees/

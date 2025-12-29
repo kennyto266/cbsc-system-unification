@@ -1,0 +1,317 @@
+# Canary Deployment for CBSC Strategy Management System v2 API
+# Gradual rollout: 5% → 25% → 50% → 100%
+
+---
+# Canary Deployment (v2)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cbsc-strategy-api-canary
+  namespace: cbsc-strategy
+  labels:
+    app: cbsc-strategy
+    component: api
+    version: v2-canary
+    track: canary
+spec:
+  replicas: 1  # Start with 1 replica (5% of 20 total)
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: cbsc-strategy
+      component: api
+      track: canary
+  template:
+    metadata:
+      labels:
+        app: cbsc-strategy
+        component: api
+        version: v2-canary
+        track: canary
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3005"
+        prometheus.io/path: "/metrics"
+        rollout: "canary"
+    spec:
+      serviceAccountName: cbsc-strategy-sa
+      containers:
+      - name: cbsc-strategy-api
+        image: cbsc/strategy-api:v2.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 3004
+        - name: metrics
+          containerPort: 3005
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://$(DATABASE_USER):$(DATABASE_PASSWORD)@$(DATABASE_HOST):$(DATABASE_PORT)/$(DATABASE_NAME)"
+        - name: REDIS_URL
+          value: "redis://$(REDIS_HOST):$(REDIS_PORT)/$(REDIS_DB)"
+        - name: DEPLOYMENT_TRACK
+          value: "canary"
+        envFrom:
+        - configMapRef:
+            name: cbsc-strategy-config
+        - secretRef:
+            name: cbsc-strategy-secrets
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+          readOnly: true
+        - name: logs-volume
+          mountPath: /app/logs
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config-volume
+        configMap:
+          name: cbsc-strategy-app-config
+      - name: logs-volume
+        emptyDir: {}
+
+---
+# Canary Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cbsc-strategy-api-canary-service
+  namespace: cbsc-strategy
+  labels:
+    app: cbsc-strategy
+    component: api
+    service-type: canary
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
+  selector:
+    app: cbsc-strategy
+    component: api
+    track: canary
+
+---
+# VirtualService for Istio (if using Istio service mesh)
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: cbsc-strategy-api-virtualservice
+  namespace: cbsc-strategy
+spec:
+  hosts:
+  - api.cbsc.com
+  gateways:
+  - cbsc-strategy-gateway
+  http:
+  - match:
+    - headers:
+        canary:
+          exact: "true"
+    route:
+    - destination:
+        host: cbsc-strategy-api-canary-service
+        port:
+          number: 80
+  - route:
+    - destination:
+        host: cbsc-strategy-api-service
+        port:
+          number: 80
+      weight: 95  # 95% stable
+    - destination:
+        host: cbsc-strategy-api-canary-service
+        port:
+          number: 80
+      weight: 5   # 5% canary
+
+---
+# DestinationRule for Istio
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: cbsc-strategy-api-destinationrule
+  namespace: cbsc-strategy
+spec:
+  host: cbsc-strategy-api-service
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_CONN
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        maxRequestsPerConnection: 10
+    circuitBreaker:
+      consecutiveErrors: 3
+      interval: 30s
+      baseEjectionTime: 30s
+  subsets:
+  - name: stable
+    labels:
+      track: stable
+  - name: canary
+    labels:
+      track: canary
+
+---
+# Prometheus Rules for Canary Analysis
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cbsc-strategy-canary-rules
+  namespace: cbsc-strategy
+  labels:
+    app: cbsc-strategy
+    component: monitoring
+spec:
+  groups:
+  - name: canary.rules
+    rules:
+    - alert: CanaryHighErrorRate
+      expr: |
+        (
+          rate(http_requests_total{service="cbsc-strategy-api-canary-service",status=~"5.."}[5m]) /
+          rate(http_requests_total{service="cbsc-strategy-api-canary-service"}[5m])
+        ) > 0.05
+      for: 5m
+      labels:
+        severity: warning
+        deployment: canary
+      annotations:
+        summary: "High error rate in canary deployment"
+        description: "Canary deployment error rate is {{ $value | humanizePercentage }}"
+
+    - alert: CanaryHighLatency
+      expr: |
+        histogram_quantile(0.95,
+          rate(http_request_duration_seconds_bucket{service="cbsc-strategy-api-canary-service"}[5m])
+        ) > 0.5
+      for: 5m
+      labels:
+        severity: warning
+        deployment: canary
+      annotations:
+        summary: "High latency in canary deployment"
+        description: "95th percentile latency is {{ $value }}s"
+
+    - alert: CanaryVsStableErrorRate
+      expr: |
+        (
+          rate(http_requests_total{service="cbsc-strategy-api-canary-service",status=~"5.."}[5m]) /
+          rate(http_requests_total{service="cbsc-strategy-api-canary-service"}[5m])
+        ) / (
+          rate(http_requests_total{service="cbsc-strategy-api-service",status=~"5.."}[5m]) /
+          rate(http_requests_total{service="cbsc-strategy-api-service"}[5m])
+        ) > 1.5
+      for: 10m
+      labels:
+        severity: critical
+        deployment: canary
+      annotations:
+        summary: "Canary error rate significantly higher than stable"
+        description: "Canary has {{ $value | humanizePercentage }} more errors than stable"
+
+---
+# ArgRollout for ArgoCD (if using ArgoCD)
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: cbsc-strategy-api-argorollout
+  namespace: cbsc-strategy
+  labels:
+    app: cbsc-strategy
+    component: argorollout
+spec:
+  replicas: 20
+  strategy:
+    canary:
+      steps:
+      - setWeight: 5    # 5% traffic
+      - pause: {duration: 5m}
+      - setWeight: 25   # 25% traffic
+      - pause: {duration: 10m}
+      - setWeight: 50   # 50% traffic
+      - pause: {duration: 15m}
+      - setWeight: 100  # 100% traffic
+      canaryService: cbsc-strategy-api-canary-service
+      stableService: cbsc-strategy-api-service
+      trafficRouting:
+        istio:
+          virtualService:
+            name: cbsc-strategy-api-virtualservice
+            routes:
+            - primary
+      analysis:
+        templates:
+        - templateName: success-rate
+        args:
+        - name: service-name
+          value: cbsc-strategy-api-canary-service
+        startingStep: 2
+        interval: 5m
+  selector:
+    matchLabels:
+      app: cbsc-strategy
+      component: api
+  template:
+    metadata:
+      labels:
+        app: cbsc-strategy
+        component: api
+    spec:
+      containers:
+      - name: cbsc-strategy-api
+        image: cbsc/strategy-api:v2.0.0
+        ports:
+        - containerPort: 3004
+        envFrom:
+        - configMapRef:
+            name: cbsc-strategy-config
+        - secretRef:
+            name: cbsc-strategy-secrets
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3004
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3004
+          initialDelaySeconds: 5
+          periodSeconds: 5
