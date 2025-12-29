@@ -1,0 +1,43 @@
+/**
+ * PerformanceHeader Styles
+ */
+
+.performance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .performance-header {
+  border-bottom-color: #374151;
+}
+
+.performance-header-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.performance-header-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.dark .performance-header-label {
+  color: #9ca3af;
+}
+
+.performance-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.dark .performance-header-meta {
+  color: #9ca3af;
+}
