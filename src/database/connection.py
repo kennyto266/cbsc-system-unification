@@ -401,3 +401,36 @@ async def database_health_check() -> dict:
             "sync_connection": False,
             "async_connection": False,
         }
+
+
+# Raw connection function for custom SQL queries
+def get_db_connection():
+    """Get raw database connection for custom SQL queries
+
+    This function provides a raw psycopg2 connection for executing custom SQL queries
+    that don't require SQLAlchemy ORM. It uses the project's database configuration.
+
+    Returns:
+        psycopg2.connection: Database connection
+
+    Note:
+        Connection must be closed by the caller using conn.close()
+        Consider using try-finally block to ensure cleanup
+    """
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+
+    config = get_database_config()
+    database_url = config.get_sync_url()
+
+    # Convert SQLAlchemy URL to psycopg2 format if needed
+    if database_url.startswith("postgresql://"):
+        # Already in correct format for psycopg2
+        pass
+    elif database_url.startswith("postgresql+"):
+        # Remove SQLAlchemy driver specification
+        database_url = database_url.replace("postgresql+psycopg2://", "postgresql://")
+        database_url = database_url.replace("postgresql+pygresql://", "postgresql://")
+
+    conn = psycopg2.connect(database_url)
+    return conn
