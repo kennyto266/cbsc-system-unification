@@ -26,6 +26,7 @@ from api.cbsc_data_api import router as cbsc_data_router
 from api.unified_strategy_endpoints import router as unified_strategy_router
 from api.websocket_server import websocket_router
 from api.non_price_endpoints import router as non_price_router
+from api.market_data_endpoints import router as analytics_router
 
 # 导入新的统一策略架构 (Issue #20/21 实现)
 from api.strategies import router as new_strategies_router
@@ -112,6 +113,7 @@ app.include_router(cbsc_data_router, tags=["CBSC数据"])
 app.include_router(unified_strategy_router, tags=["策略管理v0-统一"])
 app.include_router(websocket_router)
 app.include_router(non_price_router)
+app.include_router(analytics_router)
 
 # 全局异常处理器
 @app.exception_handler(Exception)
