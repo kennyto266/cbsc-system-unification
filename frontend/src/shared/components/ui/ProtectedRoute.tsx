@@ -10,8 +10,6 @@ interface ProtectedRouteProps {
 
 /**
  * Route guard component that redirects to login if user is not authenticated
- *
- * DEV MODE: Auth temporarily disabled for testing
  */
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   // Safe selector access - don't destructure to avoid issues
@@ -21,11 +19,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   // Check for token with null safety
   const token = authState?.token;
 
-  // DEV MODE: Skip auth check for testing - Comment out the next line to enable auth
-  // if (!token) {
-  //   // Redirect to login with return url
-  //   return <Navigate to="/login" state={{ from: location }} replace />;
-  // }
+  if (!token) {
+    // Redirect to login with return url
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
   return <>{children}</>;
 };
