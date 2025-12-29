@@ -12,6 +12,7 @@ import strategySlice from './slices/strategySlice';
 import dashboardSlice from './slices/dashboardSlice';
 import economicDataReducer from './slices/economicDataSlice';
 import monitoringReducer from './slices/monitoringSlice';
+import performanceAnalyticsReducer from './slices/performanceAnalyticsSlice';
 
 // Import RTK Query API slice
 import { apiSlice, apiReducer, apiMiddleware } from './api/apiSlice';
@@ -25,6 +26,7 @@ const rootReducer = combineReducers({
   dashboard: dashboardSlice,
   economicData: economicDataReducer,
   monitoring: monitoringReducer,
+  performanceAnalytics: performanceAnalyticsReducer,
 
   // RTK Query API reducer
   [apiSlice.reducerPath]: apiReducer,
