@@ -72,16 +72,43 @@ const initialState: PerformanceAnalyticsState = {
   lastUpdate: null,
 };
 
+// Retry mechanism with exponential backoff
+async function fetchWithRetry<T>(
+  fetcher: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fetcher();
+    } catch (error: any) {
+      const isLastAttempt = attempt === maxRetries - 1;
+      if (isLastAttempt) {
+        throw error;
+      }
+      // Exponential backoff: baseDelay * 2^attempt
+      const delay = baseDelay * Math.pow(2, attempt);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
 // Async thunk to fetch performance analytics
 export const fetchPerformanceAnalytics = createAsyncThunk(
   'performanceAnalytics/fetch',
   async (params: { timeRange: TimeRange; strategies?: string[] }, { rejectWithValue }) => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await apiClient.post('/api/analytics/performance', params);
+      // TODO: Integrate with centralized API configuration
+      // Current implementation uses mock data for development
+      // For production, replace with:
+      // import { apiClient } from '@/services/apiClient';
+      // const response = await fetchWithRetry(() =>
+      //   apiClient.post('/api/analytics/performance', params)
+      // );
       // return response.data;
 
-      // Mock data fallback
+      // Mock data fallback (will be removed after API integration)
       return {
         returnAttribution: {
           total: 15.5,
