@@ -2,7 +2,7 @@
 
 **生成時間**: 2025-12-16T02:00:00Z
 **執行人**: Claude Code PM
-**GitHub Token**: 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
+**GitHub Token**: [REDACTED]
 
 ## 📊 總體狀態概覽
 
@@ -109,7 +109,7 @@
    ```bash
    gh auth login
    # 或使用新的token
-   export GITHUB_TOKEN=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
+   export GITHUB_TOKEN=[REDACTED]
    ```
 
 2. **手動創建待同步的Epic Issues**
