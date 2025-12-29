@@ -7,8 +7,8 @@ import React from 'react';
 import { Space, Button, DatePicker } from 'antd';
 import { Download } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../../hooks/redux';
-import { setTimeRange, fetchPerformanceAnalytics, TimeRange } from '../../../store/slices/performanceAnalyticsSlice';
-import dayjs from 'dayjs';
+import { setTimeRange, fetchPerformanceAnalytics, TimeRange, TimeRangePreset } from '../../../store/slices/performanceAnalyticsSlice';
+import dayjs, { Dayjs } from 'dayjs';
 import './PerformanceHeader.css';
 
 const { RangePicker } = DatePicker;
@@ -21,20 +21,28 @@ export const PerformanceHeader: React.FC = () => {
 
   const isCustomRange = typeof selectedTimeRange === 'object' && 'start' in selectedTimeRange;
 
-  const handleTimeRangeChange = (value: string) => {
-    const newRange: TimeRange = value as any;
-    dispatch(setTimeRange(newRange));
-    dispatch(fetchPerformanceAnalytics({ timeRange: newRange }) as any);
+  const handleTimeRangeChange = async (value: TimeRangePreset) => {
+    try {
+      const newRange: TimeRange = value;
+      dispatch(setTimeRange(newRange));
+      await dispatch(fetchPerformanceAnalytics({ timeRange: newRange }));
+    } catch (error) {
+      console.error('Failed to update time range:', error);
+    }
   };
 
-  const handleCustomRangeChange = (dates: any) => {
-    if (dates && dates[0] && dates[1]) {
-      const newRange: TimeRange = {
-        start: dates[0].format('YYYY-MM-DD'),
-        end: dates[1].format('YYYY-MM-DD'),
-      };
-      dispatch(setTimeRange(newRange));
-      dispatch(fetchPerformanceAnalytics({ timeRange: newRange }) as any);
+  const handleCustomRangeChange = async (dates: null | [Dayjs | null, Dayjs | null]) => {
+    try {
+      if (dates && dates[0] && dates[1]) {
+        const newRange: TimeRange = {
+          start: dates[0].format('YYYY-MM-DD'),
+          end: dates[1].format('YYYY-MM-DD'),
+        };
+        dispatch(setTimeRange(newRange));
+        await dispatch(fetchPerformanceAnalytics({ timeRange: newRange }));
+      }
+    } catch (error) {
+      console.error('Failed to update custom date range:', error);
     }
   };
 
