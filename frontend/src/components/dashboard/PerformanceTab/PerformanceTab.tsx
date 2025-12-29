@@ -5,8 +5,8 @@
 
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Row, Col } from 'antd';
-import { useAppDispatch } from '../../../hooks/redux';
+import { Row, Col, Alert, Spin } from 'antd';
+import { useAppDispatch, useAppSelector } from '../../../hooks/redux';
 import { fetchPerformanceAnalytics } from '../../../store/slices/performanceAnalyticsSlice';
 import { PerformanceHeader } from './PerformanceHeader';
 import { ReturnAttributionChart } from './ReturnAttribution';
@@ -17,10 +17,11 @@ import './PerformanceTab.css';
 
 export const PerformanceTab: React.FC = () => {
   const dispatch = useAppDispatch();
+  const { isLoading, error } = useAppSelector((state) => state.performanceAnalytics);
 
   // Load initial data
   useEffect(() => {
-    dispatch(fetchPerformanceAnalytics({ timeRange: '1m' }) as any);
+    dispatch(fetchPerformanceAnalytics({ timeRange: '1m' }));
   }, [dispatch]);
 
   return (
@@ -30,6 +31,25 @@ export const PerformanceTab: React.FC = () => {
       exit={{ opacity: 0 }}
       className="performance-tab"
     >
+      {/* Error Display */}
+      {error && (
+        <Alert
+          message="數據加載失敗"
+          description={error}
+          type="error"
+          showIcon
+          closable
+          style={{ marginBottom: 24 }}
+        />
+      )}
+
+      {/* Global Loading Indicator */}
+      {isLoading && (
+        <div style={{ textAlign: 'center', padding: '100px 0' }}>
+          <Spin size="large" tip="加載性能分析數據中..." />
+        </div>
+      )}
+
       {/* Control Header */}
       <PerformanceHeader />
 
