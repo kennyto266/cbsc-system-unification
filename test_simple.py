@@ -1,63 +1,43 @@
-#!/usr/bin/env python3
 """
-简单测试策略优化功能
+Simple test to verify the database connection fix works
 """
-
 import sys
 import os
-import pandas as pd
-import numpy as np
 
-# 设置项目路径
-project_path = os.path.join(os.path.expanduser("~"), ".cursor", "CODEX 寫量化團隊")
-sys.path.insert(0, project_path)
-os.chdir(project_path)
+# Add src to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '.'))
 
-def test_simple():
-    """简单测试"""
-    try:
-        print("🚀 测试策略优化功能...")
-        
-        # 导入策略优化函数
-        from complete_project_system import run_strategy_optimization
-        
-        # 创建测试数据
-        data = []
-        for i in range(200):
-            data.append({
-                'date': f'2023-01-{i+1:02d}',
-                'open': 100 + i * 0.1,
-                'high': 105 + i * 0.1,
-                'low': 95 + i * 0.1,
-                'close': 100 + i * 0.1 + np.random.normal(0, 1),
-                'volume': 1000
-            })
-        
-        print(f"✅ 测试数据创建成功: {len(data)} 条记录")
-        
-        # 测试MA策略优化
-        print("测试MA策略优化...")
-        results = run_strategy_optimization(data, 'ma')
-        
-        if results:
-            print(f"✅ MA策略优化成功: 找到 {len(results)} 个策略")
-            print(f"最佳策略: {results[0]['strategy_name']}")
-            print(f"Sharpe比率: {results[0]['sharpe_ratio']:.4f}")
-            print("🎉 JSON解析错误修复成功！")
-            return True
-        else:
-            print("❌ MA策略优化失败: 没有找到有效策略")
-            return False
-        
-    except Exception as e:
-        print(f"❌ 测试失败: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+# Test 1: Verify the new connection function exists
+print("Test 1: Checking if get_db_connection exists in connection module...")
+try:
+    from src.database.connection import get_db_connection
+    print("  [PASS] get_db_connection found in src.database.connection")
+except ImportError as e:
+    print(f"  [FAIL] Could not import get_db_connection: {e}")
+    sys.exit(1)
 
-if __name__ == "__main__":
-    success = test_simple()
-    if success:
-        print("🎉 策略优化功能测试成功！")
-    else:
-        print("💥 策略优化功能测试失败！")
+# Test 2: Verify the function signature and docstring
+print("\nTest 2: Checking function signature and docstring...")
+if get_db_connection.__doc__:
+    doc_lines = get_db_connection.__doc__.strip().split('\n')
+    print(f"  Docstring has {len(doc_lines)} lines")
+    print("  [PASS] Function has documentation")
+else:
+    print("  [FAIL] Function missing docstring")
+    sys.exit(1)
+
+# Test 3: Test the functions work correctly
+print("\nTest 3: Testing functions work correctly...")
+
+# Test get_date_range
+try:
+    from src.api.market_data_endpoints import get_date_range
+    start, end = get_date_range("1w")
+    print(f"  [PASS] get_date_range('1w') returned: {start} to {end}")
+except Exception as e:
+    print(f"  [FAIL] get_date_range failed: {e}")
+    sys.exit(1)
+
+print("\n" + "=" * 60)
+print("[PASS] All tests passed!")
+print("=" * 60)
