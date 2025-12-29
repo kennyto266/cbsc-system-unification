@@ -20,6 +20,7 @@ import { MonitoringTab } from '../../components/Dashboard/MonitoringTab/Monitori
 import { AlertTicker } from '../../components/Dashboard/MonitoringTab/AlertTicker';
 import { ChartsDashboard } from '../../components/Charts/ChartsDashboard';
 import { OverviewTab } from '../../components/Dashboard/OverviewTab/OverviewTab';
+import { PerformanceTab } from '../../components/Dashboard/PerformanceTab/PerformanceTab';
 
 import { useAppSelector } from '../../hooks/redux';
 import { Strategy } from '../../types/strategy';
@@ -141,7 +142,7 @@ export const UnifiedDashboardPage: React.FC = () => {
           </motion.div>
         </TabPane>
 
-        {/* Performance Charts Tab */}
+        {/* Performance Analysis Tab */}
         <TabPane
           tab={
             <span className="flex items-center gap-2">
@@ -156,12 +157,7 @@ export const UnifiedDashboardPage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <ChartsDashboard
-              strategies={strategies}
-              height={400}
-              showControls={true}
-              defaultLayout="grid"
-            />
+            <PerformanceTab />
           </motion.div>
         </TabPane>
 
