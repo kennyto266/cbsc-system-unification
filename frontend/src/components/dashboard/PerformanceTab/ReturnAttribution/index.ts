@@ -2,5 +2,5 @@
  * ReturnAttribution Export
  */
 
-export { ReturnAttributionChart } from './ReturnAttributionChart';
-export { default as ReturnAttributionChart } from './ReturnAttributionChart';
+export * from './ReturnAttributionChart';
+export { default } from './ReturnAttributionChart';
