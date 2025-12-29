@@ -53,79 +53,95 @@ def upgrade():
                 morning_close DECIMAL(10,2),
                 afternoon_close DECIMAL(10,2),
                 change_value DECIMAL(10,2),
-                change_percent DECIMAL(10,4),
+                change_percent DECIMAL(12,6),
                 created_at TIMESTAMP DEFAULT NOW()
             );
         """))
 
-        # Create indicators table
+        # Create index on date for time range queries
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_hkex_raw_data_date ON hkex_raw_data(date);
+        """))
+
+        # Create indicators table (no foreign key to avoid cascade failures)
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS market_indicators (
-                date DATE PRIMARY KEY REFERENCES hkex_raw_data(date) ON DELETE CASCADE,
-                advance_decline_ratio DECIMAL(10,4),
-                volume_change_percent DECIMAL(10,4),
+                date DATE PRIMARY KEY,
+                advance_decline_ratio DECIMAL(12,6),
+                volume_change_percent DECIMAL(12,6),
                 sentiment_score DECIMAL(10,2),
-                breadth_momentum DECIMAL(10,4),
+                breadth_momentum DECIMAL(12,6),
                 updated_at TIMESTAMP DEFAULT NOW()
             );
         """))
 
-        # Create trigger function
+        # Create index on date for performance
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_market_indicators_date ON market_indicators(date);
+        """))
+
+        # Create trigger function with exception handling
         conn.execute(text("""
             CREATE OR REPLACE FUNCTION calculate_indicators()
             RETURNS TRIGGER AS $$
             DECLARE
                 prev_volume BIGINT;
-                volume_pct DECIMAL(10,4);
+                volume_pct DECIMAL(12,6);
                 total_stocks INTEGER;
             BEGIN
-                -- Get previous day's volume for change calculation
-                SELECT turnover_hkd INTO prev_volume
-                FROM hkex_raw_data
-                WHERE date < NEW.date
-                ORDER BY date DESC
-                LIMIT 1;
+                BEGIN
+                    -- Get previous day's volume for change calculation
+                    SELECT turnover_hkd INTO prev_volume
+                    FROM hkex_raw_data
+                    WHERE date < NEW.date
+                    ORDER BY date DESC
+                    LIMIT 1;
 
-                -- Calculate volume change percent
-                IF prev_volume IS NOT NULL AND prev_volume > 0 THEN
-                    volume_pct = ((NEW.turnover_hkd - prev_volume)::DECIMAL / prev_volume) * 100;
-                ELSE
-                    volume_pct = 0;
-                END IF;
+                    -- Calculate volume change percent
+                    IF prev_volume IS NOT NULL AND prev_volume > 0 THEN
+                        volume_pct = ((NEW.turnover_hkd - prev_volume)::DECIMAL / prev_volume) * 100;
+                    ELSE
+                        volume_pct = 0;
+                    END IF;
 
-                -- Calculate total stocks
-                total_stocks = NEW.advanced_stocks + NEW.declined_stocks + NEW.unchanged_stocks;
+                    -- Calculate total stocks
+                    total_stocks = NEW.advanced_stocks + NEW.declined_stocks + NEW.unchanged_stocks;
 
-                -- Insert or update indicators
-                INSERT INTO market_indicators (
-                    date,
-                    advance_decline_ratio,
-                    volume_change_percent,
-                    sentiment_score,
-                    breadth_momentum
-                )
-                VALUES (
-                    NEW.date,
-                    CASE WHEN NEW.declined_stocks > 0
-                         THEN NEW.advanced_stocks::DECIMAL / (NEW.declined_stocks + 1)
-                         ELSE NEW.advanced_stocks::DECIMAL END,
-                    volume_pct,
-                    (
+                    -- Insert or update indicators
+                    INSERT INTO market_indicators (
+                        date,
+                        advance_decline_ratio,
+                        volume_change_percent,
+                        sentiment_score,
+                        breadth_momentum
+                    )
+                    VALUES (
+                        NEW.date,
                         CASE WHEN NEW.declined_stocks > 0
                              THEN NEW.advanced_stocks::DECIMAL / (NEW.declined_stocks + 1)
-                             ELSE NEW.advanced_stocks::DECIMAL END * 0.4 +
-                        volume_pct * 0.3 +
-                        CASE WHEN total_stocks > 0
-                             THEN (NEW.advanced_stocks::DECIMAL / total_stocks) * 0.3
-                             ELSE 0 END
-                    ) * 100,
-                    0  -- Phase 2 implementation
-                )
-                ON CONFLICT (date) DO UPDATE SET
-                    advance_decline_ratio = EXCLUDED.advance_decline_ratio,
-                    volume_change_percent = EXCLUDED.volume_change_percent,
-                    sentiment_score = EXCLUDED.sentiment_score,
-                    updated_at = NOW();
+                             ELSE NEW.advanced_stocks::DECIMAL END,
+                        volume_pct,
+                        (
+                            CASE WHEN NEW.declined_stocks > 0
+                                 THEN NEW.advanced_stocks::DECIMAL / (NEW.declined_stocks + 1)
+                                 ELSE NEW.advanced_stocks::DECIMAL END * 0.4 +
+                            volume_pct * 0.3 +
+                            CASE WHEN total_stocks > 0
+                                 THEN (NEW.advanced_stocks::DECIMAL / total_stocks) * 0.3
+                                 ELSE 0 END
+                        ) * 100,
+                        0  -- Phase 2 implementation
+                    )
+                    ON CONFLICT (date) DO UPDATE SET
+                        advance_decline_ratio = EXCLUDED.advance_decline_ratio,
+                        volume_change_percent = EXCLUDED.volume_change_percent,
+                        sentiment_score = EXCLUDED.sentiment_score,
+                        updated_at = NOW();
+
+                EXCEPTION WHEN OTHERS THEN
+                    -- Log error but allow insert to proceed
+                    RAISE WARNING 'Failed to calculate indicators for date %: %', NEW.date, SQLERRM;
+                END;
 
                 RETURN NEW;
             END;
