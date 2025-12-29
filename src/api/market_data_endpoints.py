@@ -7,23 +7,13 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timedelta
 import logging
-import os
 
-# Simple database connection
-import psycopg2
+# Use project standard database connection
+from src.database.connection import get_db_connection
 from psycopg2.extras import RealDictCursor
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
-
-# Database configuration
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://cbsc:password@localhost:5432/cbsc')
-
-
-def get_db_connection():
-    """Get database connection"""
-    conn = psycopg2.connect(DATABASE_URL)
-    return conn
 
 
 class PerformanceAnalyticsRequest(BaseModel):
@@ -155,6 +145,7 @@ async def get_performance_analytics(
     Returns:
         Performance analytics with return attribution, risk exposure, correlations, and stress test
     """
+    conn = None
     try:
         # Calculate date range
         start_date, end_date = get_date_range(time_range)
@@ -188,7 +179,6 @@ async def get_performance_analytics(
             })
 
         cursor.close()
-        conn.close()
 
         # Calculate return attribution
         return_attribution = calculate_return_attribution(indicators)
@@ -210,6 +200,10 @@ async def get_performance_analytics(
         logger.error(f"Error fetching performance analytics: {e}")
         # Return mock data on error
         return get_mock_data()
+    finally:
+        # Ensure connection is always closed
+        if conn:
+            conn.close()
 
 
 @router.get("/indicators")
@@ -229,6 +223,7 @@ async def get_market_indicators(
     Returns:
         List of market indicators
     """
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -265,10 +260,13 @@ async def get_market_indicators(
             })
 
         cursor.close()
-        conn.close()
 
         return {"data": indicators, "count": len(indicators)}
 
     except Exception as e:
         logger.error(f"Error fetching market indicators: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Ensure connection is always closed
+        if conn:
+            conn.close()
