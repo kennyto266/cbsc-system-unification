@@ -22,12 +22,15 @@ from api.auth_endpoints import router as auth_router
 from api.user_endpoints import router as user_router
 from api.personal_strategy_endpoints import router as personal_strategy_router
 from api.cbsc_strategy_api import router as cbsc_strategy_router
+from api.cbsc_data_api import router as cbsc_data_router
 from api.unified_strategy_endpoints import router as unified_strategy_router
 from api.websocket_server import websocket_router
 from api.non_price_endpoints import router as non_price_router
+from api.market_data_endpoints import router as analytics_router
 
 # 导入新的统一策略架构 (Issue #20/21 实现)
 from api.strategies import router as new_strategies_router
+from api.strategies.v2 import v2_router
 
 # 导入服务
 from auth_simple import init_auth_service
@@ -97,15 +100,20 @@ if os.path.exists("static"):
 app.include_router(auth_router)
 app.include_router(user_router)
 
+# 新的统一策略架构路由 (v2.0) - Issue #20/21 Phase 3 实现
+app.include_router(v2_router)
+
 # 新的统一策略架构路由 (v1.0) - Issue #20/21 实现
 app.include_router(new_strategies_router, prefix="/api/v1", tags=["策略管理v1"])
 
 # 保留旧路由用于向后兼容 (v0.x) - 逐步废弃
 app.include_router(personal_strategy_router, tags=["策略管理v0-个人"])
 app.include_router(cbsc_strategy_router, tags=["策略管理v0-CBSC"])
+app.include_router(cbsc_data_router, tags=["CBSC数据"])
 app.include_router(unified_strategy_router, tags=["策略管理v0-统一"])
 app.include_router(websocket_router)
 app.include_router(non_price_router)
+app.include_router(analytics_router)
 
 # 全局异常处理器
 @app.exception_handler(Exception)

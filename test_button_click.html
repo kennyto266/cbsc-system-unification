@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Button Click Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            margin: 10px 0;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        .test-button:hover {
+            background-color: #2563eb;
+        }
+        .test-button:active {
+            background-color: #1d4ed8;
+            transform: translateY(1px);
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .info {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>快速操作按鈕測試</h1>
+        <p>點擊下面的按鈕來測試功能是否正常工作。</p>
+
+        <button class="test-button" onclick="testCreateStrategy()">
+            創建新策略
+        </button>
+
+        <button class="test-button" onclick="testViewMarketData()">
+            查看市場數據
+        </button>
+
+        <button class="test-button" onclick="testRunBacktest()">
+            運行回測
+        </button>
+
+        <button class="test-button" onclick="testExportReport()">
+            導出報告
+        </button>
+
+        <div id="status" class="status info">
+            點擊任何按鈕來測試功能
+        </div>
+    </div>
+
+    <script>
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        function testCreateStrategy() {
+            updateStatus('正在導航到創建策略頁面...', 'info');
+
+            // 模擬延遲
+            setTimeout(() => {
+                // 嘗試打開新窗口導航
+                const newWindow = window.open('http://localhost:3001/dashboard/strategies?action=create', '_blank');
+                if (newWindow) {
+                    updateStatus('✅ 成功：已打開創建策略頁面', 'success');
+                } else {
+                    updateStatus('⚠️ 警告：彈窗被阻止，請允許彈窗並重試', 'error');
+                }
+            }, 500);
+        }
+
+        function testViewMarketData() {
+            updateStatus('正在獲取市場數據...', 'info');
+
+            // 嘗試獲取市場數據
+            fetch('http://localhost:3004/api/data/stocks')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('後端未響應');
+                })
+                .then(data => {
+                    console.log('市場數據:', data);
+                    updateStatus('✅ 成功：市場數據獲取成功', 'success');
+
+                    // 打開新窗口顯示數據
+                    const newWindow = window.open('', '_blank');
+                    newWindow.document.write(`
+                        <html>
+                            <head><title>市場數據</title></head>
+                            <body>
+                                <h1>市場數據</h1>
+                                <pre>${JSON.stringify(data, null, 2)}</pre>
+                            </body>
+                        </html>
+                    `);
+                })
+                .catch(error => {
+                    console.error('錯誤:', error);
+                    updateStatus('❌ 錯誤：無法連接到後端服務 (端口 3004)', 'error');
+                });
+        }
+
+        function testRunBacktest() {
+            updateStatus('正在啟動回測...', 'info');
+
+            const backtestData = {
+                strategy_id: '1',
+                start_date: '2023-01-01',
+                end_date: '2023-12-31'
+            };
+
+            fetch('http://localhost:3004/api/backtest/strategy', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(backtestData)
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('回測啟動失敗');
+            })
+            .then(data => {
+                console.log('回測結果:', data);
+                updateStatus('✅ 成功：回測已啟動', 'success');
+            })
+            .catch(error => {
+                console.error('錯誤:', error);
+                updateStatus('❌ 錯誤：無法啟動回測', 'error');
+            });
+        }
+
+        function testExportReport() {
+            updateStatus('正在導出報告...', 'info');
+
+            // 嘗試下載報告
+            fetch('http://localhost:3004/api/v1/strategies/1/report?format=pdf')
+                .then(response => {
+                    if (response.ok) {
+                        return response.blob();
+                    }
+                    throw new Error('導出失敗');
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `strategy_report_${new Date().toISOString().split('T')[0]}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+
+                    updateStatus('✅ 成功：報告下載已開始', 'success');
+                })
+                .catch(error => {
+                    console.error('錯誤:', error);
+                    updateStatus('❌ 錯誤：無法導出報告', 'error');
+                });
+        }
+
+        // 添加點擊監聽器來確保事件被觸發
+        document.querySelectorAll('.test-button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                console.log('Button clicked:', e.target.textContent);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBSC 技术指标库演示</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/antd@5.12.8/dist/reset.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+                'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .demo-header {
+            margin-bottom: 32px;
+            text-align: center;
+        }
+        .demo-title {
+            font-size: 32px;
+            font-weight: 600;
+            color: #1890ff;
+            margin-bottom: 16px;
+        }
+        .demo-subtitle {
+            font-size: 18px;
+            color: #666;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        .feature-card {
+            padding: 20px;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            background: #fafafa;
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        .feature-title {
+            font-size: 20px;
+            font-weight: 500;
+            color: #1890ff;
+            margin-bottom: 12px;
+        }
+        .feature-description {
+            color: #666;
+            line-height: 1.6;
+        }
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            margin: 32px 0;
+            padding: 24px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 36px;
+            font-weight: 600;
+            color: #1890ff;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 8px;
+        }
+        .screenshot-container {
+            margin-top: 32px;
+            text-align: center;
+        }
+        .screenshot {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        .demo-footer {
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #e8e8e8;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1 class="demo-title">CBSC 技术指标库</h1>
+            <p class="demo-subtitle">探索 477 种专业技术指标，构建您的量化交易策略</p>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-item">
+                <div class="stat-number">477</div>
+                <div class="stat-label">技术指标</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">10</div>
+                <div class="stat-label">指标类别</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">∞</div>
+                <div class="stat-label">参数组合</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">100+</div>
+                <div class="stat-label">预设模板</div>
+            </div>
+        </div>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3 class="feature-title">📊 智能分类浏览</h3>
+                <p class="feature-description">
+                    指标按趋势、动量、波动率、成交量等类别组织，快速定位您需要的指标类型
+                </p>
+            </div>
+            <div class="feature-card">
+                <h3 class="feature-title">🔍 强大搜索功能</h3>
+                <p class="feature-description">
+                    支持按名称、描述、标签搜索，配合高级筛选快速找到理想指标
+                </p>
+            </div>
+            <div class="feature-card">
+                <h3 class="feature-title">⚙️ 动态参数配置</h3>
+                <p class="feature-description">
+                    实时调整指标参数，即时预览效果，支持参数验证和约束检查
+                </p>
+            </div>
+            <div class="feature-card">
+                <h3 class="feature-title">🎨 视觉样式定制</h3>
+                <p class="feature-description">
+                    自定义指标颜色、线型、透明度等视觉效果，打造个性化图表
+                </p>
+            </div>
+            <div class="feature-card">
+                <h3 class="feature-title">📈 策略组合编辑</h3>
+                <p class="feature-description">
+                    拖拽式界面组合多个指标，设置逻辑关系，构建复杂交易策略
+                </p>
+            </div>
+            <div class="feature-card">
+                <h3 class="feature-title">📊 性能分析工具</h3>
+                <p class="feature-description">
+                    回测历史数据，分析指标成功率、盈亏比、最大回撤等关键指标
+                </p>
+            </div>
+        </div>
+
+        <div class="screenshot-container">
+            <h2 style="margin-bottom: 24px;">界面预览</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h4>指标库浏览界面</h4>
+                    <div style="padding: 16px; background: #f0f2f5; border-radius: 8px;">
+                        <img src="indicator-library-preview.png" alt="指标库界面"
+                             style="width: 100%; border-radius: 4px;"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div style="display: none; padding: 40px; background: white; border-radius: 4px; text-align: center; color: #666;">
+                            [指标库界面预览]
+                            <br><br>
+                            - 分类浏览
+                            <br>
+                            - 搜索筛选
+                            <br>
+                            - 指标卡片展示
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h4>参数配置面板</h4>
+                    <div style="padding: 16px; background: #f0f2f5; border-radius: 8px;">
+                        <img src="parameter-config-preview.png" alt="参数配置界面"
+                             style="width: 100%; border-radius: 4px;"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div style="display: none; padding: 40px; background: white; border-radius: 4px; text-align: center; color: #666;">
+                            [参数配置界面预览]
+                            <br><br>
+                            - 实时参数调整
+                            <br>
+                            - 视觉样式设置
+                            <br>
+                            - 配置保存
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-footer">
+            <p>© 2024 CBSC. All rights reserved.</p>
+            <p>
+                <a href="#" style="color: #1890ff; text-decoration: none;">查看文档</a> |
+                <a href="#" style="color: #1890ff; text-decoration: none; margin-left: 16px;">访问 GitHub</a> |
+                <a href="#" style="color: #1890ff; text-decoration: none; margin-left: 16px;">联系我们</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // 简单的统计数字动画
+        document.addEventListener('DOMContentLoaded', function() {
+            const stats = document.querySelectorAll('.stat-number');
+
+            stats.forEach(stat => {
+                const finalValue = stat.innerText;
+                if (!isNaN(finalValue)) {
+                    let currentValue = 0;
+                    const increment = Math.ceil(finalValue / 30);
+
+                    const timer = setInterval(() => {
+                        currentValue += increment;
+                        if (currentValue >= finalValue) {
+                            currentValue = finalValue;
+                            clearInterval(timer);
+                        }
+                        stat.innerText = currentValue;
+                    }, 50);
+                } else if (finalValue === '∞') {
+                    // 无限符号动画
+                    let opacity = 0;
+                    let increasing = true;
+
+                    setInterval(() => {
+                        if (increasing) {
+                            opacity += 0.05;
+                            if (opacity >= 1) increasing = false;
+                        } else {
+                            opacity -= 0.05;
+                            if (opacity <= 0.3) increasing = true;
+                        }
+                        stat.style.opacity = opacity;
+                    }, 100);
+                }
+            });
+
+            // 特性卡片交互效果
+            const cards = document.querySelectorAll('.feature-card');
+            cards.forEach(card => {
+                card.addEventListener('click', function() {
+                    this.style.transform = 'scale(1.02)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 200);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

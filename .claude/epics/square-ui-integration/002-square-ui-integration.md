@@ -1,8 +1,8 @@
 ---
 name: Square-UI模板獲取和適配
-status: open
+status: completed
 created: 2025-12-14T03:30:42Z
-updated: 2025-12-14T03:30:42Z
+updated: 2025-12-17T14:02:48Z
 github:
 depends_on: []
 parallel: true
@@ -86,3 +86,6 @@ const cbscTheme = {
 - `src/components/square-ui/` - 適配後的組件
 - `src/styles/themes.css` - 主題樣式
 - `docs/square-ui-mapping.md` - 組件映射文檔
+---
+## Completion
+This task has been completed on 2025-12-17T14:02:48Z

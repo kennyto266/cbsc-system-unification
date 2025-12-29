@@ -1,19 +1,46 @@
 import React, { useMemo } from 'react'
+import { motion } from 'framer-motion'
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
   Legend,
-  TimeScale,
-  ChartOptions
-} from 'chart.js'
-import { Line } from 'react-chartjs-2'
-import { Card, Select, Space, Button } from 'antd'
-import { DownloadOutlined, FullscreenOutlined } from '@ant-design/icons'
+  ScatterChart,
+  Scatter,
+  ComposedChart
+} from 'recharts'
+import {
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Activity,
+  BarChart3,
+  PieChart,
+  Zap,
+  Shield,
+  DollarSign
+} from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import { Badge } from '../ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
+import { Progress } from '../ui/progress'
+import { Grid } from '../square-ui/Grid'
+import { MetricCard } from '../square-ui/MetricCard'
+import { cn } from '../../lib/utils'
 import { Strategy } from '../../types'
 
 // 註冊Chart.js組件

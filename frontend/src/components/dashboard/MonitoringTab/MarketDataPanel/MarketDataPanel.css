@@ -1,0 +1,52 @@
+/**
+ * MarketDataPanel Styles
+ */
+
+.market-data-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel-header {
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .panel-header {
+  border-bottom-color: #374151;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.dark .panel-header h2 {
+  color: #f9fafb;
+}
+
+.market-data-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.market-data-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.market-data-section h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.dark .market-data-section h3 {
+  color: #e5e7eb;
+}

@@ -1,10 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: ['class'],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -70,6 +70,28 @@ export default {
           purple: 'hsl(263, 70%, 50%)',
           cyan: 'hsl(188, 94%, 43%)',
         },
+        // Square-UI品牌色
+        square: {
+          50: '#f0f4ff',
+          100: '#e0e7ff',
+          200: '#c7d2fe',
+          300: '#a5b4fc',
+          400: '#818cf8',
+          500: '#667eea',
+          600: '#5a67d8',
+          700: '#4c51bf',
+          800: '#434190',
+          900: '#3c366b',
+          950: '#312e81',
+        },
+        // Square-UI渐变定义
+        gradient: {
+          primary: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          secondary: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+          success: 'linear-gradient(135deg, #13B497 0%, #59D4A4 100%)',
+          warning: 'linear-gradient(135deg, #F7B500 0%, #F5A623 100%)',
+          error: 'linear-gradient(135deg, #FF5252 0%, #FF3838 100%)',
+        },
         // 中性色系统
         gray: {
           50: 'hsl(210, 40%, 98%)',
@@ -84,6 +106,40 @@ export default {
           900: 'hsl(210, 40%, 21%)',
           950: 'hsl(210, 40%, 11%)',
         },
+        // shadcn/ui colors
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
       },
       // 基于系统字体栈的字体系统
       fontFamily: {
@@ -128,6 +184,8 @@ export default {
         'slide-down': 'slideDown 0.3s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        // Square-UI animations
+        'float': 'float 6s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -145,6 +203,11 @@ export default {
         scaleIn: {
           '0%': { transform: 'scale(0.95)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        // Square-UI keyframes
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-10px)' },
         },
       },
       // 基于4px的8点网格系统
@@ -180,6 +243,10 @@ export default {
       borderRadius: {
         '4xl': '2rem',
         '5xl': '2.5rem',
+        // Square-UI border radius
+        'square': '12px',
+        'square-lg': '16px',
+        'square-sm': '8px',
       },
       boxShadow: {
         'cbsc': '0 10px 40px rgba(24, 144, 255, 0.15)',
@@ -187,6 +254,15 @@ export default {
         'card': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
         'card-lg': '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
         'modal': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        // Square-UI shadows
+        'square': '0 10px 30px rgba(0, 0, 0, 0.1)',
+        'square-sm': '0 2px 10px rgba(0, 0, 0, 0.05)',
+        'square-lg': '0 20px 40px rgba(0, 0, 0, 0.15)',
+        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+      },
+      // backdrop blur
+      backdropBlur: {
+        square: '10px',
       },
       // 断点系统
       screens: {
@@ -195,7 +271,7 @@ export default {
       },
     },
   },
-  plugins: [
+  plugins: [require('tailwindcss-animate'),
     // 添加组件变体插件
     require('tailwindcss/plugin')(({ addUtilities, theme }) => {
       addUtilities({
@@ -215,6 +291,19 @@ export default {
           'background': 'rgba(0, 0, 0, 0.8)',
           'backdrop-filter': 'blur(10px)',
           '-webkit-backdrop-filter': 'blur(10px)',
+          'border': '1px solid rgba(255, 255, 255, 0.1)',
+        },
+        // Square-UI utilities
+        '.square-gradient': {
+          'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        },
+        '.glass-effect': {
+          'backdrop-filter': 'blur(10px)',
+          'background': 'rgba(255, 255, 255, 0.1)',
+          'border': '1px solid rgba(255, 255, 255, 0.2)',
+        },
+        '.dark .glass-effect': {
+          'background': 'rgba(0, 0, 0, 0.2)',
           'border': '1px solid rgba(255, 255, 255, 0.1)',
         },
       })
