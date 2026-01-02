@@ -13,6 +13,21 @@ export { ThemeToggle } from './ui/ThemeToggle';
 export { LoadingSpinner } from './ui/LoadingSpinner';
 export { RecentActivities } from './ui/RecentActivities';
 
+// UI Helper components (migrated from unified-dashboard)
+export {
+  Grid,
+  GridItem,
+  ResponsiveGrid,
+  DashboardGrid,
+  MetricsGrid,
+  ChartGrid,
+  FlexibleGrid,
+} from './ui-helpers';
+export { MetricCard } from './ui-helpers';
+
+// Analytics components (migrated from unified-dashboard)
+export { PerformanceMetrics, RiskMetrics } from './analytics';
+
 // shadcn/ui components
 export { ShadcnButton as Button } from './ui/shadcn-button';
 export { ShadcnInput as Input } from './ui/shadcn-input';
