@@ -106,6 +106,23 @@ jest.mock('plotly.js', () => ({
   addFrames: jest.fn(),
 }))
 
+// Mock react-plotly.js
+jest.mock('react-plotly.js', () => {
+  const React = require('react')
+  return {
+    default: class Plot extends React.Component {
+      render() {
+        const { layout, config, style } = this.props as any
+        return React.createElement('div', {
+          'data-testid': 'plotly-chart',
+          className: 'plotly-graph-div',
+          style: style || { width: '100%', height: '400px' }
+        }, layout?.title || 'Plotly Chart')
+      }
+    }
+  }
+})
+
 // Mock Chart.js
 jest.mock('chart.js', () => ({
   Chart: jest.fn(() => ({
@@ -118,19 +135,37 @@ jest.mock('chart.js', () => ({
 }))
 
 // Mock recharts
-jest.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }) => children,
-  LineChart: () => null,
-  BarChart: () => null,
-  PieChart: () => null,
-  AreaChart: () => null,
-  RadarChart: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
-  CartesianGrid: () => null,
-  Tooltip: () => null,
-  Legend: () => null,
-}))
+jest.mock('recharts', () => {
+  const React = require('react')
+
+  return {
+    ResponsiveContainer: ({ children, width, height }: any) =>
+      React.createElement('div', {
+        className: 'recharts-responsive-container',
+        style: { width, height }
+      }, children),
+    LineChart: ({ children }: any) => React.createElement('div', { className: 'recharts-line-chart' }, children),
+    BarChart: ({ children }: any) => React.createElement('div', { className: 'recharts-bar-chart' }, children),
+    PieChart: ({ children }: any) => React.createElement('div', { className: 'recharts-pie-chart' }, children),
+    AreaChart: ({ children }: any) => React.createElement('div', { className: 'recharts-area-chart' }, children),
+    RadarChart: ({ children }: any) => React.createElement('div', { className: 'recharts-radar-chart' }, children),
+    ScatterChart: ({ children }: any) => React.createElement('div', { className: 'recharts-scatter-chart' }, children),
+    Line: ({ data, ...props }: any) => React.createElement('div', { className: 'recharts-line recharts-line' }),
+    Bar: ({ data, ...props }: any) => React.createElement('div', { className: 'recharts-bar' }),
+    Area: ({ data, ...props }: any) => React.createElement('div', { className: 'recharts-area recharts-area' }),
+    Scatter: ({ data, ...props }: any) => React.createElement('div', {
+      className: 'recharts-scatter recharts-scatter-symbol'
+    }),
+    XAxis: (props: any) => React.createElement('div', { className: 'recharts-xAxis recharts-xAxis' }),
+    YAxis: (props: any) => React.createElement('div', { className: 'recharts-yAxis recharts-yAxis' }),
+    ZAxis: (props: any) => React.createElement('div', { className: 'recharts-zAxis' }),
+    CartesianGrid: (props: any) => React.createElement('div', { className: 'recharts-cartesian-grid' }),
+    Tooltip: (props: any) => React.createElement('div', { className: 'recharts-tooltip-wrapper' }),
+    Legend: (props: any) => React.createElement('div', { className: 'recharts-legend-wrapper' }),
+    Cell: (props: any) => React.createElement('div', { className: 'recharts-cell recharts-scatter-symbol' }),
+    ReferenceLine: (props: any) => React.createElement('div', { className: 'recharts-reference-line' }),
+  }
+})
 
 // Mock Monaco Editor
 jest.mock('@monaco-editor/react', () => ({
