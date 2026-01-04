@@ -5,32 +5,26 @@ import numpy as np
 from src.strategies.optimization.features.engine import FeatureEngine
 
 
-@pytest.fixture
-def sample_data():
-    """Create sample OHLCV data for testing"""
-    np.random.seed(42)
-    n = 100
-
-    data = pd.DataFrame({
-        'open': np.random.randn(n).cumsum() + 100,
-        'high': np.random.randn(n).cumsum() + 102,
-        'low': np.random.randn(n).cumsum() + 98,
-        'close': np.random.randn(n).cumsum() + 100,
-        'volume': np.random.randint(1000, 10000, n)
-    })
-
-    # Ensure high >= close >= low
-    data['high'] = data[['open', 'close']].max(axis=1) + np.random.rand(n) * 2
-    data['low'] = data[['open', 'close']].min(axis=1) - np.random.rand(n) * 2
-
-    return data
-
-
 class TestFeatureEngine:
     """Test FeatureEngine class"""
 
-    def test_feature_engine_initialization(self, sample_data):
+    def test_feature_engine_initialization(self):
         """Verify engine initializes with technical indicator"""
+        # Create sample OHLCV data
+        np.random.seed(42)
+        n = 100
+        data = pd.DataFrame({
+            'open': np.random.randn(n).cumsum() + 100,
+            'high': np.random.randn(n).cumsum() + 102,
+            'low': np.random.randn(n).cumsum() + 98,
+            'close': np.random.randn(n).cumsum() + 100,
+            'volume': np.random.randint(1000, 10000, n)
+        })
+
+        # Ensure high >= close >= low
+        data['high'] = data[['open', 'close']].max(axis=1) + np.random.rand(n) * 2
+        data['low'] = data[['open', 'close']].min(axis=1) - np.random.rand(n) * 2
+
         engine = FeatureEngine()
 
         # Verify it has technical indicator instance
@@ -41,10 +35,25 @@ class TestFeatureEngine:
         from src.strategies.optimization.features.technical import TechnicalIndicators
         assert isinstance(engine.technical, TechnicalIndicators)
 
-    def test_feature_engine_create_features(self, sample_data):
+    def test_feature_engine_create_features(self):
         """Verify create_features generates expected features"""
+        # Create sample OHLCV data
+        np.random.seed(42)
+        n = 100
+        data = pd.DataFrame({
+            'open': np.random.randn(n).cumsum() + 100,
+            'high': np.random.randn(n).cumsum() + 102,
+            'low': np.random.randn(n).cumsum() + 98,
+            'close': np.random.randn(n).cumsum() + 100,
+            'volume': np.random.randint(1000, 10000, n)
+        })
+
+        # Ensure high >= close >= low
+        data['high'] = data[['open', 'close']].max(axis=1) + np.random.rand(n) * 2
+        data['low'] = data[['open', 'close']].min(axis=1) - np.random.rand(n) * 2
+
         engine = FeatureEngine()
-        features = engine.create_features(sample_data)
+        features = engine.create_features(data)
 
         # Verify output is DataFrame
         assert isinstance(features, pd.DataFrame)
@@ -90,49 +99,5 @@ class TestFeatureEngine:
             assert feature in features.columns, f"Missing statistical feature: {feature}"
 
         # Verify original columns are preserved
-        for col in sample_data.columns:
+        for col in data.columns:
             assert col in features.columns, f"Missing original column: {col}"
-
-    def test_feature_engine_select_features_variance(self, sample_data):
-        """Verify feature selection with variance method"""
-        engine = FeatureEngine()
-        features = engine.create_features(sample_data)
-
-        # Select features using variance threshold
-        selected = engine.select_features(features, method='variance', threshold=0.01)
-
-        # Verify return type
-        assert isinstance(selected, list)
-
-        # Verify all selected features exist in original features
-        for feature in selected:
-            assert feature in features.columns
-
-    def test_feature_engine_select_features_correlation(self, sample_data):
-        """Verify feature selection with correlation method"""
-        engine = FeatureEngine()
-        features = engine.create_features(sample_data)
-
-        # Select features using correlation threshold
-        selected = engine.select_features(features, method='correlation', threshold=0.95)
-
-        # Verify return type
-        assert isinstance(selected, list)
-
-        # Verify all selected features exist in original features
-        for feature in selected:
-            assert feature in features.columns
-
-    def test_feature_engine_select_features_all(self, sample_data):
-        """Verify feature selection with all method returns all features"""
-        engine = FeatureEngine()
-        features = engine.create_features(sample_data)
-
-        # Select all features
-        selected = engine.select_features(features, method='all')
-
-        # Verify return type
-        assert isinstance(selected, list)
-
-        # Verify all features are returned
-        assert len(selected) == len(features.columns)

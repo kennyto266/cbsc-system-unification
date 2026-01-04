@@ -2,11 +2,7 @@
 import pandas as pd
 import numpy as np
 from typing import List, Optional
-import logging
 from .technical import TechnicalIndicators
-
-# Configure logging
-logger = logging.getLogger(__name__)
 
 
 class FeatureEngine:
@@ -15,7 +11,6 @@ class FeatureEngine:
     def __init__(self):
         """Initialize feature engine with technical indicators"""
         self.technical = TechnicalIndicators()
-        logger.info("FeatureEngine initialized")
 
     def create_features(self, data: pd.DataFrame) -> pd.DataFrame:
         """
@@ -27,7 +22,6 @@ class FeatureEngine:
         Returns:
             DataFrame with original data plus all features
         """
-        logger.info(f"Creating features for data with shape {data.shape}")
         df = data.copy()
 
         # Add different feature types
@@ -36,12 +30,10 @@ class FeatureEngine:
         df = self._add_volume_features(df)
         df = self._add_statistical_features(df)
 
-        logger.info(f"Created features, final shape: {df.shape}")
         return df
 
     def _add_technical_features(self, df: pd.DataFrame) -> pd.DataFrame:
         """Add technical indicator features"""
-        logger.debug("Adding technical features")
 
         # Moving averages
         df['sma_20'] = self.technical.sma(df['close'], 20)
@@ -77,7 +69,6 @@ class FeatureEngine:
 
     def _add_price_features(self, df: pd.DataFrame) -> pd.DataFrame:
         """Add price-based features"""
-        logger.debug("Adding price features")
 
         # Returns
         df['returns_1d'] = df['close'].pct_change(1)
@@ -87,10 +78,8 @@ class FeatureEngine:
         # Log returns
         df['log_returns_1d'] = np.log(df['close'] / df['close'].shift(1))
 
-        # Price position (where close is in recent range)
-        rolling_high = df['high'].rolling(20).max()
-        rolling_low = df['low'].rolling(20).min()
-        df['price_position'] = (df['close'] - rolling_low) / (rolling_high - rolling_low)
+        # Price position (where close is in current bar's range)
+        df['price_position'] = (df['close'] - df['low']) / (df['high'] - df['low'])
 
         # Gap (open vs previous close)
         df['gap'] = (df['open'] - df['close'].shift(1)) / df['close'].shift(1)
@@ -99,7 +88,6 @@ class FeatureEngine:
 
     def _add_volume_features(self, df: pd.DataFrame) -> pd.DataFrame:
         """Add volume-based features"""
-        logger.debug("Adding volume features")
 
         # Volume moving average
         df['volume_sma_20'] = df['volume'].rolling(20).mean()
@@ -118,7 +106,6 @@ class FeatureEngine:
 
     def _add_statistical_features(self, df: pd.DataFrame) -> pd.DataFrame:
         """Add statistical features"""
-        logger.debug("Adding statistical features")
 
         returns = df['returns_1d']
 
@@ -131,10 +118,10 @@ class FeatureEngine:
         # Kurtosis
         df['kurtosis_20d'] = returns.rolling(20).kurt()
 
-        # Z-score
-        rolling_mean = returns.rolling(20).mean()
-        rolling_std = returns.rolling(20).std()
-        df['zscore_20d'] = (returns - rolling_mean) / rolling_std
+        # Z-score (on close prices, not returns)
+        rolling_mean = df['close'].rolling(20).mean()
+        rolling_std = df['close'].rolling(20).std()
+        df['zscore_20d'] = (df['close'] - rolling_mean) / rolling_std
 
         return df
 
@@ -153,8 +140,6 @@ class FeatureEngine:
         Returns:
             List of selected feature names
         """
-        logger.info(f"Selecting features using method: {method}, threshold: {threshold}")
-
         if method == 'all':
             # Return all features
             selected = features.columns.tolist()
@@ -181,8 +166,6 @@ class FeatureEngine:
             selected = [col for col in features.columns if col not in to_drop]
 
         else:
-            logger.warning(f"Unknown selection method: {method}, returning all features")
-            selected = features.columns.tolist()
+            raise ValueError(f"Unknown selection method: {method}")
 
-        logger.info(f"Selected {len(selected)} features out of {len(features.columns)}")
         return selected
