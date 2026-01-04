@@ -137,25 +137,15 @@ jest.mock('react-plotly.js', () => {
   const PlotComponent = class Plot extends React.Component {
     render() {
       const { layout, config, style, data } = this.props as any
+      const title = typeof layout?.title === 'string'
+        ? layout.title
+        : layout?.title?.text || 'Plotly Chart'
+
       return React.createElement('div', {
         'data-testid': 'mock-plotly-chart',
         className: 'plotly-graph-div',
         style: style || { width: '100%', height: '400px' }
-      },
-        React.createElement('div', {
-          'data-testid': 'plotly-data',
-          'data-plot': JSON.stringify(data || [])
-        }),
-        React.createElement('div', {
-          'data-testid': 'plotly-layout',
-          'data-plot': JSON.stringify(layout || {})
-        }),
-        React.createElement('div', {
-          'data-testid': 'plotly-config',
-          'data-plot': JSON.stringify(config || {})
-        }),
-        layout?.title || 'Plotly Chart'
-      )
+      }, title)
     }
   }
 
@@ -167,14 +157,53 @@ jest.mock('react-plotly.js', () => {
 })
 
 // Mock Chart.js
-jest.mock('chart.js', () => ({
-  Chart: jest.fn(() => ({
+jest.mock('chart.js', () => {
+  const mockChartInstance = {
     update: jest.fn(),
     destroy: jest.fn(),
     resize: jest.fn(),
-  })),
-  register: jest.fn(),
-  defaults: {},
+    clear: jest.fn(),
+    draw: jest.fn(),
+  }
+
+  const mockChart = jest.fn(() => mockChartInstance)
+
+  return {
+    Chart: Object.assign(mockChart, {
+      register: jest.fn(),
+      defaults: {},
+    }),
+    register: jest.fn(),
+    defaults: {},
+  }
+})
+
+// Mock react-chartjs-2
+jest.mock('react-chartjs-2', () => ({
+  Bar: ({ data, options, ...props }: any) => {
+    const React = require('react')
+    return React.createElement('div', {
+      'data-testid': 'mock-chart-bar',
+      className: 'react-chartjs-2-bar',
+      style: { height: props.height || 400 }
+    }, 'Bar Chart')
+  },
+  Line: ({ data, options, ...props }: any) => {
+    const React = require('react')
+    return React.createElement('div', {
+      'data-testid': 'mock-chart-line',
+      className: 'react-chartjs-2-line',
+      style: { height: props.height || 400 }
+    }, 'Line Chart')
+  },
+  Radar: ({ data, options, ...props }: any) => {
+    const React = require('react')
+    return React.createElement('div', {
+      'data-testid': 'mock-chart-radar',
+      className: 'react-chartjs-2-radar',
+      style: { height: props.height || 400 }
+    }, 'Radar Chart')
+  },
 }))
 
 // Mock recharts

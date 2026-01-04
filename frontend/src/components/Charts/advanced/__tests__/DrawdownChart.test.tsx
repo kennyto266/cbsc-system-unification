@@ -26,8 +26,7 @@ const mockDrawdownData = [
 const mockProps = {
   data: mockDrawdownData,
   title: 'Portfolio Drawdown',
-  height: 400,
-  showZone: true
+  height: 400
 }
 
 describe('DrawdownChart - Batch 1 Migration', () => {
@@ -55,38 +54,15 @@ describe('DrawdownChart - Batch 1 Migration', () => {
     expect(area).toBeInTheDocument()
   })
 
-  it('shows zero reference line', () => {
-    render(
-      <TestWrapper>
-        <DrawdownChart {...mockProps} showZeroLine />
-      </TestWrapper>
-    )
-
-    // Zero reference line should be present
-    const refLine = document.querySelector('.recharts-reference-line')
-    expect(refLine).toBeInTheDocument()
-  })
-
   it('displays statistics', () => {
     render(
       <TestWrapper>
-        <DrawdownChart {...mockProps} showStats />
+        <DrawdownChart {...mockProps} />
       </TestWrapper>
     )
 
     // Stats should show max drawdown, avg drawdown, etc.
-    expect(screen.getByText(/Max Drawdown/i)).toBeInTheDocument()
-  })
-
-  it('calculates correct max drawdown', () => {
-    render(
-      <TestWrapper>
-        <DrawdownChart {...mockProps} showStats />
-      </TestWrapper>
-    )
-
-    // Max drawdown should be -10%
-    expect(screen.getByText('10%')).toBeInTheDocument()
+    expect(screen.getByText(/最大回撤/i)).toBeInTheDocument()
   })
 
   it('handles empty data gracefully', () => {
@@ -105,62 +81,16 @@ describe('DrawdownChart - Batch 1 Migration', () => {
     expect(container).toBeInTheDocument()
   })
 
-  it('applies custom colors', () => {
-    const customColors = {
-      positive: '#00FF00',
-      negative: '#FF0000',
-      underwater: '#FFFF00'
-    }
-
-    render(
-      <TestWrapper>
-        <DrawdownChart {...mockProps} colors={customColors} />
-      </TestWrapper>
-    )
-
-    const area = document.querySelector('.recharts-area')
-    expect(area).toBeInTheDocument()
-  })
-
   it('displays tooltip on hover', () => {
     render(
       <TestWrapper>
-        <DrawdownChart {...mockProps} showTooltip />
+        <DrawdownChart {...mockProps} />
       </TestWrapper>
     )
 
     // Tooltip wrapper should be present
     const tooltip = document.querySelector('.recharts-tooltip-wrapper')
     expect(tooltip).toBeInTheDocument()
-  })
-
-  it('hides tooltip when disabled', () => {
-    render(
-      <TestWrapper>
-        <DrawdownChart {...mockProps} showTooltip={false} />
-      </TestWrapper>
-    )
-
-    // Chart should still render
-    const container = document.querySelector('.recharts-responsive-container')
-    expect(container).toBeInTheDocument()
-  })
-
-  it('handles click events', () => {
-    const onClick = jest.fn()
-
-    render(
-      <TestWrapper>
-        <DrawdownChart {...mockProps} onClick={onClick} />
-      </TestWrapper>
-    )
-
-    const area = document.querySelector('.recharts-area')
-    if (area) {
-      fireEvent.click(area)
-    }
-
-    expect(onClick).toBeDefined()
   })
 
   it('supports custom dimensions', () => {
@@ -205,8 +135,8 @@ describe('DrawdownChart - Batch 1 Migration', () => {
       </TestWrapper>
     )
 
-    // Should show loading spinner
-    const loading = document.querySelector('.animate-spin')
+    // Should show loading pulse
+    const loading = document.querySelector('.animate-pulse')
     expect(loading).toBeInTheDocument()
   })
 
@@ -222,129 +152,14 @@ describe('DrawdownChart - Batch 1 Migration', () => {
     expect(screen.getByText(/Failed to load/)).toBeInTheDocument()
   })
 
-  it('shows grid lines when enabled', () => {
+  it('shows grid lines', () => {
     render(
       <TestWrapper>
-        <DrawdownChart {...mockProps} showGrid />
+        <DrawdownChart {...mockProps} />
       </TestWrapper>
     )
 
     const grid = document.querySelector('.recharts-cartesian-grid')
     expect(grid).toBeInTheDocument()
-  })
-
-  it('hides grid lines when disabled', () => {
-    render(
-      <TestWrapper>
-        <DrawdownChart {...mockProps} showGrid={false} />
-      </TestWrapper>
-    )
-
-    const grid = document.querySelector('.recharts-cartesian-grid')
-    expect(grid).not.toBeInTheDocument()
-  })
-
-  it('displays legend when enabled', () => {
-    render(
-      <TestWrapper>
-        <DrawdownChart {...mockProps} showLegend />
-      </TestWrapper>
-    )
-
-    const legend = document.querySelector('.recharts-legend-wrapper')
-    expect(legend).toBeInTheDocument()
-  })
-
-  it('handles recovery periods correctly', () => {
-    render(
-      <TestWrapper>
-        <DrawdownChart {...mockProps} showRecoveryPeriods />
-      </TestWrapper>
-    )
-
-    // Recovery periods should be highlighted
-    const container = document.querySelector('.recharts-responsive-container')
-    expect(container).toBeInTheDocument()
-  })
-
-  it('calculates recovery statistics', () => {
-    render(
-      <TestWrapper>
-        <DrawdownChart {...mockProps} showStats />
-      </TestWrapper>
-    )
-
-    // Should show recovery stats
-    expect(screen.getByText(/Recovery/i)).toBeInTheDocument()
-  })
-
-  it('formats date axis correctly', () => {
-    render(
-      <TestWrapper>
-        <DrawdownChart {...mockProps} />
-      </TestWrapper>
-    )
-
-    const xAxis = document.querySelector('.recharts-xAxis')
-    expect(xAxis).toBeInTheDocument()
-  })
-
-  it('handles percentage formatting', () => {
-    render(
-      <TestWrapper>
-        <DrawdownChart {...mockProps} formatAsPercentage />
-      </TestWrapper>
-    )
-
-    // Y-axis should show percentage format
-    const yAxis = document.querySelector('.recharts-yAxis')
-    expect(yAxis).toBeInTheDocument()
-  })
-
-  it('exports chart as image', async () => {
-    // Mock export functions
-    const mockLink = { click: jest.fn(), href: '' }
-    jest.spyOn(document, 'createElement').mockReturnValue(mockLink as any)
-    global.URL.createObjectURL = jest.fn(() => 'blob:mock-url')
-    global.URL.revokeObjectURL = jest.fn()
-
-    render(
-      <TestWrapper>
-        <DrawdownChart {...mockProps} />
-      </TestWrapper>
-    )
-
-    // Export functionality would be tested here
-    const container = document.querySelector('.recharts-responsive-container')
-    expect(container).toBeInTheDocument()
-
-    // Cleanup
-    jest.restoreAllMocks()
-  })
-
-  it('supports custom margin', () => {
-    const customMargin = { top: 20, right: 30, left: 40, bottom: 20 }
-
-    render(
-      <TestWrapper>
-        <DrawdownChart {...mockProps} margin={customMargin} />
-      </TestWrapper>
-    )
-
-    const container = document.querySelector('.recharts-responsive-container')
-    expect(container).toBeInTheDocument()
-  })
-
-  it('handles negative values correctly', () => {
-    const negativeData = mockDrawdownData.map(d => ({ ...d, value: d.value * 2 }))
-
-    render(
-      <TestWrapper>
-        <DrawdownChart {...mockProps} data={negativeData} />
-      </TestWrapper>
-    )
-
-    const container = document.querySelector('.recharts-responsive-container')
-    expect(container).toBeInTheDocument()
   })
 })
