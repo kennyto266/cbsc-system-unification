@@ -1,14 +1,6 @@
 import React from 'react'
 import { render, screen, cleanup } from '@testing-library/react'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../Card'
-import { ThemeProvider } from '@/contexts/ThemeContext'
-
-// Test wrapper - 测试包装器
-const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ThemeProvider>
-    {children}
-  </ThemeProvider>
-)
 
 describe('Card Component', () => {
   afterEach(() => {
@@ -17,13 +9,13 @@ describe('Card Component', () => {
 
   describe('Card Container', () => {
     test('renders with default styling', () => {
-      render(
-        <TestWrapper>
+      const { container } = render(
+        <div>
           <Card>Card Content</Card>
-        </TestWrapper>
+        </div>
       )
 
-      const card = screen.getByText('Card Content').parentElement
+      const card = container.querySelector('.rounded-lg')
       expect(card).toBeInTheDocument()
       expect(card).toHaveClass(
         'rounded-lg',
@@ -35,25 +27,26 @@ describe('Card Component', () => {
     })
 
     test('renders with custom className', () => {
-      render(
-        <TestWrapper>
+      const { container } = render(
+        <div>
           <Card className="custom-card">Content</Card>
-        </TestWrapper>
+        </div>
       )
 
-      const card = screen.getByText('Content').parentElement
+      const card = container.querySelector('.custom-card')
+      expect(card).toBeInTheDocument()
       expect(card).toHaveClass('custom-card')
     })
 
     test('renders complex content', () => {
       render(
-        <TestWrapper>
+        <div>
           <Card>
             <h2>Title</h2>
             <p>Description</p>
             <button>Action</button>
           </Card>
-        </TestWrapper>
+        </div>
       )
 
       expect(screen.getByRole('heading', { name: 'Title' })).toBeInTheDocument()
@@ -63,9 +56,9 @@ describe('Card Component', () => {
 
     test('supports data attributes', () => {
       render(
-        <TestWrapper>
+        <div>
           <Card data-testid="test-card">Content</Card>
-        </TestWrapper>
+        </div>
       )
 
       const card = screen.getByTestId('test-card')
@@ -76,13 +69,13 @@ describe('Card Component', () => {
 
   describe('CardHeader', () => {
     test('renders with default styling', () => {
-      render(
-        <TestWrapper>
+      const { container } = render(
+        <div>
           <CardHeader>Header Content</CardHeader>
-        </TestWrapper>
+        </div>
       )
 
-      const header = screen.getByText('Header Content').parentElement
+      const header = container.querySelector('.flex.flex-col')
       expect(header).toBeInTheDocument()
       expect(header).toHaveClass(
         'flex',
@@ -93,25 +86,26 @@ describe('Card Component', () => {
     })
 
     test('renders with custom className', () => {
-      render(
-        <TestWrapper>
+      const { container } = render(
+        <div>
           <CardHeader className="custom-header">Header</CardHeader>
-        </TestWrapper>
+        </div>
       )
 
-      const header = screen.getByText('Header').parentElement
+      const header = container.querySelector('.custom-header')
+      expect(header).toBeInTheDocument()
       expect(header).toHaveClass('custom-header')
     })
 
     test('renders complex header content', () => {
       render(
-        <TestWrapper>
+        <div>
           <CardHeader>
             <h2>Card Title</h2>
             <p>Subtitle</p>
             <button>Menu</button>
           </CardHeader>
-        </TestWrapper>
+        </div>
       )
 
       expect(screen.getByRole('heading', { name: 'Card Title' })).toBeInTheDocument()
@@ -123,9 +117,9 @@ describe('Card Component', () => {
   describe('CardTitle', () => {
     test('renders as h3 element with default styling', () => {
       render(
-        <TestWrapper>
+        <div>
           <CardTitle>Card Title</CardTitle>
-        </TestWrapper>
+        </div>
       )
 
       const title = screen.getByRole('heading', { level: 3, name: 'Card Title' })
@@ -140,9 +134,9 @@ describe('Card Component', () => {
 
     test('renders with custom className', () => {
       render(
-        <TestWrapper>
+        <div>
           <CardTitle className="custom-title">Title</CardTitle>
-        </TestWrapper>
+        </div>
       )
 
       const title = screen.getByRole('heading', { level: 3 })
@@ -151,11 +145,11 @@ describe('Card Component', () => {
 
     test('renders with long content', () => {
       render(
-        <TestWrapper>
+        <div>
           <CardTitle>
             This is a very long card title that should wrap properly when it exceeds the container width
           </CardTitle>
-        </TestWrapper>
+        </div>
       )
 
       const title = screen.getByRole('heading', { level: 3 })
@@ -167,13 +161,13 @@ describe('Card Component', () => {
 
   describe('CardContent', () => {
     test('renders with default styling', () => {
-      render(
-        <TestWrapper>
+      const { container } = render(
+        <div>
           <CardContent>Content here</CardContent>
-        </TestWrapper>
+        </div>
       )
 
-      const content = screen.getByText('Content here').parentElement
+      const content = container.querySelector('.p-6.pt-0')
       expect(content).toBeInTheDocument()
       expect(content).toHaveClass(
         'p-6',
@@ -182,19 +176,20 @@ describe('Card Component', () => {
     })
 
     test('renders with custom className', () => {
-      render(
-        <TestWrapper>
+      const { container } = render(
+        <div>
           <CardContent className="custom-content">Content</CardContent>
-        </TestWrapper>
+        </div>
       )
 
-      const content = screen.getByText('Content').parentElement
+      const content = container.querySelector('.custom-content')
+      expect(content).toBeInTheDocument()
       expect(content).toHaveClass('custom-content')
     })
 
     test('renders complex content with multiple elements', () => {
       render(
-        <TestWrapper>
+        <div>
           <CardContent>
             <p>Paragraph 1</p>
             <ul>
@@ -206,7 +201,7 @@ describe('Card Component', () => {
               <input id="input" type="text" />
             </div>
           </CardContent>
-        </TestWrapper>
+        </div>
       )
 
       expect(screen.getByText('Paragraph 1')).toBeInTheDocument()
@@ -218,13 +213,13 @@ describe('Card Component', () => {
 
   describe('CardFooter', () => {
     test('renders with default styling', () => {
-      render(
-        <TestWrapper>
+      const { container } = render(
+        <div>
           <CardFooter>Footer Content</CardFooter>
-        </TestWrapper>
+        </div>
       )
 
-      const footer = screen.getByText('Footer Content').parentElement
+      const footer = container.querySelector('.flex.items-center')
       expect(footer).toBeInTheDocument()
       expect(footer).toHaveClass(
         'flex',
@@ -235,24 +230,25 @@ describe('Card Component', () => {
     })
 
     test('renders with custom className', () => {
-      render(
-        <TestWrapper>
+      const { container } = render(
+        <div>
           <CardFooter className="custom-footer">Footer</CardFooter>
-        </TestWrapper>
+        </div>
       )
 
-      const footer = screen.getByText('Footer').parentElement
+      const footer = container.querySelector('.custom-footer')
+      expect(footer).toBeInTheDocument()
       expect(footer).toHaveClass('custom-footer')
     })
 
     test('renders with action buttons', () => {
       render(
-        <TestWrapper>
+        <div>
           <CardFooter>
             <button>Cancel</button>
             <button>Submit</button>
           </CardFooter>
-        </TestWrapper>
+        </div>
       )
 
       expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
@@ -261,12 +257,12 @@ describe('Card Component', () => {
 
     test('aligns items correctly', () => {
       render(
-        <TestWrapper>
+        <div>
           <CardFooter>
             <span>Left content</span>
             <span style={{ marginLeft: 'auto' }}>Right content</span>
           </CardFooter>
-        </TestWrapper>
+        </div>
       )
 
       expect(screen.getByText('Left content')).toBeInTheDocument()
@@ -277,7 +273,7 @@ describe('Card Component', () => {
   describe('Complete Card Composition', () => {
     test('renders all card components together', () => {
       render(
-        <TestWrapper>
+        <div>
           <Card data-testid="complete-card">
             <CardHeader>
               <CardTitle>Complete Card</CardTitle>
@@ -291,7 +287,7 @@ describe('Card Component', () => {
               <button>Save</button>
             </CardFooter>
           </Card>
-        </TestWrapper>
+        </div>
       )
 
       const card = screen.getByTestId('complete-card')
@@ -304,7 +300,7 @@ describe('Card Component', () => {
 
     test('renders card without all optional components', () => {
       render(
-        <TestWrapper>
+        <div>
           <Card>
             <CardHeader>
               <CardTitle>Minimal Card</CardTitle>
@@ -313,7 +309,7 @@ describe('Card Component', () => {
               Just title and content
             </CardContent>
           </Card>
-        </TestWrapper>
+        </div>
       )
 
       expect(screen.getByRole('heading', { name: 'Minimal Card' })).toBeInTheDocument()
@@ -324,13 +320,13 @@ describe('Card Component', () => {
 
     test('renders card with only content', () => {
       render(
-        <TestWrapper>
+        <div>
           <Card>
             <CardContent>
               Simple content only
             </CardContent>
           </Card>
-        </TestWrapper>
+        </div>
       )
 
       expect(screen.getByText('Simple content only')).toBeInTheDocument()
@@ -340,7 +336,7 @@ describe('Card Component', () => {
 
     test('handles nested content properly', () => {
       render(
-        <TestWrapper>
+        <div>
           <Card>
             <CardContent>
               <Card>
@@ -348,7 +344,7 @@ describe('Card Component', () => {
               </Card>
             </CardContent>
           </Card>
-        </TestWrapper>
+        </div>
       )
 
       expect(screen.getByText('Nested card content')).toBeInTheDocument()
@@ -358,14 +354,14 @@ describe('Card Component', () => {
   describe('Accessibility', () => {
     test('supports ARIA attributes', () => {
       render(
-        <TestWrapper>
+        <div>
           <Card role="article" aria-labelledby="card-title">
             <CardHeader>
               <CardTitle id="card-title">Accessible Card</CardTitle>
             </CardHeader>
             <CardContent>Content</CardContent>
           </Card>
-        </TestWrapper>
+        </div>
       )
 
       const card = screen.getByRole('article')
@@ -374,7 +370,7 @@ describe('Card Component', () => {
 
     test('preserves semantic structure', () => {
       render(
-        <TestWrapper>
+        <div>
           <Card>
             <CardHeader>
               <CardTitle>Semantic Title</CardTitle>
@@ -386,7 +382,7 @@ describe('Card Component', () => {
               </section>
             </CardContent>
           </Card>
-        </TestWrapper>
+        </div>
       )
 
       expect(screen.getByRole('heading', { level: 3, name: 'Semantic Title' })).toBeInTheDocument()
