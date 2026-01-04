@@ -87,3 +87,7 @@ global.URL.createObjectURL = jest.fn(() => 'mock-url')
 global.URL.revokeObjectURL = jest.fn()
 
 export {}
+
+// Mock HTMLCanvasElement for jsPDF
+HTMLCanvasElement.prototype.getContext = jest.fn() as any
+HTMLCanvasElement.prototype.toDataURL = jest.fn() as any
