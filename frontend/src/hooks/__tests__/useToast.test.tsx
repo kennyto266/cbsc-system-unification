@@ -15,10 +15,9 @@ jest.useFakeTimers();
 describe('useToast', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Clear global state before each test
-    const { useToast: hook } = require('../useToast');
-    // Reset global state by accessing internal state
-    global.gc?.();
+    jest.useFakeTimers();
+    // Clear global state by re-importing the module
+    jest.resetModules();
   });
 
   afterEach(() => {

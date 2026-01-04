@@ -9,6 +9,9 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { useResponsive, useMediaQuery, useIsTouchDevice } from '../useResponsive';
 
+// Enable fake timers for all tests in this file
+jest.useFakeTimers();
+
 // Mock window object and its properties
 const mockWindow = {
   innerWidth: 1024,
@@ -115,7 +118,7 @@ describe('useResponsive', () => {
     expect(result.current.isMobile).toBe(true);
     expect(result.current.isTablet).toBe(false);
     expect(result.current.isDesktop).toBe(false);
-    expect(result.current.breakpoint).toBe('sm');
+    expect(result.current.breakpoint).toBe('xs'); // Width 500 < 640 (sm), so it's xs
   });
 
   it('should detect tablet breakpoint correctly', () => {
@@ -139,20 +142,20 @@ describe('useResponsive', () => {
     expect(result.current.isMobile).toBe(false);
     expect(result.current.isTablet).toBe(false);
     expect(result.current.isDesktop).toBe(true);
-    expect(result.current.breakpoint).toBe('xl');
+    expect(result.current.breakpoint).toBe('lg'); // Width 1200 >= 1024 (lg) but < 1280 (xl), so it's lg
   });
 
   it('should detect all breakpoints correctly', () => {
     const testCases = [
       { width: 400, expected: 'xs' },
-      { width: 500, expected: 'sm' },
-      { width: 700, expected: 'sm' },
-      { width: 800, expected: 'md' },
-      { width: 900, expected: 'md' },
-      { width: 1100, expected: 'lg' },
-      { width: 1200, expected: 'xl' },
-      { width: 1300, expected: 'xl' },
-      { width: 1600, expected: '2xl' },
+      { width: 500, expected: 'xs' }, // 500 < 640 (sm), so xs
+      { width: 700, expected: 'sm' }, // 700 >= 640 (sm) but < 768 (md), so sm
+      { width: 800, expected: 'md' }, // 800 >= 768 (md) but < 1024 (lg), so md
+      { width: 900, expected: 'md' }, // 900 >= 768 (md) but < 1024 (lg), so md
+      { width: 1100, expected: 'lg' }, // 1100 >= 1024 (lg) but < 1280 (xl), so lg
+      { width: 1200, expected: 'lg' }, // 1200 >= 1024 (lg) but < 1280 (xl), so lg
+      { width: 1300, expected: 'xl' }, // 1300 >= 1280 (xl) but < 1536 (2xl), so xl
+      { width: 1600, expected: '2xl' }, // 1600 >= 1536 (2xl), so 2xl
     ];
 
     testCases.forEach(({ width, expected }) => {
@@ -408,20 +411,58 @@ describe('useMediaQuery', () => {
 });
 
 describe('useIsTouchDevice', () => {
+  let originalOntouchstart: any;
+  let originalMaxTouchPoints: any;
+  let originalMsMaxTouchPoints: any;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    // Store original values
+    originalOntouchstart = (window as any).ontouchstart;
+    originalMaxTouchPoints = window.navigator.maxTouchPoints;
+    // @ts-ignore
+    originalMsMaxTouchPoints = window.navigator.msMaxTouchPoints;
+
+    // Force remove ontouchstart and set to undefined
     Object.defineProperty(window, 'ontouchstart', {
       writable: true,
       configurable: true,
-      value: undefined,
+      value: null,
     });
-    Object.defineProperty(window, 'navigator', {
+    // Force maxTouchPoints to 0
+    Object.defineProperty(window.navigator, 'maxTouchPoints', {
       writable: true,
       configurable: true,
-      value: {
-        maxTouchPoints: 0,
-        msMaxTouchPoints: 0,
-      },
+      value: 0,
+    });
+    // @ts-ignore
+    // Force msMaxTouchPoints to 0
+    Object.defineProperty(window.navigator, 'msMaxTouchPoints', {
+      writable: true,
+      configurable: true,
+      value: 0,
+    });
+  });
+
+  afterEach(() => {
+    // Restore original values
+    if (originalOntouchstart !== undefined) {
+      Object.defineProperty(window, 'ontouchstart', {
+        writable: true,
+        configurable: true,
+        value: originalOntouchstart,
+      });
+    }
+    Object.defineProperty(window.navigator, 'maxTouchPoints', {
+      writable: true,
+      configurable: true,
+      value: originalMaxTouchPoints,
+    });
+    // @ts-ignore
+    Object.defineProperty(window.navigator, 'msMaxTouchPoints', {
+      writable: true,
+      configurable: true,
+      value: originalMsMaxTouchPoints,
     });
   });
 
@@ -458,12 +499,16 @@ describe('useIsTouchDevice', () => {
 
   it('should return false on server-side render', () => {
     const originalWindow = global.window;
+    const originalNavigator = global.navigator;
     delete (global as any).window;
+    // Also delete navigator since it's part of window
+    delete (global as any).navigator;
 
     const { result } = renderHook(() => useIsTouchDevice());
 
     expect(result.current).toBe(false);
 
     global.window = originalWindow;
+    global.navigator = originalNavigator;
   });
 });

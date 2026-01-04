@@ -5,7 +5,7 @@
  * including export functionality for different formats and chart types.
  */
 
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { useChartExport } from './useChartExport';
 import { createMockRef, mockChartData, flushPromises } from '../__tests__/setup';

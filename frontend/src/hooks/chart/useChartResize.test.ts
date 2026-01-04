@@ -10,13 +10,22 @@ import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals
 import { useChartResize } from './useChartResize';
 import { createMockRef, createMockElement } from '../__tests__/setup';
 
-// Mock useResponsive hook
+// Mock useResponsive hook with complete return value
 jest.mock('../useResponsive', () => ({
-  useResponsive: jest.fn(() => ({
+  useResponsive: jest.fn().mockImplementation(() => ({
+    width: 1024,
+    height: 768,
     isMobile: false,
     isTablet: false,
+    isDesktop: true,
+    breakpoint: 'lg',
+    orientation: 'landscape' as const,
   })),
+  __esModule: true,
 }));
+
+// Import the mocked module to access it in tests
+const mockUseResponsive = jest.requireMock('../useResponsive').useResponsive as jest.Mock;
 
 // Mock console methods
 const originalConsoleError = console.error;
@@ -372,10 +381,14 @@ describe('useChartResize', () => {
 
   it('should handle device responsiveness from useResponsive', () => {
     // Override the mock to return mobile
-    const { useResponsive } = require('../useResponsive');
-    useResponsive.mockReturnValue({
+    mockUseResponsive.mockReturnValue({
+      width: 600,
+      height: 800,
       isMobile: true,
       isTablet: false,
+      isDesktop: false,
+      breakpoint: 'sm',
+      orientation: 'portrait' as const,
     });
 
     const { result } = renderHook(() => useChartResize());

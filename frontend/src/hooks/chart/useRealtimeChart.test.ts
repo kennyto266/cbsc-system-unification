@@ -12,22 +12,24 @@ import { ChannelType, MessageType, WSMessage } from '../../types/websocket';
 import { mockChartData, mockWebSocketMessage, flushPromises } from '../__tests__/setup';
 
 // Mock the useWebSocket hook - Fix mock structure
+const mockUnsubscribe = jest.fn();
+const mockUseWebSocket = jest.fn(() => ({
+  isConnected: true,
+  connectionState: 2, // ConnectionState.CONNECTED
+  connectionQuality: 'good' as const,
+  error: null,
+  subscribe: jest.fn(() => mockUnsubscribe),
+  reconnect: jest.fn(),
+  connect: jest.fn(),
+  disconnect: jest.fn(),
+  send: jest.fn(),
+  getService: jest.fn(),
+}));
+
 jest.mock('../useWebSocketEnhanced', () => ({
-  useWebSocket: jest.fn(() => ({
-    isConnected: true,
-    error: null,
-    connectionQuality: 'good',
-    subscribe: jest.fn(() => jest.fn()),
-    reconnect: jest.fn(),
-  })),
+  useWebSocket: mockUseWebSocket,
   __esModule: true,
-  default: jest.fn(() => ({
-    isConnected: true,
-    error: null,
-    connectionQuality: 'good',
-    subscribe: jest.fn(() => jest.fn()),
-    reconnect: jest.fn(),
-  })),
+  default: mockUseWebSocket,
 }));
 
 // Mock console methods
