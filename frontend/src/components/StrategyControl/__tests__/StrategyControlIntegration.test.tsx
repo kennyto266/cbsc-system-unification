@@ -1,15 +1,28 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { ToastContainer } from 'react-toastify';
 import StrategyControlDashboard from '../StrategyControlDashboard';
 import { StrategyData, StrategyStatus } from '../StrategyToggleEnhanced';
 
+// Mock window.confirm
+global.confirm = jest.fn(() => true);
+
 // Mock the strategy control adapter
 jest.mock('../../../services/strategyControlAdapter', () => ({
   strategyControlAdapter: {
-    getAllStrategies: jest.fn(),
-    toggleStrategy: jest.fn(),
-    batchControlStrategies: jest.fn(),
+    getAllStrategies: jest.fn(() => Promise.resolve({
+      success: true,
+      data: []
+    })),
+    toggleStrategy: jest.fn(() => Promise.resolve({
+      success: true,
+      data: { success: true }
+    })),
+    batchControlStrategies: jest.fn(() => Promise.resolve({
+      success: true,
+      results: []
+    })),
   },
 }));
 

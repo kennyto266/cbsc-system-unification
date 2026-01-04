@@ -1,12 +1,17 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { ToastContainer } from 'react-toastify';
 import StrategyToggleEnhanced, { StrategyData, StrategyStatus } from '../StrategyToggleEnhanced';
 
+// Mock window.confirm
+global.confirm = jest.fn(() => true);
+
 // Mock the strategy control adapter
+const mockToggleStrategy = jest.fn();
 jest.mock('../../../services/strategyControlAdapter', () => ({
   strategyControlAdapter: {
-    toggleStrategy: jest.fn(),
+    toggleStrategy: jest.fn(() => Promise.resolve({ success: true, data: { success: true } })),
   },
 }));
 
