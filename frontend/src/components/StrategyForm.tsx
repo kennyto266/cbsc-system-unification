@@ -13,22 +13,22 @@ interface StrategyFormProps {
 }
 
 const STRATEGY_TYPES = [
-  { value: 'interest_rate_arbitrage', label: 'Interest Rate Arbitrage' },
-  { value: 'economic_data_correlation', label: 'Economic Data Correlation' },
-  { value: 'multi_indicator_momentum', label: 'Multi-Indicator Momentum' },
-  { value: 'volatility_based', label: 'Volatility Based' },
-  { value: 'seasonal_patterns', label: 'Seasonal Patterns' }
+  { value: 'interest_rate_arbitrage', label: '利率套利' },
+  { value: 'economic_data_correlation', label: '經濟數據相關性' },
+  { value: 'multi_indicator_momentum', label: '多指標動量' },
+  { value: 'volatility_based', label: '波動率策略' },
+  { value: 'seasonal_patterns', label: '季節性模式' }
 ]
 
 const AVAILABLE_INDICATORS = [
-  'GDP Growth',
-  'Inflation Rate',
-  'Interest Rate',
-  'Unemployment Rate',
-  'PMI',
-  'Retail Sales',
-  'Consumer Confidence',
-  'Industrial Production'
+  'GDP 增長',
+  '通貨膨脹率',
+  '利率',
+  '失業率',
+  '採購經理指數',
+  '零售銷售',
+  '消費者信心',
+  '工業生產'
 ]
 
 export default function StrategyForm({
@@ -86,7 +86,7 @@ export default function StrategyForm({
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {isEdit ? 'Edit Strategy' : 'Create New Strategy'}
+              {isEdit ? '編輯策略' : '創建新策略'}
             </h2>
             <button
               onClick={onClose}
@@ -100,7 +100,7 @@ export default function StrategyForm({
             {/* Strategy Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Strategy Name *
+                策略名稱 *
               </label>
               <input
                 type="text"
@@ -108,14 +108,14 @@ export default function StrategyForm({
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-                placeholder="Enter strategy name"
+                placeholder="輸入策略名稱"
               />
             </div>
 
             {/* Strategy Type */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Strategy Type *
+                策略類型 *
               </label>
               <select
                 required
@@ -134,7 +134,7 @@ export default function StrategyForm({
             {/* Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Description *
+                描述 *
               </label>
               <textarea
                 required
@@ -142,14 +142,14 @@ export default function StrategyForm({
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-                placeholder="Describe your strategy"
+                placeholder="描述您的策略"
               />
             </div>
 
             {/* Indicators */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Economic Indicators *
+                經濟指標 *
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {AVAILABLE_INDICATORS.map(indicator => (
@@ -174,11 +174,11 @@ export default function StrategyForm({
 
             {/* Risk Limits */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Risk Limits</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">風險限制</h3>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Max Position Size
+                    最大持倉規模
                   </label>
                   <input
                     type="number"
@@ -198,7 +198,7 @@ export default function StrategyForm({
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Max Daily Loss
+                    最大每日虧損
                   </label>
                   <input
                     type="number"
@@ -219,7 +219,7 @@ export default function StrategyForm({
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Max Drawdown
+                    最大回撤
                   </label>
                   <input
                     type="number"
@@ -257,7 +257,7 @@ export default function StrategyForm({
                 className="rounded"
               />
               <label htmlFor="autoRestart" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                Auto-restart on error
+                錯誤時自動重啟
               </label>
             </div>
 
@@ -270,14 +270,14 @@ export default function StrategyForm({
                 className="flex-1"
                 disabled={loading}
               >
-                Cancel
+                取消
               </Button>
               <Button
                 type="submit"
                 className="flex-1"
                 disabled={loading || selectedIndicators.length === 0}
               >
-                {loading ? 'Saving...' : isEdit ? 'Update Strategy' : 'Create Strategy'}
+                {loading ? '儲存中...' : isEdit ? '更新策略' : '創建策略'}
               </Button>
             </div>
           </form>

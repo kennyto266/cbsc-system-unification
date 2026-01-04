@@ -116,36 +116,36 @@ interface StrategyFormData {
 const STRATEGY_TYPES = [
   {
     value: 'interest_rate_arbitrage',
-    label: 'Interest Rate Arbitrage',
-    description: 'Exploits interest rate differentials across markets',
+    label: '利率套利',
+    description: '利用跨市場利率差異進行套利',
     icon: TrendingUp,
     color: 'blue'
   },
   {
     value: 'economic_data_correlation',
-    label: 'Economic Data Correlation',
-    description: 'Uses correlation between economic indicators and market movements',
+    label: '經濟數據相關性',
+    description: '利用經濟指標與市場波動的相關性',
     icon: Filter,
     color: 'green'
   },
   {
     value: 'multi_indicator_momentum',
-    label: 'Multi-Indicator Momentum',
-    description: 'Combines multiple economic indicators for momentum trading',
+    label: '多指標動量',
+    description: '結合多個經濟指標進行動量交易',
     icon: Activity,
     color: 'purple'
   },
   {
     value: 'volatility_based',
-    label: 'Volatility Based',
-    description: 'Generates signals based on economic volatility patterns',
+    label: '波動率策略',
+    description: '基於經濟波動率模式生成信號',
     icon: AlertCircle,
     color: 'orange'
   },
   {
     value: 'seasonal_patterns',
-    label: 'Seasonal Patterns',
-    description: 'Identifies and trades seasonal economic patterns',
+    label: '季節性模式',
+    description: '識別並交易季節性經濟模式',
     icon: Clock,
     color: 'pink'
   }
@@ -157,35 +157,35 @@ const STRATEGY_STATUS_CONFIG = {
     bgColor: 'bg-green-100',
     borderColor: 'border-green-200',
     icon: Play,
-    label: 'Active'
+    label: '運行中'
   },
   paused: {
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-100',
     borderColor: 'border-yellow-200',
     icon: Pause,
-    label: 'Paused'
+    label: '已暫停'
   },
   stopped: {
     color: 'text-red-600',
     bgColor: 'bg-red-100',
     borderColor: 'border-red-200',
     icon: Square,
-    label: 'Stopped'
+    label: '已停止'
   },
   error: {
     color: 'text-red-600',
     bgColor: 'bg-red-100',
     borderColor: 'border-red-200',
     icon: XCircle,
-    label: 'Error'
+    label: '錯誤'
   },
   testing: {
     color: 'text-blue-600',
     bgColor: 'bg-blue-100',
     borderColor: 'border-blue-200',
     icon: Clock,
-    label: 'Testing'
+    label: '測試中'
   }
 }
 
@@ -321,7 +321,7 @@ export default function NonPriceStrategyManagement() {
   }
 
   const handleDeleteStrategy = async (strategyId: string) => {
-    if (!confirm('Are you sure you want to delete this strategy? This action cannot be undone.')) {
+    if (!confirm('確定要刪除此策略嗎？此操作無法撤銷。')) {
       return
     }
 
@@ -353,7 +353,7 @@ export default function NonPriceStrategyManagement() {
   }
 
   const handleStopStrategy = async (strategyId: string) => {
-    if (!confirm('Are you sure you want to stop this strategy?')) {
+    if (!confirm('確定要停止此策略嗎？')) {
       return
     }
 
@@ -400,7 +400,7 @@ export default function NonPriceStrategyManagement() {
 
   const handleDuplicateStrategy = (strategy: NonPriceStrategy) => {
     const formData: StrategyFormData = {
-      name: `${strategy.name} (Copy)`,
+      name: `${strategy.name} (副本)`,
       type: strategy.type,
       description: strategy.description,
       parameters: { ...strategy.parameters },
@@ -459,7 +459,7 @@ export default function NonPriceStrategyManagement() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading strategies...</p>
+          <p className="text-gray-600">載入策略中...</p>
         </div>
       </div>
     )
@@ -474,8 +474,8 @@ export default function NonPriceStrategyManagement() {
             <div className="flex items-center">
               <TrendingUp className="h-8 w-8 text-blue-600 mr-3" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Strategy Management</h1>
-                <p className="text-sm text-gray-500">Manage and monitor economic trading strategies</p>
+                <h1 className="text-2xl font-bold text-gray-900">策略管理</h1>
+                <p className="text-sm text-gray-500">管理和監控經濟交易策略</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -484,12 +484,12 @@ export default function NonPriceStrategyManagement() {
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <Plus className="h-5 w-5" />
-                <span>New Strategy</span>
+                <span>新建策略</span>
               </button>
               <button
                 onClick={loadStrategies}
                 className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Refresh"
+                title="重新整理"
               >
                 <RefreshCw className="h-5 w-5" />
               </button>
@@ -507,7 +507,7 @@ export default function NonPriceStrategyManagement() {
                 <TrendingUp className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Strategies</p>
+                <p className="text-sm font-medium text-gray-500">總策略數</p>
                 <p className="text-2xl font-semibold text-gray-900">{stats.totalStrategies}</p>
               </div>
             </div>
@@ -519,7 +519,7 @@ export default function NonPriceStrategyManagement() {
                 <Play className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Active Strategies</p>
+                <p className="text-sm font-medium text-gray-500">運行中策略</p>
                 <p className="text-2xl font-semibold text-gray-900">{stats.activeStrategies}</p>
               </div>
             </div>
@@ -531,7 +531,7 @@ export default function NonPriceStrategyManagement() {
                 <ArrowUpRight className="h-6 w-6 text-purple-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Performance</p>
+                <p className="text-sm font-medium text-gray-500">總收益率</p>
                 <p className={`text-2xl font-semibold ${
                   stats.totalPerformance >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
@@ -547,7 +547,7 @@ export default function NonPriceStrategyManagement() {
                 <CheckCircle className="h-6 w-6 text-yellow-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Trades</p>
+                <p className="text-sm font-medium text-gray-500">總交易數</p>
                 <p className="text-2xl font-semibold text-gray-900">{stats.totalTrades.toLocaleString()}</p>
               </div>
             </div>
@@ -559,7 +559,7 @@ export default function NonPriceStrategyManagement() {
                 <Target className="h-6 w-6 text-pink-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Average Win Rate</p>
+                <p className="text-sm font-medium text-gray-500">平均勝率</p>
                 <p className="text-2xl font-semibold text-gray-900">{(stats.averageWinRate * 100).toFixed(1)}%</p>
               </div>
             </div>
@@ -576,7 +576,7 @@ export default function NonPriceStrategyManagement() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search strategies..."
+                  placeholder="搜尋策略..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -590,7 +590,7 @@ export default function NonPriceStrategyManagement() {
                 onChange={(e) => setFilterType(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">All Types</option>
+                <option value="all">所有類型</option>
                 {STRATEGY_TYPES.map(type => (
                   <option key={type.value} value={type.value}>
                     {type.label}
@@ -603,7 +603,7 @@ export default function NonPriceStrategyManagement() {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">All Status</option>
+                <option value="all">所有狀態</option>
                 {Object.entries(STRATEGY_STATUS_CONFIG).map(([key, config]) => (
                   <option key={key} value={key}>
                     {config.label}
@@ -616,11 +616,11 @@ export default function NonPriceStrategyManagement() {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="updatedAt">Last Updated</option>
-                <option value="name">Name</option>
-                <option value="status">Status</option>
-                <option value="performance">Performance</option>
-                <option value="createdAt">Created Date</option>
+                <option value="updatedAt">最後更新</option>
+                <option value="name">名稱</option>
+                <option value="status">狀態</option>
+                <option value="performance">績效</option>
+                <option value="createdAt">創建日期</option>
               </select>
             </div>
           </div>
@@ -634,18 +634,18 @@ export default function NonPriceStrategyManagement() {
             <div className="text-gray-400 mb-4">
               <Filter className="h-12 w-12 mx-auto" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No strategies found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">未找到策略</h3>
             <p className="text-gray-500 mb-4">
               {searchTerm || filterType !== 'all' || filterStatus !== 'all'
-                ? 'Try adjusting your filters or search terms'
-                : 'Get started by creating your first economic trading strategy'}
+                ? '請嘗試調整您的篩選條件或搜尋詞'
+                : '開始創建您的第一個經濟交易策略'}
             </p>
             {!searchTerm && filterType === 'all' && filterStatus === 'all' && (
               <button
                 onClick={() => setShowCreateForm(true)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Create Strategy
+                創建策略
               </button>
             )}
           </div>
