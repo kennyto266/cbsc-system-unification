@@ -8,25 +8,25 @@ import { api } from '../api'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 
 // Mock the base API service
-vi.mock('../api', () => ({
+jest.mock('../api', () => ({
   api: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
   },
 }))
 
 // Mock console.error to avoid test output pollution
-vi.spyOn(console, 'error').mockImplementation(() => {})
+jest.spyOn(console, 'error').mockImplementation(() => {})
 
 describe('EconomicStrategyApi', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    jest.restoreAllMocks()
   })
 
   describe('getEconomicStrategies', () => {
@@ -51,7 +51,7 @@ describe('EconomicStrategyApi', () => {
           },
         ],
       }
-      vi.mocked(api.get).mockResolvedValue(mockStrategies)
+      jest.mocked(api.get).mockResolvedValue(mockStrategies)
 
       // Act
       const result = await economicStrategyApi.getEconomicStrategies()
@@ -64,7 +64,7 @@ describe('EconomicStrategyApi', () => {
     it('should handle API errors gracefully', async () => {
       // Arrange
       const error = new Error('Network Error')
-      vi.mocked(api.get).mockRejectedValue(error)
+      jest.mocked(api.get).mockRejectedValue(error)
 
       // Act & Assert
       await expect(economicStrategyApi.getEconomicStrategies()).rejects.toThrow('Network Error')
@@ -83,7 +83,7 @@ describe('EconomicStrategyApi', () => {
         success: true,
         data: { id: '3', ...strategyData, status: 'created' },
       }
-      vi.mocked(api.post).mockResolvedValue(mockResponse)
+      jest.mocked(api.post).mockResolvedValue(mockResponse)
 
       // Act
       const result = await economicStrategyApi.createEconomicStrategy(strategyData)
@@ -106,7 +106,7 @@ describe('EconomicStrategyApi', () => {
         success: true,
         data: { id: strategyId, ...updateData, updated_at: '2024-01-01' },
       }
-      vi.mocked(api.put).mockResolvedValue(mockResponse)
+      jest.mocked(api.put).mockResolvedValue(mockResponse)
 
       // Act
       const result = await economicStrategyApi.updateEconomicStrategy(strategyId, updateData)
@@ -122,7 +122,7 @@ describe('EconomicStrategyApi', () => {
       // Arrange
       const strategyId = '1'
       const mockResponse = { success: true, message: 'Strategy deleted successfully' }
-      vi.mocked(api.delete).mockResolvedValue(mockResponse)
+      jest.mocked(api.delete).mockResolvedValue(mockResponse)
 
       // Act
       const result = await economicStrategyApi.deleteEconomicStrategy(strategyId)
@@ -142,7 +142,7 @@ describe('EconomicStrategyApi', () => {
         success: true,
         data: { id: strategyId, status: 'running', started_at: '2024-01-01T00:00:00Z' },
       }
-      vi.mocked(api.post).mockResolvedValue(mockResponse)
+      jest.mocked(api.post).mockResolvedValue(mockResponse)
 
       // Act
       const result = await economicStrategyApi.startEconomicStrategy(strategyId, startParams)
@@ -161,7 +161,7 @@ describe('EconomicStrategyApi', () => {
         success: true,
         data: { id: strategyId, status: 'stopped', stopped_at: '2024-01-01T00:00:00Z' },
       }
-      vi.mocked(api.post).mockResolvedValue(mockResponse)
+      jest.mocked(api.post).mockResolvedValue(mockResponse)
 
       // Act
       const result = await economicStrategyApi.stopEconomicStrategy(strategyId)
@@ -186,7 +186,7 @@ describe('EconomicStrategyApi', () => {
           total_trades: 42,
         },
       }
-      vi.mocked(api.get).mockResolvedValue(mockPerformance)
+      jest.mocked(api.get).mockResolvedValue(mockPerformance)
 
       // Act
       const result = await economicStrategyApi.getStrategyPerformance(strategyId)

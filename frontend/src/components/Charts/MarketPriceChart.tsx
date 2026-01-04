@@ -3,7 +3,7 @@ import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, ReferenceL
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 import { useRealTimeChart } from '../../hooks/useRealTimeChart'
 
 interface MarketPriceChartProps {

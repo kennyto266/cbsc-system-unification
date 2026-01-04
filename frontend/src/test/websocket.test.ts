@@ -121,14 +121,14 @@ describe('WebSocketService', () => {
   });
 
   it('should handle subscriptions correctly', () => {
-    const callback = vi.fn();
+    const callback = jest.fn();
     const unsubscribe = service.subscribe(ChannelType.STRATEGY_UPDATES, callback);
 
     expect(typeof unsubscribe).toBe('function');
   });
 
   it('should handle unsubscribe correctly', () => {
-    const callback = vi.fn();
+    const callback = jest.fn();
     const unsubscribe = service.subscribe(ChannelType.STRATEGY_UPDATES, callback);
 
     unsubscribe();
@@ -170,7 +170,7 @@ describe('WebSocket Message Handling', () => {
   });
 
   it('should handle incoming messages correctly', async () => {
-    const callback = vi.fn();
+    const callback = jest.fn();
     service.subscribe(ChannelType.STRATEGY_UPDATES, callback);
 
     await service.connect();
@@ -193,7 +193,7 @@ describe('WebSocket Message Handling', () => {
   });
 
   it('should filter messages based on subscription filters', async () => {
-    const callback = vi.fn();
+    const callback = jest.fn();
     const filters = { active: true };
     service.subscribe(ChannelType.STRATEGY_UPDATES, callback, filters);
 

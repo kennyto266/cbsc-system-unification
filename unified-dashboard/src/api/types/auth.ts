@@ -3,6 +3,9 @@
  * Types related to authentication and authorization
  */
 
+// Re-export common types that are expected to be available
+export type { ApiResponse, PaginatedResponse, BaseParams, ActivityLog } from './common'
+
 // User credentials for login
 export interface LoginCredentials {
   email: string
@@ -182,6 +185,20 @@ export interface AuthAuditLog {
   userAgent: string
   details?: any
   timestamp: string
+}
+
+// User search result for admin
+export interface UserSearchResult {
+  id: string
+  email: string
+  username: string
+  firstName: string
+  lastName: string
+  isActive: boolean
+  isEmailVerified: boolean
+  roles: string[]
+  lastLoginAt?: string
+  createdAt: string
 }
 
 // Security settings

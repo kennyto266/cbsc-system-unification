@@ -18,6 +18,15 @@ module.exports = {
     '^@utils/(.*)$': '<rootDir>/src/utils/$1',
     '^@api/(.*)$': '<rootDir>/src/api/$1',
     '^@store/(.*)$': '<rootDir>/src/store/$1',
+    '^@services/(.*)$': '<rootDir>/src/services/$1',
+    '^@contexts/(.*)$': '<rootDir>/src/contexts/$1',
+    '^@pages/(.*)$': '<rootDir>/src/pages/$1',
+    '^@styles/(.*)$': '<rootDir>/src/styles/$1',
+    '^@shared/(.*)$': '<rootDir>/src/shared/$1',
+    '^@config/(.*)$': '<rootDir>/src/config/$1',
+    // Asset file mocking
+    '\\.(css|less|scss|sass)$': '<rootDir>/config/jest/cssTransform.js',
+    '\\.(jpg|jpeg|png|gif|svg|ico)$': '<rootDir>/src/__mocks__/fileMock.js',
   },
 
   // Transform patterns
@@ -86,4 +95,17 @@ module.exports = {
 
   // Verbose output
   verbose: false,
+
+  // Globals for import.meta.env support
+  globals: {
+    'import.meta': {
+      env: {
+        VITE_API_BASE_URL: 'http://localhost:3007',
+        VITE_WS_BASE_URL: 'ws://localhost:3007',
+        VITE_API_TIMEOUT: '30000',
+        VITE_ENABLE_MOCKING: 'false',
+        VITE_LOG_LEVEL: 'info',
+      },
+    },
+  },
 }

@@ -8,14 +8,14 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import EconomicDataFilters from '../EconomicDataFilters'
 
 // Mock lucide-react icons
-vi.mock('lucide-react', () => ({
+jest.mock('lucide-react', () => ({
   Filter: ({ className }: any) => <div data-testid="filter-icon" className={className} />,
   X: ({ className }: any) => <div data-testid="x-icon" className={className} />,
   ChevronDown: ({ className }: any) => <div data-testid="chevron-down-icon" className={className} />
 }))
 
 // Mock date-fns
-vi.mock('date-fns', () => ({
+jest.mock('date-fns', () => ({
   format: (date: Date | number, formatStr: string) => {
     return '2024-01-15'
   }
@@ -26,10 +26,10 @@ describe('EconomicDataFilters', () => {
     timeRange: { label: 'Last 30 Days', value: { start: '2024-01-01', end: '2024-01-30' } },
     customDateRange: { start: '', end: '' },
     selectedIndicators: ['hibor', 'gdp', 'pmi'],
-    onTimeRangeChange: vi.fn(),
-    onCustomDateRangeChange: vi.fn(),
-    onIndicatorChange: vi.fn(),
-    onChartTypeChange: vi.fn(),
+    onTimeRangeChange: jest.fn(),
+    onCustomDateRangeChange: jest.fn(),
+    onIndicatorChange: jest.fn(),
+    onChartTypeChange: jest.fn(),
     timeRanges: [
       { label: 'Last 7 Days', value: { start: '2024-01-24', end: '2024-01-31' }, shortcut: '7d' },
       { label: 'Last 30 Days', value: { start: '2024-01-01', end: '2024-01-30' }, shortcut: '30d' },
@@ -38,7 +38,7 @@ describe('EconomicDataFilters', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   const renderComponent = (props = {}) => {

@@ -56,7 +56,7 @@ describe('Mobile Components', () => {
     });
 
     it('should trigger onPress callback', async () => {
-      const onPress = vi.fn();
+      const onPress = jest.fn();
       render(
         <TouchFeedback onPress={onPress}>
           <button>Test Button</button>
@@ -283,7 +283,7 @@ describe('Mobile Components', () => {
     });
 
     it('should handle item clicks', async () => {
-      const onItemClick = vi.fn();
+      const onItemClick = jest.fn();
       render(
         <MobileOptimizedList
           items={mockItems}

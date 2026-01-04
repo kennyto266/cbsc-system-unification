@@ -65,7 +65,10 @@ export const store = configureStore({
       .concat(userApi.middleware)
       .concat(portfolioApi.middleware)
       .concat(backtestApi.middleware),
-  devTools: import.meta.env.DEV,
+  // Use process.env.NODE_ENV for Jest compatibility, fallback to import.meta.env.DEV for Vite
+  devTools: typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production'
+    ? true
+    : (typeof import.meta !== 'undefined' ? import.meta.env?.DEV : false),
 });
 
 // Enable refetchOnFocus/refetchOnReconnect behaviors

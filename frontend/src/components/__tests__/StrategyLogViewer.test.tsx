@@ -9,7 +9,7 @@ import '@testing-library/jest-dom'
 import StrategyLogViewer from '../StrategyLogViewer'
 
 // Mock lucide-react icons
-vi.mock('lucide-react', () => ({
+jest.mock('lucide-react', () => ({
   Search: ({ className }: any) => <div data-testid="search-icon" className={className} />,
   Filter: ({ className }: any) => <div data-testid="filter-icon" className={className} />,
   Download: ({ className }: any) => <div data-testid="download-icon" className={className} />,
@@ -51,23 +51,23 @@ describe('StrategyLogViewer', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
 
     // Mock URL.createObjectURL and revokeObjectURL for download tests
-    global.URL.createObjectURL = vi.fn(() => 'mock-url')
-    global.URL.revokeObjectURL = vi.fn()
-    global.Blob = vi.fn((content, options) => ({ content, options })) as any
+    global.URL.createObjectURL = jest.fn(() => 'mock-url')
+    global.URL.revokeObjectURL = jest.fn()
+    global.Blob = jest.fn((content, options) => ({ content, options })) as any
 
     // Mock createElement and click for download
-    global.document.createElement = vi.fn(() => ({
+    global.document.createElement = jest.fn(() => ({
       href: '',
       download: '',
-      click: vi.fn()
+      click: jest.fn()
     })) as any
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    jest.restoreAllMocks()
   })
 
   const renderComponent = (props = {}) => {
@@ -323,7 +323,7 @@ describe('StrategyLogViewer', () => {
     })
 
     test('calls onLogClick when log is clicked', () => {
-      const mockOnLogClick = vi.fn()
+      const mockOnLogClick = jest.fn()
       const customLogs = [
         {
           id: 'log-1',
@@ -398,7 +398,7 @@ describe('StrategyLogViewer', () => {
     })
 
     test('calls custom onExport callback', () => {
-      const mockOnExport = vi.fn()
+      const mockOnExport = jest.fn()
       renderComponent({ enableExport: true, onExport: mockOnExport })
 
       const exportButton = screen.getByTestId('download-icon').parentElement
@@ -430,11 +430,11 @@ describe('StrategyLogViewer', () => {
 
   describe('Live Mode', () => {
     beforeEach(() => {
-      vi.useFakeTimers()
+      jest.useFakeTimers()
     })
 
     afterEach(() => {
-      vi.useRealTimers()
+      jest.useRealTimers()
     })
 
     test('toggles live mode', () => {
@@ -456,7 +456,7 @@ describe('StrategyLogViewer', () => {
     test('auto-refreshes in live mode', () => {
       renderComponent({ enableLiveMode: true, autoRefresh: true, refreshInterval: 1000 })
 
-      vi.advanceTimersByTime(1000)
+      jest.advanceTimersByTime(1000)
 
       expect(screen.getByTestId('refresh-cw-icon')).toHaveClass('animate-spin')
     })

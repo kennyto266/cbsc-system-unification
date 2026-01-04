@@ -28,7 +28,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { useStrategyUpdates } from '../../hooks/useStrategyUpdates';
-import { cn } from '../lib/utils';
+import { cn } from '@/lib/utils';
 
 // Type definitions
 export interface StrategyStatus {

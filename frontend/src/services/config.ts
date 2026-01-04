@@ -3,11 +3,27 @@
  * 包含所有API端点和配置参数
  */
 
+// Helper function to get env variables that works in both Jest and Vite
+const getEnvVar = (key: string, defaultValue: string): string => {
+  // For Jest tests: check globals.import.meta.env
+  if (typeof (globalThis as any).import !== 'undefined' &&
+      (globalThis as any).import.meta &&
+      (globalThis as any).import.meta.env) {
+    return (globalThis as any).import.meta.env[key] || defaultValue;
+  }
+  // For Vite: check import.meta.env
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    return import.meta.env[key] || defaultValue;
+  }
+  // Default fallback
+  return defaultValue;
+};
+
 // API基础URL - 根据环境变量或构建模式自动切换
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3005';
+export const API_BASE_URL = getEnvVar('VITE_API_BASE_URL', 'http://localhost:3005');
 
 // WebSocket URL
-export const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:3005';
+export const WS_BASE_URL = getEnvVar('VITE_WS_BASE_URL', 'ws://localhost:3005');
 
 // API端点配置
 export const API_ENDPOINTS = {

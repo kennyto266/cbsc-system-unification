@@ -13,9 +13,9 @@ import { useResponsive, useMediaQuery, useIsTouchDevice } from '../useResponsive
 const mockWindow = {
   innerWidth: 1024,
   innerHeight: 768,
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  matchMedia: vi.fn(),
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+  matchMedia: jest.fn(),
   orientation: 0,
 };
 
@@ -49,14 +49,14 @@ describe('useResponsive', () => {
       value: 768,
     });
 
-    window.addEventListener = vi.fn();
-    window.removeEventListener = vi.fn();
-    window.matchMedia = vi.fn(() => ({
+    window.addEventListener = jest.fn();
+    window.removeEventListener = jest.fn();
+    window.matchMedia = jest.fn(() => ({
       matches: false,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
     }));
 
     // Mock navigator
@@ -248,7 +248,7 @@ describe('useResponsive', () => {
 
     // Need to advance timers for the setTimeout in orientation handler
     act(() => {
-      vi.advanceTimersByTime(100);
+      jest.advanceTimersByTime(100);
     });
 
     expect(result.current.orientation).toBe('portrait');
@@ -282,12 +282,12 @@ describe('useMediaQuery', () => {
   });
 
   it('should initialize with false value', () => {
-    window.matchMedia = vi.fn(() => ({
+    window.matchMedia = jest.fn(() => ({
       matches: false,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
     }));
 
     const { result } = renderHook(() => useMediaQuery('(max-width: 768px)'));
@@ -296,12 +296,12 @@ describe('useMediaQuery', () => {
   });
 
   it('should initialize with true value when query matches', () => {
-    window.matchMedia = vi.fn(() => ({
+    window.matchMedia = jest.fn(() => ({
       matches: true,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
     }));
 
     const { result } = renderHook(() => useMediaQuery('(max-width: 768px)'));
@@ -310,12 +310,12 @@ describe('useMediaQuery', () => {
   });
 
   it('should call matchMedia with correct query', () => {
-    window.matchMedia = vi.fn(() => ({
+    window.matchMedia = jest.fn(() => ({
       matches: false,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
     }));
 
     renderHook(() => useMediaQuery('(max-width: 768px)'));
@@ -326,12 +326,12 @@ describe('useMediaQuery', () => {
   it('should add event listener when supported', () => {
     const mockMediaQuery = {
       matches: false,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
     };
-    window.matchMedia = vi.fn(() => mockMediaQuery);
+    window.matchMedia = jest.fn(() => mockMediaQuery);
 
     renderHook(() => useMediaQuery('(max-width: 768px)'));
 
@@ -343,10 +343,10 @@ describe('useMediaQuery', () => {
       matches: false,
       addEventListener: undefined,
       removeEventListener: undefined,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
     };
-    window.matchMedia = vi.fn(() => mockMediaQuery);
+    window.matchMedia = jest.fn(() => mockMediaQuery);
 
     renderHook(() => useMediaQuery('(max-width: 768px)'));
 
@@ -354,17 +354,17 @@ describe('useMediaQuery', () => {
   });
 
   it('should update matches when media query changes', () => {
-    const changeHandler = vi.fn();
+    const changeHandler = jest.fn();
     const mockMediaQuery = {
       matches: false,
-      addEventListener: vi.fn((_, handler) => {
+      addEventListener: jest.fn((_, handler) => {
         changeHandler.mockImplementation(handler);
       }),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
     };
-    window.matchMedia = vi.fn(() => mockMediaQuery);
+    window.matchMedia = jest.fn(() => mockMediaQuery);
 
     const { result } = renderHook(() => useMediaQuery('(max-width: 768px)'));
 
@@ -381,12 +381,12 @@ describe('useMediaQuery', () => {
   it('should clean up event listeners on unmount', () => {
     const mockMediaQuery = {
       matches: false,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
     };
-    window.matchMedia = vi.fn(() => mockMediaQuery);
+    window.matchMedia = jest.fn(() => mockMediaQuery);
 
     const { unmount } = renderHook(() => useMediaQuery('(max-width: 768px)'));
 
@@ -426,7 +426,7 @@ describe('useIsTouchDevice', () => {
   });
 
   it('should detect touch device via ontouchstart', () => {
-    Object.defineProperty(window, 'ontouchstart', { value: vi.fn() });
+    Object.defineProperty(window, 'ontouchstart', { value: jest.fn() });
 
     const { result } = renderHook(() => useIsTouchDevice());
 

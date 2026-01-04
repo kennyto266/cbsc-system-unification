@@ -33,7 +33,7 @@ import {
   Download,
   Bell
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn } from '@/lib/utils';
 
 // Sample historical data for combined performance
 const generateCombinedData = () => {

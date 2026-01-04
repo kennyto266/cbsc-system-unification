@@ -8,7 +8,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import EconomicSignalMarkers, { EconomicSignal } from '../EconomicSignalMarkers'
 
 // Mock lucide-react icons
-vi.mock('lucide-react', () => ({
+jest.mock('lucide-react', () => ({
   AlertTriangle: ({ className }: any) => <div data-testid="alert-triangle-icon" className={className} />,
   TrendingUp: ({ className }: any) => <div data-testid="trending-up-icon" className={className} />,
   TrendingDown: ({ className }: any) => <div data-testid="trending-down-icon" className={className} />,
@@ -21,7 +21,7 @@ vi.mock('lucide-react', () => ({
 }))
 
 // Mock date-fns
-vi.mock('date-fns', () => ({
+jest.mock('date-fns', () => ({
   format: (date: Date | number, formatStr: string) => {
     if (typeof date === 'number') {
       return '2024-01-15 10:30'
@@ -104,7 +104,7 @@ describe('EconomicSignalMarkers', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   const renderComponent = (props = {}) => {
@@ -297,7 +297,7 @@ describe('EconomicSignalMarkers', () => {
     })
 
     test('calls onSignalClick when signal is clicked', () => {
-      const mockOnSignalClick = vi.fn()
+      const mockOnSignalClick = jest.fn()
       renderComponent({ onSignalClick: mockOnSignalClick })
 
       const firstSignal = screen.getByText('Warning Signal').closest('div')!
@@ -307,7 +307,7 @@ describe('EconomicSignalMarkers', () => {
     })
 
     test('calls onSignalDismiss when dismiss button is clicked', () => {
-      const mockOnSignalDismiss = vi.fn()
+      const mockOnSignalDismiss = jest.fn()
       renderComponent({ onSignalDismiss: mockOnSignalDismiss })
 
       const dismissButton = screen.getByTitle('Dismiss signal')
@@ -317,8 +317,8 @@ describe('EconomicSignalMarkers', () => {
     })
 
     test('prevents event propagation when dismiss is clicked', () => {
-      const mockOnSignalClick = vi.fn()
-      const mockOnSignalDismiss = vi.fn()
+      const mockOnSignalClick = jest.fn()
+      const mockOnSignalDismiss = jest.fn()
       renderComponent({
         onSignalClick: mockOnSignalClick,
         onSignalDismiss: mockOnSignalDismiss
@@ -438,14 +438,14 @@ describe('EconomicSignalMarkers', () => {
     })
 
     test('shows dismiss all button when onSignalDismiss is provided', () => {
-      const mockOnSignalDismiss = vi.fn()
+      const mockOnSignalDismiss = jest.fn()
       renderComponent({ onSignalDismiss: mockOnSignalDismiss })
 
       expect(screen.getByText('Dismiss All')).toBeInTheDocument()
     })
 
     test('dismisses all signals when Dismiss All is clicked', () => {
-      const mockOnSignalDismiss = vi.fn()
+      const mockOnSignalDismiss = jest.fn()
       renderComponent({ onSignalDismiss: mockOnSignalDismiss })
 
       const dismissAllButton = screen.getByText('Dismiss All')

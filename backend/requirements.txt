@@ -1,11 +1,27 @@
-fastapi>=0.104.1
-uvicorn[standard]>=0.24.0
-websockets==12.0
-python-multipart>=0.0.6
-pydantic>=2.5.0
-python-dotenv==1.0.0
-httpx>=0.25.0
-yfinance>=0.2.18
-pandas>=2.1.0
-numpy>=1.24.0
-sqlalchemy>=2.0.23
+# CBSC Strategy Management System - Backend Module Dependencies
+# CBSC 策略管理系统 - 后端模块依赖
+# Created: 2025-01-04
+# Version: 1.0.0
+#
+# This file is maintained for backward compatibility.
+# Please use root requirements.txt for all new installations.
+#
+# Installation:
+#   pip install -r ../requirements.txt
+
+# Reference root requirements
+# All dependencies are now managed in the root requirements.txt
+# to ensure version consistency across the entire project.
+
+# For backward compatibility, essential core packages are listed below:
+# fastapi>=0.104.1
+# uvicorn[standard]>=0.24.0
+# websockets==12.0
+# python-multipart>=0.0.6
+# pydantic>=2.5.0
+# python-dotenv==1.0.0
+# httpx>=0.25.0
+# yfinance>=0.2.18
+# pandas==2.2.3
+# numpy==1.26.4
+# sqlalchemy>=2.0.23

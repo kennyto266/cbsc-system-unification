@@ -308,7 +308,7 @@ const cbscAdapter = new CBSCAdapter()
 export default cbscAdapter
 
 // Export types
-export { APIResponse }
+export type { APIResponse }
 
 // Export hooks for easy integration
 export const useCBSCAdapter = () => {

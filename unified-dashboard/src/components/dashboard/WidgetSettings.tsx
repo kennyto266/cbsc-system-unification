@@ -67,6 +67,7 @@ export const WidgetSettings: React.FC<WidgetSettingsProps> = ({
               <br />
               <Text type="secondary" className="text-xs">
                 锁定后无法移动或调整组件大小
+              </Text>
             </div>
             <Switch
               checked={isLayoutLocked}

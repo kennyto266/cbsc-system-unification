@@ -248,7 +248,7 @@ export const createErrorFallback = (error: Error, resetError: () => void) => {
 }
 
 // Async error wrapper
-export const withErrorHandling = async <T>(
+export const withErrorHandling = async <T extends any>(
   asyncFn: () => Promise<T>,
   errorHandler?: (error: Error) => void
 ): Promise<T | null> => {
@@ -277,7 +277,7 @@ export const withErrorHandling = async <T>(
 }
 
 // Retry utility
-export const retryAsync = async <T>(
+export const retryAsync = async <T extends any>(
   asyncFn: () => Promise<T>,
   maxRetries: number = 3,
   delay: number = 1000,

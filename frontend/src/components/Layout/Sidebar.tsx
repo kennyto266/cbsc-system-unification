@@ -35,7 +35,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '../ui/collapsible'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 
 interface SidebarProps {
   isOpen: boolean

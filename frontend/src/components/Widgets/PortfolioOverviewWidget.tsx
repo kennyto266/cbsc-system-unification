@@ -34,7 +34,7 @@ import {
   Info
 } from 'lucide-react';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { cn } from '../lib/utils';
+import { cn } from '@/lib/utils';
 
 // Type definitions
 export interface AssetAllocation {

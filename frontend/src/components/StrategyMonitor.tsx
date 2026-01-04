@@ -576,8 +576,8 @@ export default function StrategyMonitor({
                       <h5 className="text-sm font-semibold text-gray-900 mb-4">Recent Alerts</h5>
                       <div className="space-y-2">
                         {strategy.alerts.slice(0, 3).map((alert) => {
-                          const alertConfig = getAlertConfig(alert.type)
-                          const AlertIcon = alertConfig.icon
+                          const alertConfig = getAlertConfig(alert.type);
+                          const AlertIcon = alertConfig.icon;
                           return (
                             <div
                               key={alert.id}
@@ -603,7 +603,8 @@ export default function StrategyMonitor({
                                 </div>
                               </div>
                             </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}

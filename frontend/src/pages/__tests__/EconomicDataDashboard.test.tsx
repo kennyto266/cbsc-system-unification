@@ -12,12 +12,12 @@ import economicDataSlice from '../../store/slices/economicDataSlice'
 import { useEconomicData } from '../../hooks/useEconomicData'
 
 // Mock the useEconomicData hook
-vi.mock('../../hooks/useEconomicData', () => ({
-  useEconomicData: vi.fn()
+jest.mock('../../hooks/useEconomicData', () => ({
+  useEconomicData: jest.fn()
 }))
 
 // Mock the child components
-vi.mock('../../components/EconomicDataCharts', () => ({
+jest.mock('../../components/EconomicDataCharts', () => ({
   default: ({ timeRange, chartType, indicators }: any) => (
     <div data-testid="economic-data-charts">
       <div data-testid="chart-time-range">{JSON.stringify(timeRange)}</div>
@@ -27,7 +27,7 @@ vi.mock('../../components/EconomicDataCharts', () => ({
   )
 }))
 
-vi.mock('../../components/EconomicDataFilters', () => ({
+jest.mock('../../components/EconomicDataFilters', () => ({
   default: ({ timeRange, customDateRange, selectedIndicators, onTimeRangeChange, onIndicatorChange }: any) => (
     <div data-testid="economic-data-filters">
       <div data-testid="filters-time-range">{timeRange.label}</div>
@@ -49,7 +49,7 @@ vi.mock('../../components/EconomicDataFilters', () => ({
   )
 }))
 
-vi.mock('../../components/EconomicDataTable', () => ({
+jest.mock('../../components/EconomicDataTable', () => ({
   default: ({ data, indicators, loading, error }: any) => (
     <div data-testid="economic-data-table">
       <div data-testid="table-indicators">{JSON.stringify(indicators)}</div>
@@ -60,7 +60,7 @@ vi.mock('../../components/EconomicDataTable', () => ({
 }))
 
 // Mock lucide-react icons
-vi.mock('lucide-react', () => ({
+jest.mock('lucide-react', () => ({
   Calendar: ({ className }: any) => <div data-testid="calendar-icon" className={className} />,
   Filter: ({ className }: any) => <div data-testid="filter-icon" className={className} />,
   RefreshCw: ({ className }: any) => <div data-testid="refresh-icon" className={className} />,
@@ -77,7 +77,7 @@ vi.mock('lucide-react', () => ({
 }))
 
 // Mock date-fns
-vi.mock('date-fns', () => ({
+jest.mock('date-fns', () => ({
   format: (date: Date | number, formatStr: string) => {
     if (typeof date === 'number') {
       return '2024-01-15'
@@ -93,7 +93,7 @@ describe('EconomicDataDashboard', () => {
   let store: ReturnType<typeof configureStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
 
     store = configureStore({
       reducer: {
@@ -143,11 +143,11 @@ describe('EconomicDataDashboard', () => {
       loading: false,
       error: null,
       lastUpdated: '2024-01-15T10:00:00Z',
-      fetchAllIndicators: vi.fn().mockResolvedValue(undefined),
-      setFilter: vi.fn(),
-      setTimeRange: vi.fn(),
-      refreshData: vi.fn().mockResolvedValue(undefined),
-      clearCache: vi.fn(),
+      fetchAllIndicators: jest.fn().mockResolvedValue(undefined),
+      setFilter: jest.fn(),
+      setTimeRange: jest.fn(),
+      refreshData: jest.fn().mockResolvedValue(undefined),
+      clearCache: jest.fn(),
       ...overrides
     }
   }
@@ -217,8 +217,8 @@ describe('EconomicDataDashboard', () => {
     })
 
     test('triggers refresh when refresh button is clicked', async () => {
-      const mockRefreshData = vi.fn().mockResolvedValue(undefined)
-      const mockClearCache = vi.fn()
+      const mockRefreshData = jest.fn().mockResolvedValue(undefined)
+      const mockClearCache = jest.fn()
       (useEconomicData as any).mockReturnValue(
         mockUseEconomicData({
           refreshData: mockRefreshData,
@@ -259,7 +259,7 @@ describe('EconomicDataDashboard', () => {
     })
 
     test('fetches data on time range change', async () => {
-      const mockFetchAllIndicators = vi.fn().mockResolvedValue(undefined)
+      const mockFetchAllIndicators = jest.fn().mockResolvedValue(undefined)
       (useEconomicData as any).mockReturnValue(
         mockUseEconomicData({
           fetchAllIndicators: mockFetchAllIndicators

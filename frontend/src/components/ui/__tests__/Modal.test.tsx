@@ -2,7 +2,7 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Modal } from '../Modal'
-import { ThemeProvider } from '@/styles/themes'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import type { ModalProps } from '../Modal'
 
 // Test wrapper - 测试包装器

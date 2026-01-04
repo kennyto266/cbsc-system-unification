@@ -1,14 +1,15 @@
 // Performance optimization utilities
+import React from 'react'
 
 // Debounce function
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
+export function debounce<TFunc extends (...args: any[]) => any>(
+  func: TFunc,
   wait: number,
   immediate?: boolean
-): (...args: Parameters<T>) => void {
+): (...args: any[]) => void {
   let timeout: NodeJS.Timeout | null = null
 
-  return function executedFunction(...args: Parameters<T>) {
+  return function executedFunction(...args: any[]): void {
     const later = () => {
       timeout = null
       if (!immediate) func(...args)
@@ -24,13 +25,13 @@ export function debounce<T extends (...args: any[]) => any>(
 }
 
 // Throttle function
-export function throttle<T extends (...args: any[]) => any>(
-  func: T,
+export function throttle<TFunc extends (...args: any[]) => any>(
+  func: TFunc,
   limit: number
-): (...args: Parameters<T>) => void {
+): (...args: any[]) => void {
   let inThrottle: boolean
 
-  return function executedFunction(...args: Parameters<T>) {
+  return function executedFunction(...args: any[]): void {
     if (!inThrottle) {
       func(...args)
       inThrottle = true
@@ -40,10 +41,10 @@ export function throttle<T extends (...args: any[]) => any>(
 }
 
 // Memoize function
-export function memoize<T extends (...args: any[]) => any>(func: T): T {
+export function memoize<TFunc extends (...args: any[]) => any>(func: TFunc): TFunc {
   const cache = new Map()
 
-  return function executedFunction(...args: Parameters<T]): ReturnType<T> {
+  const executedFunction = function (...args: any[]): any {
     const key = JSON.stringify(args)
 
     if (cache.has(key)) {
@@ -53,17 +54,19 @@ export function memoize<T extends (...args: any[]) => any>(func: T): T {
     const result = func(...args)
     cache.set(key, result)
     return result
-  } as T
+  }
+
+  return executedFunction as TFunc
 }
 
 // Lazy load component
-export function lazyLoad<T extends React.ComponentType<any>>(
-  importFunc: () => Promise<{ default: T }>,
+export function lazyLoad<TComponent extends React.ComponentType<any>>(
+  importFunc: () => Promise<{ default: TComponent }>,
   fallback?: React.ComponentType
 ) {
   const LazyComponent = React.lazy(importFunc)
 
-  return function LazyWrapper(props: React.ComponentProps<T>) {
+  return function LazyWrapper(props: React.ComponentProps<TComponent>) {
     return (
       <React.Suspense fallback={fallback ? React.createElement(fallback) : <div>Loading...</div>}>
         <LazyComponent {...props} />
@@ -242,8 +245,8 @@ export function createOptimizedAnimation(
 }
 
 // Memory optimization
-export function cleanupObject<T extends Record<string, any>>(obj: T): Partial<T> {
-  const cleaned: Partial<T> = {}
+export function cleanupObject<TObj extends Record<string, any>>(obj: TObj): Partial<TObj> {
+  const cleaned: Partial<TObj> = {}
 
   for (const key in obj) {
     const value = obj[key]

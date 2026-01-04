@@ -2,12 +2,12 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { ThemeProvider } from '@/styles/themes'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import PerformanceAnalysis from '../PerformanceAnalysis'
-import { useGetStrategyQuery } from '../../../store/api/apiSlice'
+import { useGetStrategyQuery } from '../../../../store/api/apiSlice'
 
 // Mock the API hooks
-jest.mock('../../../store/api/apiSlice', () => ({
+jest.mock('../../../../store/api/apiSlice', () => ({
   useGetStrategyQuery: jest.fn(),
   useGetPerformanceQuery: jest.fn()
 }))

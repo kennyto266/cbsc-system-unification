@@ -4,51 +4,76 @@
  */
 
 import '@testing-library/jest-dom'
-import { vi } from 'vitest'
 
 // Mock IntersectionObserver
-global.IntersectionObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
+global.IntersectionObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
 }))
 
 // Mock ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
 }))
 
-// Mock matchMedia
+// Mock matchMedia with full event listener support
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(), // deprecated
-    removeListener: vi.fn(), // deprecated
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
+  value: jest.fn().mockImplementation(query => {
+    const listeners: Array<(event: MediaQueryListEvent) => void> = []
+
+    return {
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(), // deprecated
+      removeListener: jest.fn(), // deprecated
+      addEventListener: jest.fn((event: string, listener: any) => {
+        if (event === 'change') {
+          listeners.push(listener)
+        }
+      }),
+      removeEventListener: jest.fn((event: string, listener: any) => {
+        const index = listeners.indexOf(listener)
+        if (index > -1) {
+          listeners.splice(index, 1)
+        }
+      }),
+      dispatchEvent: jest.fn(),
+      // Helper method for testing
+      _simulateChange: (matches: boolean) => {
+        listeners.forEach(listener => {
+          listener({ matches } as MediaQueryListEvent)
+        })
+      },
+    }
+  }),
 })
 
 // Mock scrollTo
-window.scrollTo = vi.fn()
+window.scrollTo = jest.fn()
 
 // Mock crypto.getRandomValues
 Object.defineProperty(global, 'crypto', {
   value: {
-    getRandomValues: vi.fn(() => Array.from({length: 16}, () => Math.floor(Math.random() * 256)))
+    getRandomValues: jest.fn(() => Array.from({length: 16}, () => Math.floor(Math.random() * 256)))
   }
 })
 
 // Suppress console warnings during tests
-vi.spyOn(console, 'warn').mockImplementation(() => {})
+const originalWarn = console.warn
+beforeAll(() => {
+  console.warn = jest.fn()
+})
+
+afterAll(() => {
+  console.warn = originalWarn
+})
 
 // Clean up after each test
 afterEach(() => {
-  vi.clearAllMocks()
+  jest.clearAllMocks()
 })

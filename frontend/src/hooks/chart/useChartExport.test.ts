@@ -52,7 +52,7 @@ describe('useChartExport', () => {
     mockRef.current = null;
 
     // Mock createElement
-    document.createElement = vi.fn((tagName: string) => {
+    document.createElement = jest.fn((tagName: string) => {
       if (tagName === 'canvas') {
         return mockCanvas;
       }
@@ -60,18 +60,22 @@ describe('useChartExport', () => {
         return {
           href: '',
           download: '',
-          click: vi.fn(),
+          click: jest.fn(),
         } as any;
       }
       return originalCreateElement.call(document, tagName);
     });
 
-    // Mock body methods
+    // Mock body methods - use writable to allow redefinition
     Object.defineProperty(document.body, 'appendChild', {
-      value: vi.fn(),
+      value: jest.fn(),
+      writable: true,
+      configurable: true,
     });
     Object.defineProperty(document.body, 'removeChild', {
-      value: vi.fn(),
+      value: jest.fn(),
+      writable: true,
+      configurable: true,
     });
   });
 
@@ -421,15 +425,15 @@ describe('useChartExport', () => {
     const mockScaledCanvas = {
       width: 1600,
       height: 1200,
-      getContext: vi.fn(() => ({
-        scale: vi.fn(),
-        drawImage: vi.fn(),
+      getContext: jest.fn(() => ({
+        scale: jest.fn(),
+        drawImage: jest.fn(),
       })),
-      remove: vi.fn(),
+      remove: jest.fn(),
     };
 
     // Mock createElement to return scaled canvas
-    document.createElement = vi.fn((tagName: string) => {
+    document.createElement = jest.fn((tagName: string) => {
       if (tagName === 'canvas') {
         return mockScaledCanvas;
       }

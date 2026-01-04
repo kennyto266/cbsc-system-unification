@@ -38,6 +38,8 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   iconPosition?: 'left' | 'right';
   fullWidth?: boolean;
   rounded?: boolean;
+  ripple?: boolean; // 添加 ripple 屬性支持
+  danger?: boolean; // 添加 danger 屬性支持（別名於 error 變體）
   onTouchStart?: () => void;
   onTouchEnd?: () => void;
 }
@@ -140,10 +142,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   iconPosition = 'left',
   fullWidth = false,
   rounded = false,
+  ripple = false, // ripple 效果（可選實現）
+  danger = false, // danger 模式
   onTouchStart,
   onTouchEnd,
   ...props
 }, ref) => {
+  // 處理 danger 屬性：當 danger 為 true 時，使用 error 變體
+  const effectiveVariant = danger ? 'error' : variant;
   // 處理觸摸事件
   const handleTouchStart = (e: React.TouchEvent) => {
     // 添加觸摸反饋
@@ -210,16 +216,18 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
       ref={ref}
       className={cn(
         buttonVariants({
-          variant,
+          variant: effectiveVariant,
           size,
           rounded,
           fullWidth,
           className
         }),
-        // 觸摸反饋
+        // 觸摸反饾
         'active:scale-95',
-        // 禁用時不顯示觸摸反饋
-        disabled && 'active:scale-100'
+        // 禁用時不顯示觸摸反饾
+        disabled && 'active:scale-100',
+        // ripple 效果類（可選）
+        ripple && 'ripple-effect'
       )}
       disabled={disabled || loading}
       onTouchStart={handleTouchStart}
@@ -252,6 +260,8 @@ interface ButtonGroupProps {
   className?: string;
   vertical?: boolean;
   gap?: 'sm' | 'md' | 'lg';
+  spacing?: 'sm' | 'md' | 'lg'; // spacing 別名於 gap
+  align?: 'start' | 'center' | 'end'; // 添加 align 屬性
 }
 
 export const ButtonGroup: React.FC<ButtonGroupProps> = ({
@@ -259,8 +269,13 @@ export const ButtonGroup: React.FC<ButtonGroupProps> = ({
   className,
   vertical = false,
   gap = 'sm',
+  spacing, // spacing 優先於 gap
+  align = 'start',
   ...props
 }) => {
+  // 使用 spacing 或 gap（spacing 優先）
+  const effectiveGap = spacing || gap;
+
   const gapClasses = {
     sm: 'space-x-1 space-y-1',
     md: 'space-x-2 space-y-2',
@@ -271,12 +286,19 @@ export const ButtonGroup: React.FC<ButtonGroupProps> = ({
     ? 'flex-col'
     : 'flex-row';
 
+  const alignClasses = {
+    start: 'justify-start',
+    center: 'justify-center',
+    end: 'justify-end',
+  };
+
   return (
     <div
       className={cn(
         'flex',
         flexClasses,
-        gapClasses[gap],
+        gapClasses[effectiveGap],
+        alignClasses[align],
         className
       )}
       role="group"
@@ -307,6 +329,7 @@ export const ButtonGroup: React.FC<ButtonGroupProps> = ({
 interface FabProps extends ButtonProps {
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
   extended?: boolean;
+  label?: string; // 添加 label 屬性支持
 }
 
 export const Fab = React.forwardRef<HTMLButtonElement, FabProps>(({
@@ -315,6 +338,7 @@ export const Fab = React.forwardRef<HTMLButtonElement, FabProps>(({
   position = 'bottom-right',
   extended = false,
   size = extended ? 'lg' : 'md',
+  label, // label 屬性
   ...props
 }, ref) => {
   const positionClasses = {
@@ -337,8 +361,10 @@ export const Fab = React.forwardRef<HTMLButtonElement, FabProps>(({
         className
       )}
       {...props}
+      aria-label={label || (typeof children === 'string' ? children : undefined)}
     >
       {children}
+      {label && extended && <span className="ml-2">{label}</span>}
     </button>
   );
 });

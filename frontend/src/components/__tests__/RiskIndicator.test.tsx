@@ -9,7 +9,7 @@ import '@testing-library/jest-dom'
 import RiskIndicator from '../RiskIndicator'
 
 // Mock recharts components
-vi.mock('recharts', () => ({
+jest.mock('recharts', () => ({
   LineChart: ({ children }: any) => <div data-testid="line-chart">{children}</div>,
   Line: () => <div data-testid="line" />,
   AreaChart: ({ children }: any) => <div data-testid="area-chart">{children}</div>,
@@ -28,7 +28,7 @@ vi.mock('recharts', () => ({
 }))
 
 // Mock lucide-react icons
-vi.mock('lucide-react', () => ({
+jest.mock('lucide-react', () => ({
   AlertTriangle: ({ className }: any) => <div data-testid="alert-triangle-icon" className={className} />,
   TrendingUp: ({ className }: any) => <div data-testid="trending-up-icon" className={className} />,
   TrendingDown: ({ className }: any) => <div data-testid="trending-down-icon" className={className} />,
@@ -53,7 +53,7 @@ describe('RiskIndicator', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   const renderComponent = (props = {}) => {
@@ -172,7 +172,7 @@ describe('RiskIndicator', () => {
     })
 
     test('handles alert acknowledgment', () => {
-      const mockOnAlertAcknowledge = vi.fn()
+      const mockOnAlertAcknowledge = jest.fn()
       const customData = {
         alerts: [
           {
@@ -455,17 +455,17 @@ describe('RiskIndicator', () => {
 
   describe('Auto-refresh', () => {
     beforeEach(() => {
-      vi.useFakeTimers()
+      jest.useFakeTimers()
     })
 
     afterEach(() => {
-      vi.useRealTimers()
+      jest.useRealTimers()
     })
 
     test('auto-refreshes when enabled', () => {
       renderComponent({ autoRefresh: true, refreshInterval: 1000 })
 
-      vi.advanceTimersByTime(1000)
+      jest.advanceTimersByTime(1000)
 
       expect(screen.getByTestId('refresh-cw-icon')).toHaveClass('animate-spin')
     })
@@ -473,7 +473,7 @@ describe('RiskIndicator', () => {
     test('does not auto-refresh when disabled', () => {
       renderComponent({ autoRefresh: false, refreshInterval: 1000 })
 
-      vi.advanceTimersByTime(1000)
+      jest.advanceTimersByTime(1000)
 
       expect(screen.getByTestId('refresh-cw-icon')).not.toHaveClass('animate-spin')
     })

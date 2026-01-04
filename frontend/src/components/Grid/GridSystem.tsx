@@ -8,7 +8,7 @@ import 'react-resizable/css/styles.css'
 import { GridSystemProps, ResponsiveLayout, LayoutItem, GRID_BREAKPOINTS, GRID_COLS } from '../../types/grid'
 import { useGrid } from './GridProvider'
 import { WidgetContainer } from '../Widgets/WidgetContainer'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 
 // 响应式网格布局组件
 const ResponsiveGridLayout = WidthProvider(Responsive)

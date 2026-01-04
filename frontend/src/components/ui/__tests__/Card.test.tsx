@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen, cleanup } from '@testing-library/react'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../Card'
-import { ThemeProvider } from '@/styles/themes'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 
 // Test wrapper - 测试包装器
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (

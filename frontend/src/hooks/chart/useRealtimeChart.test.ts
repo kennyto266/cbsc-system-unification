@@ -11,9 +11,17 @@ import { useRealtimeChart } from './useRealtimeChart';
 import { ChannelType, MessageType, WSMessage } from '../../types/websocket';
 import { mockChartData, mockWebSocketMessage, flushPromises } from '../__tests__/setup';
 
-// Mock the useWebSocket hook
+// Mock the useWebSocket hook - Fix mock structure
 jest.mock('../useWebSocketEnhanced', () => ({
   useWebSocket: jest.fn(() => ({
+    isConnected: true,
+    error: null,
+    connectionQuality: 'good',
+    subscribe: jest.fn(() => jest.fn()),
+    reconnect: jest.fn(),
+  })),
+  __esModule: true,
+  default: jest.fn(() => ({
     isConnected: true,
     error: null,
     connectionQuality: 'good',

@@ -93,6 +93,6 @@ export { useCSRF } from '../hooks/useCSRF';
 export { useXSS } from '../hooks/useXSS';
 
 // Utilities
-export { cn } from '../lib/utils';
+export { cn } from '@/lib/utils';
 export { validationUtils } from '../lib/validations';
 export * from '../lib/validations';

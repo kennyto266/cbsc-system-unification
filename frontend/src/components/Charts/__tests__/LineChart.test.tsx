@@ -2,7 +2,7 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import LineChart from '../chartjs/LineChart'
-import { ThemeProvider } from '@/styles/themes'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 
 // Mock Chart.js
 jest.mock('react-chartjs-2', () => ({

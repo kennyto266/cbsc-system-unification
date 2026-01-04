@@ -25,7 +25,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../ui/dialog'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 
 // Widget容器组件
 export const WidgetContainer: React.FC<WidgetProps> = ({

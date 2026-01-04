@@ -1,5 +1,5 @@
 import { RealtimeManager, getRealtimeManager } from '../realtimeManager';
-import { WebSocketService } from '../websocketService';
+import { WebSocketService, getWebSocketService } from '../websocketService';
 
 // Mock WebSocket service
 jest.mock('../websocketService');
@@ -9,7 +9,7 @@ global.fetch = jest.fn();
 
 describe('RealtimeManager', () => {
   let realtimeManager: RealtimeManager;
-  let mockWebSocketService: jest.Mocked<WebSocketService>;
+  let mockWebSocketService: jest.Mocked<ReturnType<typeof WebSocketService>>;
 
   beforeEach(() => {
     // Reset mocks

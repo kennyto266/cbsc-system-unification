@@ -13,6 +13,15 @@ import {
   ApiResponse
 } from '../types/cbsc';
 
+// Re-export types that are used by components
+export type {
+  MarketSentiment,
+  CBSCTopContracts,
+  HistoricalDataPoint,
+  CBSCDashboardData,
+  HistoricalDataResponse
+}
+
 // API 基础 URL
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 

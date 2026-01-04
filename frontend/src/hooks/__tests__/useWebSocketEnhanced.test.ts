@@ -137,7 +137,7 @@ describe('useWebSocket', () => {
 
     const options: UseWebSocketOptions = {
       autoConnect: true,
-      onError: vi.fn(),
+      onError: jest.fn(),
     };
 
     const { result } = renderHook(() => useWebSocket(undefined, options));
@@ -178,7 +178,7 @@ describe('useWebSocket', () => {
 
   it('should subscribe to channel', () => {
     const { result } = renderHook(() => useWebSocket());
-    const callback = vi.fn();
+    const callback = jest.fn();
     const filters = { strategyId: '123' };
 
     act(() => {
@@ -199,8 +199,8 @@ describe('useWebSocket', () => {
 
   it('should track and clean up subscriptions on unmount', () => {
     const { unmount } = renderHook(() => useWebSocket());
-    const callback1 = vi.fn();
-    const callback2 = vi.fn();
+    const callback1 = jest.fn();
+    const callback2 = jest.fn();
 
     // Get subscription tracking
     let unsubscribe1: (() => void) | undefined;
@@ -218,8 +218,8 @@ describe('useWebSocket', () => {
     });
 
     // Mock subscription return values
-    const mockUnsubscribe1 = vi.fn();
-    const mockUnsubscribe2 = vi.fn();
+    const mockUnsubscribe1 = jest.fn();
+    const mockUnsubscribe2 = jest.fn();
     mockWebSocketService.subscribe
       .mockReturnValueOnce(mockUnsubscribe1)
       .mockReturnValueOnce(mockUnsubscribe2);
@@ -233,9 +233,9 @@ describe('useWebSocket', () => {
 
   it('should handle connection events', () => {
     const options: UseWebSocketOptions = {
-      onConnect: vi.fn(),
-      onDisconnect: vi.fn(),
-      onError: vi.fn(),
+      onConnect: jest.fn(),
+      onDisconnect: jest.fn(),
+      onError: jest.fn(),
     };
 
     renderHook(() => useWebSocket(undefined, options));
@@ -337,7 +337,7 @@ describe('useWebSocket', () => {
 
   it('should update connection quality', () => {
     const { result } = renderHook(() => useWebSocket());
-    mockWebSocketService.getConnectionQuality = vi.fn().mockReturnValue('excellent');
+    mockWebSocketService.getConnectionQuality = jest.fn().mockReturnValue('excellent');
 
     // Get the quality change handler
     const qualityHandler = mockWebSocketService.addEventListener.mock.calls.find(
@@ -388,12 +388,12 @@ describe('useWebSocket', () => {
 
   it('should handle multiple subscriptions with cleanup', () => {
     const { result } = renderHook(() => useWebSocket());
-    const callbacks = Array.from({ length: 3 }, () => vi.fn());
+    const callbacks = Array.from({ length: 3 }, () => jest.fn());
 
     const unsubscribes: (() => void)[] = [];
 
     // Mock subscription returns
-    const mockUnsubscribes = callbacks.map(() => vi.fn());
+    const mockUnsubscribes = callbacks.map(() => jest.fn());
     mockWebSocketService.subscribe
       .mockReturnValueOnce(mockUnsubscribes[0])
       .mockReturnValueOnce(mockUnsubscribes[1])

@@ -5,90 +5,88 @@
  * global mocks and test utilities.
  */
 
-import { vi } from 'vitest';
-
 // Mock ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation((callback) => {
+global.ResizeObserver = jest.fn().mockImplementation((callback) => {
   return {
-    observe: vi.fn(),
-    unobserve: vi.fn(),
-    disconnect: vi.fn(),
+    observe: jest.fn(),
+    unobserve: jest.fn(),
+    disconnect: jest.fn(),
   };
 });
 
 // Mock IntersectionObserver
-global.IntersectionObserver = vi.fn().mockImplementation((callback) => {
+global.IntersectionObserver = jest.fn().mockImplementation((callback) => {
   return {
-    observe: vi.fn(),
-    unobserve: vi.fn(),
-    disconnect: vi.fn(),
+    observe: jest.fn(),
+    unobserve: jest.fn(),
+    disconnect: jest.fn(),
   };
 });
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation(query => ({
     matches: false,
     media: query,
     onchange: null,
-    addListener: vi.fn(), // deprecated
-    removeListener: vi.fn(), // deprecated
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
+    addListener: jest.fn(), // deprecated
+    removeListener: jest.fn(), // deprecated
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
   })),
 });
 
 // Mock scrollTo
-window.scrollTo = vi.fn();
+window.scrollTo = jest.fn();
 
 // Mock getComputedStyle
-window.getComputedStyle = vi.fn(() => ({
-  getPropertyValue: vi.fn(() => ''),
+window.getComputedStyle = jest.fn(() => ({
+  getPropertyValue: jest.fn(() => ''),
 }));
 
 // Mock URL.createObjectURL and revokeObjectURL
 Object.defineProperty(URL, 'createObjectURL', {
   writable: true,
-  value: vi.fn(() => 'mocked-url'),
+  value: jest.fn(() => 'mocked-url'),
 });
 
 Object.defineProperty(URL, 'revokeObjectURL', {
   writable: true,
-  value: vi.fn(),
+  value: jest.fn(),
 });
 
 // Mock HTMLElement methods
-HTMLElement.prototype.scrollIntoView = vi.fn();
-HTMLElement.prototype.click = vi.fn();
+HTMLElement.prototype.scrollIntoView = jest.fn();
+HTMLElement.prototype.click = jest.fn();
 
 // Mock Canvas API
-HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
-  fillRect: vi.fn(),
-  clearRect: vi.fn(),
-  getImageData: vi.fn(() => ({ data: new Array(4) })),
-  putImageData: vi.fn(),
-  createImageData: vi.fn(() => ({ data: new Array(4) })),
-  setTransform: vi.fn(),
-  drawImage: vi.fn(),
-  save: vi.fn(),
-  fillText: vi.fn(),
-  restore: vi.fn(),
-  beginPath: vi.fn(),
-  moveTo: vi.fn(),
-  lineTo: vi.fn(),
-  closePath: vi.fn(),
-  stroke: vi.fn(),
-  translate: vi.fn(),
-  scale: vi.fn(),
-  rotate: vi.fn(),
-  arc: vi.fn(),
-  fill: vi.fn(),
-  measureText: vi.fn(() => ({ width: 0 })),
-  transform: vi.fn(),
-  rect: vi.fn(),
-  clip: vi.fn(),
+HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
+  fillRect: jest.fn(),
+  clearRect: jest.fn(),
+  getImageData: jest.fn(() => ({ data: new Array(4) })),
+  putImageData: jest.fn(),
+  createImageData: jest.fn(() => ({ data: new Array(4) })),
+  setTransform: jest.fn(),
+  drawImage: jest.fn(),
+  save: jest.fn(),
+  fillText: jest.fn(),
+  restore: jest.fn(),
+  beginPath: jest.fn(),
+  moveTo: jest.fn(),
+  lineTo: jest.fn(),
+  closePath: jest.fn(),
+  stroke: jest.fn(),
+  translate: jest.fn(),
+  scale: jest.fn(),
+  rotate: jest.fn(),
+  arc: jest.fn(),
+  fill: jest.fn(),
+  measureText: jest.fn(() => ({ width: 0 })),
+  transform: jest.fn(),
+  rect: jest.fn(),
+  clip: jest.fn(),
   fillStyle: '',
   font: '',
   globalAlpha: 1,
@@ -107,18 +105,18 @@ HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   textBaseline: '',
 }));
 
-HTMLCanvasElement.prototype.toDataURL = vi.fn(() => 'data:image/png;base64,mock');
+HTMLCanvasElement.prototype.toDataURL = jest.fn(() => 'data:image/png;base64,mock');
 
-HTMLCanvasElement.prototype.toBlob = vi.fn((callback) => {
+HTMLCanvasElement.prototype.toBlob = jest.fn((callback) => {
   callback(new Blob(['mock-image'], { type: 'image/png' }));
 });
 
 // Mock WebSocket
-global.WebSocket = vi.fn().mockImplementation(() => ({
-  close: vi.fn(),
-  send: vi.fn(),
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
+global.WebSocket = jest.fn().mockImplementation(() => ({
+  close: jest.fn(),
+  send: jest.fn(),
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
   readyState: 1,
   CONNECTING: 0,
   OPEN: 1,
@@ -127,47 +125,47 @@ global.WebSocket = vi.fn().mockImplementation(() => ({
 }));
 
 // Mock fetch
-global.fetch = vi.fn();
+global.fetch = jest.fn();
 
 // Mock Request and Response
-global.Request = vi.fn();
-global.Response = vi.fn();
+global.Request = jest.fn();
+global.Response = jest.fn();
 
 // Mock btoa and atob
-global.btoa = vi.fn((str) => Buffer.from(str).toString('base64'));
-global.atob = vi.fn((str) => Buffer.from(str, 'base64').toString());
+global.btoa = jest.fn((str) => Buffer.from(str).toString('base64'));
+global.atob = jest.fn((str) => Buffer.from(str, 'base64').toString());
 
 // Mock Image
-global.Image = vi.fn().mockImplementation(() => ({
+global.Image = jest.fn().mockImplementation(() => ({
   onload: null,
   onerror: null,
   src: '',
   width: 0,
   height: 0,
   complete: true,
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
 })) as any;
 
 // Mock performance APIs
 Object.defineProperty(window, 'requestAnimationFrame', {
   writable: true,
-  value: vi.fn((cb) => setTimeout(cb, 0)),
+  value: jest.fn((cb) => setTimeout(cb, 0)),
 });
 
 Object.defineProperty(window, 'cancelAnimationFrame', {
   writable: true,
-  value: vi.fn((id) => clearTimeout(id)),
+  value: jest.fn((id) => clearTimeout(id)),
 });
 
 Object.defineProperty(window, 'performance', {
   writable: true,
   value: {
-    now: vi.fn(() => Date.now()),
-    mark: vi.fn(),
-    measure: vi.fn(),
-    getEntriesByName: vi.fn(() => []),
-    getEntriesByType: vi.fn(() => []),
+    now: jest.fn(() => Date.now()),
+    mark: jest.fn(),
+    measure: jest.fn(),
+    getEntriesByName: jest.fn(() => []),
+    getEntriesByType: jest.fn(() => []),
   },
 });
 
@@ -177,7 +175,7 @@ const originalConsole = {
 };
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  jest.clearAllMocks();
 
   // Restore console methods
   Object.assign(console, originalConsole);

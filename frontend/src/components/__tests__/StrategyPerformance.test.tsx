@@ -9,7 +9,7 @@ import '@testing-library/jest-dom'
 import StrategyPerformance from '../StrategyPerformance'
 
 // Mock recharts components
-vi.mock('recharts', () => ({
+jest.mock('recharts', () => ({
   LineChart: ({ children }: any) => <div data-testid="line-chart">{children}</div>,
   Line: () => <div data-testid="line" />,
   AreaChart: ({ children }: any) => <div data-testid="area-chart">{children}</div>,
@@ -33,7 +33,7 @@ vi.mock('recharts', () => ({
 }))
 
 // Mock lucide-react icons
-vi.mock('lucide-react', () => ({
+jest.mock('lucide-react', () => ({
   TrendingUp: ({ className }: any) => <div data-testid="trending-up-icon" className={className} />,
   TrendingDown: ({ className }: any) => <div data-testid="trending-down-icon" className={className} />,
   DollarSign: ({ className }: any) => <div data-testid="dollar-sign-icon" className={className} />,
@@ -47,7 +47,7 @@ vi.mock('lucide-react', () => ({
   RefreshCw: ({ className }: any) => <div data-testid="refresh-cw-icon" className={className} />,
   Calendar: ({ className }: any) => <div data-testid="calendar-icon" className={className} />,
   BarChart3: ({ className }: any) => <div data-testid="bar-chart-3-icon" className={className} />,
-  PieChart as PieChartIcon: ({ className }: any) => <div data-testid="pie-chart-icon" className={className} />,
+  PieChartIcon: ({ className }: any) => <div data-testid="pie-chart-icon" className={className} />,
   Crosshair: ({ className }: any) => <div data-testid="crosshair-icon" className={className} />
 }))
 
@@ -58,7 +58,7 @@ describe('StrategyPerformance', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   const renderComponent = (props = {}) => {
@@ -201,7 +201,7 @@ describe('StrategyPerformance', () => {
     })
 
     test('handles export callback', () => {
-      const mockOnExport = vi.fn()
+      const mockOnExport = jest.fn()
       renderComponent({ onExport: mockOnExport })
 
       const exportButton = screen.getByTestId('download-icon').parentElement
@@ -284,18 +284,18 @@ describe('StrategyPerformance', () => {
 
   describe('Auto-refresh', () => {
     beforeEach(() => {
-      vi.useFakeTimers()
+      jest.useFakeTimers()
     })
 
     afterEach(() => {
-      vi.useRealTimers()
+      jest.useRealTimers()
     })
 
     test('does not auto-refresh by default', () => {
       renderComponent()
 
       // Fast forward time
-      vi.advanceTimersByTime(60000)
+      jest.advanceTimersByTime(60000)
 
       // Should not have refreshed (no refresh indicator)
       expect(screen.queryByTestId('refresh-cw-icon')).not.toHaveClass('animate-spin')
@@ -305,7 +305,7 @@ describe('StrategyPerformance', () => {
       renderComponent({ autoRefresh: true, refreshInterval: 1000 })
 
       // Fast forward time
-      vi.advanceTimersByTime(1000)
+      jest.advanceTimersByTime(1000)
 
       expect(screen.getByTestId('refresh-cw-icon')).toHaveClass('animate-spin')
     })

@@ -2,7 +2,7 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { ThemeProvider } from '@/styles/themes'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import StrategyEditor from '../StrategyEditor'
 import * as strategyAPI from '../../services/strategyAPI'
 

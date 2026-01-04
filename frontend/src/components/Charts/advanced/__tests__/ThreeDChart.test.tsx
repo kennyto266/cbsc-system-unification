@@ -58,8 +58,8 @@ describe('ThreeDChart - Batch 1 Migration', () => {
       </TestWrapper>
     )
 
-    // Mocked Plotly chart with data-testid
-    const container = screen.getByTestId('plotly-chart')
+    // Mocked Plotly chart uses mock-plotly-chart data-testid
+    const container = screen.getByTestId('mock-plotly-chart')
     expect(container).toBeInTheDocument()
   })
 
@@ -70,7 +70,7 @@ describe('ThreeDChart - Batch 1 Migration', () => {
       </TestWrapper>
     )
 
-    const container = screen.getByTestId('plotly-chart')
+    const container = screen.getByTestId('mock-plotly-chart')
     expect(container).toBeInTheDocument()
   })
 
@@ -81,7 +81,7 @@ describe('ThreeDChart - Batch 1 Migration', () => {
       </TestWrapper>
     )
 
-    const container = screen.getByTestId('plotly-chart')
+    const container = screen.getByTestId('mock-plotly-chart')
     expect(container).toBeInTheDocument()
   })
 
@@ -92,7 +92,7 @@ describe('ThreeDChart - Batch 1 Migration', () => {
       </TestWrapper>
     )
 
-    const container = screen.getByTestId('plotly-chart')
+    const container = screen.getByTestId('mock-plotly-chart')
     expect(container).toBeInTheDocument()
   })
 
@@ -103,7 +103,7 @@ describe('ThreeDChart - Batch 1 Migration', () => {
       </TestWrapper>
     )
 
-    const container = screen.getByTestId('plotly-chart')
+    const container = screen.getByTestId('mock-plotly-chart')
     expect(container).toBeInTheDocument()
   })
 
@@ -114,7 +114,7 @@ describe('ThreeDChart - Batch 1 Migration', () => {
       </TestWrapper>
     )
 
-    const container = screen.getByTestId('plotly-chart')
+    const container = screen.getByTestId('mock-plotly-chart')
     expect(container).toBeInTheDocument()
   })
 
@@ -161,7 +161,7 @@ describe('ThreeDChart - Batch 1 Migration', () => {
       </TestWrapper>
     )
 
-    const container = screen.getByTestId('plotly-chart')
+    const container = screen.getByTestId('mock-plotly-chart')
     if (container) {
       fireEvent.click(container)
     }
@@ -192,7 +192,7 @@ describe('ThreeDChart - Batch 1 Migration', () => {
       </TestWrapper>
     )
 
-    const container = screen.getByTestId('plotly-chart')
+    const container = screen.getByTestId('mock-plotly-chart')
     expect(container).toBeInTheDocument()
   })
 
@@ -209,7 +209,7 @@ describe('ThreeDChart - Batch 1 Migration', () => {
     )
 
     // Should render container even with empty data
-    const container = screen.getByTestId('plotly-chart')
+    const container = screen.getByTestId('mock-plotly-chart')
     expect(container).toBeInTheDocument()
   })
 
@@ -220,7 +220,7 @@ describe('ThreeDChart - Batch 1 Migration', () => {
       </TestWrapper>
     )
 
-    const container = screen.getByTestId('plotly-chart')
+    const container = screen.getByTestId('mock-plotly-chart')
     expect(container).toBeInTheDocument()
   })
 
@@ -231,7 +231,7 @@ describe('ThreeDChart - Batch 1 Migration', () => {
       </TestWrapper>
     )
 
-    const container = screen.getByTestId('plotly-chart')
+    const container = screen.getByTestId('mock-plotly-chart')
     expect(container).toBeInTheDocument()
   })
 })

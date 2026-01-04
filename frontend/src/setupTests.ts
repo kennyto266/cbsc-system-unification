@@ -1,6 +1,11 @@
 // jest-dom adds custom matchers
 import '@testing-library/jest-dom'
 
+// Polyfill TextEncoder and TextDecoder for MSW and Node.js compatibility
+import { TextEncoder, TextDecoder } from 'util'
+global.TextEncoder = TextEncoder as any
+global.TextDecoder = TextDecoder as any
+
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
@@ -46,19 +51,38 @@ global.WebSocket = class WebSocket {
   removeEventListener() {}
 }
 
-// Mock window.matchMedia
+// Mock window.matchMedia with full event listener support
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
+  value: jest.fn().mockImplementation(query => {
+    const listeners: Array<(event: MediaQueryListEvent) => void> = []
+
+    return {
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(), // deprecated
+      removeListener: jest.fn(), // deprecated
+      addEventListener: jest.fn((event: string, listener: any) => {
+        if (event === 'change') {
+          listeners.push(listener)
+        }
+      }),
+      removeEventListener: jest.fn((event: string, listener: any) => {
+        const index = listeners.indexOf(listener)
+        if (index > -1) {
+          listeners.splice(index, 1)
+        }
+      }),
+      dispatchEvent: jest.fn(),
+      // Helper method for testing
+      _simulateChange: (matches: boolean) => {
+        listeners.forEach(listener => {
+          listener({ matches } as MediaQueryListEvent)
+        })
+      },
+    }
+  }),
 })
 
 // Mock getComputedStyle
@@ -106,20 +130,39 @@ jest.mock('plotly.js', () => ({
   addFrames: jest.fn(),
 }))
 
-// Mock react-plotly.js
+// Mock react-plotly.js for lazy loading support
 jest.mock('react-plotly.js', () => {
   const React = require('react')
-  return {
-    default: class Plot extends React.Component {
-      render() {
-        const { layout, config, style } = this.props as any
-        return React.createElement('div', {
-          'data-testid': 'plotly-chart',
-          className: 'plotly-graph-div',
-          style: style || { width: '100%', height: '400px' }
-        }, layout?.title || 'Plotly Chart')
-      }
+
+  const PlotComponent = class Plot extends React.Component {
+    render() {
+      const { layout, config, style, data } = this.props as any
+      return React.createElement('div', {
+        'data-testid': 'mock-plotly-chart',
+        className: 'plotly-graph-div',
+        style: style || { width: '100%', height: '400px' }
+      },
+        React.createElement('div', {
+          'data-testid': 'plotly-data',
+          'data-plot': JSON.stringify(data || [])
+        }),
+        React.createElement('div', {
+          'data-testid': 'plotly-layout',
+          'data-plot': JSON.stringify(layout || {})
+        }),
+        React.createElement('div', {
+          'data-testid': 'plotly-config',
+          'data-plot': JSON.stringify(config || {})
+        }),
+        layout?.title || 'Plotly Chart'
+      )
     }
+  }
+
+  // Return both default and named export to support different import styles
+  return {
+    __esModule: true,
+    default: PlotComponent,
   }
 })
 
@@ -178,6 +221,63 @@ global.URL.revokeObjectURL = jest.fn()
 
 // Mock fetch
 global.fetch = jest.fn()
+
+// Unified WebSocket Service Mock - 統一 WebSocket 服務 Mock
+// Factory function that creates new mock instances
+const createMockWebSocketService = () => ({
+  connect: jest.fn(() => Promise.resolve()),
+  disconnect: jest.fn(() => Promise.resolve()),
+  send: jest.fn(),
+  subscribe: jest.fn(),
+  unsubscribe: jest.fn(),
+  on: jest.fn(),
+  off: jest.fn(),
+  emit: jest.fn(),
+  isConnected: false,
+  getConnectionState: jest.fn(() => 'disconnected'),
+  destroy: jest.fn(),
+  reconnect: jest.fn(),
+  // Additional methods used by tests
+  subscribeToStrategy: jest.fn(),
+  subscribeToPerformance: jest.fn(),
+  subscribeToSignals: jest.fn(),
+  requestCurrentState: jest.fn(),
+  getConnectionStatus: jest.fn().mockReturnValue('disconnected'),
+})
+
+// Singleton instance for getWebSocketService
+const mockWebSocketInstance = createMockWebSocketService()
+
+// Mock all WebSocket service paths - unified factory pattern
+jest.mock('@/services/websocketService', () => {
+  const MockClass = jest.fn(() => createMockWebSocketService())
+  return {
+    __esModule: true,
+    default: MockClass,
+    WebSocketService: MockClass,
+    getWebSocketService: jest.fn(() => mockWebSocketInstance),
+  }
+})
+
+jest.mock('@/services/websocket/WebSocketService', () => {
+  const MockClass = jest.fn(() => createMockWebSocketService())
+  return {
+    __esModule: true,
+    default: MockClass,
+    WebSocketService: MockClass,
+    getWebSocketService: jest.fn(() => mockWebSocketInstance),
+  }
+})
+
+jest.mock('@/services/socket/websocket-service', () => ({
+  createWebSocketService: jest.fn(() => mockWebSocketInstance),
+  default: mockWebSocketInstance,
+}))
+
+jest.mock('@/services/websocketManager', () => ({
+  getWebSocketService: jest.fn(() => mockWebSocketInstance),
+  default: mockWebSocketInstance,
+}))
 
 // Mock console methods in tests
 const originalError = console.error

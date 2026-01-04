@@ -417,27 +417,27 @@ export const router = createBrowserRouter([
               </RouteGuard>
             ),
           }] : []),
+          // 重定向
+          {
+            path: 'login',
+            element: <Navigate to="/auth/login" replace />,
+          },
+          {
+            path: 'register',
+            element: <Navigate to="/auth/register" replace />,
+          },
+          // 404
+          {
+            path: '*',
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <NotFound />
+              </Suspense>
+            ),
+          },
         ],
       },
-      // 重定向
-      {
-        path: 'login',
-        element: <Navigate to="/auth/login" replace />,
-      },
-      {
-        path: 'register',
-        element: <Navigate to="/auth/register" replace />,
-      },
     ],
-    // 404
-    {
-      path: '*',
-      element: (
-        <Suspense fallback={<LoadingFallback />}>
-          <NotFound />
-        </Suspense>
-      ),
-    },
   },
 ]);
 

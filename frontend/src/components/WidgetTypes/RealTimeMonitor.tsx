@@ -11,7 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Progress } from '../ui/progress'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 
 // 模拟实时数据
 interface MarketData {

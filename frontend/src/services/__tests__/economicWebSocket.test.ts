@@ -79,16 +79,16 @@ class MockWebSocket {
 }
 
 // Mock global WebSocket
-vi.stubGlobal('WebSocket', MockWebSocket)
+jest.stubGlobal('WebSocket', MockWebSocket)
 
 describe('EconomicWebSocket', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     economicWebSocket.disconnect()
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    jest.restoreAllMocks()
     economicWebSocket.disconnect()
   })
 
@@ -107,7 +107,7 @@ describe('EconomicWebSocket', () => {
     it('should not reconnect if already connected', async () => {
       // Arrange
       await economicWebSocket.connect()
-      const connectSpy = vi.spyOn(economicWebSocket as any, 'createConnection')
+      const connectSpy = jest.spyOn(economicWebSocket as any, 'createConnection')
 
       // Act
       await economicWebSocket.connect()
@@ -143,7 +143,7 @@ describe('EconomicWebSocket', () => {
     it('should subscribe to economic data updates', async () => {
       // Arrange
       await economicWebSocket.connect()
-      const callback = vi.fn()
+      const callback = jest.fn()
 
       // Act
       economicWebSocket.subscribe('hibor', callback)
@@ -168,8 +168,8 @@ describe('EconomicWebSocket', () => {
     it('should subscribe to multiple indicators', async () => {
       // Arrange
       await economicWebSocket.connect()
-      const hiborCallback = vi.fn()
-      const gdpCallback = vi.fn()
+      const hiborCallback = jest.fn()
+      const gdpCallback = jest.fn()
 
       // Act
       economicWebSocket.subscribe('hibor', hiborCallback)
@@ -195,10 +195,10 @@ describe('EconomicWebSocket', () => {
 
     it('should handle subscription errors gracefully', () => {
       // Arrange
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
 
       // Act
-      economicWebSocket.subscribe('invalid_indicator', vi.fn())
+      economicWebSocket.subscribe('invalid_indicator', jest.fn())
 
       // Assert
       expect(consoleSpy).toHaveBeenCalledWith(
@@ -213,7 +213,7 @@ describe('EconomicWebSocket', () => {
     it('should unsubscribe from economic data updates', async () => {
       // Arrange
       await economicWebSocket.connect()
-      const callback = vi.fn()
+      const callback = jest.fn()
       economicWebSocket.subscribe('hibor', callback)
 
       // Act
@@ -239,8 +239,8 @@ describe('EconomicWebSocket', () => {
     it('should remove specific callback but keep others', async () => {
       // Arrange
       await economicWebSocket.connect()
-      const callback1 = vi.fn()
-      const callback2 = vi.fn()
+      const callback1 = jest.fn()
+      const callback2 = jest.fn()
       economicWebSocket.subscribe('hibor', callback1)
       economicWebSocket.subscribe('hibor', callback2)
 
@@ -282,7 +282,7 @@ describe('EconomicWebSocket', () => {
       // Arrange
       await economicWebSocket.connect()
       const ws = economicWebSocket['ws']
-      const closeSpy = vi.spyOn(ws!, 'close')
+      const closeSpy = jest.spyOn(ws!, 'close')
 
       // Act
       economicWebSocket.disconnect()
@@ -301,7 +301,7 @@ describe('EconomicWebSocket', () => {
   describe('reconnect', () => {
     it('should attempt to reconnect with backoff', async () => {
       // Arrange
-      const setTimeoutSpy = vi.spyOn(global, 'setTimeout')
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout')
       await economicWebSocket.connect()
       economicWebSocket.disconnect()
 

@@ -309,7 +309,7 @@ describe('useChartResize', () => {
   });
 
   it('should call onResize callback', () => {
-    const onResizeMock = vi.fn();
+    const onResizeMock = jest.fn();
     const config = {
       onResize: onResizeMock,
     };

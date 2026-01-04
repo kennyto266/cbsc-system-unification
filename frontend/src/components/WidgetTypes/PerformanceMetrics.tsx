@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Progress } from '../ui/progress'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 
 // 模拟性能数据
 const performanceData = {

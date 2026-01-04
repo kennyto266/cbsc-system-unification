@@ -8,25 +8,25 @@ import { api } from '../api'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 
 // Mock the base API service
-vi.mock('../api', () => ({
+jest.mock('../api', () => ({
   api: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
   },
 }))
 
 // Mock console.error to avoid test output pollution
-vi.spyOn(console, 'error').mockImplementation(() => {})
+jest.spyOn(console, 'error').mockImplementation(() => {})
 
 describe('EconomicDataApi', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    jest.restoreAllMocks()
   })
 
   describe('getEconomicIndicators', () => {
@@ -39,7 +39,7 @@ describe('EconomicDataApi', () => {
           { date: '2024-01-02', rate: 5.6 },
         ],
       }
-      vi.mocked(api.get).mockResolvedValue(mockHiborData)
+      jest.mocked(api.get).mockResolvedValue(mockHiborData)
 
       // Act
       const result = await economicDataApi.getHiborData({
@@ -63,7 +63,7 @@ describe('EconomicDataApi', () => {
           { quarter: '2024-Q2', gdp_growth: 3.5 },
         ],
       }
-      vi.mocked(api.get).mockResolvedValue(mockGdpData)
+      jest.mocked(api.get).mockResolvedValue(mockGdpData)
 
       // Act
       const result = await economicDataApi.getGdpData({
@@ -87,7 +87,7 @@ describe('EconomicDataApi', () => {
           { month: '2024-02', pmi: 51.8 },
         ],
       }
-      vi.mocked(api.get).mockResolvedValue(mockPmiData)
+      jest.mocked(api.get).mockResolvedValue(mockPmiData)
 
       // Act
       const result = await economicDataApi.getPmiData({
@@ -112,7 +112,7 @@ describe('EconomicDataApi', () => {
           { month: '2024-02', visitors: 160000 },
         ],
       }
-      vi.mocked(api.get).mockResolvedValue(mockVisitorData)
+      jest.mocked(api.get).mockResolvedValue(mockVisitorData)
 
       // Act
       const result = await economicDataApi.getVisitorData({
@@ -136,7 +136,7 @@ describe('EconomicDataApi', () => {
           { month: '2024-02', rate: 3.1 },
         ],
       }
-      vi.mocked(api.get).mockResolvedValue(mockUnemploymentData)
+      jest.mocked(api.get).mockResolvedValue(mockUnemploymentData)
 
       // Act
       const result = await economicDataApi.getUnemploymentData({
@@ -154,7 +154,7 @@ describe('EconomicDataApi', () => {
     it('should handle API errors gracefully', async () => {
       // Arrange
       const error = new Error('Network Error')
-      vi.mocked(api.get).mockRejectedValue(error)
+      jest.mocked(api.get).mockRejectedValue(error)
 
       // Act & Assert
       await expect(
@@ -177,7 +177,7 @@ describe('EconomicDataApi', () => {
         unemployment: [{ month: '2024-01', rate: 3.2 }],
       }
 
-      vi.mocked(api.get)
+      jest.mocked(api.get)
         .mockResolvedValueOnce({ success: true, data: mockData.hibor })
         .mockResolvedValueOnce({ success: true, data: mockData.gdp })
         .mockResolvedValueOnce({ success: true, data: mockData.pmi })
@@ -202,7 +202,7 @@ describe('EconomicDataApi', () => {
 
     it('should handle partial failures in parallel requests', async () => {
       // Arrange
-      vi.mocked(api.get)
+      jest.mocked(api.get)
         .mockResolvedValueOnce({ success: true, data: [{ date: '2024-01-01', rate: 5.5 }] })
         .mockRejectedValueOnce(new Error('GDP API Error'))
         .mockResolvedValueOnce({ success: true, data: [{ month: '2024-01', pmi: 52.3 }] })
@@ -230,7 +230,7 @@ describe('EconomicDataApi', () => {
       const cachedData = [{ date: '2024-01-01', rate: 5.5 }]
 
       // Mock localStorage
-      const localStorageGet = vi.spyOn(Storage.prototype, 'getItem')
+      const localStorageGet = jest.spyOn(Storage.prototype, 'getItem')
       localStorageGet.mockReturnValue(JSON.stringify(cachedData))
 
       // Act
@@ -244,7 +244,7 @@ describe('EconomicDataApi', () => {
     it('should return null when no cached data exists', async () => {
       // Arrange
       const cacheKey = 'non_existent_key'
-      const localStorageGet = vi.spyOn(Storage.prototype, 'getItem')
+      const localStorageGet = jest.spyOn(Storage.prototype, 'getItem')
       localStorageGet.mockReturnValue(null)
 
       // Act

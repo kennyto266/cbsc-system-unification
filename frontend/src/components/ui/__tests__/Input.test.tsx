@@ -2,7 +2,7 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Input } from '../Input'
-import { ThemeProvider } from '@/styles/themes'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 
 // Test wrapper - 测试包装器
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (

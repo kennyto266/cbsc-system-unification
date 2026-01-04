@@ -7,7 +7,7 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { Card } from '../ui/Card'
-import { cn, formatNumber, formatPercent, formatCurrency } from '../../lib/utils'
+import { cn, formatNumber, formatPercent, formatCurrency } from '@/lib/utils'
 
 interface MetricCardProps {
   title: string

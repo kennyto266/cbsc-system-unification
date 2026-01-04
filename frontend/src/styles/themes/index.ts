@@ -176,12 +176,15 @@ export class ThemeManager {
   // Listen for system theme changes - 监听系统主题变化
   watchSystemTheme(): void {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    mediaQuery.addEventListener('change', (e) => {
-      if (!localStorage.getItem(this.storageKey)) {
-        const systemTheme = e.matches ? 'dark' : 'light'
-        this.setTheme(systemTheme)
-      }
-    })
+    // Check if mediaQuery exists and has addEventListener (for test environments)
+    if (mediaQuery && typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', (e) => {
+        if (!localStorage.getItem(this.storageKey)) {
+          const systemTheme = e.matches ? 'dark' : 'light'
+          this.setTheme(systemTheme)
+        }
+      })
+    }
   }
 
   // Notify theme change - 通知主题变化

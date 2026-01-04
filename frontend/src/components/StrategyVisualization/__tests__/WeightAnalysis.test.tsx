@@ -21,7 +21,7 @@ jest.mock('recharts', () => ({
   YAxis: (props: any) => <div data-testid="y-axis" {...props} />,
   CartesianGrid: (props: any) => <div data-testid="cartesian-grid" {...props} />,
   Tooltip: (props: any) => <div data-testid="tooltip" {...props} />,
-  Legend: (props: any) => <div data-testid="legend" {...props} },
+  Legend: (props: any) => <div data-testid="legend" {...props} />,
   RadarChart: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="radar-chart">{children}</div>
   ),

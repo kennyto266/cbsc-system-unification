@@ -361,7 +361,7 @@ class YFinanceCollector:
         # Use thread pool for CPU-bound yfinance operations
         loop = asyncio.get_event_loop()
 
-        def fetch_data():
+        async def fetch_data():
             tickers = yf.Tickers(" ".join(validated_symbols))
             data = {}
 

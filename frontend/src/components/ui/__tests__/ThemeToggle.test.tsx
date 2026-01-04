@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ThemeToggle, ThemeSelector } from '../ThemeToggle'
-import { ThemeProvider } from '@/styles/themes'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 
 // Test wrapper - 测试包装器
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (

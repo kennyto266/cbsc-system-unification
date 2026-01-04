@@ -1,0 +1,47 @@
+# MFA (Multi-Factor Authentication) Dependencies
+
+# TOTP/Google Authenticator
+pyotp==2.8.0
+qrcode[pil]==7.4.2
+
+# SMS Providers
+twilio==8.10.0
+vonage==3.12.0
+pycryptodomex==3.19.0
+
+# Phone Number Validation
+phonenumbers==8.13.25
+
+# Email
+jinja2==3.1.2
+python-dotenv==1.0.0
+
+# Security
+cryptography==41.0.7
+fernet==1.0.1
+
+# Database
+psycopg2-binary==2.9.9
+alembic==1.12.1
+
+# Rate Limiting
+redis==5.0.1
+
+# FastAPI Dependencies
+fastapi==0.104.1
+uvicorn==0.24.0
+sqlalchemy==2.0.23
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# JWT
+PyJWT==2.8.0
+python-jose[cryptography]==3.3.0
+
+# Utilities
+python-multipart==0.0.6
+python-dateutil==2.8.2
+requests==2.31.0
+
+# Logging
+structlog==23.2.0

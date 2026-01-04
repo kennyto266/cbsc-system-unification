@@ -259,7 +259,7 @@ describe('useToast', () => {
 
     // First toast should be removed after 1000ms
     act(() => {
-      vi.advanceTimersByTime(1000);
+      jest.advanceTimersByTime(1000);
     });
 
     expect(result.current.toasts).toHaveLength(1);
@@ -267,7 +267,7 @@ describe('useToast', () => {
 
     // Second toast should be removed after another 1000ms
     act(() => {
-      vi.advanceTimersByTime(1000);
+      jest.advanceTimersByTime(1000);
     });
 
     expect(result.current.toasts).toEqual([]);

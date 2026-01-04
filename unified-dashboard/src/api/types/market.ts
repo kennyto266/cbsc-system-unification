@@ -263,3 +263,39 @@ export interface MarketDataSubscription {
   isActive: boolean
   createdAt: string
 }
+
+// Trade Data (WebSocket)
+export interface TradeData {
+  symbol: string
+  price: number
+  quantity: number
+  side: 'buy' | 'sell'
+  timestamp: number
+  tradeId?: string
+}
+
+// Order Book Update (WebSocket)
+export interface OrderBookUpdate {
+  symbol: string
+  bids: [number, number][]
+  asks: [number, number][]
+  timestamp: number
+  lastUpdateId: number
+  isSnapshot?: boolean
+}
+
+// Strategy Update (WebSocket)
+export interface StrategyUpdate {
+  strategyId: string
+  status: 'active' | 'paused' | 'stopped' | 'error'
+  signal?: 'buy' | 'sell' | 'hold'
+  price?: number
+  quantity?: number
+  timestamp: number
+  message?: string
+  metrics?: {
+    totalReturn?: number
+    winRate?: number
+    profitFactor?: number
+  }
+}

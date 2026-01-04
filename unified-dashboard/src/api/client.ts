@@ -3,11 +3,22 @@
  * Centralized API client with interceptors and error handling
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 import { message } from 'antd'
 import { API_CONFIG } from './config'
-import { ApiResponse, ApiError } from './types/common'
 import { getToken, removeToken } from '../utils/auth'
+
+// Extend InternalAxiosRequestConfig to include metadata
+declare module 'axios' {
+  export interface InternalAxiosRequestConfig {
+    metadata?: RequestMetadata
+    _retry?: boolean
+  }
+}
+
+interface RequestMetadata {
+  startTime?: Date
+}
 
 // Create API client instance
 const apiClient: AxiosInstance = axios.create({
@@ -21,7 +32,7 @@ const apiClient: AxiosInstance = axios.create({
 
 // Request interceptor
 apiClient.interceptors.request.use(
-  (config: AxiosRequestConfig) => {
+  (config: InternalAxiosRequestConfig) => {
     // Add auth token if available
     const token = getToken()
     if (token && config.headers) {
@@ -133,21 +144,22 @@ apiClient.interceptors.response.use(
 
 // Export typed request methods
 export const apiRequest = {
-  get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> =>
+  get: <T = any>(url: string, config?: InternalAxiosRequestConfig | any): Promise<T> =>
     apiClient.get(url, config),
 
-  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> =>
+  post: <T = any>(url: string, data?: any, config?: InternalAxiosRequestConfig | any): Promise<T> =>
     apiClient.post(url, data, config),
 
-  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> =>
+  put: <T = any>(url: string, data?: any, config?: InternalAxiosRequestConfig | any): Promise<T> =>
     apiClient.put(url, data, config),
 
-  patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> =>
+  patch: <T = any>(url: string, data?: any, config?: InternalAxiosRequestConfig | any): Promise<T> =>
     apiClient.patch(url, data, config),
 
-  delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> =>
+  delete: <T = any>(url: string, config?: InternalAxiosRequestConfig | any): Promise<T> =>
     apiClient.delete(url, config),
 }
 
-// Export the configured client
+// Export the configured client and instance
+export { apiClient }
 export default apiClient

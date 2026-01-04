@@ -1,3 +1,4 @@
+import React from 'react';
 import { rest } from 'msw';
 import { server } from '../setup/server';
 import { integrationUtils } from '../utils/testUtils';

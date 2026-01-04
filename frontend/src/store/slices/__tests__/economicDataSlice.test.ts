@@ -15,24 +15,24 @@ import economicDataSlice, {
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 // Mock the economic data API
-vi.mock('../../services/economicDataApi', () => ({
+jest.mock('../../services/economicDataApi', () => ({
   economicDataApi: {
-    getHiborData: vi.fn(),
-    getGdpData: vi.fn(),
-    getPmiData: vi.fn(),
-    getVisitorData: vi.fn(),
-    getUnemploymentData: vi.fn(),
-    getAllEconomicIndicators: vi.fn(),
+    getHiborData: jest.fn(),
+    getGdpData: jest.fn(),
+    getPmiData: jest.fn(),
+    getVisitorData: jest.fn(),
+    getUnemploymentData: jest.fn(),
+    getAllEconomicIndicators: jest.fn(),
   },
 }))
 
-import { economicDataApi } from '../../services/economicDataApi'
+import { economicDataApi } from '@/services/economicDataApi'
 
 describe('EconomicDataSlice', () => {
   let store: ReturnType<typeof configureStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     store = configureStore({
       reducer: {
         economicData: economicDataSlice,
@@ -78,7 +78,7 @@ describe('EconomicDataSlice', () => {
         { date: '2024-01-01', rate: 5.5 },
         { date: '2024-01-02', rate: 5.6 },
       ]
-      vi.mocked(economicDataApi.getHiborData).mockResolvedValue({
+      jest.mocked(economicDataApi.getHiborData).mockResolvedValue({
         success: true,
         data: mockHiborData,
       })
@@ -99,7 +99,7 @@ describe('EconomicDataSlice', () => {
     it('should handle fetch error', async () => {
       // Arrange
       const errorMessage = 'API Error'
-      vi.mocked(economicDataApi.getHiborData).mockRejectedValue(new Error(errorMessage))
+      jest.mocked(economicDataApi.getHiborData).mockRejectedValue(new Error(errorMessage))
 
       // Act
       await store.dispatch(
@@ -114,7 +114,7 @@ describe('EconomicDataSlice', () => {
 
     it('should handle loading state during fetch', () => {
       // Arrange
-      vi.mocked(economicDataApi.getHiborData).mockImplementation(() => new Promise(() => {}))
+      jest.mocked(economicDataApi.getHiborData).mockImplementation(() => new Promise(() => {}))
 
       // Act
       store.dispatch(
@@ -138,7 +138,7 @@ describe('EconomicDataSlice', () => {
         unemployment: [{ month: '2024-01', rate: 3.2 }],
       }
 
-      vi.mocked(economicDataApi.getAllEconomicIndicators).mockResolvedValue(mockAllData)
+      jest.mocked(economicDataApi.getAllEconomicIndicators).mockResolvedValue(mockAllData)
 
       // Act
       await store.dispatch(
@@ -164,7 +164,7 @@ describe('EconomicDataSlice', () => {
         unemployment: [{ month: '2024-01', rate: 3.2 }],
       }
 
-      vi.mocked(economicDataApi.getAllEconomicIndicators).mockResolvedValue(mockPartialData)
+      jest.mocked(economicDataApi.getAllEconomicIndicators).mockResolvedValue(mockPartialData)
 
       // Act
       await store.dispatch(
@@ -214,7 +214,7 @@ describe('EconomicDataSlice', () => {
   describe('clearCache', () => {
     it('should clear all data and reset state', () => {
       // Arrange - Add some data first
-      vi.mocked(economicDataApi.getHiborData).mockResolvedValue({
+      jest.mocked(economicDataApi.getHiborData).mockResolvedValue({
         success: true,
         data: [{ date: '2024-01-01', rate: 5.5 }],
       })
@@ -261,7 +261,7 @@ describe('EconomicDataSlice', () => {
   describe('Error handling', () => {
     it('should handle network errors', async () => {
       // Arrange
-      vi.mocked(economicDataApi.getHiborData).mockRejectedValue(
+      jest.mocked(economicDataApi.getHiborData).mockRejectedValue(
         new Error('Network Error')
       )
 
@@ -278,7 +278,7 @@ describe('EconomicDataSlice', () => {
 
     it('should handle API response errors', async () => {
       // Arrange
-      vi.mocked(economicDataApi.getHiborData).mockRejectedValue(
+      jest.mocked(economicDataApi.getHiborData).mockRejectedValue(
         new Error('API Error: Invalid parameters')
       )
 

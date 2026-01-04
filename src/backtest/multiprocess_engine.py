@@ -653,7 +653,7 @@ class MultiprocessBacktestEngine:
                         )],
                         positions=positions,
                         equity_curve=pd.Series(equity, index=df['date']),
-                        returns=pd.Series([equity[i] - equity[i-1] for i in range(1, len(equity))],
+                        returns=pd.Series([equity[i] - equity[i-1] for i in range(1, len(equity))]),
                     )
 
                     return result

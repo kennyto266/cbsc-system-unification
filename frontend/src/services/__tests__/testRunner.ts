@@ -3,7 +3,8 @@
  * 經濟 API 服務的簡單測試運行器
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+// Use Jest instead of Vitest
+import { describe, it, expect, beforeEach } from '@jest/globals'
 
 // Import services to test
 import { economicDataApi } from '../economicDataApi'
@@ -12,10 +13,10 @@ import { economicWebSocket } from '../economicWebSocket'
 
 // Mock API for testing
 const mockApi = {
-  get: vi.fn(),
-  post: vi.fn(),
-  put: vi.fn(),
-  delete: vi.fn(),
+  get: jest.fn(),
+  post: jest.fn(),
+  put: jest.fn(),
+  delete: jest.fn(),
 }
 
 // Mock WebSocket
@@ -46,12 +47,12 @@ class MockWebSocket {
 }
 
 // Setup mocks
-vi.mock('../api', () => ({ api: mockApi }))
-vi.stubGlobal('WebSocket', MockWebSocket)
+jest.mock('../api', () => ({ api: mockApi }))
+jest.stubGlobal('WebSocket', MockWebSocket)
 
 describe('Economic API Services Integration Tests', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     economicWebSocket.disconnect()
   })
 

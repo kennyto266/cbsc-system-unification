@@ -73,17 +73,15 @@ const OptimizedChartBase = memo<OptimizedChartBaseProps>(({
     let processedData = data
 
     if (data.datasets) {
-      processedData = {
-        ...data,
-        datasets: data.datasets.map((dataset: any) => ({
-          ...dataset,
-          data: dataset.data.length > maxDataPoints
-            ? dataset.data.filter((_: any, i: number) =>
-                i % Math.ceil(dataset.data.length / maxDataPoints) === 0
-              )
-            : dataset.data
-        }))
+      const processedDatasets = data.datasets.map((dataset: any) => {
+        const processedDataset = { ...dataset }
+        if (dataset.data.length > maxDataPoints) {
+          const step = Math.ceil(dataset.data.length / maxDataPoints)
+          processedDataset.data = dataset.data.filter((_: any, i: number) => i % step === 0)
+        }
+        return processedDataset
       })
+      processedData = { ...data, datasets: processedDatasets }
     }
 
     endMeasure('dataOptimization')

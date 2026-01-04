@@ -12,12 +12,12 @@ import economicDataSlice from '../../store/slices/economicDataSlice'
 import { useEconomicData } from '../../hooks/useEconomicData'
 
 // Mock the useEconomicData hook
-vi.mock('../../hooks/useEconomicData', () => ({
-  useEconomicData: vi.fn()
+jest.mock('../../hooks/useEconomicData', () => ({
+  useEconomicData: jest.fn()
 }))
 
 // Mock the recharts components
-vi.mock('recharts', () => ({
+jest.mock('recharts', () => ({
   ComposedChart: ({ children }: { children: React.ReactNode }) => <div data-testid="composed-chart">{children}</div>,
   Line: () => <div data-testid="line-chart"></div>,
   Bar: () => <div data-testid="bar-chart"></div>,
@@ -35,7 +35,7 @@ vi.mock('recharts', () => ({
 }))
 
 // Mock date-fns
-vi.mock('date-fns', () => ({
+jest.mock('date-fns', () => ({
   format: (date: Date | number, formatStr: string) => {
     if (typeof date === 'number') {
       return '2024-01-15'
@@ -48,7 +48,7 @@ describe('EconomicDataCharts', () => {
   let store: ReturnType<typeof configureStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
 
     store = configureStore({
       reducer: {
@@ -98,12 +98,12 @@ describe('EconomicDataCharts', () => {
       loading: false,
       error: null,
       lastUpdated: '2024-01-15T10:00:00Z',
-      fetchIndicator: vi.fn(),
-      fetchAllIndicators: vi.fn(),
-      setFilter: vi.fn(),
-      setTimeRange: vi.fn(),
-      refreshData: vi.fn(),
-      clearCache: vi.fn(),
+      fetchIndicator: jest.fn(),
+      fetchAllIndicators: jest.fn(),
+      setFilter: jest.fn(),
+      setTimeRange: jest.fn(),
+      refreshData: jest.fn(),
+      clearCache: jest.fn(),
       ...overrides
     }
   }
@@ -282,7 +282,7 @@ describe('EconomicDataCharts', () => {
     })
 
     test('fetches data when timeRange prop changes', () => {
-      const mockFetchAllIndicators = vi.fn()
+      const mockFetchAllIndicators = jest.fn()
       (useEconomicData as any).mockReturnValue(
         mockUseEconomicData({
           fetchAllIndicators: mockFetchAllIndicators
@@ -296,7 +296,7 @@ describe('EconomicDataCharts', () => {
     })
 
     test('handles empty timeRange gracefully', () => {
-      const mockFetchAllIndicators = vi.fn()
+      const mockFetchAllIndicators = jest.fn()
       (useEconomicData as any).mockReturnValue(
         mockUseEconomicData({
           fetchAllIndicators: mockFetchAllIndicators

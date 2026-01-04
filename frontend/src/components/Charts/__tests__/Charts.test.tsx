@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { store } from '../../store';
+import { store } from '@/store';
 import { ChartsDashboard } from '../ChartsDashboard';
 import { ChartManagerProvider } from '../ChartManager';
 import { Strategy } from '../../../types';
