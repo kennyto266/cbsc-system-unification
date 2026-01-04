@@ -1,5 +1,6 @@
 """Tests for data fetchers module"""
 import pytest
+import pandas as pd
 from src.strategies.optimization.data.fetchers import YahooFinanceFetcher, HKEXFetcher
 
 
@@ -48,4 +49,29 @@ def test_hkex_fetcher_fetch():
     if data is not None:
         assert isinstance(data, pd.DataFrame)
         assert len(data) > 0
+
+
+def test_hkex_fetcher_invalid_symbol():
+    """Test HKEX fetcher with invalid symbol"""
+    fetcher = HKEXFetcher()
+    with pytest.raises(ValueError, match="Invalid symbol"):
+        fetcher.fetch("", "2024-01-01", "2024-01-31")
+
+
+def test_hkex_fetcher_invalid_date_format():
+    """Test HKEX fetcher with invalid date format"""
+    fetcher = HKEXFetcher()
+    with pytest.raises(ValueError, match="Invalid start date format"):
+        fetcher.fetch("0700.HK", "01/01/2024", "2024-01-31")
+
+    with pytest.raises(ValueError, match="Invalid end date format"):
+        fetcher.fetch("0700.HK", "2024-01-01", "31-01-2024")
+
+
+def test_hkex_fetcher_configurable_base_url():
+    """Test HKEX fetcher can be initialized with custom base URL"""
+    custom_url = "http://custom.api.com/market"
+    fetcher = HKEXFetcher(base_url=custom_url)
+    assert fetcher.base_url == custom_url
+
 

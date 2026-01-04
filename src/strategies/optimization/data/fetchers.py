@@ -1,8 +1,17 @@
 """Data fetchers for retrieving market data from various sources"""
-import yfinance as yf
+import logging
+import re
+from datetime import datetime
+
 import pandas as pd
 import requests
+import yfinance as yf
 from typing import Optional, Dict, Any, List
+
+from ..config import OptimizationConfig
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 
 class YahooFinanceFetcher:
@@ -35,17 +44,61 @@ class YahooFinanceFetcher:
             return data
 
         except Exception as e:
-            print(f"Error fetching {ticker}: {e}")
+            logger.error(f"Error fetching {ticker}: {e}")
             return None
 
 
 class HKEXFetcher:
     """Fetch market data from existing HKEX database"""
 
-    def __init__(self):
-        """Initialize HKEX fetcher with existing database connection"""
+    def __init__(self, base_url: Optional[str] = None):
+        """
+        Initialize HKEX fetcher with configurable base URL
+
+        Args:
+            base_url: Optional base URL for HKEX API (uses config default if not provided)
+        """
         self.db_connection = None  # Will use existing connection from src/api
-        self.base_url = "http://localhost:3007/api/market"
+        self.base_url = base_url or OptimizationConfig.get_hkex_base_url()
+
+    @staticmethod
+    def _validate_date_format(date_str: str) -> bool:
+        """
+        Validate date string is in YYYY-MM-DD format
+
+        Args:
+            date_str: Date string to validate
+
+        Returns:
+            True if valid, False otherwise
+        """
+        pattern = r'^\d{4}-\d{2}-\d{2}$'
+        if not re.match(pattern, date_str):
+            return False
+
+        try:
+            datetime.strptime(date_str, OptimizationConfig.DATE_FORMAT)
+            return True
+        except ValueError:
+            return False
+
+    @staticmethod
+    def _validate_symbol(symbol: str) -> bool:
+        """
+        Validate symbol is non-empty string
+
+        Args:
+            symbol: Stock symbol to validate
+
+        Returns:
+            True if valid, False otherwise
+
+        Raises:
+            ValueError: If symbol is invalid
+        """
+        if not symbol or not isinstance(symbol, str):
+            return False
+        return len(symbol.strip()) > 0
 
     def get_stock_list(self) -> Optional[List[Dict[str, Any]]]:
         """
@@ -65,34 +118,53 @@ class HKEXFetcher:
             return None
 
         except requests.exceptions.RequestException as e:
-            print(f"Error getting HKEX stock list: {e}")
+            logger.error(f"Error getting HKEX stock list: {e}")
             return None
         except Exception as e:
-            print(f"Unexpected error getting HKEX stock list: {e}")
+            logger.error(f"Unexpected error getting HKEX stock list: {e}")
             return None
 
-    def fetch(self, symbol: str, start_date: str, end_date: str) -> Optional[pd.DataFrame]:
+    def fetch(self, symbol: str, start: str, end: str) -> Optional[pd.DataFrame]:
         """
         Fetch historical data for HKEX stock
 
         Args:
             symbol: Stock symbol (e.g., '0700.HK')
-            start_date: Start date (YYYY-MM-DD)
-            end_date: End date (YYYY-MM-DD)
+            start: Start date (YYYY-MM-DD)
+            end: End date (YYYY-MM-DD)
 
         Returns:
             DataFrame with OHLCV data or None if failed
+
+        Raises:
+            ValueError: If symbol or dates are invalid
         """
+        # Input validation
+        if not self._validate_symbol(symbol):
+            raise ValueError(f"Invalid symbol: '{symbol}'. Must be non-empty string.")
+
+        if not self._validate_date_format(start):
+            raise ValueError(
+                f"Invalid start date format: '{start}'. "
+                f"Expected format: {OptimizationConfig.DATE_FORMAT}"
+            )
+
+        if not self._validate_date_format(end):
+            raise ValueError(
+                f"Invalid end date format: '{end}'. "
+                f"Expected format: {OptimizationConfig.DATE_FORMAT}"
+            )
+
         try:
             params = {
                 'symbol': symbol,
-                'start_date': start_date,
-                'end_date': end_date
+                'start': start,
+                'end': end
             }
             response = requests.get(
                 f"{self.base_url}/history",
                 params=params,
-                timeout=10
+                timeout=OptimizationConfig.REQUEST_TIMEOUT
             )
 
             if response.status_code == 200:
@@ -126,8 +198,8 @@ class HKEXFetcher:
             return None
 
         except requests.exceptions.RequestException as e:
-            print(f"Error fetching HKEX data for {symbol}: {e}")
+            logger.error(f"Error fetching HKEX data for {symbol}: {e}")
             return None
         except Exception as e:
-            print(f"Unexpected error fetching HKEX data for {symbol}: {e}")
+            logger.error(f"Unexpected error fetching HKEX data for {symbol}: {e}")
             return None
