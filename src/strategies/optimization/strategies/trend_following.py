@@ -1,6 +1,4 @@
 import pandas as pd
-import numpy as np
-from typing import Dict, Any
 
 class MAStrategy:
     """
@@ -31,6 +29,12 @@ class MAStrategy:
         Returns:
             Series of signals (-1, 0, 1)
         """
+        # Input validation
+        if 'close' not in data.columns:
+            raise ValueError("DataFrame must contain 'close' column")
+        if data.empty:
+            return pd.Series(dtype=int, index=data.index)
+
         close = data['close']
 
         # Calculate moving averages
@@ -69,7 +73,21 @@ class BollingerBandsStrategy:
         self.std_dev = std_dev
 
     def generate_signals(self, data: pd.DataFrame) -> pd.Series:
-        """Generate trading signals based on Bollinger Bands"""
+        """
+        Generate trading signals based on Bollinger Bands
+
+        Args:
+            data: DataFrame with 'close' column
+
+        Returns:
+            Series of signals (-1=short, 0=hold, 1=long)
+        """
+        # Input validation
+        if 'close' not in data.columns:
+            raise ValueError("DataFrame must contain 'close' column")
+        if data.empty:
+            return pd.Series(dtype=int, index=data.index)
+
         close = data['close']
 
         # Calculate bands
@@ -109,7 +127,21 @@ class DonchianChannelStrategy:
         self.period = period
 
     def generate_signals(self, data: pd.DataFrame) -> pd.Series:
-        """Generate trading signals based on Donchian Channel"""
+        """
+        Generate trading signals based on Donchian Channel
+
+        Args:
+            data: DataFrame with 'close' column (and optionally 'high'/'low')
+
+        Returns:
+            Series of signals (-1=short, 0=hold, 1=long)
+        """
+        # Input validation
+        if 'close' not in data.columns:
+            raise ValueError("DataFrame must contain 'close' column")
+        if data.empty:
+            return pd.Series(dtype=int, index=data.index)
+
         high = data['high'] if 'high' in data.columns else data['close']
         low = data['low'] if 'low' in data.columns else data['close']
         close = data['close']
