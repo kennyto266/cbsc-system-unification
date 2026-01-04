@@ -3,25 +3,22 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import { MixedStrategyViewer } from '../MixedStrategyViewer'
 
-// Mock the child components - fix named export issue
-jest.mock('../DualAxisChart', () => {
-  const MockDualAxisChart = ({ title, onPointClick }: any) => (
+// Mock the child components
+jest.mock('../DualAxisChart', () => ({
+  __esModule: true,
+  default: ({ title, onPointClick }: any) => (
     <div data-testid="dual-axis-chart">
       <div>{title}</div>
-      <button onClick={() => onPointClick?.({ date: '2024-01', price: 100 })}>
+      <button onClick={() => onPointClick?.({ date: '2024-01', price: 100, timestamp: 1704067200000 })}>
         Click Point
       </button>
     </div>
-  )
-  return {
-    __esModule: true,
-    default: MockDualAxisChart,
-    DualAxisChart: MockDualAxisChart,
-  }
-})
+  ),
+}))
 
-jest.mock('../TimeframeSelector', () => {
-  const MockTimeframeSelector = ({ value, onChange }: any) => (
+jest.mock('../TimeframeSelector', () => ({
+  __esModule: true,
+  default: ({ value, onChange }: any) => (
     <select
       data-testid="timeframe-selector"
       value={value}
@@ -32,12 +29,8 @@ jest.mock('../TimeframeSelector', () => {
       <option value="1m">1月</option>
       <option value="1y">1年</option>
     </select>
-  )
-  return {
-    __esModule: true,
-    default: MockTimeframeSelector,
-  }
-})
+  ),
+}))
 
 jest.mock('@/contexts/ThemeContext', () => ({
   useTheme: () => ({

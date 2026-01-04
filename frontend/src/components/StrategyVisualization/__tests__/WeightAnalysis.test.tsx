@@ -31,10 +31,11 @@ jest.mock('recharts', () => ({
   Radar: (props: any) => <div data-testid="radar" {...props} />
 }))
 
-jest.mock('../../../contexts/ThemeContext', () => ({
+jest.mock('../../contexts/ThemeContext', () => ({
   useTheme: () => ({
     resolvedTheme: 'light'
-  })
+  }),
+  ThemeProvider: ({ children }: any) => <div>{children}</div>
 }))
 
 const mockWeights = {
@@ -45,10 +46,10 @@ const mockWeights = {
 }
 
 const mockContributions = [
-  { name: '价格策略', value: 0.4, contribution: 0.35, performance: 0.12 },
-  { name: '经济指标', value: 0.3, contribution: 0.25, performance: 0.08 },
-  { name: '成交量', value: 0.2, contribution: 0.25, performance: 0.15 },
-  { name: '技术指标', value: 0.1, contribution: 0.15, performance: -0.02 }
+  { name: '价格策略', value: 0.4, contribution: 0.35, performance: 0.12, weight: 0.4 },
+  { name: '经济指标', value: 0.3, contribution: 0.25, performance: 0.08, weight: 0.3 },
+  { name: '成交量', value: 0.2, contribution: 0.25, performance: 0.15, weight: 0.2 },
+  { name: '技术指标', value: 0.1, contribution: 0.15, performance: -0.02, weight: 0.1 }
 ]
 
 describe('WeightAnalysis', () => {
@@ -123,7 +124,14 @@ describe('WeightAnalysis', () => {
   })
 
   it('displays correlation matrix', () => {
-    render(<WeightAnalysis {...defaultProps} showCorrelation={true} />)
+    const mockCorrelations = {
+      price: { economic: 0.5, volume: 0.3, technical: 0.7 },
+      economic: { price: 0.5, volume: 0.4, technical: 0.6 },
+      volume: { price: 0.3, economic: 0.4, technical: 0.2 },
+      technical: { price: 0.7, economic: 0.6, volume: 0.2 }
+    }
+
+    render(<WeightAnalysis {...defaultProps} showCorrelation={true} correlations={mockCorrelations} />)
 
     expect(screen.getByText('相关性分析')).toBeInTheDocument()
   })
@@ -137,7 +145,7 @@ describe('WeightAnalysis', () => {
 
   it('exports weight configuration when export button is clicked', () => {
     const mockExport = jest.fn()
-    render(<WeightAnalysis {...defaultProps} onExport={mockExport} />)
+    render(<WeightAnalysis {...defaultProps} onExport={mockExport} adjustable={true} />)
 
     const exportButton = screen.getByText('导出配置')
     fireEvent.click(exportButton)
@@ -166,6 +174,6 @@ describe('WeightAnalysis', () => {
     const priceSlider = screen.getByLabelText('价格策略权重')
     fireEvent.change(priceSlider, { target: { value: '1.5' } })
 
-    expect(screen.getByText(/权重不能超过/)).toBeInTheDocument()
+    expect(screen.getByText(/权重必须在/)).toBeInTheDocument()
   })
 })
