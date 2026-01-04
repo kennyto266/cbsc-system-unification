@@ -6,19 +6,6 @@ import { TextEncoder, TextDecoder } from 'util'
 global.TextEncoder = TextEncoder as any
 global.TextDecoder = TextDecoder as any
 
-// Mock window dimensions for useResponsive hook
-Object.defineProperty(window, 'innerWidth', {
-  writable: true,
-  configurable: true,
-  value: 1024,
-})
-
-Object.defineProperty(window, 'innerHeight', {
-  writable: true,
-  configurable: true,
-  value: 768,
-})
-
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
@@ -179,23 +166,16 @@ jest.mock('react-plotly.js', () => {
   }
 })
 
-// Mock Chart.js with proper static methods
-jest.mock('chart.js', () => {
-  const MockChart = jest.fn(() => ({
+// Mock Chart.js
+jest.mock('chart.js', () => ({
+  Chart: jest.fn(() => ({
     update: jest.fn(),
     destroy: jest.fn(),
     resize: jest.fn(),
-  }))
-  // Add static methods
-  MockChart.register = jest.fn()
-  MockChart.defaults = {}
-
-  return {
-    Chart: MockChart,
-    register: MockChart.register,
-    defaults: MockChart.defaults,
-  }
-})
+  })),
+  register: jest.fn(),
+  defaults: {},
+}))
 
 // Mock recharts
 jest.mock('recharts', () => {
@@ -243,51 +223,36 @@ global.URL.revokeObjectURL = jest.fn()
 global.fetch = jest.fn()
 
 // Unified WebSocket Service Mock - 統一 WebSocket 服務 Mock
-// Factory function that creates new mock instances
-const createMockWebSocketService = () => ({
-  connect: jest.fn(() => Promise.resolve()),
-  disconnect: jest.fn(() => Promise.resolve()),
-  send: jest.fn(),
-  subscribe: jest.fn(),
-  unsubscribe: jest.fn(),
-  on: jest.fn(),
-  off: jest.fn(),
-  emit: jest.fn(),
-  isConnected: false,
-  getConnectionState: jest.fn(() => 'disconnected'),
-  destroy: jest.fn(),
-  reconnect: jest.fn(),
-  // Additional methods used by tests
-  subscribeToStrategy: jest.fn(),
-  subscribeToPerformance: jest.fn(),
-  subscribeToSignals: jest.fn(),
-  requestCurrentState: jest.fn(),
-  getConnectionStatus: jest.fn().mockReturnValue('disconnected'),
-})
+class MockWebSocketService {
+  connect = jest.fn(() => Promise.resolve())
+  disconnect = jest.fn(() => Promise.resolve())
+  send = jest.fn()
+  subscribe = jest.fn()
+  unsubscribe = jest.fn()
+  on = jest.fn()
+  off = jest.fn()
+  emit = jest.fn()
+  isConnected = false
+  getConnectionState = jest.fn(() => 'disconnected')
+  destroy = jest.fn()
+  reconnect = jest.fn()
+}
 
-// Singleton instance for getWebSocketService
-const mockWebSocketInstance = createMockWebSocketService()
+// Export singleton instance
+const mockWebSocketInstance = new MockWebSocketService()
 
-// Mock all WebSocket service paths - unified factory pattern
-jest.mock('@/services/websocketService', () => {
-  const MockClass = jest.fn(() => createMockWebSocketService())
-  return {
-    __esModule: true,
-    default: MockClass,
-    WebSocketService: MockClass,
-    getWebSocketService: jest.fn(() => mockWebSocketInstance),
-  }
-})
+// Mock all WebSocket service paths to use the same mock
+jest.mock('@/services/websocketService', () => ({
+  getWebSocketService: jest.fn(() => mockWebSocketInstance),
+  WebSocketService: MockWebSocketService,
+  default: mockWebSocketInstance,
+}))
 
-jest.mock('@/services/websocket/WebSocketService', () => {
-  const MockClass = jest.fn(() => createMockWebSocketService())
-  return {
-    __esModule: true,
-    default: MockClass,
-    WebSocketService: MockClass,
-    getWebSocketService: jest.fn(() => mockWebSocketInstance),
-  }
-})
+jest.mock('@/services/websocket/WebSocketService', () => ({
+  getWebSocketService: jest.fn(() => mockWebSocketInstance),
+  WebSocketService: jest.fn(() => mockWebSocketInstance),
+  default: mockWebSocketInstance,
+}))
 
 jest.mock('@/services/socket/websocket-service', () => ({
   createWebSocketService: jest.fn(() => mockWebSocketInstance),
@@ -295,6 +260,11 @@ jest.mock('@/services/socket/websocket-service', () => ({
 }))
 
 jest.mock('@/services/websocketManager', () => ({
+  getWebSocketService: jest.fn(() => mockWebSocketInstance),
+  default: mockWebSocketInstance,
+}))
+
+jest.mock('@/services/websocketService', () => ({
   getWebSocketService: jest.fn(() => mockWebSocketInstance),
   default: mockWebSocketInstance,
 }))
@@ -309,17 +279,13 @@ afterAll(() => {
   console.error = originalError
 })
 
-// Global test utilities - 全局測試工具
-// Import ThemeProvider for tests that need it
-import { ThemeProvider } from './contexts/ThemeContext'
-
-// Export a simple renderWithThemeProvider wrapper for tests
-// Tests can use this to wrap components that need theme context
-global.TestThemeProvider = ThemeProvider
-global.renderWithTheme = (ui: any, { theme = 'light' }: any = {}) => {
-  const React = require('react')
-  const { render } = require('@testing-library/react')
-  return render(
-    React.createElement(ThemeProvider, { defaultTheme: theme }, ui)
-  )
-}
+// Mock useTheme hook for theme components
+jest.mock('@/styles/themes', () => ({
+  ...jest.requireActual('@/styles/themes'),
+  useTheme: () => ({
+    theme: 'light',
+    themeConfig: { name: 'light', colors: { background: {}, text: {}, border: {}, icon: {} }, components: {}, status: {}, chart: {} },
+    setTheme: jest.fn(),
+    toggleTheme: jest.fn(),
+  }),
+}))
