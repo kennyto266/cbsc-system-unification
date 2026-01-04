@@ -166,7 +166,7 @@ export const SharpeRatioChart: React.FC<SharpeRatioChartProps> = ({
   // Update chart when data changes
   useEffect(() => {
     const chart = chartRef.current;
-    if (chart) {
+    if (chart && typeof chart.update === 'function') {
       chart.update('none');
     }
   }, [strategies]);

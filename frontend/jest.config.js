@@ -4,11 +4,12 @@ module.exports = {
   testEnvironment: 'jsdom',
 
   // Setup files
-  setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
+  setupFilesAfterEnv: ['<rootDir>/src/setupTests.tsx'],
 
   // Ensure DOM is properly set up
   testEnvironmentOptions: {
     url: 'http://localhost:3000',
+    customExportConditions: ['node', 'node-addons'],
   },
 
   // Module file extensions

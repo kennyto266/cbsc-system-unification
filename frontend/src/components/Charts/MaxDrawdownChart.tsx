@@ -267,7 +267,7 @@ export const MaxDrawdownChart: React.FC<MaxDrawdownChartProps> = ({
   // Update chart when data or selection changes
   useEffect(() => {
     const chart = chartRef.current;
-    if (chart) {
+    if (chart && typeof chart.update === 'function') {
       chart.update('none');
     }
   }, [strategies, selectedStrategy, timeRange]);

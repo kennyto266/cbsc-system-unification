@@ -135,7 +135,7 @@ describe('CandlestickChart Component', () => {
       )
 
       const chart = screen.getByTestId('mock-candlestick-chart')
-      expect(chart).toHaveStyle({ height: '800' })
+      expect(chart).toHaveStyle({ height: '800px' })
     })
   })
 

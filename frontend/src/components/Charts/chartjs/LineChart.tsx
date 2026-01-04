@@ -57,6 +57,7 @@ const LineChart: React.FC<LineChartProps> = ({
   height,
   className = '',
   theme = 'light',
+  tabIndex,
   onDataPointClick,
   onLegendClick,
   timeSeries = false,
@@ -241,6 +242,7 @@ const LineChart: React.FC<LineChartProps> = ({
         ref={chartRef}
         data={processedData}
         options={mergedOptions}
+        {...(tabIndex !== undefined && { tabIndex })}
       />
     </div>
   )

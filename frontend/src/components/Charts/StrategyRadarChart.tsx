@@ -293,7 +293,7 @@ export const StrategyRadarChart: React.FC<StrategyRadarChartProps> = ({
   // Update chart when data changes
   useEffect(() => {
     const chart = chartRef.current;
-    if (chart) {
+    if (chart && typeof chart.update === 'function') {
       chart.update('none');
     }
   }, [strategies, selectedStrategies]);
