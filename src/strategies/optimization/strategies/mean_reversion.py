@@ -34,6 +34,12 @@ class RSIMeanReversionStrategy:
 
     def generate_signals(self, data: pd.DataFrame) -> pd.Series:
         """Generate trading signals based on RSI"""
+        # Input validation
+        if 'close' not in data.columns:
+            raise ValueError("DataFrame must contain 'close' column")
+        if data.empty:
+            return pd.Series(dtype=int, index=data.index)
+
         close = data['close']
 
         # Calculate RSI
@@ -85,6 +91,12 @@ class ZScoreStrategy:
 
     def generate_signals(self, data: pd.DataFrame) -> pd.Series:
         """Generate trading signals based on Z-score"""
+        # Input validation
+        if 'close' not in data.columns:
+            raise ValueError("DataFrame must contain 'close' column")
+        if data.empty:
+            return pd.Series(dtype=int, index=data.index)
+
         close = data['close']
 
         # Calculate rolling statistics
@@ -141,6 +153,12 @@ class PairsTradingStrategy:
         Returns:
             Dictionary with signals for both assets
         """
+        # Input validation
+        if asset1.empty or asset2.empty:
+            return {'asset1': pd.Series(dtype=int, index=asset1.index),
+                    'asset2': pd.Series(dtype=int, index=asset2.index),
+                    'spread_zscore': pd.Series(dtype=float)}
+
         # Calculate spread
         spread = asset1 - hedge_ratio * asset2
 
