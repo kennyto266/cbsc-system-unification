@@ -59,7 +59,7 @@ class TestRiskParityAllocator:
 
     def test_allocate_risk_parity_basic(self):
         """Test risk parity allocation with basic returns."""
-        allocator = RiskParityAllocator()  # No volatility scaling
+        allocator = RiskParityAllocator(target_volatility=0.0)  # No scaling for basic test
 
         # Create returns with different volatilities
         np.random.seed(42)
@@ -78,7 +78,7 @@ class TestRiskParityAllocator:
 
     def test_allocate_risk_parity_equal_volatility(self):
         """Test risk parity when all strategies have equal volatility."""
-        allocator = RiskParityAllocator()
+        allocator = RiskParityAllocator(target_volatility=0.0)  # No scaling for equal vol test
 
         np.random.seed(42)
         returns = pd.DataFrame({
@@ -106,7 +106,7 @@ class TestRiskParityAllocator:
 
     def test_allocate_risk_parity_zero_volatility(self):
         """Test risk parity allocation handles zero volatility."""
-        allocator = RiskParityAllocator()
+        allocator = RiskParityAllocator(target_volatility=0.0)  # No scaling for zero vol test
 
         # Create returns where one strategy has zero volatility
         returns = pd.DataFrame({
@@ -127,7 +127,7 @@ class TestRiskParityAllocator:
         assert allocator.target_volatility == 0.20
 
         default_allocator = RiskParityAllocator()
-        assert default_allocator.target_volatility == 0.0
+        assert default_allocator.target_volatility == 0.15  # Restore correct default
 
     def test_risk_parity_target_volatility_scaling(self):
         """Test risk parity allocation scales to target volatility."""

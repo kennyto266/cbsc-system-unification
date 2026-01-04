@@ -51,12 +51,12 @@ class RiskParityAllocator:
     so each strategy contributes equal risk to portfolio.
     """
 
-    def __init__(self, target_volatility: float = 0.0):
+    def __init__(self, target_volatility: float = 0.15):
         """
         Initialize risk parity allocator.
 
         Args:
-            target_volatility: Target portfolio volatility (default 0.0 = no scaling)
+            target_volatility: Target portfolio volatility (default 0.15 = 15% annual)
                              If > 0, weights will be scaled to achieve this volatility
         """
         self.target_volatility = target_volatility
