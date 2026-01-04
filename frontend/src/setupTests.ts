@@ -166,16 +166,23 @@ jest.mock('react-plotly.js', () => {
   }
 })
 
-// Mock Chart.js
-jest.mock('chart.js', () => ({
-  Chart: jest.fn(() => ({
+// Mock Chart.js with proper static methods
+jest.mock('chart.js', () => {
+  const MockChart = jest.fn(() => ({
     update: jest.fn(),
     destroy: jest.fn(),
     resize: jest.fn(),
-  })),
-  register: jest.fn(),
-  defaults: {},
-}))
+  }))
+  // Add static methods
+  MockChart.register = jest.fn()
+  MockChart.defaults = {}
+
+  return {
+    Chart: MockChart,
+    register: MockChart.register,
+    defaults: MockChart.defaults,
+  }
+})
 
 // Mock recharts
 jest.mock('recharts', () => {
@@ -288,3 +295,18 @@ beforeAll(() => {
 afterAll(() => {
   console.error = originalError
 })
+
+// Global test utilities - 全局測試工具
+// Import ThemeProvider for tests that need it
+import { ThemeProvider } from './contexts/ThemeContext'
+
+// Export a simple renderWithThemeProvider wrapper for tests
+// Tests can use this to wrap components that need theme context
+global.TestThemeProvider = ThemeProvider
+global.renderWithTheme = (ui: any, { theme = 'light' }: any = {}) => {
+  const React = require('react')
+  const { render } = require('@testing-library/react')
+  return render(
+    React.createElement(ThemeProvider, { defaultTheme: theme }, ui)
+  )
+}

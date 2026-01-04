@@ -65,10 +65,19 @@ export const store = configureStore({
       .concat(userApi.middleware)
       .concat(portfolioApi.middleware)
       .concat(backtestApi.middleware),
-  // Use process.env.NODE_ENV for Jest compatibility, fallback to import.meta.env.DEV for Vite
-  devTools: typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production'
-    ? true
-    : (typeof import.meta !== 'undefined' ? import.meta.env?.DEV : false),
+  // Check environment for dev tools - compatible with both Jest and Vite
+  devTools: (() => {
+    // Jest/Node environment
+    if (typeof process !== 'undefined' && process.env) {
+      return process.env.NODE_ENV !== 'production'
+    }
+    // Vite browser environment with import.meta
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      return import.meta.env.DEV
+    }
+    // Default to true for development
+    return true
+  })(),
 });
 
 // Enable refetchOnFocus/refetchOnReconnect behaviors
