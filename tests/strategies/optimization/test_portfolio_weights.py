@@ -59,7 +59,7 @@ class TestRiskParityAllocator:
 
     def test_allocate_risk_parity_basic(self):
         """Test risk parity allocation with basic returns."""
-        allocator = RiskParityAllocator(target_volatility=0.15)
+        allocator = RiskParityAllocator()  # No volatility scaling
 
         # Create returns with different volatilities
         np.random.seed(42)
@@ -73,6 +73,7 @@ class TestRiskParityAllocator:
 
         # Low volatility should get higher weight (inverse vol weighting)
         assert weights['LowVol'] > weights['HighVol']
+        # Without volatility scaling, weights should sum to 1.0
         assert np.isclose(sum(weights.values()), 1.0)
 
     def test_allocate_risk_parity_equal_volatility(self):
@@ -126,7 +127,32 @@ class TestRiskParityAllocator:
         assert allocator.target_volatility == 0.20
 
         default_allocator = RiskParityAllocator()
-        assert default_allocator.target_volatility == 0.15
+        assert default_allocator.target_volatility == 0.0
+
+    def test_risk_parity_target_volatility_scaling(self):
+        """Test risk parity allocation scales to target volatility."""
+        # Create allocator with target volatility
+        target_vol = 0.10  # 10% target volatility
+        allocator = RiskParityAllocator(target_volatility=target_vol)
+
+        # Create returns data
+        np.random.seed(42)
+        returns = pd.DataFrame({
+            'Strategy1': np.random.normal(0.001, 0.02, 100),
+            'Strategy2': np.random.normal(0.001, 0.03, 100),
+        })
+
+        strategies = ['Strategy1', 'Strategy2']
+        weights = allocator.allocate(strategies, returns)
+
+        # Calculate actual portfolio volatility
+        weights_array = np.array(list(weights.values()))
+        cov_matrix = returns[strategies].cov()
+        portfolio_vol = np.sqrt(weights_array @ cov_matrix.values @ weights_array.T)
+
+        # Portfolio volatility should be close to target (within 10% tolerance)
+        assert abs(portfolio_vol - target_vol) / target_vol < 0.10, \
+            f"Portfolio vol {portfolio_vol:.4f} not close to target {target_vol:.4f}"
 
 
 class TestKellyAllocator:

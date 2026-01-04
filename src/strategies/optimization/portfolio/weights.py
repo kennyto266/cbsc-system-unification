@@ -51,12 +51,13 @@ class RiskParityAllocator:
     so each strategy contributes equal risk to portfolio.
     """
 
-    def __init__(self, target_volatility: float = 0.15):
+    def __init__(self, target_volatility: float = 0.0):
         """
         Initialize risk parity allocator.
 
         Args:
-            target_volatility: Target portfolio volatility (default 15%)
+            target_volatility: Target portfolio volatility (default 0.0 = no scaling)
+                             If > 0, weights will be scaled to achieve this volatility
         """
         self.target_volatility = target_volatility
 
@@ -115,6 +116,22 @@ class RiskParityAllocator:
             return {s: 0.0 for s in strategies}
 
         weights = inv_vol / inv_vol.sum()
+
+        # Scale to target volatility if needed
+        if not cov_matrix.empty and self.target_volatility > 0:
+            # Filter covariance matrix to match weights (same strategies, same order)
+            cov_subset = cov_matrix.loc[weights.index, weights.index]
+
+            # Calculate portfolio volatility with current weights
+            weights_array = weights.values
+            portfolio_vol = np.sqrt(weights_array @ cov_subset.values @ weights_array.T)
+
+            # Scale to target volatility
+            if portfolio_vol > 1e-10:
+                scale_factor = self.target_volatility / portfolio_vol
+                weights = weights * scale_factor  # Scale Series directly
+                # Safety cap to prevent extreme leverage (max 500% per position)
+                weights = weights.clip(upper=5.0)
 
         # Ensure all strategies have weights
         result = {}
