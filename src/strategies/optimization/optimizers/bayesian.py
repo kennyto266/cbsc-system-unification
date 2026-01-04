@@ -5,7 +5,8 @@ Uses scikit-optimize (skopt) for efficient global optimization using
 Gaussian Process regression.
 """
 
-from typing import Dict, Callable, Tuple, Any, List
+from typing import Dict, Callable, Tuple, Any, List, Optional
+import logging
 
 try:
     from skopt import gp_minimize
@@ -28,11 +29,13 @@ class BayesianOptimizer:
     of black-box functions.
     """
 
+    logger = logging.getLogger(__name__)
+
     def __init__(
         self,
         n_calls: int = 50,
         n_random_starts: int = 10,
-        random_state: int = None
+        random_state: Optional[int] = None
     ):
         """
         Initialize Bayesian optimizer.
@@ -67,7 +70,32 @@ class BayesianOptimizer:
 
         Returns:
             Tuple of (best_parameters_dict, best_score_float)
+
+        Raises:
+            ValueError: If parameter space is empty or parameters are invalid
         """
+        # Input validation
+        if not param_space:
+            raise ValueError("Parameter space cannot be empty")
+
+        if self.n_calls <= 0:
+            raise ValueError(f"n_calls must be positive, got {self.n_calls}")
+
+        if self.n_random_starts <= 0:
+            raise ValueError(f"n_random_starts must be positive, got {self.n_random_starts}")
+
+        if self.n_random_starts >= self.n_calls:
+            raise ValueError(
+                f"n_random_starts ({self.n_random_starts}) must be less than n_calls ({self.n_calls})"
+            )
+
+        # Validate parameter ranges
+        for param_name, (min_val, max_val) in param_space.items():
+            if min_val >= max_val:
+                raise ValueError(
+                    f"Parameter '{param_name}' has invalid range: min ({min_val}) >= max ({max_val})"
+                )
+
         # Build skopt dimension list
         dimensions = []
         param_names = []
@@ -89,7 +117,7 @@ class BayesianOptimizer:
             return -score  # Minimize negative = maximize original
 
         # Run Bayesian optimization
-        print(f"Starting Bayesian optimization with {self.n_calls} calls...")
+        self.logger.info(f"Starting Bayesian optimization with {self.n_calls} calls...")
         result = gp_minimize(
             func=neg_objective,
             dimensions=dimensions,
@@ -105,7 +133,7 @@ class BayesianOptimizer:
         best_params = dict(zip(param_names, result.x))
         best_score = -result.fun  # Convert back from minimization
 
-        print(f"Optimization complete. Best score: {best_score:.4f}")
+        self.logger.info(f"Optimization complete. Best score: {best_score:.4f}")
 
         return best_params, best_score
 
