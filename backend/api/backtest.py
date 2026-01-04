@@ -7,32 +7,67 @@ from typing import List, Dict, Any
 from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
+import logging
 
+from backend.services.real_data_backtest import RealDataBacktestService, YahooFinanceError
+from backend.services.data_validator import DataValidationError
+
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.post("/strategy")
 async def backtest_strategy(request: Dict[str, Any]):
-    """策略回测"""
+    """策略回测 - 使用真實市場數據"""
     try:
         symbol = request.get("symbol")
         strategy = request.get("strategy", {})
         start_date = request.get("start_date")
         end_date = request.get("end_date")
-        
-        if not symbol or not strategy:
-            raise HTTPException(status_code=400, detail="缺少必要参数")
-        
-        # 模拟回测结果
-        backtest_result = simulate_backtest(symbol, strategy, start_date, end_date)
-        
+
+        if not symbol:
+            raise HTTPException(status_code=400, detail="缺少必要参数: symbol")
+
+        # 使用真實數據回測服務
+        service = RealDataBacktestService()
+
+        # 設置默認日期範圍
+        if not end_date:
+            end_date = datetime.now().strftime("%Y-%m-%d")
+        if not start_date:
+            start_date = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
+
+        # 運行回測
+        backtest_result = await service.run_backtest(
+            symbol=symbol,
+            strategy=strategy,
+            start_date=start_date,
+            end_date=end_date
+        )
+
         return {
             "success": True,
             "data": backtest_result,
-            "message": "策略回测完成",
-            "timestamp": datetime.now().isoformat()
+            "data_source": "yahoo_finance",  # 標明數據源
+            "message": "策略回测完成 (使用 Yahoo Finance 真實數據)",
+            "timestamp": datetime.utcnow().isoformat()
         }
-    
+
+    except YahooFinanceError as e:
+        # Yahoo Finance 特定錯誤
+        logger.error(f"Yahoo Finance error: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Yahoo Finance 數據獲取失敗: {str(e)}\n請檢查股票代碼是否正確或稍後再試。"
+        )
+    except DataValidationError as e:
+        # 數據驗證失敗
+        logger.error(f"Data validation error: {e}")
+        raise HTTPException(
+            status_code=422,
+            detail=f"數據質量檢查失敗: {str(e)}\n數據質量分數: {e.result.data_quality_score:.2f}"
+        )
     except Exception as e:
+        logger.error(f"Backtest error: {e}")
         raise HTTPException(status_code=500, detail=f"策略回测失败: {str(e)}")
 
 @router.get("/results/{result_id}")
@@ -109,12 +144,19 @@ async def get_strategies():
     }
 
 def simulate_backtest(symbol: str, strategy: Dict[str, Any], start_date: str, end_date: str) -> Dict[str, Any]:
-    """模拟回测过程"""
+    """
+    模拟回测过程 (DEPRECATED - 已被真實數據替代)
+
+    此函數已棄用，僅保留作為後備參考。
+    實際回測現在由 RealDataBacktestService 使用 Yahoo Finance 真實數據執行。
+
+    @deprecated 使用 RealDataBacktestService.run_backtest() 代替
+    """
     # 生成模拟的交易数据
     np.random.seed(42)
     dates = pd.date_range(start=start_date or "2024-01-01", end=end_date or "2024-12-31", freq='D')
     prices = 100 + np.cumsum(np.random.randn(len(dates)) * 0.5)
-    
+
     # 模拟交易信号
     trades = []
     for i in range(20, len(prices)):
@@ -126,16 +168,16 @@ def simulate_backtest(symbol: str, strategy: Dict[str, Any], start_date: str, en
                 "quantity": 100
             }
             trades.append(trade)
-    
+
     # 计算回测指标
     total_trades = len(trades)
     profit_trades = len([t for t in trades if np.random.random() > 0.4])  # 60%胜率
     loss_trades = total_trades - profit_trades
-    
+
     total_return = np.random.uniform(5, 25)  # 5-25%总收益
     max_drawdown = -np.random.uniform(5, 15)  # -5到-15%最大回撤
     sharpe_ratio = np.random.uniform(1.0, 2.5)  # 1.0-2.5夏普比率
-    
+
     return {
         "symbol": symbol,
         "strategy_name": strategy.get("name", "自定义策略"),
@@ -153,5 +195,6 @@ def simulate_backtest(symbol: str, strategy: Dict[str, Any], start_date: str, en
         "avg_loss": round(-np.random.uniform(1.0, 2.0), 2),
         "profit_factor": round(np.random.uniform(1.2, 2.0), 2),
         "trades": trades[:10],  # 只返回前10个交易
-        "status": "completed"
+        "status": "completed",
+        "warning": "使用模擬數據 - 建議使用真實數據回測"
     }
