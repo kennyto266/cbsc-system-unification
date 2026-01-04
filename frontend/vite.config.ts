@@ -11,7 +11,16 @@ export default defineConfig({
     },
   },
   define: {
-    'process.env': '{}',
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    'process.env.REACT_APP_API_URL': JSON.stringify(process.env.VITE_API_URL || 'http://localhost:3007'),
+    'process.env.REACT_APP_WS_URL': JSON.stringify(process.env.VITE_WS_URL || 'ws://localhost:3007/ws'),
+    'process.env.REACT_APP_WEBSOCKET_URL': JSON.stringify(process.env.VITE_WEBSOCKET_URL || 'ws://localhost:3007/ws'),
+    'process.env': JSON.stringify({
+      NODE_ENV: process.env.NODE_ENV || 'development',
+      REACT_APP_API_URL: process.env.VITE_API_URL || 'http://localhost:3007',
+      REACT_APP_WS_URL: process.env.VITE_WS_URL || 'ws://localhost:3007/ws',
+      REACT_APP_WEBSOCKET_URL: process.env.VITE_WEBSOCKET_URL || 'ws://localhost:3007/ws',
+    }),
     global: 'globalThis',
   },
   server: {
