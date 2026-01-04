@@ -1,12 +1,14 @@
-// CSS transformation for Jest
+/**
+ * CSS Module Transform for Jest
+ * CSS 模块转换器
+ */
 module.exports = {
   process() {
     return {
-      code: 'module.exports = {};'
+      code: 'module.exports = {};',
     }
   },
   getCacheKey() {
-    // Return a string version of the CSS to cache
-    return 'css-transform'
+    return 'cssTransform'
   },
 }
