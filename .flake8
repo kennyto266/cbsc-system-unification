@@ -1,0 +1,87 @@
+# Flake8 Configuration for CBSC Trading System
+# See https://flake8.pycqa.org/en/latest/
+
+[flake8]
+max-line-length = 100
+extend-exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    node_modules,
+    build,
+    dist,
+    *.egg-info,
+    .tox
+
+# Error codes to ignore
+ignore =
+    E203,  # whitespace before ':' (conflicts with black)
+    E501,  # line too long (handled by formatter)
+    W503,  # line break before binary operator (conflicts with black)
+
+# Error codes to enable
+enable =
+    B950,  # line too long (handled by black, but strict)
+    C       # mccabe complexity
+
+# McCabe complexity settings
+max-complexity = 15
+max-doc-length = 100
+
+# Docstring conventions
+docstring-convention = google
+
+# Show source code for each error
+show-source = true
+
+# Count the number of occurrences of each error/warning code
+count = true
+
+# Print the total number of errors
+statistics = true
+
+# Specific plugins
+#
+# flake8-docstrings: D
+# flake8-bugbear: B
+# flake8-comprehensions: C4
+
+# D100: Missing docstring in public module
+# D101: Missing docstring in public class
+# D102: Missing docstring in public method
+# D103: Missing docstring in public function
+# D104: Missing docstring in public package
+# D105: Missing docstring in magic method
+# D107: Missing docstring in __init__
+# D200: One-line docstring should fit on one line
+# D205: 1 blank line required between summary line and description
+# D400: First line should end with a period
+# D401: First line should be in imperative mood
+# D403: First word of the first line should be capitalized
+# B001: Do not use bare except
+# B002: Python does not support the unary prefix increment
+# B006: Do not use mutable data structures for argument defaults
+# B007: Loop control variable not used within the loop body
+# B008: Do not perform function calls in argument defaults
+# B901: Return x + y, used as x = x + y
+# B902: x = x + y, used as x += y
+# C400: Unnecessary generator - rewrite as a set comprehension
+# C401: Unnecessary list comprehension - rewrite as a set comprehension
+# C402: Unnecessary list comprehension - rewrite as a dict comprehension
+# C403: Unnecessary list comprehension - rewrite as a set comprehension
+# C404: Unnecessary list comprehension - rewrite as a dict comprehension
+# C405: Unnecessary list literal - rewrite as a set literal
+# C406: Unnecessary list literal - rewrite as a dict literal
+# C407: Unnecessary list comprehension - rewrite as a set comprehension
+# C408: Unnecessary list comprehension - rewrite as a dict comprehension
+# C409: Unnecessary list comprehension passed to tuple() - remove the outer call to tuple()
+# C410: Unnecessary list comprehension passed to list() - remove the outer call to list()
+# C411: Unnecessary list call - remove the outer call to list()
+# C412: Unnecessary list comprehension - rewrite as a set comprehension
+# C413: Unnecessary list call around sorted() - remove the outer call to list()
+# C414: Unnecessary list comprehension within sorted()
+# C415: Unnecessary list comprehension within reversed()
+# C416: Unnecessary list comprehension within set()
+# C417: Unnecessary map usage - rewrite using a set comprehension
+# C419: Unnecessary list comprehension - rewrite as a dict comprehension

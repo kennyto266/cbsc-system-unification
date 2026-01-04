@@ -1,0 +1,279 @@
+# CBSC Quantitative Trading System - Real Backend Production Configuration
+# CBSC 量化交易系統 - 真實後端生產環境配置
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: cbsc-postgres-real
+    environment:
+      POSTGRES_DB: cbsc_production
+      POSTGRES_USER: cbsc_admin
+      POSTGRES_PASSWORD: cbsc_secure_password_2024
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data_real:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    networks:
+      - cbsc-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cbsc_admin -d cbsc_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: cbsc-redis-real
+    command: redis-server --requirepass cbsc_redis_password_2024 --maxmemory 2gb --maxmemory-policy allkeys-lru
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data_real:/data
+    networks:
+      - cbsc-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "cbsc_redis_password_2024", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # InfluxDB Time-Series Database
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: cbsc-influxdb-real
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: cbsc_influx_admin_2024
+      DOCKER_INFLUXDB_INIT_ORG: cbsc
+      DOCKER_INFLUXDB_INIT_BUCKET: market_data
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: cbsc-influxdb-token-secure-2024
+      DOCKER_INFLUXDB_INIT_RETENTION: 30d
+    ports:
+      - "8087:8086"
+    volumes:
+      - influxdb_data_real:/var/lib/influxdb2
+      - influxdb_config_real:/etc/influxdb2
+    networks:
+      - cbsc-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8086/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # CBSC Real Backend API (VectorBT + Multi-process Backtest)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.real
+    container_name: cbsc-backend-real
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgresql://cbsc_admin:cbsc_secure_password_2024@postgres:5432/cbsc_production
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: cbsc_production
+      DATABASE_USER: cbsc_admin
+      DATABASE_PASSWORD: cbsc_secure_password_2024
+
+      # Redis Configuration
+      REDIS_URL: redis://:cbsc_redis_password_2024@redis:6379/0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: cbsc_redis_password_2024
+
+      # InfluxDB Configuration
+      INFLUXDB_URL: http://influxdb:8086
+      INFLUXDB_TOKEN: cbsc-influxdb-token-secure-2024
+      INFLUXDB_ORG: cbsc
+      INFLUXDB_BUCKET: market_data
+
+      # API Configuration
+      API_VERSION: v2
+      ENABLE_V2_API: "true"
+      ENABLE_WEBSOCKET_V2: "true"
+      ENABLE_BATCH_OPERATIONS: "true"
+      ENABLE_PERFORMANCE_ANALYTICS: "true"
+      STRATEGY_API_VERSION: 2
+
+      # Performance Settings
+      WORKERS: 4
+      MAX_CONNECTIONS: 100
+      CACHE_TTL: 3600
+      RATE_LIMIT_DEFAULT: 1000/minute
+
+      # VectorBT Configuration
+      VECTORBT_CACHE_DIR: /app/cache/vectorbt
+      VECTORBT_ENABLE_GPU: "false"
+      VECTORBT_MAX_WORKERS: 8
+
+      # Security
+      SECRET_KEY: cbsc-secret-key-production-2024-change-me
+      JWT_SECRET_KEY: cbsc-jwt-secret-production-2024-change-me
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRATION_MINUTES: 43200
+
+      # API CORS Origins (JSON array format)
+      API_CORS_ORIGINS: '["http://localhost:3000","http://localhost:3005","http://localhost:8888","http://192.168.1.5:3000","http://192.168.1.5:3006","http://10.5.0.2:3000"]'
+
+      # Logging
+      LOG_LEVEL: INFO
+      LOG_FORMAT: json
+      LOG_FILE: /app/logs/backend/app.log
+
+      # Data Source Configuration
+      FUTU_HOST: 127.0.0.1
+      FUTU_PORT: 11111
+      YAHOO_FINANCE_ENABLED: "true"
+      ALPHA_VANTAGE_KEY: ""
+
+      # Backtest Configuration
+      BACKTEST_DATA_DIR: /app/data/backtest
+      BACKTEST_RESULTS_DIR: /app/data/results
+      BACKTEST_CACHE_ENABLED: "true"
+
+    ports:
+      - "8001:3004"
+      - "8002:3005"  # Metrics port
+
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./cache:/app/cache
+      - backtest_cache:/app/cache/vectorbs
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+
+    networks:
+      - cbsc-network
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    restart: unless-stopped
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+
+  # Nginx Frontend
+  frontend:
+    image: nginx:alpine
+    container_name: cbsc-frontend-real
+    ports:
+      - "3006:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+
+  # Grafana Monitoring Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cbsc-grafana-real
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: cbsc_grafana_admin_2024
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: redis-datasource,grafana-piechart-panel,grafana-worldmap-panel
+      GF_SERVER_ROOT_URL: http://localhost:8889
+    ports:
+      - "8889:3000"
+    volumes:
+      - grafana_data_real:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - influxdb
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+
+  # Prometheus Metrics Collector
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cbsc-prometheus-real
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus-rules:/etc/prometheus/rules:ro
+      - prometheus_data_real:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+
+  # Jaeger Distributed Tracing (Optional)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: cbsc-jaeger-real
+    ports:
+      - "16687:16686"
+      - "14269:14268"
+      - "5775:5775/udp"
+    environment:
+      COLLECTOR_ZIPKIN_HTTP_PORT: 9411
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data_real:
+    driver: local
+  redis_data_real:
+    driver: local
+  influxdb_data_real:
+    driver: local
+  influxdb_config_real:
+    driver: local
+  grafana_data_real:
+    driver: local
+  prometheus_data_real:
+    driver: local
+  backtest_cache:
+    driver: local
+
+networks:
+  cbsc-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

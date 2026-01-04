@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React Test</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .test { color: green; font-size: 24px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    console.log('=== TEST PAGE LOADED ===')
+    
+    try {
+      const App = () => {
+        return React.createElement('div', { className: 'test' },
+          React.createElement('h1', null, '✅ React is Working!'),
+          React.createElement('p', null, 'Time: ' + new Date().toLocaleString())
+        )
+      }
+
+      ReactDOM.createRoot(document.getElementById('root')).render(
+        React.createElement(React.StrictMode, null,
+          React.createElement(App)
+        )
+      )
+      console.log('=== TEST RENDER COMPLETE ===')
+    } catch (error) {
+      console.error('Test error:', error)
+      document.body.innerHTML = '<div style="color:red">ERROR: ' + error.message + '</div>'
+    }
+  </script>
+</body>
+</html>

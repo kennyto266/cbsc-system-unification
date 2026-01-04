@@ -1,0 +1,152 @@
+{
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "success_rate": 100.0,
+    "total_time": 3.4000678062438965,
+    "results_by_category": {
+      "Parameter Optimizer": {
+        "total": 6,
+        "passed": 6,
+        "failed": 0,
+        "errors": 0
+      },
+      "Performance Benchmark": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "errors": 0
+      },
+      "Visualization": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "errors": 0
+      },
+      "Integration": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "errors": 0
+      }
+    },
+    "failed_tests": []
+  },
+  "tests": [
+    {
+      "name": "Optimizer Module Load",
+      "category": "Parameter Optimizer",
+      "status": "PASSED",
+      "duration": 3.0994415283203125e-06,
+      "message": "Module loaded successfully",
+      "error": ""
+    },
+    {
+      "name": "Optimizer Config Creation",
+      "category": "Parameter Optimizer",
+      "status": "PASSED",
+      "duration": 1.3828277587890625e-05,
+      "message": "Config created successfully",
+      "error": "Iterations: 10"
+    },
+    {
+      "name": "Parameter Space Definition",
+      "category": "Parameter Optimizer",
+      "status": "PASSED",
+      "duration": 5.7220458984375e-06,
+      "message": "Parameter space created",
+      "error": "Type: continuous"
+    },
+    {
+      "name": "Grid Search Optimization",
+      "category": "Parameter Optimizer",
+      "status": "PASSED",
+      "duration": 0.0029685497283935547,
+      "message": "Grid search successful",
+      "error": "Score: -0.0000, Params: {'x': 0.0, 'y': 0.0}"
+    },
+    {
+      "name": "Random Search Optimization",
+      "category": "Parameter Optimizer",
+      "status": "PASSED",
+      "duration": 0.0005443096160888672,
+      "message": "Random search successful",
+      "error": "Score: -0.3327, Evaluations: 100"
+    },
+    {
+      "name": "Bayesian Optimization",
+      "category": "Parameter Optimizer",
+      "status": "PASSED",
+      "duration": 1.4926788806915283,
+      "message": "Bayesian optimization successful",
+      "error": "Score: -0.0001, Evaluations: 2"
+    },
+    {
+      "name": "Benchmark System Creation",
+      "category": "Performance Benchmark",
+      "status": "PASSED",
+      "duration": 0.002949953079223633,
+      "message": "Benchmark created successfully",
+      "error": ""
+    },
+    {
+      "name": "Standard Benchmark Functions",
+      "category": "Performance Benchmark",
+      "status": "PASSED",
+      "duration": 3.504753112792969e-05,
+      "message": "6 benchmarks validated",
+      "error": ""
+    },
+    {
+      "name": "Benchmark Execution",
+      "category": "Performance Benchmark",
+      "status": "PASSED",
+      "duration": 0.003556966781616211,
+      "message": "Benchmark executed",
+      "error": "Generated 1 results"
+    },
+    {
+      "name": "Visualization Configuration",
+      "category": "Visualization",
+      "status": "PASSED",
+      "duration": 4.5299530029296875e-06,
+      "message": "Visualization config created",
+      "error": ""
+    },
+    {
+      "name": "Convergence Plot Generation",
+      "category": "Visualization",
+      "status": "PASSED",
+      "duration": 0.06483125686645508,
+      "message": "Convergence plot created",
+      "error": ""
+    },
+    {
+      "name": "Method Comparison Plot",
+      "category": "Visualization",
+      "status": "PASSED",
+      "duration": 0.13708090782165527,
+      "message": "Method comparison created",
+      "error": ""
+    },
+    {
+      "name": "Optimizer to Visualization Pipeline",
+      "category": "Integration",
+      "status": "PASSED",
+      "duration": 0.09789085388183594,
+      "message": "Pipeline successful",
+      "error": "Optimizer \u2192 Visualization"
+    },
+    {
+      "name": "Benchmark to Leaderboard Pipeline",
+      "category": "Integration",
+      "status": "PASSED",
+      "duration": 0.0051310062408447266,
+      "message": "Pipeline successful",
+      "error": "1 entries"
+    }
+  ]
+}

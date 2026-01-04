@@ -1,0 +1,258 @@
+import React from 'react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import '@testing-library/jest-dom'
+import { SensitivityAnalysis } from '../SensitivityAnalysis'
+
+// Mock recharts
+jest.mock('recharts', () => ({
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
+  LineChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="line-chart">{children}</div>
+  ),
+  Line: (props: any) => <div data-testid="line" {...props} />,
+  XAxis: (props: any) => <div data-testid="x-axis" {...props} />,
+  YAxis: (props: any) => <div data-testid="y-axis" {...props} />,
+  CartesianGrid: (props: any) => <div data-testid="cartesian-grid" {...props} />,
+  Tooltip: (props: any) => <div data-testid="tooltip" {...props} />,
+  Legend: (props: any) => <div data-testid="legend" {...props} />,
+  ScatterChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="scatter-chart">{children}</div>
+  ),
+  Scatter: (props: any) => <div data-testid="scatter" {...props} />,
+  Cell: (props: any) => <div data-testid="cell" {...props} />,
+  Surface: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="surface">{children}</div>
+  )
+}))
+
+jest.mock('../../contexts/ThemeContext', () => ({
+  useTheme: () => ({
+    resolvedTheme: 'light'
+  })
+}))
+
+const mockParameters = {
+  shortWindow: 10,
+  longWindow: 30,
+  rsiThreshold: 70
+}
+
+const mockSensitivityData = {
+  shortWindow: [
+    { value: 5, return: 0.08, sharpe: 1.2, drawdown: -0.12 },
+    { value: 10, return: 0.15, sharpe: 1.8, drawdown: -0.08 },
+    { value: 15, return: 0.12, sharpe: 1.5, drawdown: -0.10 }
+  ],
+  longWindow: [
+    { value: 20, return: 0.10, sharpe: 1.3, drawdown: -0.15 },
+    { value: 30, return: 0.15, sharpe: 1.8, drawdown: -0.08 },
+    { value: 40, return: 0.13, sharpe: 1.6, drawdown: -0.09 }
+  ],
+  rsiThreshold: [
+    { value: 60, return: 0.14, sharpe: 1.6, drawdown: -0.10 },
+    { value: 70, return: 0.15, sharpe: 1.8, drawdown: -0.08 },
+    { value: 80, return: 0.11, sharpe: 1.4, drawdown: -0.11 }
+  ]
+}
+
+const mockHeatmapData = [
+  { x: 5, y: 20, z: 0.08 },
+  { x: 5, y: 30, z: 0.09 },
+  { x: 10, y: 20, z: 0.14 },
+  { x: 10, y: 30, z: 0.15 },
+  { x: 15, y: 20, z: 0.10 },
+  { x: 15, y: 30, z: 0.11 }
+]
+
+describe('SensitivityAnalysis', () => {
+  const defaultProps = {
+    parameters: mockParameters,
+    sensitivityData: mockSensitivityData,
+    onParameterChange: jest.fn()
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('renders without crashing', () => {
+    render(<SensitivityAnalysis {...defaultProps} />)
+    expect(screen.getByText('参数敏感性分析')).toBeInTheDocument()
+  })
+
+  it('displays parameter selection dropdown', () => {
+    render(<SensitivityAnalysis {...defaultProps} />)
+
+    const selector = screen.getByTestId('parameter-selector')
+    expect(selector).toBeInTheDocument()
+
+    expect(screen.getByText('短期窗口')).toBeInTheDocument()
+    expect(screen.getByText('长期窗口')).toBeInTheDocument()
+    expect(screen.getByText('RSI阈值')).toBeInTheDocument()
+  })
+
+  it('switches parameter when selection changes', async () => {
+    render(<SensitivityAnalysis {...defaultProps} />)
+
+    const selector = screen.getByTestId('parameter-selector')
+    fireEvent.change(selector, { target: { value: 'longWindow' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('长期窗口')).toBeInTheDocument()
+    })
+  })
+
+  it('displays sensitivity chart', () => {
+    render(<SensitivityAnalysis {...defaultProps} />)
+
+    expect(screen.getByTestId('line-chart')).toBeInTheDocument()
+    expect(screen.getByTestId('line')).toBeInTheDocument()
+  })
+
+  it('shows multiple metrics in chart', () => {
+    render(<SensitivityAnalysis {...defaultProps} />)
+
+    const lines = screen.getAllByTestId('line')
+    expect(lines.length).toBeGreaterThan(1) // Should have multiple lines for different metrics
+  })
+
+  it('displays optimal parameters when available', () => {
+    const optimalParams = {
+      shortWindow: 10,
+      longWindow: 30,
+      rsiThreshold: 70
+    }
+
+    render(
+      <SensitivityAnalysis
+        {...defaultProps}
+        optimalParameters={optimalParams}
+      />
+    )
+
+    expect(screen.getByText('最优参数')).toBeInTheDocument()
+    expect(screen.getByText('短期窗口: 10')).toBeInTheDocument()
+  })
+
+  it('shows heatmap view for two-parameter analysis', () => {
+    render(
+      <SensitivityAnalysis
+        {...defaultProps}
+        heatmapData={mockHeatmapData}
+        heatmapConfig={{
+          xParam: 'shortWindow',
+          yParam: 'longWindow',
+          metric: 'return'
+        }}
+      />
+    )
+
+    expect(screen.getByText('双参数热力图')).toBeInTheDocument()
+  })
+
+  it('handles parameter range change', async () => {
+    render(<SensitivityAnalysis {...defaultProps} />)
+
+    const rangeStart = screen.getByLabelText('范围起始')
+    const rangeEnd = screen.getByLabelText('范围结束')
+
+    fireEvent.change(rangeStart, { target: { value: '8' } })
+    fireEvent.change(rangeEnd, { target: { value: '12' } })
+
+    await waitFor(() => {
+      expect(defaultProps.onParameterChange).toHaveBeenCalledWith('shortWindow', {
+        range: { min: 8, max: 12 }
+      })
+    })
+  })
+
+  it('exports sensitivity results when export button is clicked', () => {
+    const mockExport = jest.fn()
+    render(<SensitivityAnalysis {...defaultProps} onExport={mockExport} />)
+
+    const exportButton = screen.getByText('导出结果')
+    fireEvent.click(exportButton)
+
+    expect(mockExport).toHaveBeenCalledWith(mockSensitivityData)
+  })
+
+  it('shows loading state during analysis', () => {
+    render(<SensitivityAnalysis {...defaultProps} loading={true} />)
+
+    expect(screen.getByText('分析中...')).toBeInTheDocument()
+    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument()
+  })
+
+  it('handles zero or negative data gracefully', () => {
+    const zeroData = {
+      shortWindow: [
+        { value: 10, return: 0, sharpe: 0, drawdown: 0 }
+      ]
+    }
+
+    render(<SensitivityAnalysis {...defaultProps} sensitivityData={zeroData} />)
+
+    expect(screen.getByTestId('line-chart')).toBeInTheDocument()
+  })
+
+  it('adjusts axis scales based on data range', () => {
+    const largeValueData = {
+      shortWindow: [
+        { value: 10, return: 2.5, sharpe: 5.0, drawdown: -0.8 }
+      ]
+    }
+
+    render(<SensitivityAnalysis {...defaultProps} sensitivityData={largeValueData} />)
+
+    const yAxes = screen.getAllByTestId('y-axis')
+    expect(yAxes.length).toBeGreaterThan(0)
+  })
+
+  it('supports custom metric selection', () => {
+    render(<SensitivityAnalysis {...defaultProps} />)
+
+    const metricSelector = screen.getByTestId('metric-selector')
+    expect(metricSelector).toBeInTheDocument()
+
+    expect(screen.getByText('收益率')).toBeInTheDocument()
+    expect(screen.getByText('夏普比率')).toBeInTheDocument()
+    expect(screen.getByText('最大回撤')).toBeInTheDocument()
+  })
+
+  it('highlights current parameter value on chart', () => {
+    render(<SensitivityAnalysis {...defaultProps} />)
+
+    const currentParamLine = screen.getByTestId('current-parameter-line')
+    expect(currentParamLine).toBeInTheDocument()
+    expect(currentParamLine).toHaveStyle('stroke: #ef4444')
+  })
+
+  it('shows parameter recommendations', () => {
+    const recommendations = [
+      {
+        parameter: 'shortWindow',
+        reason: '提高收益率',
+        suggestion: '增加到12',
+        impact: 'high'
+      }
+    ]
+
+    render(
+      <SensitivityAnalysis
+        {...defaultProps}
+        recommendations={recommendations}
+      />
+    )
+
+    expect(screen.getByText('参数建议')).toBeInTheDocument()
+    expect(screen.getByText('短期窗口: 增加到12')).toBeInTheDocument()
+  })
+
+  it('handles empty sensitivity data', () => {
+    render(<SensitivityAnalysis {...defaultProps} sensitivityData={{}} />)
+
+    expect(screen.getByText('暂无敏感性数据')).toBeInTheDocument()
+  })
+})

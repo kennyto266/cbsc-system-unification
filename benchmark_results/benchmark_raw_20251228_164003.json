@@ -1,0 +1,50 @@
+[
+  {
+    "method": "grid_search",
+    "function_name": "test_sphere",
+    "run_id": 0,
+    "best_score": Infinity,
+    "best_params": {},
+    "n_evaluations": 0,
+    "runtime": 0.000232696533203125,
+    "converged": false,
+    "error_message": "'numpy.ndarray' object has no attribute 'values'",
+    "convergence_curve": null
+  },
+  {
+    "method": "grid_search",
+    "function_name": "test_sphere",
+    "run_id": 1,
+    "best_score": Infinity,
+    "best_params": {},
+    "n_evaluations": 0,
+    "runtime": 7.009506225585938e-05,
+    "converged": false,
+    "error_message": "'numpy.ndarray' object has no attribute 'values'",
+    "convergence_curve": null
+  },
+  {
+    "method": "random_search",
+    "function_name": "test_sphere",
+    "run_id": 0,
+    "best_score": Infinity,
+    "best_params": {},
+    "n_evaluations": 0,
+    "runtime": 3.1948089599609375e-05,
+    "converged": false,
+    "error_message": "'numpy.ndarray' object has no attribute 'values'",
+    "convergence_curve": null
+  },
+  {
+    "method": "random_search",
+    "function_name": "test_sphere",
+    "run_id": 1,
+    "best_score": Infinity,
+    "best_params": {},
+    "n_evaluations": 0,
+    "runtime": 1.9073486328125e-05,
+    "converged": false,
+    "error_message": "'numpy.ndarray' object has no attribute 'values'",
+    "convergence_curve": null
+  }
+]

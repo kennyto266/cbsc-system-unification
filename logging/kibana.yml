@@ -1,0 +1,47 @@
+# CBSC 策略管理系統 - Kibana 配置
+# Kibana configuration for CBSC Strategy Management System
+
+server.name: cbsc-kibana
+server.host: "0.0.0.0"
+server.port: 5601
+server.basePath: "/kibana"
+server.rewriteBasePath: true
+
+# Elasticsearch configuration
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+elasticsearch.preserveHost: true
+elasticsearch.requestTimeout: 90000
+elasticsearch.pingTimeout: 30000
+elasticsearch.startupTimeout: 5000
+
+# Security configuration
+xpack.security.enabled: false
+xpack.encryptedSavedObjects.encryptionKey: "cbsc-kibana-encryption-key-change-in-production"
+
+# Monitoring configuration
+xpack.monitoring.enabled: true
+xpack.monitoring.ui.container.elasticsearch.enabled: true
+
+# Internationalization
+i18n.locale: "zh-CN"
+
+# Logging
+logging.appenders.file.type: file
+logging.appenders.file.fileName: /usr/share/kibana/logs/kibana.log
+logging.appenders.file.layout.type: json
+logging.root.appenders: [default, file]
+
+# CBSC specific settings
+xpack.search_timeout: 60s
+xpack.task_manager.retry_interval: 30s
+xpack.task_manager.max_attempts: 3
+
+# Dashboard and visualization settings
+dashboard.defaultDarkTheme: true
+
+# Performance settings
+monitoring.ui.container.elasticsearch.enabled: true
+monitoring.ui.max_bucket_size: 200000
+
+# Telemetry (disable in production)
+telemetry.enabled: false

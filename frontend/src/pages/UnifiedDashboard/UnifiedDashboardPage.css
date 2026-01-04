@@ -1,0 +1,101 @@
+/**
+ * Unified Dashboard Page Styles
+ */
+
+.unified-dashboard-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 1.5rem;
+}
+
+.dark .unified-dashboard-page {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+.unified-dashboard-page.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  overflow-y: auto;
+}
+
+/* Page Header */
+.page-header {
+  margin-bottom: 2rem;
+}
+
+/* Dashboard Tabs */
+.dashboard-tabs {
+  background: transparent;
+}
+
+.dashboard-tabs .ant-tabs-nav {
+  background: white;
+  border-radius: 12px;
+  padding: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.dark .dashboard-tabs .ant-tabs-nav {
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.dashboard-tabs .ant-tabs-tab {
+  border-radius: 8px;
+  margin: 0 0.25rem !important;
+  padding: 0.75rem 1.25rem !important;
+  transition: all 0.2s ease;
+}
+
+.dashboard-tabs .ant-tabs-tab:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.dashboard-tabs .ant-tabs-tab-active {
+  background: #3b82f6;
+  color: white !important;
+}
+
+.dashboard-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: white !important;
+}
+
+.dashboard-tabs .ant-tabs-ink-bar {
+  display: none;
+}
+
+/* Settings Container */
+.settings-container {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dark .settings-container {
+  background: rgba(30, 41, 59, 0.8);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .unified-dashboard-page {
+    padding: 1rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .dashboard-tabs .ant-tabs-tab {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.875rem;
+  }
+
+  .dashboard-tabs .ant-tabs-tab span {
+    gap: 0.5rem;
+  }
+}

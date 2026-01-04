@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import { useAppDispatch, useAppSelector } from '../hooks/redux'
 import { loginStart, loginSuccess, loginFailure } from '../store/slices/authSlice'
+import { useLoginMutation } from '../api/endpoints/authApi'
 
 export const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false)
@@ -11,36 +12,52 @@ export const Login: React.FC = () => {
     password: '',
     rememberMe: false,
   })
+  const [loginError, setLoginError] = useState('')
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const location = useLocation()
   const { isLoading } = useAppSelector((state) => state.auth)
+  const [loginApi] = useLoginMutation()
 
-  const from = location.state?.from?.pathname || '/'
+  const from = location.state?.from?.pathname || '/strategies/list'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     dispatch(loginStart())
+    setLoginError('')
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Call real login API
+      const result = await loginApi({
+        username: formData.username,
+        password: formData.password,
+      }).unwrap()
 
-      // Mock successful login
+      // Dispatch login success with real token
       dispatch(loginSuccess({
         user: {
-          id: '1',
-          username: formData.username,
-          email: `${formData.username}@example.com`,
-          role: 'admin',
+          id: String(result.user?.id || '1'),
+          username: result.user?.username || formData.username,
+          email: result.user?.email || `${formData.username}@example.com`,
+          role: 'admin', // Backend doesn't return role, use default
+          permissions: result.user?.permissions || [],
+          lastLoginAt: result.user?.last_login || new Date().toISOString(),
+          createdAt: result.user?.created_at || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          isActive: result.user?.is_active ?? true,
         },
-        token: 'mock-jwt-token',
+        token: result.access_token,
+        refreshToken: undefined, // Backend doesn't support refresh token yet
+        expiresIn: result.expires_in,
       }))
 
       navigate(from, { replace: true })
-    } catch (error) {
-      dispatch(loginFailure())
+    } catch (error: any) {
+      console.error('Login error:', error)
+      const errorMessage = error?.data?.detail || error?.data?.message || '登录失败，请检查用户名和密码'
+      setLoginError(errorMessage)
+      dispatch(loginFailure(errorMessage))
     }
   }
 
@@ -68,6 +85,18 @@ export const Login: React.FC = () => {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {loginError && (
+            <div className="rounded-md bg-red-50 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">登录失败</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>{loginError}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="username" className="sr-only">
@@ -161,3 +190,5 @@ export const Login: React.FC = () => {
     </div>
   )
 }
+
+export default Login

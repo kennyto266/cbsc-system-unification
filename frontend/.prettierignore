@@ -1,0 +1,36 @@
+# Prettier ignore patterns for CBSC Trading System
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Cache directories
+.vite/
+.turbo/
+.next/
+
+# Config files
+*.config.js
+*.config.ts
+.prettierignore
+
+# Generated files
+*.min.js
+*.min.css
+package-lock.json
+
+# Documentation
+CHANGELOG.md
+LICENSE.md
+
+# Test files that need specific formatting
+snapshots/
+
+# Static assets
+public/
+static/
+assets/

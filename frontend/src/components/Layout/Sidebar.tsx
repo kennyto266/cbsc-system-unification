@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   BarChart3,
@@ -13,10 +13,23 @@ import {
   ChevronRight,
   Sparkles,
   Shield,
-  Activity
+  Activity,
+  Check,
+  X as XIcon,
+  DollarSign,
+  LineChart,
+  Wallet
 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../ui/dialog'
 import {
   Collapsible,
   CollapsibleContent,
@@ -99,6 +112,29 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
+    name: '非價格數據',
+    href: '/non-price-strategies',
+    icon: DollarSign,
+    badge: 'NEW',
+    children: [
+      {
+        name: '非價格策略',
+        href: '/non-price-strategies',
+        icon: TrendingUp,
+      },
+      {
+        name: '經濟數據',
+        href: '/economic-data',
+        icon: LineChart,
+      },
+    ],
+  },
+  {
+    name: 'Futu 牛牛',
+    href: '/futu-accounts',
+    icon: Wallet,
+  },
+  {
     name: '系统设置',
     href: '/settings',
     icon: Settings,
@@ -108,6 +144,7 @@ const menuItems: MenuItem[] = [
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const location = useLocation()
   const [expandedItems, setExpandedItems] = React.useState<string[]>(['strategies'])
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
 
   const toggleExpanded = (item: string) => {
     setExpandedItems(prev =>
@@ -222,13 +259,70 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         {/* Sidebar footer */}
         {isOpen && (
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border">
-            <div className="bg-gradient-to-r from-primary to-primary/80 rounded-lg p-4 text-primary-foreground">
-              <p className="text-sm font-semibold">升级到专业版</p>
-              <p className="text-xs mt-1 opacity-90">解锁更多高级功能</p>
-              <Button variant="secondary" size="sm" className="mt-3 w-full">
-                了解更多
-              </Button>
-            </div>
+            <Dialog open={upgradeDialogOpen} onOpenChange={setUpgradeDialogOpen}>
+              <div className="bg-gradient-to-r from-primary to-primary/80 rounded-lg p-4 text-primary-foreground">
+                <p className="text-sm font-semibold">升级到专业版</p>
+                <p className="text-xs mt-1 opacity-90">解锁更多高级功能</p>
+                <DialogTrigger asChild>
+                  <Button variant="secondary" size="sm" className="mt-3 w-full">
+                    了解更多
+                  </Button>
+                </DialogTrigger>
+              </div>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold">升级到专业版</DialogTitle>
+                  <DialogDescription>
+                    解鎖更多高級功能，提升您的量化交易體驗
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-lg">專業版功能包括：</h3>
+                    <ul className="space-y-2 mt-3">
+                      <li className="flex items-start">
+                        <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">無限策略數量</span>
+                      </li>
+                      <li className="flex items-start">
+                        <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">高級回測功能</span>
+                      </li>
+                      <li className="flex items-start">
+                        <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">實時行情推送</span>
+                      </li>
+                      <li className="flex items-start">
+                        <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">API接口訪問</span>
+                      </li>
+                      <li className="flex items-start">
+                        <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">優先技術支持</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="bg-muted p-4 rounded-lg">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-2xl font-bold">HK$ 299</span>
+                      <span className="text-sm text-muted-foreground">/月</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">隨時取消，無綁定承諾</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={() => setUpgradeDialogOpen(false)} variant="outline" className="flex-1">
+                      暫不升級
+                    </Button>
+                    <Button onClick={() => {
+                      alert('感興趣！請聯繫銷售團隊了解更多詳情')
+                      setUpgradeDialogOpen(false)
+                    }} className="flex-1">
+                      立即升級
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         )}
       </div>

@@ -1,0 +1,34 @@
+Textual TUI 無障礙改進摘要
+==========================
+
+改進項目:
+1. 屏幕描述 (SCREEN_DESCRIPTION) - 為屏幕閱讀器提供語義化描述
+2. ARIA 標籤 (aria_label) - 所有按鈕、輸入框、表格都有描述性標籤
+3. 鍵盤導航增強 - 添加幫助快捷鍵 (Shift+?, F1)
+4. 屏幕閱讀器通知 - 選擇和操作都有語音反饋
+5. 表單驗證改進 - 詳細的錯誤消息和提示
+6. 焦點管理 - 清晰的選擇反饋
+7. 幫助系統 - 每個界面都有上下文相關的幫助
+8. 確認對話框改進 - 清晰的操作說明
+
+修改的文件:
+- screens/main_screen.py (主菜單界面)
+- screens/strategies_screen.py (策略管理界面)
+- screens/backtest_screen.py (回測管理界面)
+- screens/results_screen.py (結果查看界面)
+- screens/progress_screen.py (進度監控界面)
+- screens/config_screen.py (系統配置界面)
+
+測試結果:
+- 所有文件編譯成功
+- 所有模組導入成功
+- 無障礙功能驗證通過
+
+使用說明:
+- 按 Shift+? 查看幫助
+- 按 F1 查看字段幫助
+- 使用 Tab 和方向鍵導航
+- 按 Enter 激活按鈕
+- 按 Esc 返回上一級
+
+詳細文檔: ACCESSIBILITY_IMPROVEMENTS.md

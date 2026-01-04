@@ -10,6 +10,7 @@ import { Strategy } from '../../types/strategy'
 import type { PaginatedResponse } from '../../types/api'
 
 // Create API slice with enhanced configuration
+// Force cache refresh
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
@@ -145,7 +146,10 @@ export const apiSlice = createApi({
         url: `/strategies/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: [{ type: 'Strategy', id }, { type: 'Strategy', id: 'LIST' }],
+      invalidatesTags: (result, error, id) => [
+        { type: 'Strategy', id },
+        { type: 'Strategy', id: 'LIST' },
+      ],
     }),
 
     // Portfolio endpoints
@@ -258,3 +262,6 @@ export const {
   // Health
   useHealthCheckQuery,
 } = apiSlice
+
+// Export the API slice itself as 'api' for convenience
+export const api = apiSlice;

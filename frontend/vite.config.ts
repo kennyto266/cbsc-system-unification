@@ -10,14 +10,23 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  define: {
+    'process.env': '{}',
+    global: 'globalThis',
+  },
   server: {
     port: 3000,
     host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3004',
+        target: 'http://127.0.0.1:3007',
         changeOrigin: true,
         secure: false,
+      },
+      '/ws': {
+        target: 'ws://127.0.0.1:3007',
+        ws: true,
+        changeOrigin: true,
       },
     },
     // Optimize server for memory usage
@@ -45,11 +54,9 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           redux: ['@reduxjs/toolkit', 'react-redux'],
-          ui: ['antd', '@ant-design/plots'],
-          charts: ['chart.js', 'react-chartjs-2', 'recharts'],
+          ui: ['antd'],
+          charts: ['chart.js', 'react-chartjs-2', 'recharts', 'plotly.js', 'react-plotly.js'],
         },
-        // Optimize chunk size
-        maxParallelFileOps: 5,
       },
     },
     // Reduce memory usage during build

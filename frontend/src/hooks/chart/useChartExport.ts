@@ -99,7 +99,7 @@ export interface ChartExportActions {
   /** Export chart data to JSON format */
   exportToJSON: (options?: ExportOptions) => Promise<void>;
   /** Export chart to specified format */
-  export: (format: ExportFormat, options?: ExportOptions) => Promise<void>;
+  exportChart: (format: ExportFormat, options?: ExportOptions) => Promise<void>;
   /** Get chart as blob */
   getChartBlob: (format: ExportFormat, options?: ExportOptions) => Promise<Blob | null>;
   /** Clear export history */
@@ -537,7 +537,7 @@ export const useChartExport = (config: ChartExportConfig): UseChartExportReturn 
     }
   }, [performExport, finalConfig.filename]);
 
-  const export = useCallback(async (format: ExportFormat, options?: ExportOptions) => {
+  const exportChart = useCallback(async (format: ExportFormat, options?: ExportOptions) => {
     switch (format) {
       case 'png':
         return exportToPNG(options);
@@ -576,7 +576,7 @@ export const useChartExport = (config: ChartExportConfig): UseChartExportReturn 
     exportToSVG,
     exportToCSV,
     exportToJSON,
-    export,
+    exportChart,
     getChartBlob,
     clearHistory,
   }), [
@@ -588,7 +588,7 @@ export const useChartExport = (config: ChartExportConfig): UseChartExportReturn 
     exportToSVG,
     exportToCSV,
     exportToJSON,
-    export,
+    exportChart,
     getChartBlob,
     clearHistory,
   ]);

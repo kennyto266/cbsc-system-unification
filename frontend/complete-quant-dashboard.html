@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>CBSC 量化交易平台 | Quantitative Trading Platform</title>
+
+    <!-- Distinctive Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+
+    <style>
+        /* CSS Variables - Deep Financial Theme */
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2234;
+            --bg-card-hover: #1f2937;
+            --accent-primary: #f59e0b;
+            --accent-secondary: #fbbf24;
+            --accent-gold: #d4af37;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-muted: #6b7280;
+            --border-color: #374151;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+
+            --chart-grid: #1f2937;
+            --chart-line-1: #f59e0b;
+            --chart-line-2: #10b981;
+            --chart-line-3: #3b82f6;
+            --chart-line-4: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 50%, rgba(245, 158, 11, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(212, 175, 55, 0.02) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .app-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(26, 34, 52, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-gold));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: var(--bg-primary);
+            box-shadow: 0 0 40px rgba(245, 158, 11, 0.3);
+        }
+
+        .logo-text h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-text p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        /* Navigation */
+        .nav {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--accent-primary);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .nav-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-btn:hover::after {
+            width: 80%;
+        }
+
+        .nav-btn.active {
+            color: var(--accent-primary);
+        }
+
+        .nav-btn.active::after {
+            width: 80%;
+        }
+
+        .lang-switch {
+            display: flex;
+            gap: 0.25rem;
+            background: var(--bg-secondary);
+            padding: 0.25rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .lang-btn.active {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Module Sections */
+        .module-section {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .module-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Section Header */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Grid Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 18px;
+            background: var(--accent-primary);
+            border-radius: 2px;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        .btn {
+            background: var(--accent-primary);
+            border: none;
+            color: var(--bg-primary);
+            padding: 0.875rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background: var(--accent-secondary);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent-primary);
+        }
+
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 400px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        /* Backtest Results */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .result-item {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .result-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .result-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Strategy List */
+        .strategy-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .strategy-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .strategy-item:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .strategy-info h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .strategy-info p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .strategy-metrics {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Economic Indicators */
+        .indicator-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .indicator-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .indicator-card.positive::before {
+            background: var(--success);
+        }
+
+        .indicator-card.negative::before {
+            background: var(--error);
+        }
+
+        .indicator-name {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .indicator-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .indicator-change {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+
+        .indicator-change.positive {
+            color: var(--success);
+        }
+
+        .indicator-change.negative {
+            color: var(--error);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            gap: 1rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .grid-4 { grid-template-columns: repeat(2, 1fr); }
+            .grid-3 { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .grid-2, .grid-3, .grid-4 {
+                grid-template-columns: 1fr;
+            }
+
+            .results-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">CB</div>
+                    <div class="logo-text">
+                        <h1 data-zh="CBSC 量化交易平台" data-en="CBSC Quant Trading">CBSC 量化交易平台</h1>
+                        <p data-zh="专业量化策略回测与分析系统" data-en="Professional Quant Strategy Backtest & Analysis">专业量化策略回测与分析系统</p>
+                    </div>
+                </div>
+
+                <nav class="nav">
+                    <button class="nav-btn active" data-tab="backtest" onclick="switchTab('backtest')">
+                        <span data-zh="股票回测" data-en="Backtest">股票回测</span>
+                    </button>
+                    <button class="nav-btn" data-tab="technical" onclick="switchTab('technical')">
+                        <span data-zh="技术分析" data-en="Technical">技术分析</span>
+                    </button>
+                    <button class="nav-btn" data-tab="fundamental" onclick="switchTab('fundamental')">
+                        <span data-zh="非价数据" data-en="Fundamental">非价数据</span>
+                    </button>
+                    <button class="nav-btn" data-tab="strategies" onclick="switchTab('strategies')">
+                        <span data-zh="策略管理" data-en="Strategies">策略管理</span>
+                    </button>
+                </nav>
+
+                <div class="lang-switch">
+                    <button class="lang-btn active" onclick="setLanguage('zh')">中文</button>
+                    <button class="lang-btn" onclick="setLanguage('en')">EN</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Backtest Module -->
+            <section id="backtest" class="module-section active">
+                <div class="section-header">
+                    <h2 class="section-title" data-zh="股票策略回测" data-en="Stock Strategy Backtest">股票策略回测</h2>
+                </div>
+
+                <div class="grid-3">
+                    <!-- Input Panel -->
+                    <div class="card">
+                        <h3 class="card-title" data-zh="回测参数" data-en="Backtest Parameters">回测参数</h3>
+
+                        <div class="form-group">
+                            <label class="form-label" data-zh="股票代码" data-en="Stock Symbol">股票代码</label>
+                            <input type="text" class="form-input" id="stockSymbol" placeholder="0700.HK" value="0700.HK">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" data-zh="开始日期" data-en="Start Date">开始日期</label>
+                            <input type="date" class="form-input" id="startDate" value="2023-01-01">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" data-zh="结束日期" data-en="End Date">结束日期</label>
+                            <input type="date" class="form-input" id="endDate" value="2024-12-31">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" data-zh="初始资金" data-en="Initial Capital">初始资金</label>
+                            <input type="number" class="form-input" id="initialCapital" value="1000000">
+                        </div>
+
+                        <button class="btn" onclick="runBacktest()" style="width: 100%">
+                            <span data-zh="运行回测" data-en="Run Backtest">运行回测</span>
+                        </button>
+                    </div>
+
+                    <!-- Strategy Selection -->
+                    <div class="card">
+                        <h3 class="card-title" data-zh="选择策略" data-en="Select Strategy">选择策略</h3>
+
+                        <div class="form-group">
+                            <label class="form-label" data-zh="策略类型" data-en="Strategy Type">策略类型</label>
+                            <select class="form-select" id="strategyType" onchange="updateStrategyParams()">
+                                <option value="ma_crossover" data-zh="双均线交叉" data-en="MA Crossover">双均线交叉</option>
+                                <option value="rsi" data-zh="RSI策略" data-en="RSI Strategy">RSI策略</option>
+                                <option value="macd" data-zh="MACD策略" data-en="MACD Strategy">MACD策略</option>
+                                <option value="bollinger" data-zh="布林带策略" data-en="Bollinger Bands">布林带策略</option>
+                                <option value="momentum" data-zh="动量策略" data-en="Momentum">动量策略</option>
+                                <option value="hibor" data-zh="HIBOR利率策略" data-en="HIBOR Rate">HIBOR利率策略</option>
+                            </select>
+                        </div>
+
+                        <div id="strategyParams">
+                            <!-- Dynamic parameters will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Backtest Results -->
+                    <div class="card">
+                        <h3 class="card-title" data-zh="回测结果" data-en="Backtest Results">回测结果</h3>
+
+                        <div id="backtestResults" class="results-grid">
+                            <div class="result-item">
+                                <div class="result-value">--</div>
+                                <div class="result-label" data-zh="总收益率" data-en="Total Return">总收益率</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-value">--</div>
+                                <div class="result-label" data-zh="夏普比率" data-en="Sharpe Ratio">夏普比率</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-value">--</div>
+                                <div class="result-label" data-zh="最大回撤" data-en="Max Drawdown">最大回撤</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-value">--</div>
+                                <div class="result-label" data-zh="胜率" data-en="Win Rate">胜率</div>
+                            </div>
+                        </div>
+
+                        <div class="chart-container" style="margin-top: 1rem; height: 300px;">
+                            <canvas id="backtestChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Technical Analysis Module -->
+            <section id="technical" class="module-section">
+                <div class="section-header">
+                    <h2 class="section-title" data-zh="技术分析" data-en="Technical Analysis">技术分析</h2>
+                </div>
+
+                <div class="grid-2">
+                    <!-- Chart Controls -->
+                    <div class="card">
+                        <h3 class="card-title" data-zh="图表控制" data-en="Chart Controls">图表控制</h3>
+
+                        <div class="form-group">
+                            <label class="form-label" data-zh="股票代码" data-en="Symbol">股票代码</label>
+                            <input type="text" class="form-input" id="techSymbol" placeholder="0700.HK" value="0700.HK">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" data-zh="时间周期" data-en="Timeframe">时间周期</label>
+                            <select class="form-select" id="timeframe">
+                                <option value="1D">日线 (1D)</option>
+                                <option value="1W">周线 (1W)</option>
+                                <option value="1M">月线 (1M)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" data-zh="技术指标" data-en="Indicators">技术指标</label>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" id="showMA" checked>
+                                    <span>MA (均线)</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" id="showRSI">
+                                    <span>RSI</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" id="showMACD">
+                                    <span>MACD</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" id="showBB">
+                                    <span>布林带</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" id="showVolume" checked>
+                                    <span data-zh="成交量" data-en="Volume">成交量</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button class="btn" onclick="loadTechnicalChart()" style="width: 100%">
+                            <span data-zh="加载图表" data-en="Load Chart">加载图表</span>
+                        </button>
+                    </div>
+
+                    <!-- Main Chart -->
+                    <div class="card">
+                        <div class="chart-container">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indicator Charts -->
+                <div class="grid-2" style="margin-top: 1.5rem;">
+                    <div class="card">
+                        <h3 class="card-title">RSI (14)</h3>
+                        <div class="chart-container" style="height: 200px;">
+                            <canvas id="rsiChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3 class="card-title">MACD</h3>
+                        <div class="chart-container" style="height: 200px;">
+                            <canvas id="macdChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Fundamental Data Module -->
+            <section id="fundamental" class="module-section">
+                <div class="section-header">
+                    <h2 class="section-title" data-zh="非价格数据" data-en="Non-Price Data">非价格数据</h2>
+                </div>
+
+                <!-- Economic Indicators -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <h3 class="card-title" data-zh="经济指标" data-en="Economic Indicators">经济指标</h3>
+                    <div class="grid-4">
+                        <div class="indicator-card positive">
+                            <div class="indicator-name">HIBOR (1个月)</div>
+                            <div class="indicator-value">5.23%</div>
+                            <div class="indicator-change positive">▼ 0.12%</div>
+                        </div>
+                        <div class="indicator-card positive">
+                            <div class="indicator-name">GDP增长率</div>
+                            <div class="indicator-value">3.2%</div>
+                            <div class="indicator-change positive">▲ 0.3%</div>
+                        </div>
+                        <div class="indicator-card negative">
+                            <div class="indicator-name">PMI制造业</div>
+                            <div class="indicator-value">49.8</div>
+                            <div class="indicator-change negative">▼ 0.5</div>
+                        </div>
+                        <div class="indicator-card positive">
+                            <div class="indicator-name">失业率</div>
+                            <div class="indicator-value">3.1%</div>
+                            <div class="indicator-change positive">▼ 0.1%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bond Yields -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <h3 class="card-title" data-zh="政府债券收益率" data-en="Government Bond Yields">政府债券收益率</h3>
+                    <div class="grid-4">
+                        <div class="indicator-card">
+                            <div class="indicator-name">2年期国债</div>
+                            <div class="indicator-value">4.52%</div>
+                            <div class="indicator-change positive">+0.08%</div>
+                        </div>
+                        <div class="indicator-card">
+                            <div class="indicator-name">5年期国债</div>
+                            <div class="indicator-value">4.18%</div>
+                            <div class="indicator-change positive">+0.12%</div>
+                        </div>
+                        <div class="indicator-card">
+                            <div class="indicator-name">10年期国债</div>
+                            <div class="indicator-value">4.05%</div>
+                            <div class="indicator-change negative">-0.05%</div>
+                        </div>
+                        <div class="indicator-card">
+                            <div class="indicator-name">30年期国债</div>
+                            <div class="indicator-value">4.22%</div>
+                            <div class="indicator-change positive">+0.03%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Market Sentiment -->
+                <div class="card">
+                    <h3 class="card-title" data-zh="市场情绪指标" data-en="Market Sentiment">市场情绪指标</h3>
+                    <div class="grid-3">
+                        <div class="indicator-card positive">
+                            <div class="indicator-name">VIX恐慌指数</div>
+                            <div class="indicator-value">18.5</div>
+                            <div class="indicator-change positive">▼ 2.3 (低波动)</div>
+                        </div>
+                        <div class="indicator-card positive">
+                            <div class="indicator-name">看涨/看跌比率</div>
+                            <div class="indicator-value">1.35</div>
+                            <div class="indicator-change positive">看涨主导</div>
+                        </div>
+                        <div class="indicator-card">
+                            <div class="indicator-name">融资余额</div>
+                            <div class="indicator-value">HK$ 245.8B</div>
+                            <div class="indicator-change positive">▲ 2.3%</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Strategy Management Module -->
+            <section id="strategies" class="module-section">
+                <div class="section-header">
+                    <h2 class="section-title" data-zh="策略管理" data-en="Strategy Management">策略管理</h2>
+                    <button class="btn" onclick="showCreateStrategy()">
+                        <span data-zh="新建策略" data-en="New Strategy">新建策略</span>
+                    </button>
+                </div>
+
+                <div class="strategy-list" id="strategyList">
+                    <!-- Strategies will be loaded here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Global state
+        let currentLang = 'zh';
+        let charts = {};
+        let strategies = [
+            {
+                id: 1,
+                name: 'MA Crossover (5/20)',
+                nameZh: '双均线交叉 (5/20)',
+                type: 'ma_crossover',
+                totalReturn: 23.5,
+                sharpeRatio: 1.85,
+                maxDrawdown: -12.3,
+                winRate: 58.2,
+                status: 'active'
+            },
+            {
+                id: 2,
+                name: 'RSI Mean Reversion',
+                nameZh: 'RSI均值回归',
+                type: 'rsi',
+                totalReturn: 31.2,
+                sharpeRatio: 2.15,
+                maxDrawdown: -8.7,
+                winRate: 62.5,
+                status: 'active'
+            },
+            {
+                id: 3,
+                name: 'HIBOR Rate Strategy',
+                nameZh: 'HIBOR利率策略',
+                type: 'hibor',
+                totalReturn: 18.9,
+                sharpeRatio: 1.92,
+                maxDrawdown: -10.5,
+                winRate: 55.8,
+                status: 'active'
+            }
+        ];
+
+        // Language switch
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.includes(lang === 'zh' ? '中文' : 'EN'));
+            });
+
+            document.querySelectorAll('[data-zh]').forEach(el => {
+                el.textContent = lang === 'zh' ? el.dataset.zh : el.dataset.en;
+            });
+
+            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+        }
+
+        // Tab switch
+        function switchTab(tabName) {
+            document.querySelectorAll('.module-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+            // Load module data
+            if (tabName === 'technical') {
+                setTimeout(() => loadTechnicalChart(), 100);
+            } else if (tabName === 'strategies') {
+                renderStrategies();
+            }
+        }
+
+        // Strategy parameters
+        function updateStrategyParams() {
+            const type = document.getElementById('strategyType').value;
+            const paramsContainer = document.getElementById('strategyParams');
+
+            const params = {
+                ma_crossover: `
+                    <div class="form-group">
+                        <label class="form-label">快速均线周期</label>
+                        <input type="number" class="form-input" id="fastMA" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">慢速均线周期</label>
+                        <input type="number" class="form-input" id="slowMA" value="20">
+                    </div>
+                `,
+                rsi: `
+                    <div class="form-group">
+                        <label class="form-label">RSI周期</label>
+                        <input type="number" class="form-input" id="rsiPeriod" value="14">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">超卖阈值</label>
+                        <input type="number" class="form-input" id="rsiOversold" value="30">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">超买阈值</label>
+                        <input type="number" class="form-input" id="rsiOverbought" value="70">
+                    </div>
+                `,
+                macd: `
+                    <div class="form-group">
+                        <label class="form-label">快线周期</label>
+                        <input type="number" class="form-input" id="macdFast" value="12">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">慢线周期</label>
+                        <input type="number" class="form-input" id="macdSlow" value="26">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">信号线周期</label>
+                        <input type="number" class="form-input" id="macdSignal" value="9">
+                    </div>
+                `,
+                bollinger: `
+                    <div class="form-group">
+                        <label class="form-label">周期</label>
+                        <input type="number" class="form-input" id="bbPeriod" value="20">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">标准差倍数</label>
+                        <input type="number" class="form-input" id="bbStdDev" value="2">
+                    </div>
+                `,
+                momentum: `
+                    <div class="form-group">
+                        <label class="form-label">动量周期</label>
+                        <input type="number" class="form-input" id="momentumPeriod" value="10">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">阈值</label>
+                        <input type="number" class="form-input" id="momentumThreshold" value="0">
+                    </div>
+                `,
+                hibor: `
+                    <div class="form-group">
+                        <label class="form-label">HIBOR周期</label>
+                        <input type="number" class="form-input" id="hiborPeriod" value="30">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">利率阈值上限 (%)</label>
+                        <input type="number" class="form-input" id="hiborHigh" value="5.0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">利率阈值下限 (%)</label>
+                        <input type="number" class="form-input" id="hiborLow" value="2.0">
+                    </div>
+                `
+            };
+
+            paramsContainer.innerHTML = params[type] || '';
+        }
+
+        // Run backtest
+        async function runBacktest() {
+            const symbol = document.getElementById('stockSymbol').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const strategyType = document.getElementById('strategyType').value;
+
+            // Simulate backtest results
+            simulateLoading();
+
+            setTimeout(() => {
+                const results = generateBacktestResults(symbol, strategyType);
+                displayBacktestResults(results);
+                renderBacktestChart(results);
+            }, 2000);
+        }
+
+        function generateBacktestResults(symbol, strategyType) {
+            const returns = (Math.random() * 40 - 10).toFixed(2);
+            const sharpe = (Math.random() * 2 + 0.5).toFixed(2);
+            const drawdown = (Math.random() * -20 - 5).toFixed(2);
+            const winRate = (Math.random() * 30 + 45).toFixed(1);
+
+            return {
+                symbol,
+                strategyType,
+                totalReturn: parseFloat(returns),
+                sharpeRatio: parseFloat(sharpe),
+                maxDrawdown: parseFloat(drawdown),
+                winRate: parseFloat(winRate),
+                equity: generateEquityCurve(100)
+            };
+        }
+
+        function generateEquityCurve(startValue) {
+            const curve = [];
+            let value = startValue;
+            for (let i = 0; i < 100; i++) {
+                const change = (Math.random() - 0.45) * 0.05;
+                value = value * (1 + change);
+                curve.push({ day: i, value: value });
+            }
+            return curve;
+        }
+
+        function displayBacktestResults(results) {
+            document.querySelector('#backtestResults .result-item:nth-child(1) .result-value').textContent =
+                results.totalReturn >= 0 ? '+' + results.totalReturn + '%' : results.totalReturn + '%';
+            document.querySelector('#backtestResults .result-item:nth-child(2) .result-value').textContent =
+                results.sharpeRatio.toFixed(2);
+            document.querySelector('#backtestResults .result-item:nth-child(3) .result-value').textContent =
+                results.maxDrawdown + '%';
+            document.querySelector('#backtestResults .result-item:nth-child(4) .result-value').textContent =
+                results.winRate + '%';
+
+            // Color code
+            document.querySelector('#backtestResults .result-item:nth-child(1) .result-value').style.color =
+                results.totalReturn >= 0 ? 'var(--success)' : 'var(--error)';
+        }
+
+        function renderBacktestChart(results) {
+            const ctx = document.getElementById('backtestChart');
+            if (charts.backtest) charts.backtest.destroy();
+
+            charts.backtest = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: results.equity.map((_, i) => `Day ${i}`),
+                    datasets: [{
+                        label: currentLang === 'zh' ? '权益曲线' : 'Equity Curve',
+                        data: results.equity.map(e => e.value.toFixed(2)),
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#d1d5db' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#1f2937' },
+                            ticks: { color: '#6b7280' }
+                        },
+                        y: {
+                            grid: { color: '#1f2937' },
+                            ticks: { color: '#6b7280' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Technical Analysis
+        async function loadTechnicalChart() {
+            simulateLoading();
+            setTimeout(() => {
+                renderPriceChart();
+                renderIndicatorCharts();
+            }, 1500);
+        }
+
+        function renderPriceChart() {
+            const ctx = document.getElementById('priceChart');
+            if (charts.price) charts.price.destroy();
+
+            // Generate mock price data
+            const prices = [];
+            const ma20 = [];
+            const ma50 = [];
+            const volume = [];
+
+            let price = 300;
+            for (let i = 0; i < 60; i++) {
+                const change = (Math.random() - 0.48) * 0.03;
+                price = price * (1 + change);
+                prices.push(price);
+
+                if (i >= 19) {
+                    const ma20Data = prices.slice(i - 19, i + 1);
+                    ma20.push(ma20Data.reduce((a, b) => a + b) / 20);
+                }
+                if (i >= 49) {
+                    const ma50Data = prices.slice(i - 49, i + 1);
+                    ma50.push(ma50Data.reduce((a, b) => a + b) / 50);
+                }
+
+                volume.push(Math.floor(Math.random() * 1000000) + 500000);
+            }
+
+            const datasets = [{
+                label: 'Price',
+                data: prices,
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                type: 'line',
+                yAxis: 'y'
+            }];
+
+            if (document.getElementById('showMA').checked) {
+                datasets.push({
+                    label: 'MA20',
+                    data: ma20,
+                    borderColor: '#3b82f6',
+                    type: 'line',
+                    pointRadius: 0
+                });
+                datasets.push({
+                    label: 'MA50',
+                    data: ma50,
+                    borderColor: '#10b981',
+                    type: 'line',
+                    pointRadius: 0
+                });
+            }
+
+            charts.price = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: prices.map((_, i) => `Day ${i}`),
+                    datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#d1d5db' } }
+                    },
+                    scales: {
+                        x: { grid: { color: '#1f2937' }, ticks: { color: '#6b7280' } },
+                        y: {
+                            position: 'left',
+                            grid: { color: '#1f2937' },
+                            ticks: { color: '#6b7280' }
+                        },
+                        y1: {
+                            position: 'right',
+                            display: document.getElementById('showVolume').checked,
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#6b7280' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderIndicatorCharts() {
+            // RSI Chart
+            const rsiCtx = document.getElementById('rsiChart');
+            if (charts.rsi) charts.rsi.destroy();
+
+            const rsiData = Array.from({ length: 60 }, () => Math.random() * 100);
+            charts.rsi = new Chart(rsiCtx, {
+                type: 'line',
+                data: {
+                    labels: rsiData.map((_, i) => `${i}`),
+                    datasets: [{
+                        label: 'RSI',
+                        data: rsiData,
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#d1d5db' } } },
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            min: 0, max: 100,
+                            grid: { color: '#1f2937' },
+                            ticks: { color: '#6b7280' }
+                        }
+                    }
+                }
+            });
+
+            // MACD Chart
+            const macdCtx = document.getElementById('macdChart');
+            if (charts.macd) charts.macd.destroy();
+
+            const macdData = Array.from({ length: 40 }, () => Math.random() * 2 - 1);
+            charts.macd = new Chart(macdCtx, {
+                type: 'bar',
+                data: {
+                    labels: macdData.map((_, i) => `${i}`),
+                    datasets: [{
+                        label: 'MACD',
+                        data: macdData,
+                        backgroundColor: macdData.map(v => v >= 0 ? '#10b981' : '#ef4444')
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#d1d5db' } } },
+                    scales: {
+                        x: { display: false },
+                        y: { grid: { color: '#1f2937' }, ticks: { color: '#6b7280' } }
+                    }
+                }
+            });
+        }
+
+        // Strategy Management
+        function renderStrategies() {
+            const listContainer = document.getElementById('strategyList');
+
+            listContainer.innerHTML = strategies.map(strategy => `
+                <div class="strategy-item">
+                    <div class="strategy-info">
+                        <h3>${currentLang === 'zh' ? strategy.nameZh : strategy.name}</h3>
+                        <p>${strategy.type}</p>
+                    </div>
+                    <div class="strategy-metrics">
+                        <div class="metric">
+                            <div class="metric-value">${strategy.totalReturn}%</div>
+                            <div class="metric-label">Return</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${strategy.sharpeRatio}</div>
+                            <div class="metric-label">Sharpe</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${strategy.maxDrawdown}%</div>
+                            <div class="metric-label">DD</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${strategy.winRate}%</div>
+                            <div class="metric-label">Win</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-secondary" onclick="editStrategy(${strategy.id})">${currentLang === 'zh' ? '编辑' : 'Edit'}</button>
+                        <button class="btn btn-secondary" onclick="deleteStrategy(${strategy.id})" style="background: var(--error); color: white;">${currentLang === 'zh' ? '删除' : 'Delete'}</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showCreateStrategy() {
+            alert(currentLang === 'zh' ? '创建策略功能开发中...' : 'Create strategy feature coming soon...');
+        }
+
+        function editStrategy(id) {
+            alert(currentLang === 'zh' ? `编辑策略 #${id} 功能开发中...` : `Edit strategy #${id} feature coming soon...`);
+        }
+
+        function deleteStrategy(id) {
+            if (confirm(currentLang === 'zh' ? '确定删除此策略？' : 'Delete this strategy?')) {
+                strategies = strategies.filter(s => s.id !== id);
+                renderStrategies();
+            }
+        }
+
+        // Utilities
+        function simulateLoading() {
+            // Show loading state if needed
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStrategyParams();
+            renderStrategies();
+
+            // Auto-load technical chart on technical tab
+            setTimeout(() => {
+                loadTechnicalChart();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -31,15 +31,14 @@ interface AuthState {
 const secureStorage = {
   setItem: (key: string, value: string) => {
     try {
-      localStorage.setItem(key, btoa(value)) // Basic encoding for demo
+      localStorage.setItem(key, value)
     } catch (error) {
       console.error('Failed to store secure data:', error)
     }
   },
   getItem: (key: string): string | null => {
     try {
-      const value = localStorage.getItem(key)
-      return value ? atob(value) : null
+      return localStorage.getItem(key)
     } catch (error) {
       console.error('Failed to retrieve secure data:', error)
       return null

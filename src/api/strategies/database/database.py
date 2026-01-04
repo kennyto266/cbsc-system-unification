@@ -126,8 +126,9 @@ class Database:
             return {"status": "unhealthy", "message": "Not connected"}
 
         try:
+            from sqlalchemy import text
             with self.get_session() as session:
-                session.execute("SELECT 1")
+                session.execute(text("SELECT 1"))
                 return {"status": "healthy", "message": "Database accessible"}
         except Exception as e:
             logger.error(f"Database health check failed: {e}")

@@ -1,0 +1,16 @@
+/**
+ * Metrics Summary Cards Styles
+ */
+
+.metrics-summary-cards {
+  margin-bottom: 24px;
+}
+
+.metrics-summary-empty {
+  padding: 40px;
+  text-align: center;
+  color: #8c8c8c;
+  font-size: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+}

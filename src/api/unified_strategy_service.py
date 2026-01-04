@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Union
 from enum import Enum
 from dataclasses import dataclass
+from pydantic import BaseModel, Field
 import uuid
 import pandas as pd
 import numpy as np
@@ -20,13 +21,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc, func
 
 # 導入統一數據模型
-from ..models.strategy import (
+from models.strategy import (
     Strategy, StrategyConfig, StrategyPerformance, StrategyCategory,
     StrategyCreateSchema, StrategyUpdateSchema, StrategyResponseSchema,
     StrategyConfigCreateSchema, StrategyConfigResponseSchema,
     StrategyPerformanceResponseSchema
 )
-from ..models.unified_base import StatusEnum, RiskLevelEnum
+from models.unified_base import StatusEnum, RiskLevelEnum
 
 # 導入認證系統
 try:
@@ -523,11 +524,11 @@ class UnifiedStrategyManager:
                 raise HTTPException(status_code=404, detail=f"策略不存在: {strategy_id}")
 
             # 聚合性能數據
-            performances = db.query(StrategyPerformance)\
-                .filter(StrategyPerformance.strategy_id == strategy_id)\
-                .order_by(desc(StrategyPerformance.date))\
+            performances = (db.query(StrategyPerformance)
+                .filter(StrategyPerformance.strategy_id == strategy_id)
+                .order_by(desc(StrategyPerformance.date))
                 .limit(252)  # 過去一年的數據（交易日）
-                .all()
+                .all())
 
             if not performances:
                 # 返回默認指標
@@ -686,8 +687,8 @@ class UnifiedStrategyManager:
                 "status": "failed",
                 "error": str(e)
             }
-            finally:
-                db.close()
+        finally:
+            db.close()
 
 # 全局策略管理器實例
 _unified_strategy_manager: Optional[UnifiedStrategyManager] = None

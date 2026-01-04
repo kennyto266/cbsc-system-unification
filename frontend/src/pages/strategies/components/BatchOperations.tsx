@@ -426,3 +426,5 @@ export const BatchOperations: React.FC<BatchOperationsProps> = ({
     </div>
   )
 }
+
+export default BatchOperations

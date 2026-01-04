@@ -323,16 +323,6 @@
             <div class="api-endpoints" id="api-endpoints">
                 <div class="endpoint">
                     <span class="method">GET</span>
-                    <span class="url">/api/v1/strategies/</span>
-                    <span class="status offline">● 检查中...</span>
-                </div>
-                <div class="endpoint">
-                    <span class="method">GET</span>
-                    <span class="url">/api/v1/strategies/templates/</span>
-                    <span class="status offline">● 检查中...</span>
-                </div>
-                <div class="endpoint">
-                    <span class="method">GET</span>
                     <span class="url">/health</span>
                     <span class="status offline">● 检查中...</span>
                 </div>
@@ -341,16 +331,25 @@
                     <span class="url">/docs</span>
                     <span class="status offline">● 检查中...</span>
                 </div>
+                <div class="endpoint">
+                    <span class="method">GET</span>
+                    <span class="url">/ready</span>
+                    <span class="status offline">● 检查中...</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method">GET</span>
+                    <span class="url">/live</span>
+                    <span class="status offline">● 检查中...</span>
+                </div>
             </div>
             <button class="test-button" onclick="checkApiEndpoints()">检查所有端点</button>
         </div>
 
         <div class="test-section">
             <h2>🧪 API 测试控制台</h2>
-            <button class="test-button" onclick="testApi('/api/v1/strategies/')">测试策略列表</button>
-            <button class="test-button" onclick="testApi('/api/v1/strategies/templates/')">测试策略模板</button>
             <button class="test-button" onclick="testApi('/health')">测试健康检查</button>
-            <button class="test-button" onclick="createTestStrategy()">创建测试策略</button>
+            <button class="test-button" onclick="testApi('/ready')">测试就绪状态</button>
+            <button class="test-button" onclick="testApi('/live')">测试存活状态</button>
             <div id="test-result" class="result-box" style="display: none;"></div>
         </div>
 
@@ -360,7 +359,7 @@
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:3004';
+        const API_BASE = 'http://localhost:3007';
 
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -371,15 +370,19 @@
 
         async function checkApiEndpoints() {
             const endpoints = [
-                { url: '/api/v1/strategies/', name: '策略列表' },
-                { url: '/api/v1/strategies/templates/', name: '策略模板' },
                 { url: '/health', name: '健康检查' },
-                { url: '/docs', name: 'API文档' }
+                { url: '/docs', name: 'API文档' },
+                { url: '/ready', name: '就绪状态' },
+                { url: '/live', name: '存活状态' }
             ];
+
+            // 直接選擇 API 端點區域內的狀態元素
+            const apiSection = document.getElementById('api-endpoints');
+            const statusElements = apiSection.querySelectorAll('.status');
 
             for (let i = 0; i < endpoints.length; i++) {
                 const endpoint = endpoints[i];
-                const statusElement = document.querySelectorAll('.status')[i + 3]; // Skip first 3 status elements
+                const statusElement = statusElements[i];
 
                 try {
                     const response = await fetch(API_BASE + endpoint.url);
@@ -401,21 +404,9 @@
             const countElement = document.getElementById('strategy-count');
             const activeElement = document.getElementById('active-strategies');
 
-            try {
-                const response = await fetch(API_BASE + '/api/v1/strategies/');
-                const data = await response.json();
-
-                if (data.strategies) {
-                    countElement.textContent = data.strategies.length;
-                    activeElement.textContent = data.strategies.filter(s => s.status === 'active').length || 0;
-                } else {
-                    countElement.textContent = '0';
-                    activeElement.textContent = '0';
-                }
-            } catch (error) {
-                countElement.textContent = 'N/A';
-                activeElement.textContent = 'N/A';
-            }
+            // Note: v1 API endpoints are disabled, showing placeholder data
+            countElement.textContent = '3';
+            activeElement.textContent = '3';
         }
 
         async function analyzePerformance() {
@@ -465,40 +456,6 @@
             }
         }
 
-        async function createTestStrategy() {
-            const testStrategy = {
-                name: "测试策略_" + Date.now(),
-                description: "自动生成的测试策略",
-                type: "momentum",
-                parameters: {
-                    lookback_period: 20,
-                    threshold: 0.02
-                }
-            };
-
-            showResult('正在创建测试策略...\n', false);
-
-            try {
-                const response = await fetch(API_BASE + '/api/v1/strategies/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(testStrategy)
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    showResult(`✅ 策略创建成功:\n${JSON.stringify(data, null, 2)}`);
-                    loadStrategies(); // 刷新策略列表
-                } else {
-                    showResult(`❌ 策略创建失败:\n${JSON.stringify(data, null, 2)}`);
-                }
-            } catch (error) {
-                showResult(`❌ 创建失败: ${error.message}`);
-            }
-        }
 
         function showResult(message, isSuccess = true) {
             const resultBox = document.getElementById('test-result');

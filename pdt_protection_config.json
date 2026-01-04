@@ -1,0 +1,7 @@
+{
+  "timestamp": "2025-12-19T19:28:51.977062",
+  "found_executables": [],
+  "pdt_protection_setting": "Needs to be set to 0",
+  "recommended_command": "\"FutuOpenD.exe\" --pdt_protection=0",
+  "verification_script": "python final_account_check.py"
+}

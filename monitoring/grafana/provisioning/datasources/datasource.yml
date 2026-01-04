@@ -1,0 +1,38 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus-service:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: POST
+
+  - name: InfluxDB
+    type: influxdb
+    access: proxy
+    url: http://influxdb-service:8086
+    database: market_data
+    user: admin
+    jsonData:
+      version: Flux
+      organization: cbsc
+      defaultBucket: market_data
+      tlsSkipVerify: true
+    secureJsonData:
+      token: ${INFLUXDB_TOKEN}
+
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres-service:5432
+    database: cbsc_strategy
+    user: postgres_exporter
+    jsonData:
+      sslmode: disable
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}

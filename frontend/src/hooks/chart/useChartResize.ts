@@ -25,6 +25,7 @@
  *   );
  * };
  * ```
+ */
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useResponsive } from '../useResponsive';

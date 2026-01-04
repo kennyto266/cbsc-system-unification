@@ -129,7 +129,7 @@ const buttonVariants = cva(
 /**
  * Button Component
  */
-export const Button: React.FC<ButtonProps> = ({
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   children,
   className,
   variant = 'primary',
@@ -143,7 +143,7 @@ export const Button: React.FC<ButtonProps> = ({
   onTouchStart,
   onTouchEnd,
   ...props
-}) => {
+}, ref) => {
   // 處理觸摸事件
   const handleTouchStart = (e: React.TouchEvent) => {
     // 添加觸摸反饋
@@ -207,6 +207,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
+      ref={ref}
       className={cn(
         buttonVariants({
           variant,
@@ -241,7 +242,9 @@ export const Button: React.FC<ButtonProps> = ({
       {icon && iconPosition === 'right' && renderIcon()}
     </button>
   );
-};
+});
+
+Button.displayName = 'Button';
 
 // 按鈕組組件
 interface ButtonGroupProps {
@@ -306,14 +309,14 @@ interface FabProps extends ButtonProps {
   extended?: boolean;
 }
 
-export const Fab: React.FC<FabProps> = ({
+export const Fab = React.forwardRef<HTMLButtonElement, FabProps>(({
   children,
   className,
   position = 'bottom-right',
   extended = false,
   size = extended ? 'lg' : 'md',
   ...props
-}) => {
+}, ref) => {
   const positionClasses = {
     'bottom-right': 'bottom-4 right-4',
     'bottom-left': 'bottom-4 left-4',
@@ -323,6 +326,7 @@ export const Fab: React.FC<FabProps> = ({
 
   return (
     <button
+      ref={ref}
       className={cn(
         'fixed z-50 shadow-lg rounded-full p-0 hover:shadow-xl transition-all',
         'bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500',
@@ -337,7 +341,9 @@ export const Fab: React.FC<FabProps> = ({
       {children}
     </button>
   );
-};
+});
+
+Fab.displayName = 'Fab';
 
 // 導出組件類型
 export type { ButtonProps, ButtonGroupProps, FabProps, ButtonVariant, ButtonSize };

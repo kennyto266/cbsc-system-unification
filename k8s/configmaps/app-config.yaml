@@ -1,0 +1,152 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: cbsc-system
+  labels:
+    app: cbsc-strategy-management
+    component: backend
+data:
+  # Application Configuration
+  app.env: |
+    # Environment
+    ENVIRONMENT=production
+    LOG_LEVEL=INFO
+    DEBUG=false
+
+    # Database Configuration
+    DATABASE_URL=postgresql://cbsc_admin:${POSTGRES_PASSWORD}@postgres:5432/cbsc_production
+    DATABASE_POOL_SIZE=20
+    DATABASE_MAX_OVERFLOW=30
+    DATABASE_POOL_TIMEOUT=30
+
+    # Redis Configuration
+    REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+    REDIS_POOL_SIZE=10
+    REDIS_MAX_CONNECTIONS=50
+
+    # InfluxDB Configuration
+    INFLUXDB_URL=http://influxdb:8086
+    INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+    INFLUXDB_ORG=CBSC-Production
+    INFLUXDB_BUCKET=strategy_metrics
+    INFLUXDB_RETENTION=30d
+
+    # Security Configuration
+    SECRET_KEY=${SECRET_KEY}
+    JWT_SECRET=${JWT_SECRET}
+    ALGORITHM=HS256
+    ACCESS_TOKEN_EXPIRE_MINUTES=30
+    REFRESH_TOKEN_EXPIRE_DAYS=7
+
+    # CORS Configuration
+    CORS_ORIGINS=https://cbsc.example.com,https://www.cbsc.example.com
+    CORS_CREDENTIALS=true
+    CORS_METHODS=GET,POST,PUT,DELETE,OPTIONS
+    CORS_HEADERS=*
+
+    # API Configuration
+    API_V1_PREFIX=/api/v1
+    API_TITLE=CBSC Strategy Management API
+    API_VERSION=1.0.0
+    API_DESCRIPTION=API for managing trading strategies and risk management
+
+    # Rate Limiting
+    RATE_LIMIT_ENABLED=true
+    RATE_LIMIT_REQUESTS=100
+    RATE_LIMIT_WINDOW=60
+
+    # File Upload Configuration
+    MAX_UPLOAD_SIZE=100MB
+    UPLOAD_PATH=/app/uploads
+    ALLOWED_UPLOAD_EXTENSIONS=.csv,.json,.xlsx,.yaml
+
+    # Cache Configuration
+    CACHE_TTL=3600
+    CACHE_MAX_SIZE=1000
+    CACHE_ENABLED=true
+
+    # Background Tasks
+    BACKGROUND_TASKS_ENABLED=true
+    TASK_QUEUE_NAME=strategy_tasks
+    MAX_TASK_WORKERS=4
+
+    # Monitoring Configuration
+    METRICS_ENABLED=true
+    METRICS_PATH=/metrics
+    HEALTH_CHECK_PATH=/health
+
+    # WebSocket Configuration
+    WEBSOCKET_ENABLED=true
+    WEBSOCKET_PATH=/ws
+    WEBSOCKET_HEARTBEAT_INTERVAL=30
+
+    # External API Configuration
+    MARKET_DATA_API_TIMEOUT=30
+    STRATEGY_EXECUTION_TIMEOUT=300
+    RISK_ASSESSMENT_TIMEOUT=60
+
+    # Email Configuration
+    SMTP_HOST=smtp.gmail.com
+    SMTP_PORT=587
+    SMTP_USER=noreply@cbsc.example.com
+    SMTP_TLS=true
+    EMAIL_FROM=noreply@cbsc.example.com
+    EMAIL_FROM_NAME=CBSC Strategy Management
+
+    # Notification Configuration
+    NOTIFICATION_ENABLED=true
+    SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+    DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+
+  # Logging Configuration
+  logging.conf: |
+    [loggers]
+    keys=root,uvicorn,sqlalchemy,app
+
+    [handlers]
+    keys=console,file
+
+    [formatters]
+    keys=standard,detailed
+
+    [logger_root]
+    level=INFO
+    handlers=console,file
+
+    [logger_uvicorn]
+    level=INFO
+    handlers=console,file
+    propagate=0
+    qualname=uvicorn
+
+    [logger_sqlalchemy]
+    level=WARNING
+    handlers=console,file
+    propagate=0
+    qualname=sqlalchemy.engine
+
+    [logger_app]
+    level=INFO
+    handlers=console,file
+    propagate=0
+    qualname=app
+
+    [handler_console]
+    class=StreamHandler
+    level=INFO
+    formatter=standard
+    args=(sys.stdout,)
+
+    [handler_file]
+    class=handlers.RotatingFileHandler
+    level=INFO
+    formatter=detailed
+    args=('/app/logs/app.log', 'a', 10485760, 5, 'utf-8')
+
+    [formatter_standard]
+    format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+
+    [formatter_detailed]
+    format=%(asctime)s - %(name)s - %(levelname)s - %(module)s - %(funcName)s - %(message)s

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Page</title>
+</head>
+<body>
+    <h1>Static Test Page</h1>
+    <p>If you see this, the server is working.</p>
+    <div id="root-status">Root element: <span id="root-check">Checking...</span></div>
+    
+    <script>
+        // Check if root element exists
+        const root = document.getElementById('root');
+        document.getElementById('root-check').textContent = root ? 'Found but empty' : 'Not found';
+        
+        // Try to load main.tsx
+        fetch('/src/main.tsx')
+            .then(r => r.text())
+            .then(text => {
+                console.log('main.tsx loaded:', text.substring(0, 200));
+            })
+            .catch(e => {
+                console.error('Error loading main.tsx:', e);
+            });
+    </script>
+</body>
+</html>

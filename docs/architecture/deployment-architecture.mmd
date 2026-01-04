@@ -1,0 +1,157 @@
+```mermaid
+graph TB
+    %% ============================================
+    %% Development Environment
+    %% ============================================
+    subgraph DEV["開發環境 (本地機器)"]
+        DirectionTB
+
+        subgraph BROWSER["瀏覽器<br/>Chrome/Edge"]
+            BrowserTab["Tab: http://localhost:3000"]
+        end
+
+        subgraph FRONTEND_DEV["前端開發服務器<br/>Vite Dev Server"]
+            FE_Port["Port: 3000"]
+            FE_Proxy["Proxy: /api → :8001<br/>Proxy: /ws → ws://:8001"]
+            FE_HMR["HMR: Hot Module Reload"]
+        end
+
+        subgraph BACKEND_DEV["後端 API 服務器<br/>Uvicorn + FastAPI"]
+            BE_Port["Port: 8001"]
+            BE_Reload["Auto-reload: WatchFiles"]
+            BE_Docs["API Docs: /docs<br/>Interactive Docs"]
+        end
+    end
+
+    %% ============================================
+    %% Docker Containers
+    %% ============================================
+    subgraph DOCKER["Docker Desktop"]
+        DirectionTB
+
+        subgraph PG_CONTAINER["PostgreSQL Container<br/>cbsc-postgres"]
+            PG_Image["Image: postgres:15-alpine"]
+            PG_Port["Port Mapping: 5432:5432"]
+            PG_Volume["Volume: pgdata<br/>(Persistent Storage)"]
+            PG_DB["Database: cbsc_strategy<br/>User: cbsc_user"]
+        end
+    end
+
+    %% ============================================
+    %% Data Flow
+    %% ============================================
+    BrowserTab -->|"HTTP Request"| FE_Port
+    FE_Port --> FE_Proxy
+    FE_Proxy -->|"Proxy Forward"| BE_Port
+    FE_Proxy -->|"WebSocket Upgrade"| BE_Port
+
+    BE_Port -->|"SQLAlchemy<br/>asyncpg"| PG_Port
+    PG_Port --> PG_DB
+
+    %% Styling
+    classDef browserClass fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef frontendClass fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef backendClass fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef dockerClass fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef externalClass fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+
+    class BROWSER browserClass
+    class FRONTEND_DEV frontendClass
+    class BACKEND_DEV backendClass
+    class PG_CONTAINER dockerClass
+```
+
+```mermaid
+graph LR
+    %% ============================================
+    %% Port Mapping
+    %% ============================================
+    subgraph PORTS["端口映射表"]
+        Browser["瀏覽器<br/>localhost:3000"]
+        Vite["Vite Dev Server<br/>:3000"]
+        FastAPI["FastAPI Backend<br/>:8001"]
+        PG["PostgreSQL<br/>:5432"]
+
+        Browser -->|"Access"| Vite
+        Vite -->|"Proxy<br/>/api"| FastAPI
+        Vite -->|"Proxy<br/>/ws"| FastAPI
+        FastAPI -->|"Connection"| PG
+    end
+
+    %% Styling
+    classDef portClass fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px
+
+    class Browser,Vite,FastAPI,PG portClass
+```
+
+## 部署架構說明
+
+### 開發環境組件
+
+**前端開發服務器 (Vite)**
+- **地址**: http://localhost:3000
+- **代理配置**:
+  - `/api/*` → `http://127.0.0.1:8001`
+  - `/ws/*` → `ws://127.0.0.1:8001`
+- **熱更新**: WatchFiles 自動重載
+- **構建優化**: 代碼分割、樹搖、壓縮
+
+**後端 API 服務器 (FastAPI + Uvicorn)**
+- **地址**: http://localhost:8001
+- **自動重載**: 監控文件變化
+- **API 文檔**:
+  - Swagger UI: `http://localhost:8001/docs`
+  - ReDoc: `http://localhost:8001/redoc`
+- **WebSocket 支持**: 實時數據推送
+
+### Docker 容器
+
+**PostgreSQL 數據庫**
+- **容器名稱**: `cbsc-postgres`
+- **鏡像**: `postgres:15-alpine`
+- **端口映射**: `5432:5432`
+- **環境變量**:
+  - `POSTGRES_USER=cbsc_user`
+  - `POSTGRES_PASSWORD=cbsc_password`
+  - `POSTGRES_DB=cbsc_strategy`
+- **持久化**: Docker volume `pgdata`
+
+### 網絡通信流程
+
+1. **用戶訪問** → 瀏覽器打開 `http://localhost:3000`
+2. **前端請求** → Vite 開發服務器處理靜態資源
+3. **API 調用** → Vite 代理轉發到 FastAPI (`:8001`)
+4. **數據庫查詢** → FastAPI 連接 PostgreSQL (`:5432`)
+5. **實時數據** → WebSocket 直接連接到 FastAPI
+
+### 數據庫結構
+
+**已創建的表 (6個)**:
+- `users` - 用戶賬戶信息
+- `stock_data` - 股票價格數據
+- `strategy_signals` - 策略交易信號
+- `market_indicators` - 市場技術指標
+- `hkex_raw_data` - 港交所原始數據
+- `ml_models` - 機器學習模型存儲
+
+### 啟動命令
+
+**啟動順序**:
+```bash
+# 1. 啟動 PostgreSQL (Docker)
+docker start cbsc-postgres
+
+# 2. 啟動後端 API
+cd C:\Users\Penguin8n\CODEX--\src
+python main.py
+
+# 3. 啟動前端開發服務器
+cd C:\Users\Penguin8n\CODEX--\frontend
+npm run dev
+```
+
+**訪問地址**:
+- 前端: http://localhost:3000
+- 後端 API: http://localhost:8001
+- API 文檔: http://localhost:8001/docs
+- 數據庫: localhost:5432

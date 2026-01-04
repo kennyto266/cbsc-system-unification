@@ -1,4 +1,9 @@
 {
+  "enabledPlugins": {
+    "superpowers@superpowers-marketplace": true,
+    "ralph-wiggum@claude-plugins-official": true
+  },
+  "alwaysThinkingEnabled": true,
   "permissions": {
     "allow": [
       "Bash(bash .claude/scripts/test-and-log.sh:*)",
@@ -39,7 +44,9 @@
       "Bash(tree:*)",
       "List(**)",
       "WebFetch(domain:github.com)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(netstat:*)",
+      "Edit"
     ]
   },
   "enabledMcpjsonServers": [

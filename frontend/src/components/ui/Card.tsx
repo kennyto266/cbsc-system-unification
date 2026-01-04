@@ -65,6 +65,24 @@ export const CardTitle: React.FC<CardTitleProps> = ({ className, children }) => 
   );
 };
 
+interface CardDescriptionProps {
+  className?: string;
+  children: React.ReactNode;
+}
+
+export const CardDescription: React.FC<CardDescriptionProps> = ({ className, children }) => {
+  return (
+    <p
+      className={clsx(
+        'text-sm text-gray-600',
+        className
+      )}
+    >
+      {children}
+    </p>
+  );
+};
+
 export const CardContent: React.FC<CardContentProps> = ({ className, children }) => {
   return (
     <div

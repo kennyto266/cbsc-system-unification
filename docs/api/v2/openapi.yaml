@@ -1,0 +1,932 @@
+openapi: 3.0.3
+info:
+  title: CBSC Strategy Management API
+  description: |
+    CBSC量化交易策略管理系統API文檔
+
+    此API提供了完整的策略管理功能，包括：
+    - 策略的創建、讀取、更新、刪除
+    - 策略執行和監控
+    - 實時市場數據獲取
+    - 回測功能
+    - 用戶管理
+
+    # 認證
+    API使用JWT Bearer Token進行認證。請在Authorization header中包含有效的token。
+
+    # 錯誤處理
+    API使用標準HTTP狀態碼。錯誤響應格式如下：
+    ```json
+    {
+      "success": false,
+      "error": {
+        "code": "ERROR_CODE",
+        "message": "錯誤描述",
+        "details": {}
+      },
+      "timestamp": "2025-01-19T10:00:00Z"
+    }
+    ```
+  version: 2.0.0
+  contact:
+    name: CBSC API Support
+    email: api-support@cbsc.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.cbsc.example.com/v2
+    description: Production server
+  - url: https://staging-api.cbsc.example.com/v2
+    description: Staging server
+  - url: http://localhost:3004/v2
+    description: Development server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Authentication
+    description: 用戶認證相關接口
+  - name: Strategies
+    description: 策略管理接口
+  - name: Execution
+    description: 策略執行接口
+  - name: Market Data
+    description: 市場數據接口
+  - name: Backtest
+    description: 回測接口
+  - name: Users
+    description: 用戶管理接口
+  - name: Monitoring
+    description: 監控接口
+
+paths:
+  # Authentication endpoints
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: 用戶登錄
+      description: 用戶使用用戶名和密碼登錄，返回JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  description: 用戶名
+                  example: "john.doe"
+                password:
+                  type: string
+                  description: 密碼
+                  format: password
+                  example: "securePassword123"
+                remember_me:
+                  type: boolean
+                  description: 是否記住登錄狀態
+                  default: false
+      responses:
+        '200':
+          description: 登錄成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                        description: JWT access token
+                      token_type:
+                        type: string
+                        example: "bearer"
+                      expires_in:
+                        type: integer
+                        description: Token有效期（秒）
+                      refresh_token:
+                        type: string
+                        description: Refresh token
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: 刷新Token
+      description: 使用refresh token獲取新的access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  description: Refresh token
+      responses:
+        '200':
+          description: Token刷新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                      expires_in:
+                        type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # Strategy endpoints
+  /strategies:
+    get:
+      tags:
+        - Strategies
+      summary: 獲取策略列表
+      description: 分頁獲取用戶的策略列表，支持篩選和排序
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: 頁碼，從1開始
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: size
+          in: query
+          description: 每頁數量
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: status
+          in: query
+          description: 策略狀態篩選
+          schema:
+            type: string
+            enum: [active, inactive, archived, testing]
+        - name: category
+          in: query
+          description: 策略分類
+          schema:
+            type: string
+            enum: [momentum, mean_reversion, arbitrage, market_making]
+        - name: sort_by
+          in: query
+          description: 排序字段
+          schema:
+            type: string
+            enum: [created_at, updated_at, name, performance]
+            default: created_at
+        - name: sort_order
+          in: query
+          description: 排序順序
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: 成功獲取策略列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      strategies:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Strategy'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Strategies
+      summary: 創建新策略
+      description: 創建一個新的交易策略
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StrategyCreate'
+      responses:
+        '201':
+          description: 策略創建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Strategy'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /strategies/{strategy_id}:
+    get:
+      tags:
+        - Strategies
+      summary: 獲取策略詳情
+      description: 根據策略ID獲取策略的詳細信息
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: strategy_id
+          in: path
+          required: true
+          description: 策略ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 成功獲取策略詳情
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/StrategyDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Strategies
+      summary: 更新策略
+      description: 更新現有策略的信息
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: strategy_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StrategyUpdate'
+      responses:
+        '200':
+          description: 策略更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Strategy'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Strategies
+      summary: 刪除策略
+      description: 軟刪除策略（標記為已刪除）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: strategy_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 策略刪除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /strategies/{strategy_id}/execute:
+    post:
+      tags:
+        - Execution
+      summary: 執行策略
+      description: 啟動策略的實時交易執行
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: strategy_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - execution_config
+              properties:
+                execution_config:
+                  $ref: '#/components/schemas/ExecutionConfig'
+      responses:
+        '200':
+          description: 策略執行啟動成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      execution_id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        enum: [running, paused, stopped]
+                      started_at:
+                        type: string
+                        format: date-time
+
+  /strategies/{strategy_id}/stop:
+    post:
+      tags:
+        - Execution
+      summary: 停止策略執行
+      description: 停止正在運行的策略
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: strategy_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 策略停止成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  # Market data endpoints
+  /market/stocks/{symbol}/quote:
+    get:
+      tags:
+        - Market Data
+      summary: 獲取股票報價
+      description: 獲取指定股票的實時報價信息
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          description: 股票代碼
+          schema:
+            type: string
+            example: "AAPL"
+        - name: fields
+          in: query
+          description: 需要返回的字段
+          schema:
+            type: string
+            example: "price,volume,bid,ask"
+      responses:
+        '200':
+          description: 成功獲取報價
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/StockQuote'
+
+  /market/stocks/{symbol}/history:
+    get:
+      tags:
+        - Market Data
+      summary: 獲取歷史數據
+      description: 獲取指定股票的歷史價格數據
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          required: true
+          description: 開始日期 (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          required: true
+          description: 結束日期 (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: interval
+          in: query
+          description: 數據間隔
+          schema:
+            type: string
+            enum: [1m, 5m, 15m, 30m, 1h, 1d]
+            default: 1d
+      responses:
+        '200':
+          description: 成功獲取歷史數據
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HistoricalData'
+
+  # Backtest endpoints
+  /backtest/run:
+    post:
+      tags:
+        - Backtest
+      summary: 運行回測
+      description: 對策略進行歷史回測
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - strategy_id
+                - backtest_config
+              properties:
+                strategy_id:
+                  type: string
+                  format: uuid
+                backtest_config:
+                  $ref: '#/components/schemas/BacktestConfig'
+      responses:
+        '202':
+          description: 回測已啟動
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      backtest_id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        enum: [queued, running, completed, failed]
+
+  /backtest/{backtest_id}/results:
+    get:
+      tags:
+        - Backtest
+      summary: 獲取回測結果
+      description: 獲取已完成回測的詳細結果
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: backtest_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 成功獲取回測結果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/BacktestResult'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        role:
+          type: string
+          enum: [admin, trader, analyst, viewer]
+        created_at:
+          type: string
+          format: date-time
+        last_login:
+          type: string
+          format: date-time
+
+    Strategy:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+          enum: [momentum, mean_reversion, arbitrage, market_making]
+        status:
+          type: string
+          enum: [active, inactive, archived, testing]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        performance:
+          type: object
+          properties:
+            total_return:
+              type: number
+              format: float
+            sharpe_ratio:
+              type: number
+              format: float
+            max_drawdown:
+              type: number
+              format: float
+
+    StrategyCreate:
+      type: object
+      required:
+        - name
+        - category
+        - config
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        category:
+          type: string
+          enum: [momentum, mean_reversion, arbitrage, market_making]
+        config:
+          type: object
+          description: 策略配置參數
+        tags:
+          type: array
+          items:
+            type: string
+
+    StrategyDetail:
+      allOf:
+        - $ref: '#/components/schemas/Strategy'
+        - type: object
+          properties:
+            config:
+              type: object
+              description: 策略配置
+            execution_history:
+              type: array
+              items:
+                $ref: '#/components/schemas/ExecutionRecord'
+
+    ExecutionConfig:
+      type: object
+      required:
+        - capital
+      properties:
+        capital:
+          type: number
+          description: 初始資金
+          minimum: 10000
+        symbols:
+          type: array
+          items:
+            type: string
+          description: 交易的股票代碼
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        risk_management:
+          $ref: '#/components/schemas/RiskManagement'
+
+    RiskManagement:
+      type: object
+      properties:
+        max_position_size:
+          type: number
+          description: 最大持倉比例（0-1）
+        stop_loss:
+          type: number
+          description: 止損比例
+        take_profit:
+          type: number
+          description: 止盈比例
+
+    StockQuote:
+      type: object
+      properties:
+        symbol:
+          type: string
+        price:
+          type: number
+        volume:
+          type: integer
+        bid:
+          type: number
+        ask:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+
+    HistoricalData:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        open:
+          type: number
+        high:
+          type: number
+        low:
+          type: number
+        close:
+          type: number
+        volume:
+          type: integer
+
+    BacktestConfig:
+      type: object
+      required:
+        - start_date
+        - end_date
+        - initial_capital
+      properties:
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        initial_capital:
+          type: number
+          minimum: 10000
+        commission:
+          type: number
+          default: 0.001
+        slippage:
+          type: number
+          default: 0.0001
+
+    BacktestResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [completed, failed]
+        performance:
+          type: object
+          properties:
+            total_return:
+              type: number
+            annualized_return:
+              type: number
+            sharpe_ratio:
+              type: number
+            max_drawdown:
+              type: number
+            win_rate:
+              type: number
+        trades:
+          type: array
+          items:
+            $ref: '#/components/schemas/Trade'
+
+    Trade:
+      type: object
+      properties:
+        symbol:
+          type: string
+        side:
+          type: string
+          enum: [buy, sell]
+        quantity:
+          type: number
+        price:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+        pnl:
+          type: number
+
+    ExecutionRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [running, paused, stopped]
+        pnl:
+          type: number
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        size:
+          type: integer
+        total:
+          type: integer
+        pages:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: 請求參數錯誤
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: 未授權或token無效
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: 沒有權限訪問此資源
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: 資源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    TooManyRequests:
+      description: 請求頻率超過限制
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InternalServerError:
+      description: 服務器內部錯誤
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

@@ -1,0 +1,432 @@
+# CBSC 策略管理系統 - 安全增強 Docker Compose 配置
+# Security-focused configuration with all best practices
+
+version: '3.8'
+
+# Extends base production configuration with security enhancements
+x-common-security: &security-settings
+  security_opt:
+    - no-new-privileges:true
+  read_only: false  # Required for some services
+  user: "1001:1001"  # Non-root user
+  cap_drop:
+    - ALL
+  cap_add:
+    - CHOWN
+    - SETGID
+    - SETUID
+  ulimits:
+    nproc: 65535
+    nofile:
+      soft: 20000
+      hard: 40000
+
+x-healthcheck: &default-healthcheck
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 30s
+
+services:
+  # Security-hardened PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: cbsc-postgres-secure
+    restart: unless-stopped
+    <<: *security-settings
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./config/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "127.0.0.1:5432:5432"  # Bind to localhost only
+    networks:
+      - cbsc-secure-network
+    healthcheck:
+      <<: *default-healthcheck
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Security-hardened Redis
+  redis:
+    image: redis:7-alpine
+    container_name: cbsc-redis-secure
+    restart: unless-stopped
+    <<: *security-settings
+    cap_add:
+      - SETGID
+      - SETUID
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    ports:
+      - "127.0.0.1:6379:6379"  # Bind to localhost only
+    networks:
+      - cbsc-secure-network
+    healthcheck:
+      <<: *default-healthcheck
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    sysctls:
+      - net.core.somaxconn=65535
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Security-hardened FastAPI Backend
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend-optimized
+      target: production
+      args:
+        VERSION: ${VERSION:-2.0.0}
+        BUILD_DATE: ${BUILD_DATE}
+        VCS_REF: ${VCS_REF}
+    image: cbsc/strategy-api:${VERSION:-latest}
+    container_name: cbsc-backend-secure
+    restart: unless-stopped
+    <<: *security-settings
+    cap_add:
+      - NET_BIND_SERVICE
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_ORG=${INFLUXDB_ORG}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - MAX_WORKERS=${MAX_WORKERS:-4}
+      # Security headers
+      - SECURE_HEADERS_ENABLED=true
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://app.cbsc.com}
+      - SESSION_COOKIE_SECURE=true
+      - SESSION_COOKIE_HTTPONLY=true
+      - SESSION_COOKIE_SAMESITE=strict
+    volumes:
+      - ./logs:/app/logs:rw
+      - ./config:/app/config:ro
+      - ./uploads:/app/uploads:rw
+      - /tmp:/tmp:rw
+    ports:
+      - "127.0.0.1:3004:8000"  # Bind to localhost only
+    networks:
+      - cbsc-secure-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      <<: *default-healthcheck
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+    deploy:
+      replicas: ${BACKEND_REPLICAS:-2}
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Security-hardened Nginx with SSL/TLS
+  nginx:
+    image: nginx:alpine
+    container_name: cbsc-nginx-secure
+    restart: unless-stopped
+    <<: *security-settings
+    cap_add:
+      - NET_BIND_SERVICE
+      - CHOWN
+    volumes:
+      - ./config/nginx/nginx-secure.conf:/etc/nginx/nginx.conf:ro
+      - ./config/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./static:/var/www/static:ro
+      - nginx_cache:/var/cache/nginx:rw
+      - /tmp:/tmp:rw
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - cbsc-secure-network
+    depends_on:
+      - backend
+    healthcheck:
+      <<: *default-healthcheck
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Security-hardened Prometheus
+  prometheus:
+    image: prom/prometheus:v2.40.0
+    container_name: cbsc-prometheus-secure
+    restart: unless-stopped
+    <<: *security-settings
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-30d}'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--storage.tsdb.wal-compression'
+      - '--query.max-concurrency=25'
+      - '--query.timeout=2m'
+    volumes:
+      - prometheus_data:/prometheus
+      - ./config/prometheus/prometheus-secure.yml:/etc/prometheus/prometheus.yml:ro
+      - ./config/prometheus/rules:/etc/prometheus/rules:ro
+    ports:
+      - "127.0.0.1:9090:9090"  # Bind to localhost only
+    networks:
+      - cbsc-secure-network
+    healthcheck:
+      <<: *default-healthcheck
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Security-hardened Grafana
+  grafana:
+    image: grafana/grafana:9.3.0
+    container_name: cbsc-grafana-secure
+    restart: unless-stopped
+    <<: *security-settings
+    cap_add:
+      - CHOWN
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_SECURITY_COOKIE_SECURE=true
+      - GF_SECURITY_COOKIE_SAMESITE=strict
+      - GF_SECURITY_CONTENT_TYPE_PROTECTION=true
+      - GF_SECURITY_X_CONTENT_TYPE_OPTIONS=nosniff
+      - GF_SECURITY_X_XSS_PROTECTION=true
+      - GF_SECURITY_STRICT_TRANSPORT_SECURITY=true
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=redis-datasource,grafana-piechart-panel,grafana-worldmap-panel
+      - GF_SERVER_DOMAIN=${DOMAIN}
+      - GF_SERVER_ROOT_URL=https://${DOMAIN}/grafana/
+      - GF_SERVER_PROTOCOL=https
+      - GF_SMTP_ENABLED=${SMTP_ENABLED:-false}
+      - GF_SMTP_HOST=${SMTP_HOST}
+      - GF_SMTP_USER=${SMTP_USER}
+      - GF_SMTP_PASSWORD=${SMTP_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "127.0.0.1:3001:3000"  # Bind to localhost only
+    networks:
+      - cbsc-secure-network
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      <<: *default-healthcheck
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Fail2Ban for intrusion prevention
+  fail2ban:
+    image: crazymax/fail2ban:latest
+    container_name: cbsc-fail2ban
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    network_mode: "host"  # Required for iptables access
+    volumes:
+      - ./config/fail2ban/jail.local:/etc/fail2ban/jail.local:ro
+      - ./config/fail2ban/filter.d:/etc/fail2ban/filter.d:ro
+      - ./logs:/var/log:ro
+      - /var/log:/var/log/host:ro
+    environment:
+      - TZ=UTC
+      - F2B_IPTABLES_CHAIN=INPUT
+      - F2B_LOG_TARGET=/var/log/fail2ban/fail2ban.log
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ClamAV antivirus scanning
+  clamav:
+    image: clamav/clamav:latest
+    container_name: cbsc-clamav
+    restart: unless-stopped
+    <<: *security-settings
+    cap_add:
+      - SETGID
+      - SETUID
+    volumes:
+      - clamav_data:/var/lib/clamav
+      - ./uploads:/scan:ro
+    ports:
+      - "127.0.0.1:3310:3310"  # Bind to localhost only
+    networks:
+      - cbsc-secure-network
+    healthcheck:
+      <<: *default-healthcheck
+      test: ["CMD-SHELL", "clamscan --version || exit 1"]
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+
+  # Log rotation and management
+  logrotate:
+    image: blacklabelops/logrotate
+    container_name: cbsc-logrotate
+    restart: unless-stopped
+    volumes:
+      - ./config/logrotate/logrotate.conf:/etc/logrotate.conf:ro
+      - ./config/logrotate/conf.d:/etc/logrotate.d:ro
+      - ./logs:/logs
+      - /var/log:/var/log/host:ro
+    environment:
+      - LOGS_DIRECTORIES=/logs /var/log/host
+      - LOGROTATE_COPIES=7
+      - LOGROTATE_INTERVAL=daily
+      - LOGROTATE_SIZE=10M
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  clamav_data:
+    driver: local
+  nginx_cache:
+    driver: local
+
+networks:
+  cbsc-secure-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: cbsc-secure-br0
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+          gateway: 172.21.0.1
+    internal: true  # Internal network for services
+  cbsc-public-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: cbsc-public-br0
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+          gateway: 172.22.0.1

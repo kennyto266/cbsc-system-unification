@@ -25,13 +25,13 @@ export const userApi = createApi({
       sortOrder?: 'asc' | 'desc'
     }>({
       query: (params) => ({
-        url: '/users',
+        url: '/v1/users',
         params,
       }),
       providesTags: (result) => providesList(result?.items || [], 'User'),
       transformResponse: (response: any, meta, arg) => {
         return {
-          items: response.users || response.data || [],
+          items: response.users || response.data || response.items || [],
           total: response.total || response.count || 0,
           page: arg.page || 1,
           pageSize: arg.pageSize || 20,
@@ -42,7 +42,7 @@ export const userApi = createApi({
 
     // Get user details
     getUser: builder.query<User, string>({
-      query: (id) => `/users/${id}`,
+      query: (id) => `/v1/users/${id}`,
       providesTags: (result, error, id) => [{ type: 'User', id }],
     }),
 
@@ -52,7 +52,7 @@ export const userApi = createApi({
       sendInvite?: boolean
     }>({
       query: (userData) => ({
-        url: '/users',
+        url: '/v1/users',
         method: 'POST',
         body: userData,
       }),
@@ -65,7 +65,7 @@ export const userApi = createApi({
       data: Partial<User>
     }>({
       query: ({ id, data }) => ({
-        url: `/users/${id}`,
+        url: `/v1/users/${id}`,
         method: 'PUT',
         body: data,
       }),
@@ -78,7 +78,7 @@ export const userApi = createApi({
     // Delete user
     deleteUser: builder.mutation<void, string>({
       query: (id) => ({
-        url: `/users/${id}`,
+        url: `/v1/users/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: [{ type: 'User', id: 'LIST' }],
@@ -90,7 +90,7 @@ export const userApi = createApi({
       status: 'active' | 'inactive'
     }>({
       query: ({ id, status }) => ({
-        url: `/users/${id}/status`,
+        url: `/v1/users/${id}/status`,
         method: 'PATCH',
         body: { status },
       }),
@@ -106,7 +106,7 @@ export const userApi = createApi({
       roleIds: string[]
     }>({
       query: ({ id, roleIds }) => ({
-        url: `/users/${id}/roles`,
+        url: `/v1/users/${id}/roles`,
         method: 'POST',
         body: { roleIds },
       }),
@@ -122,7 +122,7 @@ export const userApi = createApi({
       roleId: string
     }>({
       query: ({ id, roleId }) => ({
-        url: `/users/${id}/roles/${roleId}`,
+        url: `/v1/users/${id}/roles/${roleId}`,
         method: 'DELETE',
       }),
       invalidatesTags: (result, error, { id }) => [
@@ -133,7 +133,7 @@ export const userApi = createApi({
 
     // Get user permissions
     getUserPermissions: builder.query<Permission[], string>({
-      query: (id) => `/users/${id}/permissions`,
+      query: (id) => `/v1/users/${id}/permissions`,
       providesTags: (result, error, id) => [{ type: 'Permission', id: `user-${id}` }],
     }),
 
@@ -146,7 +146,7 @@ export const userApi = createApi({
       endDate?: string
     }>({
       query: ({ id, limit = 50, offset = 0, startDate, endDate }) => ({
-        url: `/users/${id}/activity`,
+        url: `/v1/users/${id}/activity`,
         params: { limit, offset, startDate, endDate },
       }),
       providesTags: (result, error, { id }) => [{ type: 'User', id: `${id}-activity` }],
@@ -159,7 +159,7 @@ export const userApi = createApi({
       forceChange?: boolean
     }>({
       query: ({ id, password, forceChange }) => ({
-        url: `/users/${id}/password`,
+        url: `/v1/users/${id}/password`,
         method: 'POST',
         body: { password, forceChange },
       }),
@@ -172,7 +172,7 @@ export const userApi = createApi({
       duration?: number // in hours
     }>({
       query: ({ id, reason, duration }) => ({
-        url: `/users/${id}/lock`,
+        url: `/v1/users/${id}/lock`,
         method: 'POST',
         body: { reason, duration },
       }),
@@ -185,7 +185,7 @@ export const userApi = createApi({
     // Unlock account
     unlockAccount: builder.mutation<User, string>({
       query: (id) => ({
-        url: `/users/${id}/unlock`,
+        url: `/v1/users/${id}/unlock`,
         method: 'POST',
       }),
       invalidatesTags: (result, error, { id }) => [
@@ -201,13 +201,13 @@ export const userApi = createApi({
       search?: string
     }>({
       query: (params) => ({
-        url: '/roles',
+        url: '/v1/users/roles',
         params,
       }),
       providesTags: (result) => providesList(result?.items || [], 'Role'),
       transformResponse: (response: any, meta, arg) => {
         return {
-          items: response.roles || response.data || [],
+          items: response.roles || response.data || response.items || [],
           total: response.total || response.count || 0,
           page: arg.page || 1,
           pageSize: arg.pageSize || 20,
@@ -219,7 +219,7 @@ export const userApi = createApi({
     // Create role
     createRole: builder.mutation<Role, Omit<Role, 'id' | 'createdAt' | 'updatedAt'>>({
       query: (roleData) => ({
-        url: '/roles',
+        url: '/v1/users/roles',
         method: 'POST',
         body: roleData,
       }),
@@ -232,7 +232,7 @@ export const userApi = createApi({
       data: Partial<Role>
     }>({
       query: ({ id, data }) => ({
-        url: `/roles/${id}`,
+        url: `/v1/users/roles/${id}`,
         method: 'PUT',
         body: data,
       }),
@@ -245,7 +245,7 @@ export const userApi = createApi({
     // Delete role
     deleteRole: builder.mutation<void, string>({
       query: (id) => ({
-        url: `/roles/${id}`,
+        url: `/v1/users/roles/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: [{ type: 'Role', id: 'LIST' }],
@@ -257,7 +257,7 @@ export const userApi = createApi({
       action?: string
     }>({
       query: (params) => ({
-        url: '/permissions',
+        url: '/v1/users/permissions',
         params,
       }),
       providesTags: ['Permission'],
@@ -265,7 +265,7 @@ export const userApi = createApi({
 
     // Get user preferences
     getUserPreferences: builder.query<any, string>({
-      query: (id) => `/users/${id}/preferences`,
+      query: (id) => `/v1/users/${id}/preferences`,
       providesTags: (result, error, id) => [{ type: 'Preference', id }],
     }),
 
@@ -275,7 +275,7 @@ export const userApi = createApi({
       preferences: Record<string, any>
     }>({
       query: ({ id, preferences }) => ({
-        url: `/users/${id}/preferences`,
+        url: `/v1/users/${id}/preferences`,
         method: 'PUT',
         body: preferences,
       }),
@@ -291,7 +291,7 @@ export const userApi = createApi({
       limit?: number
     }>({
       query: ({ id, unread, limit = 20 }) => ({
-        url: `/users/${id}/notifications`,
+        url: `/v1/users/${id}/notifications`,
         params: { unread, limit },
       }),
       providesTags: (result, error, { id }) => [{ type: 'Notification', id }],
@@ -303,7 +303,7 @@ export const userApi = createApi({
       notificationId: string
     }>({
       query: ({ userId, notificationId }) => ({
-        url: `/users/${userId}/notifications/${notificationId}/read`,
+        url: `/v1/users/${userId}/notifications/${notificationId}/read`,
         method: 'POST',
       }),
       invalidatesTags: (result, error, { userId }) => [
@@ -314,7 +314,7 @@ export const userApi = createApi({
     // Mark all notifications as read
     markAllNotificationsRead: builder.mutation<void, string>({
       query: (userId) => ({
-        url: `/users/${userId}/notifications/read-all`,
+        url: `/v1/users/${userId}/notifications/read-all`,
         method: 'POST',
       }),
       invalidatesTags: (result, error, { userId }) => [
@@ -328,7 +328,7 @@ export const userApi = createApi({
       notificationId: string
     }>({
       query: ({ userId, notificationId }) => ({
-        url: `/users/${userId}/notifications/${notificationId}`,
+        url: `/v1/users/${userId}/notifications/${notificationId}`,
         method: 'DELETE',
       }),
       invalidatesTags: (result, error, { userId }) => [
@@ -338,7 +338,7 @@ export const userApi = createApi({
 
     // Get user statistics
     getUserStatistics: builder.query<any, string>({
-      query: (id) => `/users/${id}/statistics`,
+      query: (id) => `/v1/users/${id}/statistics`,
       providesTags: (result, error, id) => [{ type: 'User', id: `${id}-stats` }],
     }),
   }),

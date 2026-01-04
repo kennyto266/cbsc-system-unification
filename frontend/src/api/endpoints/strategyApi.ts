@@ -21,18 +21,54 @@ export const strategyApi = createApi({
       riskLevel?: string
     }>({
       query: (params) => ({
-        url: '/strategies',
+        url: '/strategies/',
         params,
       }),
       providesTags: (result) => providesList(result?.items || [], 'Strategy'),
       transformResponse: (response: any, meta, arg) => {
-        // Transform backend response to frontend format
+        // Transform backend response items to frontend format
+        const items = (response.items || []).map((item: any) => ({
+          id: String(item.id),
+          name: item.name,
+          type: item.strategy_type || item.type || 'technical',
+          category: item.category || 'other',
+          status: item.is_active ? 'active' : (item.status || 'inactive'),
+          description: item.description || '',
+          createdAt: item.created_at || new Date().toISOString(),
+          updatedAt: item.updated_at || new Date().toISOString(),
+          // Map performance metrics
+          performance: item.performance ? {
+            totalReturn: item.performance.total_return || item.performance.totalReturn || 0,
+            annualReturn: item.performance.annual_return || item.performance.annualReturn || 0,
+            sharpeRatio: item.performance.sharpe_ratio || item.performance.sharpeRatio || 0,
+            maxDrawdown: item.performance.max_drawdown || item.performance.maxDrawdown || 0,
+            volatility: item.performance.volatility || 0,
+            winRate: item.performance.win_rate || item.performance.winRate || 0,
+            profitFactor: item.performance.profit_factor || item.performance.profitFactor || 0,
+            calmarRatio: item.performance.calmar_ratio || item.performance.calmarRatio || 0,
+            var95: item.performance.var_95 || item.performance.var95 || 0,
+            cvar95: item.performance.cvar_95 || item.performance.cvar95 || 0,
+            dataQualityScore: item.performance.data_quality_score || item.performance.dataQualityScore || 0,
+          } : undefined,
+          // Flatten performance fields for direct access
+          annual_return: item.performance?.total_return || item.performance?.annual_return || 0,
+          sharpe_ratio: item.performance?.sharpe_ratio || 0,
+          max_drawdown: item.performance?.max_drawdown || 0,
+          win_rate: item.performance?.win_rate || 0,
+          volatility: item.performance?.volatility || 0,
+          // Default values for required fields
+          parameters: item.parameters || {},
+          riskLevel: item.risk_level || item.riskLevel || 'medium',
+          tags: item.tags || [],
+          trading_frequency: item.trading_frequency || 'medium',
+        }))
+
         return {
-          items: response.strategies || response.data || [],
-          total: response.total || response.count || 0,
-          page: arg.page || 1,
-          pageSize: arg.pageSize || 20,
-          totalPages: Math.ceil((response.total || 0) / (arg.pageSize || 20)),
+          items,
+          total: response.total || 0,
+          page: response.page || 1,
+          pageSize: response.page_size || arg.pageSize || 20,
+          totalPages: response.total_pages || 1,
         }
       },
     }),
@@ -46,7 +82,7 @@ export const strategyApi = createApi({
     // Create new strategy
     createStrategy: builder.mutation<Strategy, Partial<Strategy>>({
       query: (strategy) => ({
-        url: '/strategies',
+        url: '/strategies/',
         method: 'POST',
         body: strategy,
       }),

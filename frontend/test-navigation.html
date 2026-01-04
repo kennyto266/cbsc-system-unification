@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBSC Dashboard - 導航測試</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-dark: #0a0e27;
+            --secondary-dark: #151932;
+            --neon-cyan: #00d4ff;
+            --neon-purple: #8b5cf6;
+            --neon-pink: #ec4899;
+            --neon-green: #10b981;
+            --neon-orange: #f59e0b;
+            --gray-800: #1f2937;
+            --gray-700: #374151;
+            --gray-600: #4b5563;
+            --gray-300: #d1d5db;
+            --gray-100: #f3f4f6;
+            --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--primary-dark);
+            color: var(--gray-300);
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 側邊欄 */
+        .sidebar {
+            width: 250px;
+            background: var(--secondary-dark);
+            border-right: 1px solid var(--gray-700);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 64px;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-700);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .logo {
+            font-size: 1rem;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: var(--gray-300);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn:hover {
+            background: var(--gray-700);
+            color: var(--neon-cyan);
+        }
+
+        .sidebar.collapsed .logo-text {
+            display: none;
+        }
+
+        /* 導航菜單 */
+        .nav-menu {
+            flex: 1;
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            position: relative;
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: var(--gray-300);
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+        }
+
+        .nav-link:hover {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--neon-cyan);
+            border-left-color: var(--neon-cyan);
+        }
+
+        .nav-link.active {
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--neon-cyan);
+            border-left-color: var(--neon-cyan);
+        }
+
+        .nav-link i {
+            width: 20px;
+            margin-right: 12px;
+            text-align: center;
+        }
+
+        .sidebar.collapsed .nav-link {
+            justify-content: center;
+            padding: 0.75rem;
+        }
+
+        .sidebar.collapsed .nav-link i {
+            margin-right: 0;
+        }
+
+        .sidebar.collapsed .nav-text {
+            display: none;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--neon-purple);
+            color: white;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .sidebar.collapsed .nav-badge {
+            display: none;
+        }
+
+        /* 子菜單 */
+        .submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .submenu.open {
+            max-height: 500px;
+        }
+
+        .submenu .nav-link {
+            padding-left: 3.5rem;
+            font-size: 0.9rem;
+        }
+
+        .sidebar.collapsed .submenu {
+            display: none;
+        }
+
+        .sidebar.collapsed .nav-chevron {
+            display: none;
+        }
+
+        /* 主內容區 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 頂部導航 */
+        .top-nav {
+            background: var(--secondary-dark);
+            border-bottom: 1px solid var(--gray-700);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* 內容區 */
+        .content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .page-content {
+            display: none;
+        }
+
+        .page-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--secondary-dark);
+            border: 1px solid var(--gray-700);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--gray-800), var(--gray-700));
+            border: 1px solid var(--gray-600);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--neon-cyan);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--gray-400);
+            font-size: 0.9rem;
+        }
+
+        .button {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.3);
+        }
+
+        /* 響應式 */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -250px;
+                z-index: 1000;
+                height: 100vh;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .sidebar.collapsed {
+                left: -64px;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+            }
+
+            .overlay.active {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- 側邊欄 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-text">CBSC Quant</span>
+                </div>
+                <button class="toggle-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-item">
+                    <a href="#dashboard" class="nav-link active" onclick="showPage('dashboard')">
+                        <i class="fas fa-chart-line"></i>
+                        <span class="nav-text">儀表板</span>
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <div class="nav-link" onclick="toggleSubmenu()">
+                        <i class="fas fa-trending-up"></i>
+                        <span class="nav-text">策略管理</span>
+                        <span class="nav-badge">新</span>
+                        <i class="fas fa-chevron-down nav-chevron" style="margin-left: auto; font-size: 0.8rem;"></i>
+                    </div>
+                    <div class="submenu" id="strategies-submenu">
+                        <a href="#strategies-list" class="nav-link" onclick="showPage('strategies-list')">
+                            <i class="fas fa-list"></i>
+                            <span class="nav-text">策略列表</span>
+                        </a>
+                        <a href="#strategies-create" class="nav-link" onclick="showPage('strategies-create')">
+                            <i class="fas fa-plus"></i>
+                            <span class="nav-text">創建策略</span>
+                        </a>
+                        <a href="#strategies-templates" class="nav-link" onclick="showPage('strategies-templates')">
+                            <i class="fas fa-file-alt"></i>
+                            <span class="nav-text">策略模板</span>
+                        </a>
+                        <a href="#strategies-analysis" class="nav-link" onclick="showPage('strategies-analysis')">
+                            <i class="fas fa-chart-bar"></i>
+                            <span class="nav-text">策略分析</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="nav-item">
+                    <a href="#backtest" class="nav-link" onclick="showPage('backtest')">
+                        <i class="fas fa-history"></i>
+                        <span class="nav-text">回測分析</span>
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <a href="#portfolio" class="nav-link" onclick="showPage('portfolio')">
+                        <i class="fas fa-briefcase"></i>
+                        <span class="nav-text">投資組合</span>
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <div class="nav-link" onclick="toggleUserSubmenu()">
+                        <i class="fas fa-users"></i>
+                        <span class="nav-text">用戶管理</span>
+                        <i class="fas fa-chevron-down nav-chevron" style="margin-left: auto; font-size: 0.8rem;"></i>
+                    </div>
+                    <div class="submenu" id="users-submenu">
+                        <a href="#users-list" class="nav-link" onclick="showPage('users-list')">
+                            <i class="fas fa-users"></i>
+                            <span class="nav-text">用戶列表</span>
+                        </a>
+                        <a href="#users-roles" class="nav-link" onclick="showPage('users-roles')">
+                            <i class="fas fa-shield-alt"></i>
+                            <span class="nav-text">角色權限</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="nav-item">
+                    <a href="#settings" class="nav-link" onclick="showPage('settings')">
+                        <i class="fas fa-cog"></i>
+                        <span class="nav-text">系統設置</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 主內容區 -->
+        <main class="main-content">
+            <!-- 頂部導航 -->
+            <header class="top-nav">
+                <h1 class="page-title" id="page-title">儀表板</h1>
+                <div class="user-info">
+                    <span>歡迎回來，管理員</span>
+                    <i class="fas fa-user-circle" style="font-size: 1.5rem;"></i>
+                </div>
+            </header>
+
+            <!-- 內容區 -->
+            <div class="content">
+                <!-- 儀表板頁面 -->
+                <div id="dashboard" class="page-content active">
+                    <div class="grid">
+                        <div class="stat-card">
+                            <div class="stat-value">12</div>
+                            <div class="stat-label">活躍策略</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">+15.2%</div>
+                            <div class="stat-label">本月回報</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">1.23</div>
+                            <div class="stat-label">夏普比率</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">98.5%</div>
+                            <div class="stat-label">系統正常運行時間</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2 class="card-title">策略概覽</h2>
+                        <p>系統運行狀態良好，所有策略正在正常執行。今日總交易量：$2,345,678</p>
+                        <button class="button" style="margin-top: 1rem;">查看詳細報告</button>
+                    </div>
+                </div>
+
+                <!-- 策略列表頁面 -->
+                <div id="strategies-list" class="page-content">
+                    <div class="card">
+                        <h2 class="card-title">策略列表</h2>
+                        <p>這裡將顯示所有可用的量化交易策略，包括移動平均線交叉、RSI均值回歸、混合經濟數據策略等。</p>
+                    </div>
+                </div>
+
+                <!-- 其他頁面內容 -->
+                <div id="strategies-create" class="page-content">
+                    <div class="card">
+                        <h2 class="card-title">創建策略</h2>
+                        <p>使用可視化策略編輯器創建新的量化交易策略。</p>
+                    </div>
+                </div>
+
+                <div id="strategies-templates" class="page-content">
+                    <div class="card">
+                        <h2 class="card-title">策略模板</h2>
+                        <p>從預定義的策略模板開始，快速部署常見的交易策略。</p>
+                    </div>
+                </div>
+
+                <div id="strategies-analysis" class="page-content">
+                    <div class="card">
+                        <h2 class="card-title">策略分析</h2>
+                        <p>深入分析策略性能，包括回測結果、風險指標和優化建議。</p>
+                    </div>
+                </div>
+
+                <div id="backtest" class="page-content">
+                    <div class="card">
+                        <h2 class="card-title">回測分析</h2>
+                        <p>對策略進行歷史數據回測，評估策略在不同市場條件下的表現。</p>
+                    </div>
+                </div>
+
+                <div id="portfolio" class="page-content">
+                    <div class="card">
+                        <h2 class="card-title">投資組合</h2>
+                        <p>管理和監控整個投資組合的表現，包括資產配置和風險分析。</p>
+                    </div>
+                </div>
+
+                <div id="users-list" class="page-content">
+                    <div class="card">
+                        <h2 class="card-title">用戶列表</h2>
+                        <p>管理系統用戶，包括創建、編輯、刪除用戶帳戶。</p>
+                    </div>
+                </div>
+
+                <div id="users-roles" class="page-content">
+                    <div class="card">
+                        <h2 class="card-title">角色權限</h2>
+                        <p>配置用戶角色和權限，控制系統訪問權限。</p>
+                    </div>
+                </div>
+
+                <div id="settings" class="page-content">
+                    <div class="card">
+                        <h2 class="card-title">系統設置</h2>
+                        <p>配置系統參數、集成設置、通知偏好等。</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 移動端覆蓋層 -->
+        <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+    </div>
+
+    <script>
+        // 導航功能
+        function showPage(pageId) {
+            // 隱藏所有頁面
+            const pages = document.querySelectorAll('.page-content');
+            pages.forEach(page => page.classList.remove('active'));
+
+            // 顯示選中的頁面
+            document.getElementById(pageId).classList.add('active');
+
+            // 更新導航鏈接狀態
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => link.classList.remove('active'));
+
+            // 設置當前頁面標題
+            const pageTitles = {
+                'dashboard': '儀表板',
+                'strategies-list': '策略管理',
+                'strategies-create': '創建策略',
+                'strategies-templates': '策略模板',
+                'strategies-analysis': '策略分析',
+                'backtest': '回測分析',
+                'portfolio': '投資組合',
+                'users-list': '用戶管理',
+                'users-roles': '角色權限',
+                'settings': '系統設置'
+            };
+
+            document.getElementById('page-title').textContent = pageTitles[pageId] || '未知頁面';
+
+            // 激活對應的導航鏈接
+            const activeLink = document.querySelector(`[onclick="showPage('${pageId}')"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+
+            // 移動端關閉側邊欄
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+
+        function toggleSubmenu() {
+            const submenu = document.getElementById('strategies-submenu');
+            submenu.classList.toggle('open');
+        }
+
+        function toggleUserSubmenu() {
+            const submenu = document.getElementById('users-submenu');
+            submenu.classList.toggle('open');
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            showPage('dashboard');
+        });
+
+        // 響應式處理
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('overlay').classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

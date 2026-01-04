@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBSC Quantum - 量化策略管理系統</title>
+
+    <!-- 字體引入 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- 圖標庫 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            /* 主色調 - 深藍科技感 */
+            --primary-dark: #0a0e27;
+            --secondary-dark: #151932;
+            --tertiary-dark: #1a1f3a;
+
+            /* 強調色 - 霓虹效果 */
+            --neon-cyan: #00d4ff;
+            --neon-purple: #8b5cf6;
+            --neon-pink: #ec4899;
+            --neon-green: #10b981;
+            --neon-orange: #f59e0b;
+
+            /* 中性色 */
+            --gray-900: #111827;
+            --gray-800: #1f2937;
+            --gray-700: #374151;
+            --gray-600: #4b5563;
+            --gray-500: #6b7280;
+            --gray-400: #9ca3af;
+            --gray-300: #d1d5db;
+            --gray-200: #e5e7eb;
+            --gray-100: #f3f4f6;
+
+            /* 成功/警告/錯誤 */
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #3b82f6;
+
+            /* 字體 */
+            --font-display: 'Orbitron', monospace;
+            --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+            /* 間距 */
+            --space-xs: 0.25rem;
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+            --space-xl: 2rem;
+            --space-2xl: 3rem;
+            --space-3xl: 4rem;
+
+            /* 陰影 */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --shadow-neon: 0 0 20px rgba(0, 212, 255, 0.3);
+
+            /* 邊框半徑 */
+            --radius-sm: 0.25rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+
+            /* 動畫時長 */
+            --duration-fast: 0.15s;
+            --duration-normal: 0.3s;
+            --duration-slow: 0.5s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--primary-dark);
+            color: var(--gray-300);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* 滾動條美化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--secondary-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gray-700);
+            border-radius: var(--radius-md);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--neon-cyan);
+        }
+
+        /* 背景粒子效果 */
+        #particles-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(ellipse at top left, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at center, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            from {
+                transform: translateY(100vh) translateX(0);
+            }
+            to {
+                transform: translateY(-100px) translateX(100px);
+            }
+        }
+
+        /* 導航欄 */
+        .navbar {
+            background: rgba(26, 31, 58, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            padding: var(--space-md) 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            transition: all var(--duration-normal) ease;
+        }
+
+        .navbar-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 var(--space-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: var(--space-xl);
+            list-style: none;
+        }
+
+        .nav-link {
+            color: var(--gray-400);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all var(--duration-normal) ease;
+            position: relative;
+            padding: var(--space-sm) var(--space-md);
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background: var(--neon-cyan);
+            transition: width var(--duration-normal) ease;
+        }
+
+        .nav-link:hover::after,
+        .nav-link.active::after {
+            width: 80%;
+        }
+
+        /* 主容器 */
+        .main-container {
+            margin-top: 80px;
+            min-height: calc(100vh - 80px);
+            position: relative;
+        }
+
+        /* Hero 區域 */
+        .hero-section {
+            padding: var(--space-3xl) 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-lg);
+            text-shadow: 0 0 40px rgba(0, 212, 255, 0.3);
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                filter: brightness(1) contrast(1);
+            }
+            to {
+                filter: brightness(1.1) contrast(1.1);
+            }
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--gray-400);
+            max-width: 600px;
+            margin: 0 auto var(--space-2xl);
+            line-height: 1.8;
+        }
+
+        /* 儀表板網格 */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: var(--space-xl);
+            padding: 0 var(--space-lg);
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* 卡片組件 */
+        .card {
+            background: rgba(21, 25, 50, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            position: relative;
+            overflow: hidden;
+            transition: all var(--duration-normal) ease;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+            opacity: 0;
+            transition: opacity var(--duration-normal) ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 212, 255, 0.3);
+            box-shadow:
+                0 20px 40px rgba(0, 0, 0, 0.3),
+                0 0 30px rgba(0, 212, 255, 0.1);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-lg);
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-100);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-lg);
+            font-size: 1.25rem;
+        }
+
+        .card-icon.cyan {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--neon-cyan);
+        }
+
+        .card-icon.purple {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--neon-purple);
+        }
+
+        .card-icon.green {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--neon-green);
+        }
+
+        .card-icon.orange {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--neon-orange);
+        }
+
+        /* 統計數據 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-md);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            padding: var(--space-md);
+            background: rgba(26, 31, 58, 0.5);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all var(--duration-normal) ease;
+        }
+
+        .stat-item:hover {
+            background: rgba(26, 31, 58, 0.8);
+            border-color: rgba(0, 212, 255, 0.2);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+            margin-bottom: var(--space-xs);
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-100);
+        }
+
+        .stat-value.positive {
+            color: var(--success);
+        }
+
+        .stat-value.negative {
+            color: var(--error);
+        }
+
+        /* 按鈕 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-md) var(--space-lg);
+            border: none;
+            border-radius: var(--radius-md);
+            font-family: var(--font-body);
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all var(--duration-normal) ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(26, 31, 58, 0.8);
+            color: var(--neon-cyan);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
+        }
+
+        /* 圖表容器 */
+        .chart-container {
+            margin-top: var(--space-lg);
+            height: 300px;
+            position: relative;
+            background: rgba(26, 31, 58, 0.3);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+        }
+
+        /* 狀態指示器 */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-lg);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-online {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-offline {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                padding: 0 var(--space-md);
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* 加載動畫 */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(26, 31, 58, 0.5), rgba(26, 31, 58, 0.8), rgba(26, 31, 58, 0.5));
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s ease-in-out infinite;
+            border-radius: var(--radius-md);
+        }
+
+        @keyframes skeleton-loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        /* 工具提示 */
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gray-900);
+            color: var(--gray-100);
+            padding: var(--space-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--duration-normal) ease;
+            z-index: 1000;
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- 粒子背景 -->
+    <div id="particles-bg"></div>
+
+    <!-- 導航欄 -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="#" class="logo">
+                <i class="fas fa-chart-line"></i>
+                CBSC Quantum
+            </a>
+            <ul class="nav-links">
+                <li><a href="#dashboard" class="nav-link active">儀表板</a></li>
+                <li><a href="#strategies" class="nav-link">策略管理</a></li>
+                <li><a href="#backtest" class="nav-link">回測分析</a></li>
+                <li><a href="#monitoring" class="nav-link">實時監控</a></li>
+                <li><a href="#settings" class="nav-link">系統設置</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- Hero 區域 -->
+        <section class="hero-section">
+            <div class="container">
+                <h1 class="hero-title">量子策略管理系統</h1>
+                <p class="hero-subtitle">
+                    運用人工智能與量化分析，打造下一代智能投資管理平台
+                </p>
+            </div>
+        </section>
+
+        <!-- 儀表板網格 -->
+        <div class="dashboard-grid">
+            <!-- 系統狀態卡片 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <div class="card-icon cyan">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        系統狀態
+                    </h3>
+                    <div class="status-indicator status-online">
+                        <span class="status-dot"></span>
+                        運行中
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">API服務</span>
+                        <span class="stat-value">正常</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">數據庫</span>
+                        <span class="stat-value">已連接</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">延遲</span>
+                        <span class="stat-value">12ms</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">運行時間</span>
+                        <span class="stat-value">24h</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 策略概覽卡片 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <div class="card-icon purple">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        策略概覽
+                    </h3>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">活躍策略</span>
+                        <span class="stat-value" id="activeStrategies">12</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">總回測數</span>
+                        <span class="stat-value">248</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">勝率</span>
+                        <span class="stat-value positive">68.5%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">夏普比率</span>
+                        <span class="stat-value positive">1.82</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 收益表現卡片 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <div class="card-icon green">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        收益表現
+                    </h3>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">今日收益率</span>
+                        <span class="stat-value positive">+2.34%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">月收益率</span>
+                        <span class="stat-value positive">+8.67%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">年收益率</span>
+                        <span class="stat-value positive">+34.21%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">最大回撤</span>
+                        <span class="stat-value negative">-5.8%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 快速操作卡片 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <div class="card-icon orange">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        快速操作
+                    </h3>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="createNewStrategy()">
+                        <i class="fas fa-plus"></i>
+                        創建策略
+                    </button>
+                    <button class="btn btn-secondary" onclick="runBacktest()">
+                        <i class="fas fa-play"></i>
+                        運行回測
+                    </button>
+                    <button class="btn btn-secondary" onclick="viewReports()">
+                        <i class="fas fa-file-alt"></i>
+                        查看報告
+                    </button>
+                    <button class="btn btn-secondary" onclick="openAPIDocs()">
+                        <i class="fas fa-code"></i>
+                        API文檔
+                    </button>
+                </div>
+            </div>
+
+            <!-- 性能圖表卡片 -->
+            <div class="card" style="grid-column: span 2;">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <div class="card-icon cyan">
+                            <i class="fas fa-chart-area"></i>
+                        </div>
+                        策略收益曲線
+                    </h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 系統信息卡片 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <div class="card-icon purple">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        系統信息
+                    </h3>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">系統版本</span>
+                        <span class="stat-value">2.0.0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">數據庫</span>
+                        <span class="stat-value">SQLite</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">API版本</span>
+                        <span class="stat-value">v1+v2</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">更新時間</span>
+                        <span class="stat-value" id="updateTime">--:--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // 初始化粒子背景
+        function initParticles() {
+            const particlesBg = document.getElementById('particles-bg');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+                particlesBg.appendChild(particle);
+            }
+        }
+
+        // 初始化圖表
+        function initPerformanceChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(0, 212, 255, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 212, 255, 0.01)');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+                    datasets: [{
+                        label: '策略收益率',
+                        data: [2.1, 3.5, 1.8, 4.2, 2.9, 3.7, 5.1, 4.8, 6.2, 5.9, 7.1, 6.8],
+                        borderColor: '#00d4ff',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#00d4ff',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }, {
+                        label: '基準收益率',
+                        data: [1.5, 2.1, 1.2, 2.8, 1.9, 2.4, 3.1, 2.9, 3.8, 3.5, 4.2, 3.9],
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        borderDash: [5, 5],
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#d1d5db',
+                                font: {
+                                    family: 'Inter',
+                                    size: 12
+                                },
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                            titleColor: '#f3f4f6',
+                            bodyColor: '#d1d5db',
+                            borderColor: '#374151',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            padding: 12,
+                            displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(75, 85, 99, 0.3)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(75, 85, 99, 0.3)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                font: {
+                                    family: 'Inter'
+                                },
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 獲取策略數據
+        async function fetchStrategyData() {
+            try {
+                const response = await fetch('http://localhost:3004/api/v1/strategies');
+                const strategies = await response.json();
+                document.getElementById('activeStrategies').textContent = strategies.length;
+                return strategies;
+            } catch (error) {
+                console.log('無法連接到API服務，使用模擬數據');
+                return [];
+            }
+        }
+
+        // 更新時間
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('zh-TW', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('updateTime').textContent = timeString;
+        }
+
+        // 功能函數
+        async function createNewStrategy() {
+            const strategyData = {
+                name: '量子動量策略 v' + Math.floor(Math.random() * 100),
+                type: '量化分析',
+                description: '基於機器學習的智能交易策略',
+                parameters: {
+                    lookback: 20,
+                    threshold: 0.02,
+                    stop_loss: 0.05
+                }
+            };
+
+            try {
+                const response = await fetch('http://localhost:3004/api/v1/strategies', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(strategyData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`策略創建成功！\\n策略名稱: ${result.name}\\n策略ID: ${result.id}`);
+                    fetchStrategyData(); // 刷新數據
+                } else {
+                    alert('策略創建失敗，請稍後重試');
+                }
+            } catch (error) {
+                alert('正在連接到策略服務...');
+                console.error('Error:', error);
+            }
+        }
+
+        function runBacktest() {
+            alert('回測引擎正在開發中，敬請期待！');
+        }
+
+        function viewReports() {
+            window.open('http://localhost:3004/docs', '_blank');
+        }
+
+        function openAPIDocs() {
+            window.open('http://localhost:3004/docs', '_blank');
+        }
+
+        // 平滑滾動
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // 導航欄滾動效果
+        let lastScroll = 0;
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            const currentScroll = window.pageYOffset;
+
+            if (currentScroll > 100) {
+                navbar.style.background = 'rgba(10, 14, 39, 0.95)';
+                navbar.style.backdropFilter = 'blur(30px)';
+            } else {
+                navbar.style.background = 'rgba(26, 31, 58, 0.8)';
+                navbar.style.backdropFilter = 'blur(20px)';
+            }
+
+            lastScroll = currentScroll;
+        });
+
+        // 頁面載入完成後初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initParticles();
+            initPerformanceChart();
+            fetchStrategyData();
+            updateTime();
+            setInterval(updateTime, 1000);
+
+            // 添加載入動畫
+            document.querySelectorAll('.card').forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                card.style.transition = 'all 0.6s ease';
+
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

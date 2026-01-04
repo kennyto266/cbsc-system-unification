@@ -1,0 +1,173 @@
+{
+  "timestamp": "2025-12-28T17:02:42.937527",
+  "total_time": 2.565889358520508,
+  "summary": {
+    "total": 14,
+    "passed": 8,
+    "failed": 0,
+    "errors": 3,
+    "skipped": 3
+  },
+  "results": [
+    {
+      "name": "Import: parameter_optimizer",
+      "category": "Module Import",
+      "status": "TestStatus.PASSED",
+      "message": "Successfully imported Parameter optimizer core module",
+      "duration": 1.2038283348083496,
+      "details": {
+        "module": "parameter_optimizer",
+        "has_main_classes": true
+      }
+    },
+    {
+      "name": "Import: performance_optimizer",
+      "category": "Module Import",
+      "status": "TestStatus.PASSED",
+      "message": "Successfully imported Performance optimization extensions",
+      "duration": 0.0009016990661621094,
+      "details": {
+        "module": "performance_optimizer",
+        "has_main_classes": true
+      }
+    },
+    {
+      "name": "Import: performance_benchmark",
+      "category": "Module Import",
+      "status": "TestStatus.ERROR",
+      "message": "Failed to import: No module named 'massive_nonprice_ta_optimizer'",
+      "duration": 0.004425764083862305,
+      "details": {
+        "error": "No module named 'massive_nonprice_ta_optimizer'",
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Penguin8n\\CODEX--\\src\\backtest\\system_acceptance_test.py\", line 107, in _test_imports\n    module = __import__(module_name, fromlist=[''])\n  File \"C:\\Users\\Penguin8n\\CODEX--\\src\\backtest\\..\\..\\performance_benchmark.py\", line 19, in <module>\n    from massive_nonprice_ta_optimizer import MassiveNonPriceTAOptimizer\nModuleNotFoundError: No module named 'massive_nonprice_ta_optimizer'\n"
+      }
+    },
+    {
+      "name": "Import: optimization_visualization",
+      "category": "Module Import",
+      "status": "TestStatus.SKIPPED",
+      "message": "Successfully imported Visualization module",
+      "duration": 0.9144401550292969,
+      "details": {
+        "module": "optimization_visualization",
+        "has_main_classes": false
+      }
+    },
+    {
+      "name": "Import: comprehensive_test_suite",
+      "category": "Module Import",
+      "status": "TestStatus.SKIPPED",
+      "message": "Successfully imported Comprehensive test suite",
+      "duration": 0.001100301742553711,
+      "details": {
+        "module": "comprehensive_test_suite",
+        "has_main_classes": false
+      }
+    },
+    {
+      "name": "Import: integration_runner",
+      "category": "Module Import",
+      "status": "TestStatus.SKIPPED",
+      "message": "Successfully imported Integration test runner",
+      "duration": 0.0009586811065673828,
+      "details": {
+        "module": "integration_runner",
+        "has_main_classes": false
+      }
+    },
+    {
+      "name": "E2E: Parameter Optimization Workflow",
+      "category": "Core Functionality",
+      "status": "TestStatus.PASSED",
+      "message": "Optimization completed, score: -0.6173",
+      "duration": 0.0033464431762695312,
+      "details": {
+        "best_params": {
+          "x": -0.5555555555555554,
+          "y": -0.5555555555555554
+        },
+        "best_score": -0.6172839506172835,
+        "n_evaluations": 100
+      }
+    },
+    {
+      "name": "E2E: Multi-Method Comparison",
+      "category": "Core Functionality",
+      "status": "TestStatus.PASSED",
+      "message": "Compared 2 methods",
+      "duration": 0.0005872249603271484,
+      "details": {
+        "results": {
+          "grid_search": -0.6172839506172835,
+          "random_search": -0.02088189725557213
+        }
+      }
+    },
+    {
+      "name": "E2E: Visualization Pipeline",
+      "category": "Core Functionality",
+      "status": "TestStatus.PASSED",
+      "message": "Generated 2 visualization(s)",
+      "duration": 0.3595240116119385,
+      "details": {
+        "figure_created": true
+      }
+    },
+    {
+      "name": "Performance: Optimized vs Standard",
+      "category": "Performance",
+      "status": "TestStatus.ERROR",
+      "message": "Performance test failed: attempted relative import with no known parent package",
+      "duration": 0.0018477439880371094,
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      }
+    },
+    {
+      "name": "Performance: Large-Scale Optimization",
+      "category": "Performance",
+      "status": "TestStatus.ERROR",
+      "message": "Large-scale test failed: attempted relative import with no known parent package",
+      "duration": 0.047612905502319336,
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      }
+    },
+    {
+      "name": "Data Integrity: Result Serialization",
+      "category": "Data Integrity",
+      "status": "TestStatus.PASSED",
+      "message": "Serialization successful, size: 285 bytes",
+      "duration": 8.821487426757812e-05,
+      "details": {
+        "json_size": 285,
+        "fields_preserved": true
+      }
+    },
+    {
+      "name": "Data Integrity: Parameter Validation",
+      "category": "Data Integrity",
+      "status": "TestStatus.PASSED",
+      "message": "Parameter validation: Working",
+      "duration": 7.152557373046875e-06,
+      "details": {
+        "validation_works": true
+      }
+    },
+    {
+      "name": "Integration: Complete Workflow",
+      "category": "Integration",
+      "status": "TestStatus.PASSED",
+      "message": "Workflow: 2 optimizations, 1 visualization(s)",
+      "duration": 0.024124860763549805,
+      "details": {
+        "n_optimizations": 2,
+        "visualization_created": true,
+        "scores": [
+          -0.6172839506172835,
+          -0.22323811102568134
+        ]
+      }
+    }
+  ]
+}

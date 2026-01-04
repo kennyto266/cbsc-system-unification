@@ -455,5 +455,17 @@ def init_auth_service():
     auth_service.create_tables()
     logger.info("认证服务初始化完成")
 
+# Export functions for backward compatibility
+def get_db():
+    """获取数据库会话 - Export wrapper for backward compatibility"""
+    return auth_service.get_db()
+
+async def get_current_user(
+    token: str = Depends(OAuth2PasswordBearer(tokenUrl="api/auth/login")),
+    db=Depends(get_db)
+) -> User:
+    """获取当前用户 - Export wrapper for backward compatibility"""
+    return await auth_service.get_current_user(token, db)
+
 if __name__ == "__main__":
     init_auth_service()

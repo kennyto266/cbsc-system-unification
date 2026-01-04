@@ -12,7 +12,8 @@ python-multipart>=0.0.6
 # 认证和安全
 PyJWT>=2.8.0
 cryptography>=41.0.0
-passlib[bcrypt]>=1.7.4
+passlib>=1.7.4
+bcrypt==4.0.1
 
 # 缓存和数据存储
 redis>=5.0.0

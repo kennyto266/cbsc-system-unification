@@ -10,8 +10,8 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 
-from backend.services.data_validator import DataValidator, DataValidationError
-from backend.data_config import BacktestConfig, DataSourceConfig
+from services.data_validator import DataValidator, DataValidationError
+from data_config import BacktestConfig, DataSourceConfig
 
 logger = logging.getLogger(__name__)
 

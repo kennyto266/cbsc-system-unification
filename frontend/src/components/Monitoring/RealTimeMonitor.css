@@ -1,0 +1,75 @@
+/**
+ * Real-Time Monitor Styles
+ */
+
+.realtime-monitor {
+  padding: 1.5rem;
+}
+
+/* Monitor Header */
+.monitor-header {
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Price Cards */
+.price-card {
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.price-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.price-card.selected {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.dark .price-card.selected {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* Chart Card */
+.chart-card {
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Activity Card */
+.activity-card {
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.activity-table .ant-table-tbody > tr {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.activity-table .ant-table-tbody > tr:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.dark .activity-table .ant-table-tbody > tr:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .realtime-monitor {
+    padding: 1rem;
+  }
+
+  .price-card {
+    font-size: 0.875rem;
+  }
+
+  .price-card .text-2xl {
+    font-size: 1.5rem;
+  }
+}

@@ -122,6 +122,117 @@ class MarketDataProvider(ABC):
         pass
 
 # ============================================================================
+# Mock市場數據提供者 (Mock Market Data Provider)
+# ============================================================================
+
+class MockMarketDataProvider(MarketDataProvider):
+    """Mock市場數據提供者，用於測試和開發"""
+
+    def __init__(self):
+        self.logger = logging.getLogger(f"mock_data_provider")
+        self._real_time_subscribers: Dict[str, List[Callable[[str, MarketData], None]]] = {}
+
+    async def get_historical_data(
+        self,
+        symbol: str,
+        start_date: datetime,
+        end_date: datetime,
+        interval: str = "1d"
+    ) -> List[MarketData]:
+        """獲取模擬歷史數據"""
+        data_points = []
+        current_date = start_date
+
+        # 生成模擬數據
+        while current_date <= end_date:
+            # 模擬價格波動 (使用正弦波 + 隨機噪聲)
+            import random
+            days_from_start = (current_date - start_date).days
+            base_price = 100.0 + 10 * random.random()
+            price_variation = 5 * (0.5 + 0.5 * (days_from_start / 100))
+
+            open_price = base_price + price_variation * random.uniform(-1, 1)
+            high_price = open_price * (1 + random.uniform(0, 0.02))
+            low_price = open_price * (1 - random.uniform(0, 0.02))
+            close_price = low_price + (high_price - low_price) * random.random()
+            volume = int(1000000 * (0.5 + random.random()))
+
+            data_point = MarketData(
+                timestamp=current_date,
+                symbol=symbol,
+                open_price=round(open_price, 2),
+                high_price=round(high_price, 2),
+                low_price=round(low_price, 2),
+                close_price=round(close_price, 2),
+                volume=volume,
+                adjusted_close=round(close_price, 2),
+                technical_indicators={
+                    "rsi": 50 + 20 * random.random(),
+                    "macd": random.uniform(-2, 2),
+                    "signal": random.uniform(-1, 1)
+                },
+                sentiment_data={
+                    "bullish": random.random() > 0.5,
+                    "bearish": random.random() < 0.5,
+                    "score": random.uniform(-1, 1)
+                }
+            )
+            data_points.append(data_point)
+            current_date += timedelta(days=1)
+
+        self.logger.info(f"生成 {len(data_points)} 筆模擬歷史數據: {symbol}, {start_date} 到 {end_date}")
+        return data_points
+
+    async def get_real_time_data(self, symbols: List[str]) -> Dict[str, MarketData]:
+        """獲取模擬實時數據"""
+        import random
+        real_time_data = {}
+
+        for symbol in symbols:
+            base_price = 100.0
+            price_change = random.uniform(-2, 2)
+
+            real_time_data[symbol] = MarketData(
+                timestamp=datetime.now(),
+                symbol=symbol,
+                open_price=round(base_price, 2),
+                high_price=round(base_price * (1 + random.uniform(0, 0.01)), 2),
+                low_price=round(base_price * (1 - random.uniform(0, 0.01)), 2),
+                close_price=round(base_price + price_change, 2),
+                volume=int(100000 * random.random()),
+                adjusted_close=round(base_price + price_change, 2),
+                technical_indicators={
+                    "rsi": 50 + 20 * random.random(),
+                    "macd": random.uniform(-2, 2)
+                },
+                sentiment_data={
+                    "bullish": random.random() > 0.5,
+                    "score": random.uniform(-1, 1)
+                }
+            )
+
+        return real_time_data
+
+    async def subscribe_real_time(
+        self,
+        symbols: List[str],
+        callback: Callable[[str, MarketData], None]
+    ) -> None:
+        """訂閱模擬實時數據"""
+        for symbol in symbols:
+            if symbol not in self._real_time_subscribers:
+                self._real_time_subscribers[symbol] = []
+            self._real_time_subscribers[symbol].append(callback)
+        self.logger.info(f"已訂閱實時數據: {symbols}")
+
+    async def unsubscribe_real_time(self, symbols: List[str]) -> None:
+        """取消訂閱模擬實時數據"""
+        for symbol in symbols:
+            if symbol in self._real_time_subscribers:
+                self._real_time_subscribers[symbol] = []
+        self.logger.info(f"已取消訂閱實時數據: {symbols}")
+
+# ============================================================================
 # 策略執行器接口 (Strategy Executor Interface)
 # ============================================================================
 
@@ -769,5 +880,49 @@ __all__ = [
     "StrategyExecutor",
     "DirectRSIExecutor",
     "SentimentMomentumExecutor",
-    "CBSCStrategyExecutionEngine"
+    "CBSCStrategyExecutionEngine",
+    "initialize_execution_engine",
+    "shutdown_execution_engine"
 ]
+
+# Global engine instance
+_execution_engine: Optional[CBSCStrategyExecutionEngine] = None
+
+
+# Initialize execution engine with MockMarketDataProvider
+async def initialize_execution_engine() -> CBSCStrategyExecutionEngine:
+    """初始化策略執行引擎
+
+    Returns:
+        CBSCStrategyExecutionEngine: 執行引擎實例
+    """
+    global _execution_engine
+
+    if _execution_engine is not None:
+        return _execution_engine
+
+    # 創建引擎配置
+    config = EngineConfig(
+        engine_id="default",
+        execution_mode=ExecutionMode.BACKTEST,
+        market_data_source=MarketDataSource.SIMULATED,
+        max_concurrent_strategies=5
+    )
+
+    # 創建執行引擎
+    _execution_engine = CBSCStrategyExecutionEngine(config=config)
+
+    # 初始化引擎
+    mock_provider = MockMarketDataProvider()
+    await _execution_engine.initialize(mock_provider)
+
+    return _execution_engine
+
+
+async def shutdown_execution_engine() -> None:
+    """關閉策略執行引擎"""
+    global _execution_engine
+
+    if _execution_engine is not None:
+        await _execution_engine.cleanup()
+        _execution_engine = None

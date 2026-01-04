@@ -1,0 +1,149 @@
+```mermaid
+sequenceDiagram
+    actor U as 👤 用戶
+    participant F as 🌐 前端<br/>(React)
+    participant V as ⚡ Vite Proxy
+    participant B as 🔧 後端 API<br/>(FastAPI)
+    participant R as 🔴 Redis<br/>緩存
+    participant P as 🐘 PostgreSQL<br/>數據庫
+    participant Y as 📊 YFinance<br/>市場數據
+    participant W as 🔌 WebSocket<br/>實時推送
+
+    %% ============================================
+    %% Authentication Flow
+    %% ============================================
+    U->>F: 1. 訪問 /login
+    F->>V: 2. POST /api/v1/auth/login
+    V->>B: 3. 轉發請求
+    B->>P: 4. 驗證用戶憑證
+    P-->>B: 5. 返回用戶數據
+    B->>B: 6. 生成 JWT Token
+    B-->>V: 7. 返回 Token
+    V-->>F: 8. 轉發響應
+    F->>F: 9. 存儲 Token (Redux)
+    F-->>U: 10. 進入 Dashboard
+
+    %% ============================================
+    %% Strategy Management Flow
+    %% ============================================
+    rect rgb(240, 248, 255)
+        Note over U,P: 策略管理流程
+        U->>F: 1. 查看策略列表
+        F->>V: 2. GET /api/v1/strategies
+        V->>B: 3. 轉發請求
+        B->>R: 4. 檢查緩存
+        alt 緩存命中
+            R-->>B: 5a. 返回緩存數據
+        else 緩存未命中
+            B->>P: 5b. 查詢數據庫
+            P-->>B: 6b. 返回策略數據
+            B->>R: 7b. 更新緩存
+        end
+        B-->>V: 8. 返回策略列表
+        V-->>F: 9. 轉發響應
+        F-->>U: 10. 顯示策略列表
+    end
+
+    %% ============================================
+    %% Backtest Flow
+    %% ============================================
+    rect rgb(255, 243, 224)
+        Note over U,P: 回測流程
+        U->>F: 1. 創建新回測
+        F->>V: 2. POST /api/backtest
+        V->>B: 3. 轉發請求
+        B->>B: 4. 創建回測任務
+
+        par 並行獲取數據
+            B->>Y: 5a. 獲取歷史數據
+            Y-->>B: 6a. 返回 OHLC 數據
+        and
+            B->>P: 5b. 讀取策略配置
+            P-->>B: 6b. 返回策略參數
+        end
+
+        B->>B: 7. VectorBT 回測計算
+        B->>P: 8. 保存回測結果
+        B-->>V: 9. 返回回測報告
+        V-->>F: 10. 轉發響應
+        F->>F: 11. 渲染圖表 (Plotly)
+        F-->>U: 12. 顯示回測報告
+    end
+
+    %% ============================================
+    %% Real-time Monitoring Flow
+    %% ============================================
+    rect rgb(232, 245, 233)
+        Note over U,W: 實時監控流程
+        F->>W: 1. 建立 WebSocket 連接
+        W-->>F: 2. 連接確認
+
+        loop 實時數據推送
+            B->>Y: 3. 獲取實時行情
+            Y-->>B: 4. 返回最新數據
+            B->>R: 5. 更新緩存
+            B->>W: 6. 推送到前端
+            W-->>F: 7. 接收數據
+            F->>F: 8. 更新圖表
+            F-->>U: 9. 實時顯示
+        end
+    end
+
+    %% ============================================
+    %% Error Handling
+    %% ============================================
+    rect rgb(255, 235, 238)
+        Note over B,U: 錯誤處理
+        B->>B: 檢測到錯誤
+        B->>P: 記錄錯誤日誌
+        B-->>V: 返回錯誤響應
+        V-->>F: 轉發錯誤
+        F->>F: 顯示錯誤提示
+        F-->>U: 通知用戶
+    end
+```
+
+## 數據流說明
+
+### 1. 認證流程
+1. 用戶在前端輸入憑證
+2. Vite 代理轉發到 FastAPI
+3. FastAPI 驗證 PostgreSQL 中的用戶數據
+4. 生成 JWT Token 並返回
+5. 前端存儲 Token 到 Redux 狀態
+
+### 2. 策略管理流程
+1. 用戶請求策略列表
+2. 首先檢查 Redis 緩存
+3. 緩存命中則直接返回
+4. 緩存未命中則查詢 PostgreSQL
+5. 更新 Redis 緩存供下次使用
+
+### 3. 回測流程
+1. 用戶提交回測請求
+2. 並行獲取市場數據和策略配置
+3. VectorBT 引擎執行回測計算
+4. 結果保存到 PostgreSQL
+5. 前端使用 Plotly 渲染圖表
+
+### 4. 實時監控流程
+1. 前端建立 WebSocket 連接
+2. 後端定期從 YFinance 獲取實時數據
+3. 數據更新 Redis 緩存
+4. 通過 WebSocket 推送到前端
+5. 前端實時更新圖表顯示
+
+### 性能優化點
+
+**緩存策略**:
+- Redis 緩存熱點數據（策略列表、市場指標）
+- 緩存過期時間：5分鐘
+- 緩存更新：寫時更新
+
+**並行處理**:
+- 回測時並行獲取市場數據和策略配置
+- VectorBT 多進程回測優化
+
+**實時通信**:
+- WebSocket 長連接
+- 增量推送減少帶寬

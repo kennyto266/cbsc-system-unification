@@ -1,0 +1,381 @@
+/**
+ * 个人策略管理Dashboard - 响应式样式
+ * Personal Strategy Management Dashboard - Responsive Styles
+ */
+
+/* 响应式断点 */
+/* xs: 0px - 575px */
+/* sm: 576px - 767px */
+/* md: 768px - 991px */
+/* lg: 992px - 1199px */
+/* xl: 1200px+ */
+
+/* 超小屏幕 (手机) */
+@media (max-width: 575px) {
+    :root {
+        --font-xs: 10px;
+        --font-sm: 12px;
+        --font-base: 14px;
+        --font-lg: 16px;
+        --font-xl: 18px;
+        --font-2xl: 20px;
+        --font-3xl: 24px;
+        --font-4xl: 28px;
+
+        --spacing-xs: 2px;
+        --spacing-sm: 4px;
+        --spacing-md: 8px;
+        --spacing-lg: 12px;
+        --spacing-xl: 16px;
+        --spacing-2xl: 24px;
+    }
+
+    /* 导航栏 */
+    .navbar {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+    }
+
+    .nav-brand h1 {
+        font-size: var(--font-lg);
+    }
+
+    .nav-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    /* 概览卡片 */
+    .overview-cards {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+
+    .overview-card .card-value {
+        font-size: var(--font-2xl);
+    }
+
+    /* 策略卡片 */
+    .strategy-cards {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+
+    .card-metrics {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+    }
+
+    .card-actions {
+        justify-content: center;
+    }
+
+    .card-actions .btn {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* 图表网格 */
+    .charts-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+
+    .chart-wrapper {
+        height: 300px;
+        padding: var(--spacing-md);
+    }
+
+    /* 表单 */
+    .form-container {
+        padding: var(--spacing-md);
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions .btn {
+        width: 100%;
+    }
+
+    /* 模态框 */
+    .modal {
+        padding: var(--spacing-md);
+    }
+
+    .modal-content {
+        max-height: 95vh;
+    }
+
+    /* 通知 */
+    .notifications-container {
+        top: var(--spacing-md);
+        right: var(--spacing-md);
+        left: var(--spacing-md);
+        max-width: none;
+    }
+
+    /* 热力图 */
+    .heatmap-grid {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 2px;
+    }
+
+    .heatmap-cell {
+        padding: 4px 2px;
+        font-size: 10px;
+    }
+
+    /* 章节标题 */
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+
+    .section-header h2 {
+        font-size: var(--font-xl);
+    }
+
+    .section-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .section-actions .btn {
+        flex: 1;
+    }
+}
+
+/* 小屏幕 (平板竖屏) */
+@media (min-width: 576px) and (max-width: 767px) {
+    /* 概览卡片 */
+    .overview-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* 策略卡片 */
+    .strategy-cards {
+        grid-template-columns: 1fr;
+    }
+
+    /* 图表网格 */
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-wrapper {
+        height: 350px;
+    }
+
+    /* 热力图 */
+    .heatmap-grid {
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    }
+}
+
+/* 中等屏幕 (平板横屏) */
+@media (min-width: 768px) and (max-width: 991px) {
+    /* 概览卡片 */
+    .overview-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* 策略卡片 */
+    .strategy-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* 图表网格 */
+    .charts-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .chart-wrapper {
+        height: 350px;
+    }
+
+    /* 热力图 */
+    .heatmap-grid {
+        grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+    }
+}
+
+/* 大屏幕 (小桌面) */
+@media (min-width: 992px) and (max-width: 1199px) {
+    /* 概览卡片 */
+    .overview-cards {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* 策略卡片 */
+    .strategy-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* 图表网格 */
+    .charts-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* 超大屏幕 (大桌面) */
+@media (min-width: 1200px) {
+    /* 概览卡片 */
+    .overview-cards {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* 策略卡片 */
+    .strategy-cards {
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    }
+
+    /* 图表网格 */
+    .charts-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .chart-wrapper {
+        height: 450px;
+    }
+}
+
+/* 打印样式 */
+@media print {
+    * {
+        background: white !important;
+        color: black !important;
+        box-shadow: none !important;
+    }
+
+    .navbar,
+    .nav-actions,
+    .card-actions,
+    .modal,
+    .loading-indicator,
+    .notifications-container {
+        display: none !important;
+    }
+
+    .card {
+        border: 1px solid #000 !important;
+        break-inside: avoid;
+        margin-bottom: 1rem;
+    }
+
+    .overview-cards,
+    .strategy-cards,
+    .charts-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1rem !important;
+    }
+
+    .chart-wrapper {
+        height: 300px !important;
+    }
+
+    h1, h2, h3 {
+        page-break-after: avoid;
+    }
+}
+
+/* 高对比度模式 */
+@media (prefers-contrast: high) {
+    :root {
+        --border-color: #000000;
+        --text-primary: #000000;
+        --text-secondary: #000000;
+        --bg-primary: #ffffff;
+        --bg-secondary: #f0f0f0;
+    }
+
+    [data-theme="dark"] {
+        --border-color: #ffffff;
+        --text-primary: #ffffff;
+        --text-secondary: #ffffff;
+        --bg-primary: #000000;
+        --bg-secondary: #1a1a1a;
+    }
+
+    .btn {
+        border-width: 2px;
+    }
+
+    .card {
+        border-width: 2px;
+    }
+}
+
+/* 减少动画模式 */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .card:hover {
+        transform: none;
+    }
+
+    .tooltip:hover::after {
+        display: none;
+    }
+
+    .chart-wrapper {
+        touch-action: pan-x pan-y pinch-zoom;
+    }
+}
+
+/* 横屏模式优化 */
+@media (orientation: landscape) and (max-height: 600px) {
+    .navbar {
+        padding: var(--spacing-sm) 0;
+    }
+
+    .modal-content {
+        max-height: 90vh;
+    }
+
+    .chart-wrapper {
+        height: 250px;
+    }
+
+    .overview-cards {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+}
+
+/* 可视性优化 */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --text-primary: #f7fafc;
+        --text-secondary: #e2e8f0;
+        --text-muted: #a0aec0;
+        --text-light: #718096;
+
+        --bg-primary: #1a202c;
+        --bg-secondary: #2d3748;
+        --bg-tertiary: #4a5568;
+        --bg-dark: #0f1419;
+        --bg-darker: #0a0e27;
+
+        --border-color: #4a5568;
+        --border-light: #2d3748;
+        --border-dark: #718096;
+    }
+}

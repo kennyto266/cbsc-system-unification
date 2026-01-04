@@ -1,0 +1,53 @@
+# CBSC 策略管理系統 - Elasticsearch 配置
+# Elasticsearch configuration for CBSC Strategy Management System
+
+cluster.name: cbsc-cluster
+node.name: cbsc-elasticsearch-1
+node.roles: [master, data, ingest]
+
+# Network configuration
+network.host: 0.0.0.0
+http.port: 9200
+transport.port: 9300
+
+# Discovery configuration for single node development
+discovery.type: single-node
+
+# Path configuration
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+
+# Security configuration
+xpack.security.enabled: false
+xpack.security.enrollment.enabled: false
+
+# Monitoring configuration
+xpack.monitoring.collection.enabled: true
+
+# Memory configuration
+bootstrap.memory_lock: true
+
+# Index settings
+indices.lifecycle.poll_interval: 1m
+
+# Performance settings
+indices.memory.index_buffer_size: 10%
+indices.queries.cache.size: 5%
+
+# Log settings
+logger.level: INFO
+
+# Settings for production
+xpack.ml.enabled: false
+xpack.watcher.enabled: false
+
+# Reindex settings
+reindex.remote.whitelist: []
+
+# Index templates
+action.auto_create_index: "+*"
+
+# CBSC specific index templates and patterns
+index.mapper.dynamic: true
+index.number_of_shards: 1
+index.number_of_replicas: 0

@@ -1,0 +1,297 @@
+/**
+ * Strategy List Styles
+ */
+
+.strategy-list-container {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.dark .strategy-list-container {
+  background: #1f2937;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Header */
+.strategy-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .strategy-list-header {
+  border-bottom-color: #374151;
+}
+
+.strategy-list-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.dark .strategy-list-title {
+  color: #f9fafb;
+}
+
+.strategy-list-stats {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.stat-dot.stat-running {
+  background: #10b981;
+}
+
+.stat-dot.stat-paused {
+  background: #f59e0b;
+}
+
+.stat-dot.stat-stopped {
+  background: #ef4444;
+}
+
+/* Strategy List Items */
+.strategy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.strategy-list-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dark .strategy-list-item {
+  background: #374151;
+}
+
+.strategy-list-item:hover {
+  background: #f3f4f6;
+  transform: translateX(4px);
+}
+
+.dark .strategy-list-item:hover {
+  background: #4b5563;
+}
+
+/* Strategy Info */
+.strategy-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.strategy-status-icon {
+  flex-shrink: 0;
+}
+
+.status-icon {
+  flex-shrink: 0;
+}
+
+.status-icon.status-running {
+  color: #10b981;
+}
+
+.status-icon.status-paused {
+  color: #f59e0b;
+}
+
+.status-icon.status-stopped {
+  color: #ef4444;
+}
+
+.status-icon.status-error {
+  color: #dc2626;
+}
+
+.strategy-details {
+  flex: 1;
+}
+
+.strategy-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.dark .strategy-name {
+  color: #f9fafb;
+}
+
+.strategy-meta {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.dark .strategy-meta {
+  color: #9ca3af;
+}
+
+/* Strategy Return */
+.strategy-return {
+  text-align: right;
+}
+
+.return-value {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.return-label {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* Text colors */
+.text-green {
+  color: #10b981;
+}
+
+.text-red {
+  color: #ef4444;
+}
+
+.trend-up {
+  color: #10b981;
+}
+
+.trend-down {
+  color: #ef4444;
+}
+
+.trend-neutral {
+  color: #6b7280;
+}
+
+/* Strategy Actions */
+.strategy-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.strategy-list-item:hover .strategy-actions {
+  opacity: 1;
+}
+
+/* Footer */
+.strategy-list-footer {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.dark .strategy-list-footer {
+  border-top-color: #374151;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .strategy-list-container {
+    padding: 16px;
+  }
+
+  .strategy-list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .strategy-list-stats {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .strategy-list-item {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .strategy-return {
+    text-align: left;
+  }
+
+  .return-value {
+    justify-content: flex-start;
+  }
+
+  .strategy-actions {
+    opacity: 1;
+  }
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.running {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.paused {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.stopped {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.dark .status-badge.running {
+  background: #064e3b;
+  color: #d1fae5;
+}
+
+.dark .status-badge.paused {
+  background: #78350f;
+  color: #fef3c7;
+}
+
+.dark .status-badge.stopped {
+  background: #7f1d1d;
+  color: #fee2e2;
+}

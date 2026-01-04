@@ -4,10 +4,10 @@
  */
 
 // API基础URL - 根据环境变量或构建模式自动切换
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3004';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3005';
 
 // WebSocket URL
-export const WS_BASE_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:3004';
+export const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:3005';
 
 // API端点配置
 export const API_ENDPOINTS = {

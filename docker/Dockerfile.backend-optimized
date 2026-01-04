@@ -1,0 +1,108 @@
+# CBSC 策略管理系統優化 Dockerfile - 生產環境
+# Multi-stage build with security optimizations
+
+# Build stage
+FROM python:3.11-slim AS builder
+
+# Build arguments for version control
+ARG VERSION=2.0.0
+ARG BUILD_DATE
+ARG VCS_REF
+
+# Set labels
+LABEL maintainer="CBSC DevOps Team" \
+      version="${VERSION}" \
+      description="CBSC Strategy Management System - Production Optimized" \
+      org.label-schema.build-date="${BUILD_DATE}" \
+      org.label-schema.name="cbsc-strategy-api" \
+      org.label-schema.vcs-ref="${VCS_REF}" \
+      org.label-schema.vcs-url="https://github.com/cbsc/strategy-management"
+
+# Set environment variables for build
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create and activate virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy and install Python dependencies
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
+
+# Production stage
+FROM python:3.11-slim AS production
+
+# Security-related environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PATH="/opt/venv/bin:$PATH" \
+    STRATEGY_API_VERSION=2
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    postgresql-client \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Copy virtual environment from builder stage
+COPY --from=builder /opt/venv /opt/venv
+
+# Create app directory with proper permissions
+RUN mkdir -p /app && \
+    useradd --create-home --shell /bin/bash --uid 1001 app && \
+    chown -R app:app /app
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code with ownership
+COPY --chown=app:app src/ ./src/
+COPY --chown=app:app api/ ./api/
+COPY --chown=app:app migrations/ ./migrations/
+COPY --chown=app:app scripts/ ./scripts/
+COPY --chown=app:app config/ ./config/
+COPY --chown=app:app docker-entrypoint.sh /usr/local/bin/
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/data /app/logs /app/uploads /app/static /app/tmp && \
+    mkdir -p /app/logs/strategies /app/logs/api /app/logs/websocket && \
+    chmod 755 /app/data /app/logs /app/uploads /app/static /app/tmp && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Switch to non-root user
+USER app
+
+# Expose ports
+EXPOSE 3004 3005
+
+# Enhanced health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:3004/health || exit 1
+
+# Set entrypoint
+ENTRYPOINT ["docker-entrypoint.sh"]
+
+# Default command for production
+CMD ["python", "-m", "uvicorn", "src.api.main:app", \
+      "--host", "0.0.0.0", \
+      "--port", "3004", \
+      "--workers", "4", \
+      "--worker-class", "uvicorn.workers.UvicornWorker", \
+      "--access-log", \
+      "--log-level", "info"]

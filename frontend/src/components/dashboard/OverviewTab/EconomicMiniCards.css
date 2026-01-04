@@ -1,0 +1,237 @@
+/**
+ * Economic Mini Cards Styles
+ */
+
+.economic-mini-cards-container {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.dark .economic-mini-cards-container {
+  background: #1f2937;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Header */
+.economic-mini-cards-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .economic-mini-cards-header {
+  border-bottom-color: #374151;
+}
+
+.economic-mini-cards-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.dark .economic-mini-cards-title {
+  color: #f9fafb;
+}
+
+.economic-mini-cards-refresh {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dark .economic-mini-cards-refresh {
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+.economic-mini-cards-refresh:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.dark .economic-mini-cards-refresh:hover {
+  background: #374151;
+  border-color: #6b7280;
+}
+
+/* Cards Grid */
+.economic-mini-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+/* Mini Card */
+.economic-mini-card {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.dark .economic-mini-card {
+  background: #374151;
+}
+
+.economic-mini-card:hover {
+  background: #f3f4f6;
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dark .economic-mini-card:hover {
+  background: #4b5563;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Card Header */
+.economic-mini-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.economic-mini-card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.indicator-icon {
+  font-size: 16px;
+}
+
+.indicator-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.dark .indicator-name {
+  color: #e5e7eb;
+}
+
+.economic-mini-card-change {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Card Value */
+.economic-mini-card-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 12px;
+  line-height: 1;
+}
+
+.dark .economic-mini-card-value {
+  color: #f9fafb;
+}
+
+/* Sparkline */
+.economic-mini-card-sparkline {
+  height: 40px;
+  margin-bottom: 12px;
+}
+
+/* Card Footer */
+.economic-mini-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.indicator-name-en {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.dark .indicator-name-en {
+  color: #6b7280;
+}
+
+.stale-badge {
+  padding: 2px 8px;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dark .stale-badge {
+  background: #78350f;
+  color: #fef3c7;
+}
+
+/* Trend Colors */
+.trend-up {
+  color: #10b981;
+}
+
+.trend-down {
+  color: #ef4444;
+}
+
+.trend-neutral {
+  color: #6b7280;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .economic-mini-cards-container {
+    padding: 16px;
+  }
+
+  .economic-mini-card {
+    padding: 12px;
+  }
+
+  .economic-mini-card-value {
+    font-size: 20px;
+  }
+
+  .economic-mini-cards-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .economic-mini-cards-refresh {
+    width: 100%;
+  }
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.economic-mini-card.loading {
+  animation: pulse 1.5s ease-in-out infinite;
+}

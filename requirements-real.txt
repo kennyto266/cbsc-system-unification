@@ -1,0 +1,83 @@
+# CBSC Real Backend Requirements - Working Versions Only
+# CBSC 真實後端依賴 - 僅包含可用版本
+
+# ===== Core Framework =====
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+gunicorn==21.2.0
+
+# ===== Database =====
+sqlalchemy==2.0.23
+alembic==1.12.1
+psycopg2-binary==2.9.9
+asyncpg==0.29.0
+aiosqlite==0.19.0
+
+# ===== Cache & Storage =====
+redis==5.0.1
+hiredis==2.2.3
+influxdb-client==1.38.0
+
+# ===== Authentication & Security =====
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-dotenv==1.0.0
+cryptography>=42.0.0
+PyJWT==2.8.0
+
+# ===== Data Processing & Analytics =====
+pandas==2.1.4
+numpy==1.25.2
+scipy==1.11.4
+scikit-learn==1.3.2
+
+# ===== Backtesting Engine (Core) =====
+vectorbt>=0.26.0
+quantstats==0.0.62
+
+# ===== Technical Analysis =====
+# TA-Lib requires system build, skip for now
+# ta>=0.11.0
+
+# ===== Market Data Sources =====
+yfinance>=0.2.32
+# akshare - skip for now (version issues)
+# futu-api - requires local Futu OpenD, skip for docker
+# ccxt==4.1.88
+
+# ===== HTTP & API =====
+httpx==0.25.2
+aiohttp==3.9.1
+requests==2.31.0
+
+# ===== Monitoring & Logging =====
+structlog==23.2.0
+prometheus-client==0.19.0
+
+# ===== Task Queue =====
+# celery==5.3.4  - skip for now
+# kombu==5.3.4
+
+# ===== Configuration =====
+pydantic==2.5.2
+pydantic-settings==2.1.0
+
+# ===== Utilities =====
+click==8.1.7
+rich==13.7.0
+typer==0.9.0
+aiofiles==23.2.1
+psutil==5.9.6
+
+# ===== Visualization =====
+plotly==5.18.0
+# seaborn==0.13.0 - skip for now
+# matplotlib==3.8.2 - skip for now
+
+# ===== Testing =====
+# pytest==7.4.3
+# pytest-asyncio==0.21.1
+# pytest-cov==4.1.0
+argon2-cffi==23.1.0
+email-validator==2.1.0

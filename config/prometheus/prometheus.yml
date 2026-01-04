@@ -1,0 +1,52 @@
+# Prometheus 配置文件 - 生產環境
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Prometheus 自身監控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # 系統指標監控
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # VectorBT 應用監控
+  - job_name: 'vectorbt-backend'
+    static_configs:
+      - targets: ['backend:3004']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # PostgreSQL 監控
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # Redis 監控
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # Nginx 監控
+  - job_name: 'nginx-exporter'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+
+  # Docker 容器監控
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']

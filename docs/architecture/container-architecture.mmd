@@ -1,0 +1,227 @@
+```mermaid
+graph TB
+    %% ============================================
+    %% Frontend Architecture
+    %% ============================================
+    subgraph FRONTEND["前端應用 (Vite + React)"]
+        DirectionTB
+
+        subgraph FE_ROUTES["路由層"]
+            Router["React Router v6"]
+            Login["/login"]
+            Dashboard["/dashboard"]
+            Strategies["/strategies/*"]
+            Backtest["/backtest/*"]
+        end
+
+        subgraph FE_FEATURES["功能模組"]
+            FeatAuth["認證模組<br/>LoginPage"]
+            FeatDash["儀表板<br/>DashboardPage"]
+            FeatStrat["策略管理<br/>StrategyList/Detail/Create"]
+            FeatBack["回測模組<br/>BacktestList/Create/Report"]
+            FeatReal["實時監控<br/>RealtimeDashboard"]
+        end
+
+        subgraph FE_COMPONENTS["組件庫"]
+            UI["UI 組件<br/>Ant Design"]
+            Charts["圖表組件<br/>Chart.js/Plotly"]
+            Forms["表單組件"]
+            Layout["佈局組件<br/>Sidebar/Navigation"]
+        end
+
+        subgraph FE_STATE["狀態管理"]
+            Redux["Redux Toolkit"]
+            RTKQuery["RTK Query<br/>API 狀態"]
+        end
+
+        subgraph FE_API["API 層"]
+            API["API Client"]
+            WS["WebSocket Client"]
+            Endpoints["端點定義<br/>auth/strategy/backtest/portfolio"]
+        end
+
+        Router --> FeatAuth
+        Router --> FeatDash
+        Router --> FeatStrat
+        Router --> FeatBack
+        Router --> FeatReal
+
+        FeatDash --> UI
+        FeatDash --> Charts
+        FeatDash --> Redux
+
+        FeatStrat --> UI
+        FeatStrat --> Forms
+        FeatStrat --> API
+
+        FeatBack --> Charts
+        FeatBack --> API
+
+        FeatReal --> WS
+        FeatReal --> Charts
+
+        API --> Endpoints
+        RTKQuery --> Endpoints
+    end
+
+    %% ============================================
+    %% Backend Architecture
+    %% ============================================
+    subgraph BACKEND["後端 API (FastAPI)"]
+        DirectionTB
+
+        subgraph BE_ROUTERS["路由層"]
+            V1["API v1 路由"]
+            V2["API v2 路由"]
+            AuthRoutes["/api/v1/auth<br/>認證端點"]
+            StratRoutes["/api/v1/strategies<br/>策略管理"]
+            UserRoutes["/api/v1/users<br/>用戶管理"]
+            DataRoutes["/api/data<br/>數據端點"]
+        end
+
+        subgraph BE_SERVICES["服務層"]
+            AuthService["認證服務<br/>JWT/MFA"]
+            StratService["策略服務<br/>CRUD/優化"]
+            BacktestService["回測服務<br/>VectorBT"]
+            RiskService["風險管理<br/>監控/告警"]
+            DataCollector["數據收集器<br/>YFinance"]
+        end
+
+        subgraph BE_MIDDLEWARE["中間件"]
+            CORS["CORS"]
+            RateLimit["限流中間件"]
+            AuthMw["認證中間件"]
+            RBAC["權限控制<br/>RBAC"]
+            SecurityAudit["安全審計"]
+        end
+
+        subgraph BE_CORE["核心層"]
+            Database["數據庫會話<br/>SQLAlchemy"]
+            Cache["緩存層<br/>Redis"]
+            Events["事件總線"]
+            Logging["日誌系統"]
+        end
+
+        subgraph BE_MODELS["數據模型"]
+            UserModels["用戶模型"]
+            StratModels["策略模型"]
+            TradeModels["交易模型"]
+        end
+
+        V1 --> AuthRoutes
+        V1 --> StratRoutes
+        V1 --> UserRoutes
+        V2 --> StratRoutes
+        DataRoutes --> AuthMw
+
+        AuthRoutes --> AuthService
+        StratRoutes --> StratService
+        StratRoutes --> BacktestService
+        UserRoutes --> AuthService
+
+        AuthService --> RBAC
+        StratService --> BacktestService
+        BacktestService --> RiskService
+        DataRoutes --> DataCollector
+
+        AuthRoutes --> AuthMw
+        StratRoutes --> AuthMw
+        UserRoutes --> AuthMw
+
+        AuthMw --> RBAC
+        RBAC --> Database
+
+        AuthService --> Database
+        StratService --> Database
+        BacktestService --> Database
+        RiskService --> Cache
+        DataCollector --> Cache
+    end
+
+    %% ============================================
+    %% Data Layer
+    %% ============================================
+    subgraph DATABASE["數據層"]
+        PG[(PostgreSQL)]
+        Redis[(Redis)]
+    end
+
+    %% ============================================
+    %% External Services
+    %% ============================================
+    subgraph EXTERNAL["外部服務"]
+        YFinance["YFinance API"]
+        BrokerAPI["券商 API"]
+    end
+
+    %% ============================================
+    %% Connections
+    %% ============================================
+    FRONTEND -->|"HTTP/JSON<br/>REST API"| BACKEND
+    FRONTEND -->|"WebSocket<br/>Real-time"| BACKEND
+
+    BACKEND --> PG
+    BACKEND --> Redis
+
+    BACKEND --> YFinance
+    BACKEND --> BrokerAPI
+
+    %% Styling
+    classDef frontendClass fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef backendClass fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef databaseClass fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef externalClass fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+
+    class FRONTEND frontendClass
+    class BACKEND backendClass
+    class PG,Redis databaseClass
+    class YFinance,BrokerAPI externalClass
+```
+
+## 容器架構說明
+
+### 前端模組
+
+**路由層 (React Router v6):**
+- `/login` - 登入頁面
+- `/dashboard` - 主儀表板
+- `/strategies/*` - 策略管理（列表/詳情/創建）
+- `/backtest/*` - 回測功能
+
+**功能模組:**
+- `認證模組` - 用戶登入/登出
+- `儀表板` - 總覽和實時監控
+- `策略管理` - 策略 CRUD 和優化
+- `回測模組` - 歷史回測和報告生成
+- `實時監控` - WebSocket 實時數據
+
+**組件庫:**
+- UI 組件 - Ant Design
+- 圖表 - Chart.js, Plotly.js
+- 狀態管理 - Redux Toolkit + RTK Query
+
+### 後端模組
+
+**API 路由:**
+- `/api/v1/auth` - JWT 認證、MFA
+- `/api/v1/strategies` - 策略管理
+- `/api/v1/users` - 用戶管理
+- `/api/data` - 市場數據接口
+
+**服務層:**
+- 認證服務 - JWT 令牌、多因子認證
+- 策略服務 - 策略 CRUD、參數優化
+- 回測服務 - VectorBT 回測引擎
+- 風險管理 - 實時監控、告警系統
+- 數據收集 - YFinance 數據獲取
+
+**中間件:**
+- CORS - 跨域處理
+- 限流 - API 請求限流
+- 認證 - JWT 驗證
+- RBAC - 基於角色的訪問控制
+- 安全審計 - 操作日誌
+
+### 數據存儲
+- **PostgreSQL** - 持久化數據存儲
+- **Redis** - 緩存和會話存儲

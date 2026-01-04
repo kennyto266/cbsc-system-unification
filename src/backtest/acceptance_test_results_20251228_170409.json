@@ -1,0 +1,198 @@
+{
+  "timestamp": "2025-12-28T17:04:09.093620",
+  "total_time": 2.22682523727417,
+  "summary": {
+    "total": 14,
+    "passed": 10,
+    "failed": 0,
+    "errors": 1,
+    "skipped": 3
+  },
+  "results": [
+    {
+      "name": "Import: parameter_optimizer",
+      "category": "Module Import",
+      "status": "TestStatus.PASSED",
+      "message": "Successfully imported Parameter optimizer core module",
+      "duration": 1.16819167137146,
+      "details": {
+        "module": "parameter_optimizer",
+        "has_main_classes": true
+      }
+    },
+    {
+      "name": "Import: performance_optimizer",
+      "category": "Module Import",
+      "status": "TestStatus.PASSED",
+      "message": "Successfully imported Performance optimization extensions",
+      "duration": 0.0007426738739013672,
+      "details": {
+        "module": "performance_optimizer",
+        "has_main_classes": true
+      }
+    },
+    {
+      "name": "Import: performance_benchmark",
+      "category": "Module Import",
+      "status": "TestStatus.ERROR",
+      "message": "Failed to import: No module named 'massive_nonprice_ta_optimizer'",
+      "duration": 0.004007577896118164,
+      "details": {
+        "error": "No module named 'massive_nonprice_ta_optimizer'",
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Penguin8n\\CODEX--\\src\\backtest\\system_acceptance_test.py\", line 107, in _test_imports\n    module = __import__(module_name, fromlist=[''])\n  File \"C:\\Users\\Penguin8n\\CODEX--\\src\\backtest\\..\\..\\performance_benchmark.py\", line 19, in <module>\n    from massive_nonprice_ta_optimizer import MassiveNonPriceTAOptimizer\nModuleNotFoundError: No module named 'massive_nonprice_ta_optimizer'\n"
+      }
+    },
+    {
+      "name": "Import: optimization_visualization",
+      "category": "Module Import",
+      "status": "TestStatus.SKIPPED",
+      "message": "Successfully imported Visualization module",
+      "duration": 0.8949542045593262,
+      "details": {
+        "module": "optimization_visualization",
+        "has_main_classes": false
+      }
+    },
+    {
+      "name": "Import: comprehensive_test_suite",
+      "category": "Module Import",
+      "status": "TestStatus.SKIPPED",
+      "message": "Successfully imported Comprehensive test suite",
+      "duration": 0.0014150142669677734,
+      "details": {
+        "module": "comprehensive_test_suite",
+        "has_main_classes": false
+      }
+    },
+    {
+      "name": "Import: integration_runner",
+      "category": "Module Import",
+      "status": "TestStatus.SKIPPED",
+      "message": "Successfully imported Integration test runner",
+      "duration": 0.0012507438659667969,
+      "details": {
+        "module": "integration_runner",
+        "has_main_classes": false
+      }
+    },
+    {
+      "name": "E2E: Parameter Optimization Workflow",
+      "category": "Core Functionality",
+      "status": "TestStatus.PASSED",
+      "message": "Optimization completed, score: -0.6173",
+      "duration": 0.0033299922943115234,
+      "details": {
+        "best_params": {
+          "x": -0.5555555555555554,
+          "y": -0.5555555555555554
+        },
+        "best_score": -0.6172839506172835,
+        "n_evaluations": 100
+      }
+    },
+    {
+      "name": "E2E: Multi-Method Comparison",
+      "category": "Core Functionality",
+      "status": "TestStatus.PASSED",
+      "message": "Compared 2 methods",
+      "duration": 0.0008020401000976562,
+      "details": {
+        "results": {
+          "grid_search": -0.6172839506172835,
+          "random_search": -0.021980615048786626
+        }
+      }
+    },
+    {
+      "name": "E2E: Visualization Pipeline",
+      "category": "Core Functionality",
+      "status": "TestStatus.PASSED",
+      "message": "Generated 2 visualization(s)",
+      "duration": 0.08907270431518555,
+      "details": {
+        "figure_created": true
+      }
+    },
+    {
+      "name": "Performance: Multi-Method Comparison",
+      "category": "Performance",
+      "status": "TestStatus.PASSED",
+      "message": "Tested 3 methods",
+      "duration": 0.03560519218444824,
+      "details": {
+        "results": {
+          "grid_search": -0.6172839506172835,
+          "random_search": -0.02386083911711515,
+          "particle_swarm": -1.0885118600613443e-14
+        },
+        "times": {
+          "grid_search": 0.0001537799835205078,
+          "random_search": 0.0003383159637451172,
+          "particle_swarm": 0.03507089614868164
+        }
+      }
+    },
+    {
+      "name": "Performance: Scalability Test",
+      "category": "Performance",
+      "status": "TestStatus.PASSED",
+      "message": "Tested 3 dimensions",
+      "duration": 0.0013136863708496094,
+      "details": {
+        "results": {
+          "2D": {
+            "score": -0.06984124013606272,
+            "time": 0.000362396240234375,
+            "evaluations": 100
+          },
+          "3D": {
+            "score": -0.7665548675226488,
+            "time": 0.0004076957702636719,
+            "evaluations": 100
+          },
+          "4D": {
+            "score": -1.5626967399324931,
+            "time": 0.000499725341796875,
+            "evaluations": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "Data Integrity: Result Serialization",
+      "category": "Data Integrity",
+      "status": "TestStatus.PASSED",
+      "message": "Serialization successful, size: 285 bytes",
+      "duration": 6.29425048828125e-05,
+      "details": {
+        "json_size": 285,
+        "fields_preserved": true
+      }
+    },
+    {
+      "name": "Data Integrity: Parameter Validation",
+      "category": "Data Integrity",
+      "status": "TestStatus.PASSED",
+      "message": "Parameter validation: Working",
+      "duration": 5.7220458984375e-06,
+      "details": {
+        "validation_works": true
+      }
+    },
+    {
+      "name": "Integration: Complete Workflow",
+      "category": "Integration",
+      "status": "TestStatus.PASSED",
+      "message": "Workflow: 2 optimizations, 1 visualization(s)",
+      "duration": 0.024486541748046875,
+      "details": {
+        "n_optimizations": 2,
+        "visualization_created": true,
+        "scores": [
+          -0.6172839506172835,
+          -0.4771772282156634
+        ]
+      }
+    }
+  ]
+}

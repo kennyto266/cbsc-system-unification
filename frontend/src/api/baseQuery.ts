@@ -5,9 +5,11 @@ import type { RootState } from '../store'
 import { logout } from '../store/slices/authSlice'
 import type { ApiError } from '../types/api'
 
-// API base configuration
+// API base configuration - point to backend server
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3005'
+
 const baseQuery = fetchBaseQuery({
-  baseUrl: '/api',
+  baseUrl: `${API_BASE_URL}/api`,
   prepareHeaders: (headers, { getState }) => {
     // Get token from Redux store
     const token = (getState() as RootState).auth.token
@@ -81,11 +83,17 @@ export const baseQueryWithAuth: BaseQueryFn<string | FetchArgs, unknown, ApiErro
 }
 
 // Base query with re-authentication
+// NOTE: Token refresh temporarily disabled - backend doesn't have /auth/refresh endpoint yet
 export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, ApiError> = async (
   args,
   api,
   extraOptions
 ) => {
+  // Direct call without refresh logic for now
+  return await baseQueryWithAuth(args, api, extraOptions)
+
+  // TODO: Enable refresh logic once backend implements /auth/refresh endpoint
+  /*
   let result = await baseQueryWithAuth(args, api, extraOptions)
 
   // If token expired or invalid (401), try to refresh
@@ -118,6 +126,7 @@ export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, ApiEr
   }
 
   return result
+  */
 }
 
 // Enhanced base query with retry logic

@@ -1,0 +1,51 @@
+/**
+ * StrategyExecutionPanel Styles
+ */
+
+.strategy-execution-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .panel-header {
+  border-bottom-color: #374151;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.dark .panel-header h2 {
+  color: #f9fafb;
+}
+
+/* Grid layout */
+.strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  min-height: 200px;
+}
+
+.strategy-grid-item {
+  height: fit-content;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .strategy-grid {
+    grid-template-columns: 1fr;
+  }
+}

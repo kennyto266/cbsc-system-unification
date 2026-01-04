@@ -5,10 +5,14 @@ import { NavigationProvider } from '../../navigation/NavigationProvider';
 import MainLayout from './MainLayout';
 import MobileLayout from './MobileLayout';
 
+interface ResponsiveLayoutProps {
+  children?: React.ReactNode;
+}
+
 /**
  * ResponsiveLayout - Automatically switches between desktop and mobile layouts
  */
-const ResponsiveLayout: React.FC = () => {
+const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({ children }) => {
   const { isMobile } = useResponsive();
 
   // Render mobile layout on mobile devices
@@ -16,7 +20,7 @@ const ResponsiveLayout: React.FC = () => {
     return (
       <NavigationProvider>
         <MobileLayout>
-          <Outlet />
+          {children || <Outlet />}
         </MobileLayout>
       </NavigationProvider>
     );
@@ -26,7 +30,7 @@ const ResponsiveLayout: React.FC = () => {
   return (
     <NavigationProvider>
       <MainLayout>
-        <Outlet />
+        {children || <Outlet />}
       </MainLayout>
     </NavigationProvider>
   );

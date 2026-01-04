@@ -6,7 +6,7 @@
 
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
-from sqlalchemy import Column, String, Boolean, DateTime, Text, Table, ForeignKey
+from sqlalchemy import Column, String, Boolean, DateTime, Text, Table, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from pydantic import BaseModel, Field, EmailStr, validator
@@ -21,9 +21,9 @@ user_roles = Table(
     UnifiedBaseModel.metadata,
     Column('user_id', String(36), ForeignKey('user.id'), primary_key=True),
     Column('role_id', String(36), ForeignKey('role.id'), primary_key=True),
-    Column('assigned_at', DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
+    Column('assigned_at', DateTime, default=lambda: datetime.now(timezone.utc)),
     Column('assigned_by', String(36), nullable=True),
-    Column('expires_at', DateTime(timezone=True), nullable=True)
+    Column('expires_at', DateTime, nullable=True)
 )
 
 role_permissions = Table(
@@ -31,7 +31,7 @@ role_permissions = Table(
     UnifiedBaseModel.metadata,
     Column('role_id', String(36), ForeignKey('role.id'), primary_key=True),
     Column('permission_id', String(36), ForeignKey('permission.id'), primary_key=True),
-    Column('granted_at', DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
+    Column('granted_at', DateTime, default=lambda: datetime.now(timezone.utc)),
     Column('granted_by', String(36), nullable=True)
 )
 
@@ -61,8 +61,8 @@ class User(UnifiedBaseModel):
     mfa_enabled = Column(Boolean, default=False, nullable=False)
     mfa_secret = Column(String(32), nullable=True)
     failed_login_attempts = Column(Integer, default=0, nullable=False)
-    locked_until = Column(DateTime(timezone=True), nullable=True)
-    last_login_at = Column(DateTime(timezone=True), nullable=True)
+    locked_until = Column(DateTime, nullable=True)
+    last_login_at = Column(DateTime, nullable=True)
     last_login_ip = Column(String(45), nullable=True)
 
     # 偏好設置
@@ -169,8 +169,8 @@ class UserRole(UnifiedBaseModel):
 
     # 分配信息
     assigned_by = Column(String(36), nullable=True)
-    assigned_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    expires_at = Column(DateTime(timezone=True), nullable=True)
+    assigned_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    expires_at = Column(DateTime, nullable=True)
 
     # 狀態
     is_active = Column(Boolean, default=True, nullable=False)

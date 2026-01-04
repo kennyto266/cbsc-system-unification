@@ -18,7 +18,7 @@ import pickle
 logger = logging.getLogger(__name__)
 
 class CacheService:
-    """Redis缓存服务"""
+    """Redis缓存服务 with in-memory fallback"""
 
     def __init__(
         self,
@@ -37,6 +37,10 @@ class CacheService:
         self.redis_pool: Optional[ConnectionPool] = None
         self.redis_client: Optional[redis.Redis] = None
         self._is_connected = False
+
+        # In-memory fallback cache
+        self._memory_cache: Dict[str, tuple[Any, Optional[float]]] = {}  # key -> (value, expiry_time)
+        self._use_memory_fallback = False
 
     async def initialize(self) -> bool:
         """初始化缓存服务"""
@@ -62,9 +66,11 @@ class CacheService:
             return True
 
         except Exception as e:
-            logger.error(f"缓存服务初始化失败: {e}")
+            logger.warning(f"Redis連接失敗，啟用內存緩存回退: {e}")
             self._is_connected = False
-            return False
+            self._use_memory_fallback = True
+            logger.info("✅ 內存緩存回退已啟用 - 緩存功能將使用進程內存")
+            return True  # Return True since we have fallback
 
     async def is_connected(self) -> bool:
         """检查连接状态"""
@@ -78,6 +84,70 @@ class CacheService:
             self._is_connected = False
             return False
 
+    # ============================================================================
+    # Memory Fallback Cache Helpers
+    # ============================================================================
+
+    def _memory_cache_set(self, key: str, value: Any, expire: Optional[int] = None) -> bool:
+        """Set value in memory cache"""
+        try:
+            expiry_time = None
+            if expire:
+                expiry_time = datetime.now().timestamp() + expire
+            self._memory_cache[key] = (value, expiry_time)
+            return True
+        except Exception as e:
+            logger.error(f"Memory cache set failed: {e}")
+            return False
+
+    def _memory_cache_get(self, key: str, default: Any = None) -> Any:
+        """Get value from memory cache"""
+        try:
+            if key not in self._memory_cache:
+                return default
+
+            value, expiry_time = self._memory_cache[key]
+
+            # Check if expired
+            if expiry_time and datetime.now().timestamp() > expiry_time:
+                del self._memory_cache[key]
+                return default
+
+            return value
+        except Exception as e:
+            logger.error(f"Memory cache get failed: {e}")
+            return default
+
+    def _memory_cache_delete(self, key: str) -> bool:
+        """Delete value from memory cache"""
+        try:
+            if key in self._memory_cache:
+                del self._memory_cache[key]
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Memory cache delete failed: {e}")
+            return False
+
+    async def _memory_cache_cleanup(self) -> int:
+        """Clean expired entries from memory cache"""
+        try:
+            current_time = datetime.now().timestamp()
+            expired_keys = [
+                key for key, (_, expiry) in self._memory_cache.items()
+                if expiry and current_time > expiry
+            ]
+            for key in expired_keys:
+                del self._memory_cache[key]
+            return len(expired_keys)
+        except Exception as e:
+            logger.error(f"Memory cache cleanup failed: {e}")
+            return 0
+
+    # ============================================================================
+    # Public Cache Operations with Memory Fallback
+    # ============================================================================
+
     async def set(
         self,
         key: str,
@@ -87,23 +157,31 @@ class CacheService:
     ) -> bool:
         """设置缓存"""
         try:
-            if not await self.is_connected():
-                return False
+            # Try Redis first if connected
+            if await self.is_connected():
+                if use_pickle:
+                    serialized_value = pickle.dumps(value)
+                else:
+                    serialized_value = json.dumps(value, default=str).encode('utf-8')
 
-            if use_pickle:
-                serialized_value = pickle.dumps(value)
-            else:
-                serialized_value = json.dumps(value, default=str).encode('utf-8')
+                if expire:
+                    await self.redis_client.setex(key, expire, serialized_value)
+                else:
+                    await self.redis_client.set(key, serialized_value)
 
-            if expire:
-                await self.redis_client.setex(key, expire, serialized_value)
-            else:
-                await self.redis_client.set(key, serialized_value)
+                return True
 
-            return True
+            # Fall back to memory cache
+            elif self._use_memory_fallback:
+                return self._memory_cache_set(key, value, expire)
+
+            return False
 
         except Exception as e:
             logger.error(f"设置缓存失败 {key}: {e}")
+            # Try memory fallback on error
+            if self._use_memory_fallback:
+                return self._memory_cache_set(key, value, expire)
             return False
 
     async def get(
@@ -114,34 +192,50 @@ class CacheService:
     ) -> Any:
         """获取缓存"""
         try:
-            if not await self.is_connected():
-                return default
+            # Try Redis first if connected
+            if await self.is_connected():
+                value = await self.redis_client.get(key)
 
-            value = await self.redis_client.get(key)
+                if value is None:
+                    return default
 
-            if value is None:
-                return default
+                if use_pickle:
+                    return pickle.loads(value)
+                else:
+                    return json.loads(value.decode('utf-8'))
 
-            if use_pickle:
-                return pickle.loads(value)
-            else:
-                return json.loads(value.decode('utf-8'))
+            # Fall back to memory cache
+            elif self._use_memory_fallback:
+                return self._memory_cache_get(key, default)
+
+            return default
 
         except Exception as e:
             logger.error(f"获取缓存失败 {key}: {e}")
+            # Try memory fallback on error
+            if self._use_memory_fallback:
+                return self._memory_cache_get(key, default)
             return default
 
     async def delete(self, key: str) -> bool:
         """删除缓存"""
         try:
-            if not await self.is_connected():
-                return False
+            # Try Redis first if connected
+            if await self.is_connected():
+                result = await self.redis_client.delete(key)
+                return result > 0
 
-            result = await self.redis_client.delete(key)
-            return result > 0
+            # Fall back to memory cache
+            elif self._use_memory_fallback:
+                return self._memory_cache_delete(key)
+
+            return False
 
         except Exception as e:
             logger.error(f"删除缓存失败 {key}: {e}")
+            # Try memory fallback on error
+            if self._use_memory_fallback:
+                return self._memory_cache_delete(key)
             return False
 
     async def delete_pattern(self, pattern: str) -> int:
@@ -200,13 +294,28 @@ class CacheService:
     async def increment(self, key: str, amount: int = 1) -> Optional[int]:
         """递增缓存值"""
         try:
+            # 使用内存回退模式
+            if self._use_memory_fallback:
+                current_value = self._memory_cache_get(key, default=0)
+                new_value = (current_value or 0) + amount
+                self._memory_cache_set(key, new_value)
+                return new_value
+
             if not await self.is_connected():
                 return None
 
             return await self.redis_client.incrby(key, amount)
 
         except Exception as e:
-            logger.error(f"递增缓存失败 {key}: {e}")
+            # 如果Redis失敗，回退到內存緩存
+            if not self._use_memory_fallback:
+                logger.warning(f"Redis increment failed, using memory fallback: {e}")
+                self._use_memory_fallback = True
+                current_value = self._memory_cache_get(key, default=0)
+                new_value = (current_value or 0) + amount
+                self._memory_cache_set(key, new_value)
+                return new_value
+            logger.error(f"Memory increment failed {key}: {e}")
             return None
 
     async def list_push(self, key: str, *values: Any, maxlen: Optional[int] = None) -> Optional[int]:
@@ -390,8 +499,26 @@ class CacheService:
     async def record_api_call(self, endpoint: str, user_id: int, response_time: float) -> bool:
         """记录API调用统计"""
         try:
-            # 使用哈希结构存储API调用统计
             key = f"api_stats:{endpoint}"
+
+            # 使用内存回退模式
+            if self._use_memory_fallback:
+                # 从内存获取现有统计
+                stats_key = f"{key}_stats"
+                stats = self._memory_cache_get(stats_key) or {"call_count": 0, "avg_response_time": 0, "total_time": 0}
+
+                # 更新统计
+                stats["call_count"] += 1
+                stats["total_time"] += response_time
+                stats["avg_response_time"] = stats["total_time"] / stats["call_count"]
+
+                # 保存回内存（24小时过期）
+                self._memory_cache_set(stats_key, stats, expire=86400)
+                return True
+
+            # 使用Redis存储
+            if not await self.is_connected():
+                return False
 
             # 更新调用次数
             await self.redis_client.hincrby(key, "call_count", 1)
@@ -408,7 +535,13 @@ class CacheService:
             return True
 
         except Exception as e:
-            logger.error(f"记录API调用统计失败: {e}")
+            # 如果Redis失敗，回退到內存緩存
+            if not self._use_memory_fallback:
+                logger.warning(f"Redis record_api_call failed, using memory fallback: {e}")
+                self._use_memory_fallback = True
+                # 重试使用内存模式
+                return await self.record_api_call(endpoint, user_id, response_time)
+            logger.error(f"Memory record_api_call failed: {e}")
             return False
 
     async def get_api_stats(self, endpoint: str) -> Dict[str, Any]:
@@ -455,20 +588,33 @@ class CacheService:
     async def get_cache_info(self) -> Dict[str, Any]:
         """获取缓存信息"""
         try:
-            if not await self.is_connected():
-                return {"connected": False}
+            if await self.is_connected():
+                info = await self.redis_client.info()
 
-            info = await self.redis_client.info()
+                return {
+                    "type": "redis",
+                    "connected": True,
+                    "used_memory": info.get("used_memory_human"),
+                    "total_commands_processed": info.get("total_commands_processed"),
+                    "keyspace_hits": info.get("keyspace_hits"),
+                    "keyspace_misses": info.get("keyspace_misses"),
+                    "connected_clients": info.get("connected_clients"),
+                    "uptime_in_seconds": info.get("uptime_in_seconds")
+                }
 
-            return {
-                "connected": True,
-                "used_memory": info.get("used_memory_human"),
-                "total_commands_processed": info.get("total_commands_processed"),
-                "keyspace_hits": info.get("keyspace_hits"),
-                "keyspace_misses": info.get("keyspace_misses"),
-                "connected_clients": info.get("connected_clients"),
-                "uptime_in_seconds": info.get("uptime_in_seconds")
-            }
+            elif self._use_memory_fallback:
+                # Count expired entries
+                await self._memory_cache_cleanup()
+
+                return {
+                    "type": "memory",
+                    "connected": True,
+                    "cache_entries": len(self._memory_cache),
+                    "fallback_mode": True,
+                    "note": "Using in-memory cache fallback"
+                }
+
+            return {"connected": False}
 
         except Exception as e:
             logger.error(f"获取缓存信息失败: {e}")

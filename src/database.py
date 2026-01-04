@@ -75,8 +75,8 @@ class SecureDatabaseManager:
     """安全数据库管理器 - 集成SQL注入防护"""
 
     def __init__(self):
-        # 获取数据库URL并验证
-        database_url = os.getenv('DATABASE_URL', 'postgresql://user:password@localhost/quant_system')
+        # 获取数据库URL并验证 (使用 docker-compose 凭据)
+        database_url = os.getenv('DATABASE_URL', 'postgresql://cbsc_user:cbsc_password@localhost:5432/cbsc_strategy')
 
         # 基本验证数据库URL
         if not self._validate_database_url(database_url):

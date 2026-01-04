@@ -59,9 +59,9 @@ class AnalysisReport(UnifiedBaseModel):
     strategy_id = Column(String(36), ForeignKey('strategies.id'), nullable=True)
 
     # 報告時間範圍
-    period_start = Column(DateTime(timezone=True), nullable=False)
-    period_end = Column(DateTime(timezone=True), nullable=False)
-    generated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    period_start = Column(DateTime, nullable=False)
+    period_end = Column(DateTime, nullable=False)
+    generated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # 報告狀態
     status = Column(String(20), default=StatusEnum.COMPLETED, nullable=False, index=True)
@@ -97,10 +97,10 @@ class AnalysisReport(UnifiedBaseModel):
 
     # 審計信息
     reviewed_by = Column(String(36), nullable=True)
-    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
     approved = Column(Boolean, nullable=True)
     approved_by = Column(String(36), nullable=True)
-    approved_at = Column(DateTime(timezone=True), nullable=True)
+    approved_at = Column(DateTime, nullable=True)
 
     # 複合索引
     __table_args__ = (
@@ -128,12 +128,12 @@ class BacktestResult(UnifiedBaseModel):
     initial_capital = Column(NUMERIC(20, 4), nullable=False)
     commission_rate = Column(Float, default=0.001, nullable=False)
     slippage_rate = Column(Float, default=0.0005, nullable=False)
-    start_date = Column(DateTime(timezone=True), nullable=False)
-    end_date = Column(DateTime(timezone=True), nullable=False)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
 
     # 執行信息
-    started_at = Column(DateTime(timezone=True), nullable=True)
-    completed_at = Column(DateTime(timezone=True), nullable=True)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
     execution_time_seconds = Column(Integer, nullable=True)
     data_points_processed = Column(Integer, nullable=True)
 
@@ -223,9 +223,9 @@ class PerformanceMetrics(UnifiedBaseModel):
     metric_category = Column(String(50), nullable=False, index=True)  # daily, weekly, monthly, ytd, all_time
 
     # 時間範圍
-    calculation_date = Column(DateTime(timezone=True), nullable=False, index=True)
-    period_start = Column(DateTime(timezone=True), nullable=False)
-    period_end = Column(DateTime(timezone=True), nullable=False)
+    calculation_date = Column(DateTime, nullable=False, index=True)
+    period_start = Column(DateTime, nullable=False)
+    period_end = Column(DateTime, nullable=False)
 
     # 指標值
     value = Column(Float, nullable=False)

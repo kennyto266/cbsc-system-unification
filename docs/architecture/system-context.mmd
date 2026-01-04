@@ -1,0 +1,60 @@
+```mermaid
+graph TB
+    %% Users
+    User[交易員/投資者]
+    Admin[系統管理員]
+
+    %% CBSC System
+    subgraph CBSC["CBSC 量化交易策略管理系統"]
+        DirectionTB
+        Frontend["Web 前端<br/>React + TypeScript"]
+        Backend["API 後端<br/>FastAPI + Python"]
+        DB[(PostgreSQL<br/>策略數據庫)]
+        Cache[(Redis<br/>緩存)]
+
+        Frontend -->|"HTTP/WebSocket"| Backend
+        Backend --> DB
+        Backend --> Cache
+    end
+
+    %% External Services
+    MarketData["市場數據源<br/>YFinance"]
+    Broker["券商 API<br/>交易執行"]
+
+    %% User Interactions
+    User -->|"訪問 Dashboard"| Frontend
+    User -->|"管理策略"| Frontend
+    User -->|"查看回測報告"| Frontend
+
+    Admin -->|"系統配置"| Backend
+    Admin -->|"用戶管理"| Backend
+
+    %% External Data Flow
+    Backend -->|"獲取實時行情"| MarketData
+    Backend -->|"執行交易"| Broker
+
+    %% Styling
+    classDef userClass fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef systemClass fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef externalClass fill:#fff3e0,stroke:#e65100,stroke-width:2px
+
+    class User,Admin userClass
+    class Frontend,Backend,DB,CBSC systemClass
+    class MarketData,Broker externalClass
+```
+
+## 系統上下文說明
+
+**主要用戶角色:**
+- **交易員/投資者**: 使用系統進行策略管理和交易
+- **系統管理員**: 維護系統和用戶管理
+
+**核心系統組件:**
+- **Web 前端**: React + TypeScript，提供用戶界面
+- **API 後端**: FastAPI + Python，處理業務邏輯
+- **PostgreSQL**: 存儲策略、用戶、交易數據
+- **Redis**: 緩存熱點數據，提升性能
+
+**外部集成:**
+- **市場數據源**: YFinance API 獲取實時行情
+- **券商 API**: 執行實際交易訂單

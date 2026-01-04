@@ -1,0 +1,328 @@
+version: '3.8'
+
+services:
+  # InfluxDB 2.0 Time Series Database
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: cbsc-influxdb
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      # InfluxDB configuration
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=cbsc_admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_PASSWORD:-cbsc_influxdb_admin_2024}
+      - DOCKER_INFLUXDB_INIT_ORG=cbsc
+      - DOCKER_INFLUXDB_INIT_BUCKET=market_data
+      - DOCKER_INFLUXDB_INIT_RETENTION=90d
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_TOKEN:-cbsc_influxdb_token_1234567890abcdef}
+      # Performance tuning
+      - INFLUXD_BOLT_PATH=/var/lib/influxdb2/influxd.bolt
+      - INFLUXD_ENGINE_PATH=/var/lib/influxdb2/engine
+      - INFLUXD_QUERY_CONCURRENCY=20
+      - INFLUXD_QUERY_MEMORY_BYTES=1073741824  # 1GB
+      - INFLUXD_QUERY_TIMEOUT=0s
+      - INFLUXD_MAX_CONNECTIONS=10000
+      - INFLUXD_MAX_CONCURRENT_QUERIES=0
+      - INFLUXD_MAX_SELECT_POINT=0
+      - INFLUXD_MAX_SELECT_SERIES=0
+      - INFLUXD_MAX_SELECT_BUCKETS=0
+    volumes:
+      # Data persistence
+      - influxdb_data:/var/lib/influxdb2
+      - influxdb_config:/etc/influxdb2
+      # Configuration files
+      - ./config/influxdb.conf:/etc/influxdb2/influxdb.conf:ro
+      - ./config/influxdb-market-data-schema.yml:/app/schema/influxdb-market-data-schema.yml:ro
+      # Initialization scripts
+      - ./scripts/influxdb-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - cbsc-timeseries
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # InfluxDB CLI for management
+  influxdb-cli:
+    image: influxdb:2.7-alpine
+    container_name: cbsc-influxdb-cli
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    environment:
+      - INFLUX_HOST=http://influxdb:8086
+      - INFLUX_ORG=cbsc
+      - INFLUX_TOKEN=${INFLUXDB_TOKEN:-cbsc_influxdb_token_1234567890abcdef}
+    networks:
+      - cbsc-timeseries
+    command: >
+      sh -c "
+        echo 'InfluxDB CLI container ready';
+        echo 'Use: docker exec -it cbsc-influxdb-cli influx ping';
+        tail -f /dev/null
+      "
+
+  # Telegraf for data collection
+  telegraf:
+    image: telegraf:1.29-alpine
+    container_name: cbsc-telegraf
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    environment:
+      - INFLUX_TOKEN=${INFLUXDB_TOKEN:-cbsc_influxdb_token_1234567890abcdef}
+      - INFLUX_ORG=cbsc
+      - INFLUX_URL=http://influxdb:8086
+    volumes:
+      # Telegraf configuration
+      - ./config/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - ./config/telegraf/telegraf.d:/etc/telegraf/telegraf.d:ro
+      # System metrics
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - cbsc-timeseries
+    healthcheck:
+      test: ["CMD", "telegraf", "--test"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Kapacitor for alerting and data processing (optional)
+  kapacitor:
+    image: kapacitor:1.6-alpine
+    container_name: cbsc-kapacitor
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    environment:
+      - KAPACITOR_INFLUXDB_0_URLS_0=http://influxdb:8086
+      - KAPACITOR_INFLUXDB_0_USERNAME=cbsc_admin
+      - KAPACITOR_INFLUXDB_0_PASSWORD=${INFLUXDB_PASSWORD:-cbsc_influxdb_admin_2024}
+    volumes:
+      - kapacitor_data:/var/lib/kapacitor
+      - ./config/kapacitor/kapacitor.conf:/etc/kapacitor/kapacitor.conf:ro
+      - ./scripts/kapacitor-init:/etc/kapacitor/load:ro
+    networks:
+      - cbsc-timeseries
+    ports:
+      - "9092:9092"
+
+  # Chronograf for visualization (optional, replaced by Grafana)
+  chronograf:
+    image: chronograf:1.9-alpine
+    container_name: cbsc-chronograf
+    restart: unless-stopped
+    depends_on:
+      - influxdb
+      - kapacitor
+    ports:
+      - "8888:8888"
+    environment:
+      - CHRONOGRAF_INFLUXDB_URL=http://influxdb:8086
+      - CHRONOGRAF_KAPACITOR_URL=http://kapacitor:9092
+    volumes:
+      - chronograf_data:/var/lib/chronograf
+    networks:
+      - cbsc-timeseries
+
+  # Grafana for visualization and dashboards
+  grafana-influx:
+    image: grafana/grafana:10.2-alpine
+    container_name: cbsc-grafana-influx
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    ports:
+      - "3001:3000"  # Use different port to avoid conflict with main Grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=cbsc_admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-cbsc_grafana_admin_2024}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-influxdb-flux-datasource
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=smtp.gmail.com:587
+      - GF_SMTP_USER=${SMTP_USER}
+      - GF_SMTP_PASSWORD=${SMTP_PASSWORD}
+      - GF_SMTP_FROM_ADDRESS=noreply@cbsc.com
+    volumes:
+      - grafana_influx_data:/var/lib/grafana
+      - ./config/grafana/influx-provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards/influx:/var/lib/grafana/dashboards:ro
+    networks:
+      - cbsc-timeseries
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching and session storage
+  redis-influx:
+    image: redis:7-alpine
+    container_name: cbsc-redis-influx
+    restart: unless-stopped
+    ports:
+      - "6380:6379"  # Different port to avoid conflict
+    volumes:
+      - redis_influx_data:/data
+      - ./config/redis/redis-influx.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - cbsc-timeseries
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Python service for data processing and ingestion
+  influx-data-processor:
+    build:
+      context: .
+      dockerfile: Dockerfile.influx
+    container_name: cbsc-influx-data-processor
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      redis-influx:
+        condition: service_healthy
+    environment:
+      # InfluxDB connection
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN:-cbsc_influxdb_token_1234567890abcdef}
+      - INFLUXDB_ORG=cbsc
+      - INFLUXDB_BUCKET=market_data
+      # Redis connection
+      - REDIS_URL=redis://redis-influx:6379/0
+      # PostgreSQL connection for metadata
+      - POSTGRES_URL=postgresql://cbsc_admin:${POSTGRES_PASSWORD:-cKelI4TJVKQ5pgCVKHYMY7GUZqqQsHvELoQBTJg-u8IPw!}@postgres:5432/cbsc_production
+      # Data sources
+      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
+      - POLYGON_API_KEY=${POLYGON_API_KEY}
+      - YAHOO_FINANCE_ENABLED=true
+      # Processing configuration
+      - DATA_PROCESSING_INTERVAL=60  # seconds
+      - BATCH_SIZE=1000
+      - WORKER_PROCESSES=4
+    volumes:
+      # Configuration
+      - ./config/influxdb-market-data-schema.yml:/app/config/influxdb-market-data-schema.yml:ro
+      # Logs
+      - ./logs/influx:/app/logs
+      # Data cache
+      - ./data/influx:/app/data/cache
+    networks:
+      - cbsc-timeseries
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Market data collector service
+  market-data-collector:
+    build:
+      context: .
+      dockerfile: Dockerfile.collector
+    container_name: cbsc-market-data-collector
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      redis-influx:
+        condition: service_healthy
+    environment:
+      # InfluxDB connection
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN:-cbsc_influxdb_token_1234567890abcdef}
+      - INFLUXDB_ORG=cbsc
+      # Redis connection
+      - REDIS_URL=redis://redis-influx:6379/1
+      # Data source configurations
+      - DATA_SOURCES=yahoo,alpha_vantage,polygon
+      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
+      - POLYGON_API_KEY=${POLYGON_API_KEY}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY}
+      # Collection schedule
+      - COLLECTION_SCHEDULE=*/1 * * * *  # Every minute
+      - SYMBOLS_FILE=/app/data/symbols.txt
+      - MARKET_HOURS_ONLY=true
+    volumes:
+      - ./config/market-symbols.txt:/app/data/symbols.txt:ro
+      - ./logs/collector:/app/logs
+    networks:
+      - cbsc-timeseries
+    command: >
+      sh -c "
+        echo 'Starting market data collector...';
+        python -m src.collectors.market_data;
+      "
+
+  # Strategy signal processor
+  strategy-signal-processor:
+    build:
+      context: .
+      dockerfile: Dockerfile.signals
+    container_name: cbsc-strategy-signal-processor
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN:-cbsc_influxdb_token_1234567890abcdef}
+      - INFLUXDB_ORG=cbsc
+      - POSTGRES_URL=postgresql://cbsc_admin:${POSTGRES_PASSWORD:-cKelI4TJVKQ5pgCVKHYMY7GUZqqQsHvELoQBTJg-u8IPw!}@postgres:5432/cbsc_production
+      - SIGNAL_PROCESSING_INTERVAL=30  # seconds
+      - STRATEGY_REFRESH_INTERVAL=300  # seconds
+    volumes:
+      - ./logs/signals:/app/logs
+    networks:
+      - cbsc-timeseries
+      - cbsc-monitoring  # Connect to main network for PostgreSQL access
+
+# Named volumes for data persistence
+volumes:
+  influxdb_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/data/influxdb/data
+  influxdb_config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/data/influxdb/config
+  kapacitor_data:
+    driver: local
+  chronograf_data:
+    driver: local
+  grafana_influx_data:
+    driver: local
+  redis_influx_data:
+    driver: local
+
+# Networks
+networks:
+  cbsc-timeseries:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+          gateway: 172.22.0.1
+  cbsc-monitoring:
+    external: true  # Connect to existing monitoring network

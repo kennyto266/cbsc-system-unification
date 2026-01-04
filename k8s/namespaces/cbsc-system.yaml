@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cbsc-system
+  labels:
+    name: cbsc-system
+    environment: production
+    project: cbsc-strategy-management
+  annotations:
+    description: "CBSC Strategy Management System Namespace"

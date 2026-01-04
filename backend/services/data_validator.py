@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 import logging
 
-from backend.data_config import DataValidatorConfig
+from data_config import DataValidatorConfig
 
 logger = logging.getLogger(__name__)
 

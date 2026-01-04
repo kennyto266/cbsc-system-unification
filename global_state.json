@@ -1,0 +1,17 @@
+{
+  "market_sz": "AFTERNOON",
+  "market_us": "AFTER_HOURS_END",
+  "market_sh": "AFTERNOON",
+  "market_hk": "AFTERNOON",
+  "market_hkfuture": "FUTURE_DAY_OPEN",
+  "market_usfuture": "FUTURE_OPEN",
+  "market_sgfuture": "FUTURE_DAY_OPEN",
+  "market_jpfuture": "FUTURE_DAY_OPEN",
+  "server_ver": "904",
+  "trd_logined": true,
+  "timestamp": "1766120729",
+  "qot_logined": true,
+  "local_timestamp": 1766120729.263279,
+  "program_status_type": "READY",
+  "program_status_desc": ""
+}

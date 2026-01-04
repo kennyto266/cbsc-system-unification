@@ -11,7 +11,7 @@ import logging
 from typing import Callable
 from datetime import datetime
 from fastapi import Request, Response
-from fastapi.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.base import RequestResponseEndpoint
 
 from .cache_service import cache_service
@@ -324,8 +324,8 @@ def setup_middleware(app):
     # 2. 安全头中间件
     app.add_middleware(SecurityHeadersMiddleware)
 
-    # 3. 限流中间件
-    app.add_middleware(RateLimitingMiddleware, requests_per_minute=120)
+    # 3. 限流中间件 - 暫時禁用以修復內存緩存 bug
+    # app.add_middleware(RateLimitingMiddleware, requests_per_minute=10000)
 
     # 4. 性能监控中间件
     app.add_middleware(PerformanceMonitoringMiddleware)

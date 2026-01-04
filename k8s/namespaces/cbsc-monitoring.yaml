@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cbsc-monitoring
+  labels:
+    name: cbsc-monitoring
+    environment: production
+    project: cbsc-strategy-management
+    monitoring: prometheus
+  annotations:
+    description: "CBSC Strategy Management System Monitoring Namespace"

@@ -1,0 +1,18 @@
+{
+  "user_id": "2860386",
+  "api_port": 1130,
+  "test_time": "2025-12-19T13:00:16.766159",
+  "results": {
+    "connection": true,
+    "market_data": [
+      {
+        "code": "HK.00700",
+        "last_price": 612.0,
+        "volume": 5486228,
+        "change_val": 0.0,
+        "change_rate": 0.0
+      }
+    ],
+    "demo_accounts": false
+  }
+}

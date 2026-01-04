@@ -1,0 +1,168 @@
+{
+  "timestamp": "2025-12-28T17:01:27.291712",
+  "total_time": 17.446146965026855,
+  "summary": {
+    "total": 14,
+    "passed": 6,
+    "failed": 0,
+    "errors": 5,
+    "skipped": 3
+  },
+  "results": [
+    {
+      "name": "Import: parameter_optimizer",
+      "category": "Module Import",
+      "status": "TestStatus.PASSED",
+      "message": "Successfully imported Parameter optimizer core module",
+      "duration": 1.2010090351104736,
+      "details": {
+        "module": "parameter_optimizer",
+        "has_main_classes": true
+      }
+    },
+    {
+      "name": "Import: performance_optimizer",
+      "category": "Module Import",
+      "status": "TestStatus.PASSED",
+      "message": "Successfully imported Performance optimization extensions",
+      "duration": 0.006192684173583984,
+      "details": {
+        "module": "performance_optimizer",
+        "has_main_classes": true
+      }
+    },
+    {
+      "name": "Import: performance_benchmark",
+      "category": "Module Import",
+      "status": "TestStatus.ERROR",
+      "message": "Failed to import: No module named 'massive_nonprice_ta_optimizer'",
+      "duration": 0.017750263214111328,
+      "details": {
+        "error": "No module named 'massive_nonprice_ta_optimizer'",
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Penguin8n\\CODEX--\\src\\backtest\\system_acceptance_test.py\", line 87, in _test_imports\n    module = __import__(module_name, fromlist=[''])\n  File \"C:\\Users\\Penguin8n\\CODEX--\\src\\backtest\\..\\..\\performance_benchmark.py\", line 19, in <module>\n    from massive_nonprice_ta_optimizer import MassiveNonPriceTAOptimizer\nModuleNotFoundError: No module named 'massive_nonprice_ta_optimizer'\n"
+      }
+    },
+    {
+      "name": "Import: optimization_visualization",
+      "category": "Module Import",
+      "status": "TestStatus.SKIPPED",
+      "message": "Successfully imported Visualization module",
+      "duration": 0.953059196472168,
+      "details": {
+        "module": "optimization_visualization",
+        "has_main_classes": false
+      }
+    },
+    {
+      "name": "Import: comprehensive_test_suite",
+      "category": "Module Import",
+      "status": "TestStatus.SKIPPED",
+      "message": "Successfully imported Comprehensive test suite",
+      "duration": 0.005178213119506836,
+      "details": {
+        "module": "comprehensive_test_suite",
+        "has_main_classes": false
+      }
+    },
+    {
+      "name": "Import: integration_runner",
+      "category": "Module Import",
+      "status": "TestStatus.SKIPPED",
+      "message": "Successfully imported Integration test runner",
+      "duration": 0.006658792495727539,
+      "details": {
+        "module": "integration_runner",
+        "has_main_classes": false
+      }
+    },
+    {
+      "name": "E2E: Parameter Optimization Workflow",
+      "category": "Core Functionality",
+      "status": "TestStatus.PASSED",
+      "message": "Optimization completed, score: -0.6173",
+      "duration": 0.0003390312194824219,
+      "details": {
+        "best_params": {
+          "x": -0.5555555555555554,
+          "y": -0.5555555555555554
+        },
+        "best_score": -0.6172839506172835,
+        "n_evaluations": 100
+      }
+    },
+    {
+      "name": "E2E: Multi-Method Comparison",
+      "category": "Core Functionality",
+      "status": "TestStatus.PASSED",
+      "message": "Compared 2 methods",
+      "duration": 0.0007376670837402344,
+      "details": {
+        "results": {
+          "grid_search": -0.6172839506172835,
+          "random_search": -0.5070120575103296
+        }
+      }
+    },
+    {
+      "name": "E2E: Visualization Pipeline",
+      "category": "Core Functionality",
+      "status": "TestStatus.ERROR",
+      "message": "Visualization failed: cannot import name 'OptimizationVisualization' from 'optimization_visualization' (C:\\Users\\Penguin8n\\CODEX--\\src\\backtest\\optimization_visualization.py)",
+      "duration": 1.0251998901367188e-05,
+      "details": {
+        "error": "cannot import name 'OptimizationVisualization' from 'optimization_visualization' (C:\\Users\\Penguin8n\\CODEX--\\src\\backtest\\optimization_visualization.py)"
+      }
+    },
+    {
+      "name": "Performance: Optimized vs Standard",
+      "category": "Performance",
+      "status": "TestStatus.ERROR",
+      "message": "Performance test failed: attempted relative import with no known parent package",
+      "duration": 0.4424574375152588,
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      }
+    },
+    {
+      "name": "Performance: Large-Scale Optimization",
+      "category": "Performance",
+      "status": "TestStatus.ERROR",
+      "message": "Large-scale test failed: attempted relative import with no known parent package",
+      "duration": 14.811331510543823,
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      }
+    },
+    {
+      "name": "Data Integrity: Result Serialization",
+      "category": "Data Integrity",
+      "status": "TestStatus.PASSED",
+      "message": "Serialization successful, size: 285 bytes",
+      "duration": 0.00011301040649414062,
+      "details": {
+        "json_size": 285,
+        "fields_preserved": true
+      }
+    },
+    {
+      "name": "Data Integrity: Parameter Validation",
+      "category": "Data Integrity",
+      "status": "TestStatus.PASSED",
+      "message": "Parameter validation: Working",
+      "duration": 1.1682510375976562e-05,
+      "details": {
+        "validation_works": true
+      }
+    },
+    {
+      "name": "Integration: Complete Workflow",
+      "category": "Integration",
+      "status": "TestStatus.ERROR",
+      "message": "Workflow failed: cannot import name 'OptimizationVisualization' from 'optimization_visualization' (C:\\Users\\Penguin8n\\CODEX--\\src\\backtest\\optimization_visualization.py)",
+      "duration": 1.6450881958007812e-05,
+      "details": {
+        "error": "cannot import name 'OptimizationVisualization' from 'optimization_visualization' (C:\\Users\\Penguin8n\\CODEX--\\src\\backtest\\optimization_visualization.py)"
+      }
+    }
+  ]
+}

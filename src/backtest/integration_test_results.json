@@ -1,0 +1,75 @@
+{
+  "timestamp": "2025-12-28 16:59:20",
+  "total_time": 2.459386110305786,
+  "total_tests": 5,
+  "passed": 4,
+  "failed": 0,
+  "errors": 1,
+  "skipped": 0,
+  "success_rate": 80.0,
+  "results": [
+    {
+      "name": "Optimizer-Benchmark Integration",
+      "status": "PASSED",
+      "duration": 0.0028159618377685547,
+      "message": "Optimization completed, score: -0.6173",
+      "error": "",
+      "details": {
+        "best_score": -0.6172839506172835,
+        "best_params": {
+          "x": -0.5555555555555554,
+          "y": -0.5555555555555554
+        },
+        "n_evaluations": 100
+      }
+    },
+    {
+      "name": "Multi-Method Comparison",
+      "status": "PASSED",
+      "duration": 0.00017690658569335938,
+      "message": "Compared 2 methods",
+      "error": "",
+      "details": {
+        "grid_search": {
+          "best_score": -0.11111111111111091,
+          "n_evaluations": 10
+        },
+        "random_search": {
+          "best_score": -0.001670649798522266,
+          "n_evaluations": 20
+        }
+      }
+    },
+    {
+      "name": "Visualization Pipeline",
+      "status": "PASSED",
+      "duration": 0.04866814613342285,
+      "message": "Visualizations created successfully",
+      "error": "",
+      "details": {}
+    },
+    {
+      "name": "End-to-End Workflow",
+      "status": "PASSED",
+      "duration": 0.7457151412963867,
+      "message": "Complete workflow executed, score: -0.0114",
+      "error": "",
+      "details": {
+        "best_score": -0.011428155507525807,
+        "best_params": {
+          "x": 0.020742789393453087,
+          "y": 0.10487083577289091
+        },
+        "steps_completed": 5
+      }
+    },
+    {
+      "name": "Benchmark Real Methods",
+      "status": "ERROR",
+      "duration": 0.005579948425292969,
+      "message": "",
+      "error": "Traceback (most recent call last):\n  File \"C:\\Users\\Penguin8n\\CODEX--\\src\\backtest\\integration_runner.py\", line 480, in _test_benchmark_real_methods\n    results = benchmark.run_benchmark(\n        function_names=['test_sphere'],\n        methods=['grid_search', 'random_search']\n    )\n  File \"C:\\Users\\Penguin8n\\CODEX--\\src\\backtest\\performance_benchmark.py\", line 244, in run_benchmark\n    self._save_results()\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Users\\Penguin8n\\CODEX--\\src\\backtest\\performance_benchmark.py\", line 609, in _save_results\n    leaderboard = self.generate_leaderboard()\n  File \"C:\\Users\\Penguin8n\\CODEX--\\src\\backtest\\performance_benchmark.py\", line 433, in generate_leaderboard\n    raise ValueError(\"No results available. Run benchmark first.\")\nValueError: No results available. Run benchmark first.\n",
+      "details": {}
+    }
+  ]
+}

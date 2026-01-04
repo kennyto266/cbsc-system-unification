@@ -1,0 +1,709 @@
+# CBSC 策略管理系統 - 增強版 CI/CD 管道
+# Enhanced CI/CD pipeline with comprehensive security, testing, and deployment
+
+name: Enhanced CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop, 'release/*']
+    tags: ['v*']
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+  schedule:
+    # Daily security scan at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      deploy_environment:
+        description: 'Deployment environment'
+        required: false
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      force_deploy:
+        description: 'Force deployment (skip tests)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+# Global permissions
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+  issues: write
+  checks: write
+  actions: read
+  security-events: write
+  id-token: write
+
+jobs:
+  # Code Quality and Security Analysis
+  code-quality:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    outputs:
+      backend-changed: ${{ steps.changes.outputs.backend }}
+      frontend-changed: ${{ steps.changes.outputs.frontend }}
+      should-scan: ${{ steps.changes.outputs.should-scan }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect file changes
+        id: changes
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            backend:
+              - 'src/**'
+              - 'requirements*.txt'
+              - 'Dockerfile*'
+              - 'pyproject.toml'
+            frontend:
+              - 'frontend/**'
+              - 'package*.json'
+            config:
+              - 'docker-compose*.yml'
+              - '.github/workflows/**'
+              - 'k8s/**'
+            should-scan:
+              - 'src/**'
+              - 'frontend/**'
+              - 'requirements*.txt'
+              - 'frontend/package*.json'
+
+      - name: Set up Python
+        if: steps.changes.outputs.backend == 'true'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Set up Node.js
+        if: steps.changes.outputs.frontend == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Python dependencies
+        if: steps.changes.outputs.backend == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Install Node.js dependencies
+        if: steps.changes.outputs.frontend == 'true'
+        working-directory: frontend
+        run: npm ci
+
+      # Backend Quality Checks
+      - name: Lint Python code
+        if: steps.changes.outputs.backend == 'true'
+        run: |
+          # Format checks
+          black --check --diff src/
+          isort --check-only --diff src/
+
+          # Linting
+          flake8 src/ --format=junit-xml --output-file=flake8-results.xml
+          pylint src/ --output-format=parseable > pylint-results.txt || true
+
+          # Type checking
+          mypy src/ --junit-xml reports/mypy.xml || true
+
+      - name: Security scan Python code
+        if: steps.changes.outputs.should-scan == 'true'
+        run: |
+          # Bandit security linter
+          bandit -r src/ -f json -o bandit-report.json || true
+
+          # Safety check for dependencies
+          safety check --json --output safety-report.json || true
+
+      # Frontend Quality Checks
+      - name: Lint frontend code
+        if: steps.changes.outputs.frontend == 'true'
+        working-directory: frontend
+        run: |
+          npm run lint
+          npm run type-check
+          npm run format:check
+
+      - name: Security scan frontend code
+        if: steps.changes.outputs.should-scan == 'true'
+        working-directory: frontend
+        run: |
+          npm audit --audit-level=high
+          npm run security-check || true
+
+      - name: Upload code quality reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-quality-reports
+          path: |
+            flake8-results.xml
+            pylint-results.txt
+            bandit-report.json
+            safety-report.json
+            reports/
+          retention-days: 30
+
+  # SAST (Static Application Security Testing)
+  security-scan:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    needs: code-quality
+    if: needs.code-quality.outputs.should-scan == 'true'
+
+    strategy:
+      matrix:
+        scanner: [codeql, semgrep, trivy]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run CodeQL Analysis
+        if: matrix.scanner == 'codeql'
+        uses: github/codeql-action/analyze@v2
+        with:
+          languages: python, javascript
+
+      - name: Run Semgrep
+        if: matrix.scanner == 'semgrep'
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/owasp-top-ten
+            p/cwe-top-25
+
+      - name: Run Trivy vulnerability scanner
+        if: matrix.scanner == 'trivy'
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        if: matrix.scanner == 'trivy'
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Comprehensive Testing
+  test-matrix:
+    name: Test Matrix
+    runs-on: ubuntu-latest
+    needs: code-quality
+    if: needs.code-quality.outputs.backend-changed == 'true' || needs.code-quality.outputs.frontend-changed == 'true'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11']
+        node-version: ['18']
+        test-suite:
+          - backend-unit
+          - backend-integration
+          - frontend-unit
+          - frontend-component
+          - frontend-e2e
+        include:
+          - test-suite: backend-unit
+            python-version: '3.9'
+          - test-suite: backend-unit
+            python-version: '3.10'
+          - test-suite: frontend-unit
+            node-version: '16'
+          - test-suite: frontend-unit
+            node-version: '20'
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+        if: contains(matrix.test-suite, 'backend')
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+        if: contains(matrix.test-suite, 'backend')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        if: contains(matrix.test-suite, 'backend')
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        if: contains(matrix.test-suite, 'frontend')
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Python dependencies
+        if: contains(matrix.test-suite, 'backend')
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Install Node.js dependencies
+        if: contains(matrix.test-suite, 'frontend')
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run backend unit tests
+        if: matrix.test-suite == 'backend-unit'
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
+          TESTING: true
+          COVERAGE_FILE: .coverage.${{ matrix.python-version }}
+        run: |
+          pytest src/tests/unit/ \
+            -v \
+            --cov=src \
+            --cov-report=xml:coverage-backend-${{ matrix.python-version }}.xml \
+            --cov-report=html \
+            --junit-xml=junit-backend-${{ matrix.python-version }}.xml \
+            --durations=10
+
+      - name: Run backend integration tests
+        if: matrix.test-suite == 'backend-integration'
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
+          TESTING: true
+        run: |
+          pytest src/tests/integration/ \
+            -v \
+            --cov=src \
+            --cov-report=xml:coverage-integration.xml \
+            --cov-append \
+            --junit-xml=junit-integration.xml
+
+      - name: Run frontend unit tests
+        if: matrix.test-suite == 'frontend-unit'
+        working-directory: frontend
+        run: |
+          npm run test:unit -- --coverage --watchAll=false --ci
+
+      - name: Run frontend component tests
+        if: matrix.test-suite == 'frontend-component'
+        working-directory: frontend
+        run: |
+          npm run test:component -- --coverage --watchAll=false --ci
+
+      - name: Run frontend E2E tests
+        if: matrix.test-suite == 'frontend-e2e'
+        working-directory: frontend
+        run: |
+          npm run build
+          npm run test:e2e:ci
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.test-suite }}-${{ matrix.python-version || matrix.node-version }}
+          path: |
+            coverage*.xml
+            junit*.xml
+            coverage/
+            test-results/
+          retention-days: 30
+
+  # Build Docker Images
+  build-images:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: [code-quality, test-matrix]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+
+    outputs:
+      backend-image: ${{ steps.meta-backend.outputs.tags }}
+      frontend-image: ${{ steps.meta-frontend.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Generate build metadata
+        id: meta
+        run: |
+          echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          echo "VCS_REF=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract backend metadata
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            maintainer=CBSC DevOps Team
+            org.opencontainers.image.title=CBSC Strategy API
+            org.opencontainers.image.description=CBSC Strategy Management System API
+            org.opencontainers.image.version=${{ steps.meta.outputs.BUILD_DATE }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.BUILD_DATE }}
+            org.opencontainers.image.revision=${{ steps.meta.outputs.VCS_REF }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Build and push backend image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.backend-optimized
+          target: production
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            BUILD_DATE=${{ steps.meta.outputs.BUILD_DATE }}
+            VCS_REF=${{ steps.meta.outputs.VCS_REF }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Extract frontend metadata
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./docker/Dockerfile.frontend-optimized
+          target: production
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            BUILD_DATE=${{ steps.meta.outputs.BUILD_DATE }}
+            VCS_REF=${{ steps.meta.outputs.VCS_REF }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.meta-backend.outputs.tags }}
+          format: spdx-json
+          output-file: sbom-backend.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom-backend
+          path: sbom-backend.json
+          retention-days: 90
+
+  # Performance Testing
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+
+      - name: Create performance test environment
+        run: |
+          cat > .env.perf << EOF
+          POSTGRES_DB=cbsc_perf
+          POSTGRES_USER=perf_user
+          POSTGRES_PASSWORD=perf_password
+          REDIS_PASSWORD=perf_redis_password
+          INFLUXDB_USERNAME=perf_user
+          INFLUXDB_PASSWORD=perf_password
+          INFLUXDB_ORG=perf-org
+          INFLUXDB_BUCKET=perf-bucket
+          INFLUXDB_TOKEN=perf_token_123456789
+          JWT_SECRET=perf_jwt_secret_key
+          SECRET_KEY=perf_application_secret_key
+          DOMAIN=localhost
+          ENVIRONMENT=performance
+          LOG_LEVEL=WARN
+          EOF
+
+      - name: Start performance test environment
+        run: |
+          docker-compose -f docker-compose.test.yml up -d
+          sleep 60
+
+      - name: Wait for services
+        run: |
+          timeout 300 bash -c 'until curl -f http://localhost:3004/health; do sleep 5; done'
+
+      - name: Install performance tools
+        run: |
+          pip install locust
+          npm install -g artillery
+
+      - name: Run API performance tests
+        run: |
+          locust -f tests/performance/locustfile.py \
+            --headless \
+            -u 100 -r 10 \
+            --run-time 60s \
+            --host http://localhost:3004 \
+            --html performance-report.html
+
+      - name: Run load tests
+        run: |
+          artillery run tests/performance/load-test-config.yml
+
+      - name: Upload performance reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-reports
+          path: |
+            performance-report.html
+            load-test-report.json
+          retention-days: 30
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose -f docker-compose.test.yml down -v
+          docker system prune -f
+
+  # Deployment
+  deploy:
+    name: Deploy to ${{ github.event.inputs.deploy_environment || 'staging' }}
+    runs-on: ubuntu-latest
+    needs: [build-images, performance-tests]
+    if: |
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')) &&
+      (github.event.inputs.force_deploy == 'true' || success())
+    environment: ${{ github.event.inputs.deploy_environment || 'staging' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to environment
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+
+            # Environment-specific settings
+            ENVIRONMENT="${{ github.event.inputs.deploy_environment || 'staging' }}"
+            COMPOSE_FILE="docker-compose.${ENVIRONMENT}.yml"
+
+            cd /opt/cbsc
+
+            # Backup current deployment
+            if [ "$ENVIRONMENT" = "production" ]; then
+              ./scripts/backup-production.sh
+            fi
+
+            # Pull latest changes
+            git pull origin main
+
+            # Set environment
+            cp .env.${ENVIRONMENT} .env
+
+            # Login to registry
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+            # Deploy with blue-green strategy for production
+            if [ "$ENVIRONMENT" = "production" ]; then
+              ./scripts/blue-green-deploy.sh ${{ needs.build-images.outputs.backend-image }} ${{ needs.build-images.outputs.frontend-image }}
+            else
+              # Standard deployment for staging
+              docker-compose -f $COMPOSE_FILE pull
+              docker-compose -f $COMPOSE_FILE up -d
+            fi
+
+            # Health check
+            timeout 300 bash -c 'until curl -f https://${{ secrets.DOMAIN }}/health; do sleep 5; done'
+
+            echo "Deployment to $ENVIRONMENT completed successfully!"
+
+      - name: Run smoke tests
+        run: |
+          # Wait for deployment to settle
+          sleep 30
+
+          # Run basic smoke tests
+          curl -f https://${{ secrets.DOMAIN }}/health || exit 1
+          curl -f https://${{ secrets.DOMAIN }}/api/v2/strategies || exit 1
+
+          echo "Smoke tests passed!"
+
+      - name: Update deployment status
+        if: always()
+        run: |
+          # Update deployment tracking
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/deployments \
+            -d '{
+              "ref": "${{ github.sha }}",
+              "environment": "${{ github.event.inputs.deploy_environment || "staging" }}",
+              "description": "Deployment from workflow ${{ github.workflow }} #${{ github.run_number }}"
+            }'
+
+      - name: Notify deployment
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          text: |
+            Deployment to ${{ github.event.inputs.deploy_environment || 'staging' }} ${{ job.status }}
+            Commit: ${{ github.sha }}
+            Workflow: ${{ github.workflow }} #${{ github.run_number }}
+
+  # Post-deployment verification
+  verify-deployment:
+    name: Verify Deployment
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always() && needs.deploy.result == 'success'
+
+    steps:
+      - name: Run comprehensive health checks
+        run: |
+          # API health
+          curl -f https://${{ secrets.DOMAIN }}/health || exit 1
+
+          # Database connectivity
+          curl -f https://${{ secrets.DOMAIN }}/api/v2/health/db || exit 1
+
+          # Redis connectivity
+          curl -f https://${{ secrets.DOMAIN }}/api/v2/health/redis || exit 1
+
+          # External service checks
+          curl -f https://${{ secrets.DOMAIN }}/api/v2/health/external || exit 1
+
+          echo "All health checks passed!"
+
+      - name: Run synthetic monitoring tests
+        run: |
+          # Test key user flows
+          curl -X POST https://${{ secrets.DOMAIN }}/api/v2/strategies \
+            -H "Content-Type: application/json" \
+            -d '{"name": "test-strategy", "type": "momentum"}' || exit 1
+
+          echo "Synthetic tests passed!"
+
+      - name: Update deployment status to success
+        if: success()
+        run: |
+          echo "Deployment verified successfully!"
+
+  # Cleanup
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [verify-deployment]
+    if: always()
+
+    steps:
+      - name: Clean up old images
+        run: |
+          # This would run on the deployment server
+          echo "Cleaning up old Docker images..."
+          # docker image prune -f --filter "until=72h"
+
+      - name: Clean up old artifacts
+        uses: geekyeggo/delete-artifact@v2
+        with:
+          name: |
+            code-quality-reports
+            test-results-*
+            performance-reports
+          failOnError: false

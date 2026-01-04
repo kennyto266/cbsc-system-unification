@@ -21,7 +21,7 @@ services:
     image: postgres:15-alpine
     container_name: cbsc-dev-postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_DB: cbsc_dev
       POSTGRES_USER: cbsc_dev
@@ -360,5 +360,5 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.21.0.0/16
-          gateway: 172.21.0.1
+        - subnet: 172.28.0.0/16
+          gateway: 172.28.0.1

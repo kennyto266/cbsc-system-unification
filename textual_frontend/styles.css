@@ -1,0 +1,201 @@
+/* CBSC 量化交易系统 - Textual TUI 样式 */
+
+/* 全局样式 */
+Screen {
+  background: $primary;
+  padding: 1;
+}
+
+/* 容器样式 */
+.action-container {
+  height: 5;
+  dock: top;
+}
+
+.config-section {
+  height: 15;
+  border: solid $panel;
+  padding: 1;
+  margin: 1;
+}
+
+.detail-panel {
+  height: 20;
+  border: solid $panel;
+  padding: 1;
+  margin: 1;
+}
+
+.progress-detail {
+  height: 15;
+  border: solid $panel;
+  padding: 1;
+  margin: 1;
+}
+
+/* 表格样式 */
+.strategy-table,
+.results-table,
+.tasks-table {
+  height: 1fr;
+  border: solid $border;
+}
+
+DataTable.cursor {
+  background: $accent;
+}
+
+DataTable:focus {
+  background: $accent;
+}
+
+/* 表单样式 */
+.input {
+  border: solid $border;
+  padding: 0 1;
+}
+
+.form-label {
+  color: $text;
+  text-style: bold;
+  margin-top: 1;
+}
+
+.section-title {
+  color: $text;
+  text-style: bold;
+  background: $panel;
+  padding: 0 1;
+  margin-bottom: 1;
+}
+
+/* 按钮样式 */
+Button.success {
+  background: $success;
+  color: $text;
+}
+
+Button.warning {
+  background: $warning;
+  color: $text;
+}
+
+Button.danger {
+  background: $error;
+  color: $text;
+}
+
+/* 标签页样式 */
+TabbedContent {
+  height: 1fr;
+}
+
+Tab {
+  background: $surface;
+  color: $text;
+}
+
+Tab.active {
+  background: $primary;
+  color: $accent;
+  text-style: bold;
+}
+
+/* 模态框样式 */
+.confirm-modal {
+  width: 60;
+  height: 15;
+  align: center middle;
+}
+
+.confirm-title {
+  content-align: center;
+  text-style: bold;
+  margin-bottom: 1;
+}
+
+.confirm-message {
+  content-align: center;
+  margin-bottom: 2;
+}
+
+.confirm-buttons {
+  height: 3;
+  align: center middle;
+}
+
+/* 编辑表单样式 */
+.edit-form {
+  padding: 1;
+}
+
+.button-container {
+  height: 3;
+  dock: bottom;
+}
+
+/* 隐藏类 */
+.hidden {
+  display: none;
+}
+
+/* 主菜单样式 */
+#welcome-container {
+  height: 10;
+  align: center middle;
+}
+
+#welcome-title {
+  content-align: center;
+  text-style: bold;
+  text-style: italic;
+  margin-bottom: 1;
+}
+
+#welcome-subtitle {
+  content-align: center;
+  color: $text-muted;
+}
+
+#menu-container {
+  align: center middle;
+}
+
+#menu-title {
+  content-align: center;
+  margin-bottom: 1;
+}
+
+#spacer {
+  height: 1;
+}
+
+/* 状态样式 */
+Static.info {
+  color: $primary;
+}
+
+Static.success {
+  color: $success;
+  text-style: bold;
+}
+
+Static.error {
+  color: $error;
+  text-style: bold;
+}
+
+Static.warning {
+  color: $warning;
+  text-style: bold;
+}
+
+/* 进度条样式 */
+ProgressBar {
+  height: 2;
+  border: solid $border;
+}
+
+ProgressBar.complete {
+  background: $success;
+}

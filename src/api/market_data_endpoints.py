@@ -9,16 +9,33 @@ from datetime import datetime
 import logging
 
 # Use project standard database connection
-from src.database.connection import get_db_connection
+import psycopg2
 from psycopg2.extras import RealDictCursor
 
 # Import service layer functions
-from src.services.market_indicator_service import (
+from services.market_indicator_service import (
     get_date_range,
     fetch_indicators,
     calculate_return_attribution,
     get_mock_data
 )
+
+# Database configuration
+DB_HOST = "localhost"
+DB_PORT = 5432
+DB_NAME = "cbsc_strategy"
+DB_USER = "cbsc_user"
+DB_PASSWORD = "cbsc_password"
+
+def get_db_connection():
+    """Get raw database connection for custom SQL queries"""
+    return psycopg2.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD
+    )
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])

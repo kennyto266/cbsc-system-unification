@@ -6,6 +6,7 @@ CBSC統一數據模型基礎類
 
 from datetime import datetime, timezone
 from typing import Optional, Any, Dict
+from enum import Enum
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import declared_attr
@@ -25,8 +26,8 @@ class TableNameMixin:
 class TimestampMixin:
     """時間戳混入類"""
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
 class UUIDMixin:
     """UUID混入類"""
@@ -39,7 +40,7 @@ class AuditMixin:
     created_by = Column(String(36), nullable=True)
     updated_by = Column(String(36), nullable=True)
     is_deleted = Column(Boolean, default=False, nullable=False)
-    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    deleted_at = Column(DateTime, nullable=True)
     deleted_by = Column(String(36), nullable=True)
 
 class UnifiedBaseModel(TableNameMixin, TimestampMixin, UUIDMixin, AuditMixin, UnifiedBase):
@@ -49,7 +50,7 @@ class UnifiedBaseModel(TableNameMixin, TimestampMixin, UUIDMixin, AuditMixin, Un
 
     # 通用字段
     version = Column(Integer, default=1, nullable=False)
-    metadata = Column(JSON, nullable=True)
+    meta_data = Column(JSON, nullable=True)  # Renamed to avoid conflict with SQLAlchemy metadata
     notes = Column(Text, nullable=True)
 
     def soft_delete(self, user_id: Optional[str] = None):
@@ -73,9 +74,9 @@ class UnifiedBaseModel(TableNameMixin, TimestampMixin, UUIDMixin, AuditMixin, Un
 
     def update_metadata(self, key: str, value: Any):
         """更新元數據"""
-        if self.metadata is None:
-            self.metadata = {}
-        self.metadata[key] = value
+        if self.meta_data is None:
+            self.meta_data = {}
+        self.meta_data[key] = value
         self.updated_at = datetime.now(timezone.utc)
 
 # Pydantic基礎模型
@@ -92,7 +93,7 @@ class UnifiedSchema(PydanticBaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     version: Optional[int] = 1
-    metadata: Optional[Dict[str, Any]] = None
+    meta_data: Optional[Dict[str, Any]] = None  # Renamed to avoid conflict with SQLAlchemy metadata
     notes: Optional[str] = None
 
 class BaseResponse(PydanticBaseModel):
@@ -130,22 +131,23 @@ class PaginatedResponse(PydanticBaseModel):
         return (total + page_size - 1) // page_size if total > 0 else 0
 
 # 通用枚舉和常量
-class StatusEnum:
+class StatusEnum(str, Enum):
     """狀態枚舉"""
     ACTIVE = "active"
     INACTIVE = "inactive"
     PENDING = "pending"
+    COMPLETED = "completed"
     ARCHIVED = "archived"
     DELETED = "deleted"
 
-class RiskLevelEnum:
+class RiskLevelEnum(str, Enum):
     """風險等級枚舉"""
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     EXTREME = "extreme"
 
-class PriorityEnum:
+class PriorityEnum(str, Enum):
     """優先級枚舉"""
     LOW = "low"
     MEDIUM = "medium"

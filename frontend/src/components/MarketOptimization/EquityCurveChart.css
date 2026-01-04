@@ -1,0 +1,32 @@
+/**
+ * Equity Curve Chart Styles
+ */
+
+.equity-curve-chart {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Fix title color */
+.equity-curve-chart .ant-card-head-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626 !important;
+}
+
+.equity-curve-empty {
+  padding: 80px 40px;
+  text-align: center;
+  color: #8c8c8c;
+  font-size: 16px;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.equity-curve-plot {
+  width: 100%;
+  height: 500px;
+}

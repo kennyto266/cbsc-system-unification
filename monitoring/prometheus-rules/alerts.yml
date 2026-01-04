@@ -1,0 +1,410 @@
+# CBSC 策略管理系統 - Prometheus 告警規則
+# Alert rules for CBSC Strategy Management System
+
+groups:
+  # 系統級別告警
+  - name: system.alerts
+    rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Instance {{ $labels.instance }} is down"
+          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}. Current value: {{ $value }}%"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}. Current value: {{ $value }}%"
+
+      - alert: DiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 90
+        for: 2m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk usage is above 90% on {{ $labels.instance }}. Current value: {{ $value }}%"
+
+      - alert: DiskUsageHigh
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage is above 80% for more than 10 minutes on {{ $labels.instance }}. Current value: {{ $value }}%"
+
+  # API 服務告警
+  - name: api.alerts
+    rules:
+      - alert: APIHighErrorRate
+        expr: (rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])) * 100 > 5
+        for: 3m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "High error rate on API"
+          description: "API error rate is above 5% for more than 3 minutes. Current value: {{ $value }}%"
+
+      - alert: APIHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "High API latency"
+          description: "95th percentile latency is above 1 second for more than 5 minutes. Current value: {{ $value }}s"
+
+      - alert: APILowRequestRate
+        expr: rate(http_requests_total[5m]) < 10
+        for: 10m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "Low API request rate"
+          description: "API request rate is below 10 requests/second for more than 10 minutes. Current value: {{ $value }} req/s"
+
+      - alert: APIUnhealthy
+        expr: probe_success == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "API health check failed"
+          description: "API health check has been failing for more than 1 minute."
+
+  # 數據庫告警
+  - name: database.alerts
+    rules:
+      - alert: PostgreSQLDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL instance has been down for more than 1 minute."
+
+      - alert: PostgreSQLTooManyConnections
+        expr: pg_stat_database_numbackends / pg_settings_max_connections * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Too many PostgreSQL connections"
+          description: "PostgreSQL has more than 80% of max connections in use. Current: {{ $value }}%"
+
+      - alert: PostgreSQLSlowQueries
+        expr: rate(pg_stat_statements_mean_time_seconds[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "PostgreSQL slow queries"
+          description: "PostgreSQL average query time is above 1 second. Current: {{ $value }}s"
+
+      - alert: PostgreSQLReplicationLag
+        expr: pg_replication_lag_seconds > 300
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "PostgreSQL replication lag"
+          description: "PostgreSQL replication lag is above 5 minutes. Current: {{ $value }}s"
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance has been down for more than 1 minute."
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is above 90%. Current: {{ $value }}%"
+
+  # InfluxDB 告警
+  - name: influxdb.alerts
+    rules:
+      - alert: InfluxDBDown
+        expr: up{job="influxdb"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "InfluxDB is down"
+          description: "InfluxDB instance has been down for more than 1 minute."
+
+      - alert: InfluxDBHighQueryLatency
+        expr: histogram_quantile(0.95, rate(influxdb_query_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "InfluxDB high query latency"
+          description: "95th percentile query latency is above 5 seconds. Current: {{ $value }}s"
+
+      - alert: InfluxDBHighWriteLatency
+        expr: histogram_quantile(0.95, rate(influxdb_write_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "InfluxDB high write latency"
+          description: "95th percentile write latency is above 2 seconds. Current: {{ $value }}s"
+
+  # Nginx 告警
+  - name: nginx.alerts
+    rules:
+      - alert: NginxDown
+        expr: up{job="nginx"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: nginx
+        annotations:
+          summary: "Nginx is down"
+          description: "Nginx instance has been down for more than 1 minute."
+
+      - alert: NginxHigh4xxRate
+        expr: rate(nginx_http_requests_total{status=~"4.."}[5m]) / rate(nginx_http_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: nginx
+        annotations:
+          summary: "High 4xx error rate on Nginx"
+          description: "Nginx 4xx error rate is above 5% for more than 5 minutes. Current: {{ $value }}%"
+
+      - alert: NginxHigh5xxRate
+        expr: rate(nginx_http_requests_total{status=~"5.."}[5m]) / rate(nginx_http_requests_total[5m]) * 100 > 1
+        for: 3m
+        labels:
+          severity: critical
+          service: nginx
+        annotations:
+          summary: "High 5xx error rate on Nginx"
+          description: "Nginx 5xx error rate is above 1% for more than 3 minutes. Current: {{ $value }}%"
+
+      - alert: NginxHighResponseTime
+        expr: histogram_quantile(0.95, rate(nginx_http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: nginx
+        annotations:
+          summary: "High Nginx response time"
+          description: "95th percentile response time is above 2 seconds. Current: {{ $value }}s"
+
+  # 容器告警
+  - name: container.alerts
+    rules:
+      - alert: ContainerDown
+        expr: up == 0 and on(instance) container_last_seen > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: container
+        annotations:
+          summary: "Container {{ $labels.name }} is down"
+          description: "Container {{ $labels.name }} on {{ $labels.instance }} has been down for more than 1 minute."
+
+      - alert: ContainerHighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{name!=""}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: container
+        annotations:
+          summary: "High CPU usage in container {{ $labels.name }}"
+          description: "Container {{ $labels.name }} CPU usage is above 80% for more than 5 minutes. Current: {{ $value }}%"
+
+      - alert: ContainerHighMemoryUsage
+        expr: (container_memory_usage_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""}) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: container
+        annotations:
+          summary: "High memory usage in container {{ $labels.name }}"
+          description: "Container {{ $labels.name }} memory usage is above 85% for more than 5 minutes. Current: {{ $value }}%"
+
+      - alert: ContainerRestarting
+        expr: increase(container_start_time_seconds{name!=""}[1h]) > 2
+        for: 0m
+        labels:
+          severity: warning
+          service: container
+        annotations:
+          summary: "Container {{ $labels.name }} is restarting frequently"
+          description: "Container {{ $labels.name }} has restarted {{ $value }} times in the last hour."
+
+  # 業務告警
+  - name: business.alerts
+    rules:
+      - alert: StrategyExecutionFailure
+        expr: rate(strategy_execution_failures_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "High strategy execution failure rate"
+          description: "Strategy execution failure rate is above 10% for more than 2 minutes. Current: {{ $value }} failures/sec"
+
+      - alert: LowStrategyPerformance
+        expr: strategy_performance_score < 0.5
+        for: 10m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "Low strategy performance"
+          description: "Strategy performance score is below 0.5 for more than 10 minutes. Current: {{ $value }}"
+
+      - alert: HighDataProcessingLatency
+        expr: histogram_quantile(0.95, rate(data_processing_duration_seconds_bucket[5m])) > 60
+        for: 5m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "High data processing latency"
+          description: "95th percentile data processing latency is above 60 seconds. Current: {{ $value }}s"
+
+      - alert: MarketDataFeedDown
+        expr: market_data_feed_connected == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: business
+        annotations:
+          summary: "Market data feed is down"
+          description: "Market data feed has been disconnected for more than 1 minute."
+
+      - alert: ActiveUserCountLow
+        expr: active_users_total < 10
+        for: 15m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "Low active user count"
+          description: "Active user count is below 10 for more than 15 minutes. Current: {{ $value }}"
+
+  # 安全告警
+  - name: security.alerts
+    rules:
+      - alert: HighFailedLoginRate
+        expr: rate(failed_login_attempts_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High failed login rate"
+          description: "Failed login rate is above 10 attempts per minute for more than 2 minutes. Current: {{ $value }} attempts/min"
+
+      - alert: SuspiciousActivity
+        expr: rate(suspicious_requests_total[5m]) > 5
+        for: 1m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "Suspicious request rate is above 5 per minute. Current: {{ $value }} requests/min"
+
+      - alert: UnauthorizedAPIAccess
+        expr: rate(unauthorized_api_requests_total[5m]) > 1
+        for: 1m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Unauthorized API access attempts"
+          description: "Unauthorized API access rate is above 1 per minute. Current: {{ $value }} requests/min"
+
+      - alert: SSLCertificateExpiring
+        expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 7
+        for: 0m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate for {{ $labels.instance }} expires in less than 7 days."
+
+  # 日誌告警
+  - name: logs.alerts
+    rules:
+      - alert: HighErrorLogRate
+        expr: rate(log_entries_total{level="error"}[5m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+          service: logs
+        annotations:
+          summary: "High error log rate"
+          description: "Error log rate is above 10 entries per minute. Current: {{ $value }} errors/min"
+
+      - alert: HighFatalLogRate
+        expr: rate(log_entries_total{level="fatal"}[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          service: logs
+        annotations:
+          summary: "Fatal errors in logs"
+          description: "Fatal errors detected in logs. Current rate: {{ $value }} entries/min"
+
+      - alert: LogPatternMatch
+        expr: log_pattern_matches_total{pattern="database.*connection.*failed"} > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: logs
+        annotations:
+          summary: "Database connection failures in logs"
+          description: "Database connection failure pattern detected in logs. Count: {{ $value }}"

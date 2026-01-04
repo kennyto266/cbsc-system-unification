@@ -1,0 +1,117 @@
+# CBSC 策略管理系統 - 生產環境 Dockerfile
+# Multi-stage build optimized for production deployment
+
+# Build stage
+FROM python:3.11-slim as builder
+
+# Set build arguments
+ARG BUILD_DATE
+ARG VERSION
+ARG VCS_REF
+
+# Set environment variables for build
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libpq-dev \
+    libffi-dev \
+    libssl-dev \
+    rustc \
+    cargo \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Upgrade pip and install dependencies
+COPY requirements.txt requirements-prod.txt ./
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir -r requirements-prod.txt
+
+# Production stage
+FROM python:3.11-slim as production
+
+# Set labels
+LABEL maintainer="CBSC Team" \
+      version="${VERSION}" \
+      build_date="${BUILD_DATE}" \
+      vcs_ref="${VCS_REF}" \
+      description="CBSC Strategy Management System - Production"
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PATH="/opt/venv/bin:$PATH" \
+    ENVIRONMENT=production \
+    STRATEGY_API_VERSION=2
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    postgresql-client \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Copy virtual environment from builder stage
+COPY --from=builder /opt/venv /opt/venv
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code with proper permissions
+COPY --chown=app:app src/ ./src/
+COPY --chown=app:app api/ ./api/
+COPY --chown=app:app migrations/ ./migrations/
+COPY --chown=app:app config/ ./config/
+COPY --chown=app:app scripts/ ./scripts/
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/logs /app/uploads /app/static \
+    && mkdir -p /app/logs/strategies \
+    && mkdir -p /app/logs/api \
+    && mkdir -p /app/logs/websocket \
+    && mkdir -p /app/cache
+
+# Create non-root user
+RUN groupadd -r app && useradd -r -g app app
+
+# Set ownership
+RUN chown -R app:app /app
+
+# Switch to non-root user
+USER app
+
+# Expose port
+EXPOSE 8000
+
+# Enhanced health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+    CMD curl -f http://localhost:8000/health \
+        && curl -f http://localhost:8000/api/v2/system/status || exit 1
+
+# Copy entrypoint script
+COPY --chown=app:app docker/docker-entrypoint.prod.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Set entrypoint and command
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["gunicorn", "src.api.main:app", \
+      "-w", "4", \
+      "-k", "uvicorn.workers.UvicornWorker", \
+      "--bind", "0.0.0.0:8000", \
+      "--access-logfile", "-", \
+      "--error-logfile", "-", \
+      "--log-level", "info", \
+      "--timeout", "120", \
+      "--keep-alive", "5", \
+      "--max-requests", "1000", \
+      "--max-requests-jitter", "100"]

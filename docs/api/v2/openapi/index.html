@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBSC量化交易系統 API 文檔</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui.css" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+        
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        
+        body {
+            margin: 0;
+            background: #fafafa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        .swagger-ui .topbar {
+            background-color: #4285F4;
+            border-bottom: 1px solid #4285F4;
+        }
+        
+        .swagger-ui .topbar .download-url-wrapper {
+            display: none;
+        }
+        
+        .swagger-ui .info {
+            margin: 50px 0;
+        }
+        
+        .swagger-ui .info .title {
+            color: #3b4151;
+            font-size: 36px;
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        .swagger-ui .scheme-container {
+            background: #ffffff;
+            box-shadow: 0 1px 2px 0 rgba(0,0,0,0.15);
+            border-radius: 4px;
+            margin: 0 0 20px;
+            padding: 10px 20px;
+        }
+        
+        .custom-header {
+            background: linear-gradient(135deg, #4285F4 0%, #34A853 100%);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .custom-header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+        
+        .custom-header p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+        }
+        
+        .quick-links {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            margin: 0 0 20px;
+            padding: 20px;
+        }
+        
+        .quick-links h3 {
+            margin-top: 0;
+            color: #3b4151;
+        }
+        
+        .quick-links ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .quick-links li {
+            margin: 10px 0;
+        }
+        
+        .quick-links a {
+            color: #4285F4;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        .quick-links a:hover {
+            background-color: #f0f7ff;
+        }
+        
+        .api-info-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .info-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .info-card h4 {
+            margin: 0 0 10px;
+            color: #3b4151;
+        }
+        
+        .info-card p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .footer {
+            background: #3b4151;
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 50px;
+        }
+        
+        .footer a {
+            color: #61affe;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="custom-header">
+        <h1>CBSC量化交易系統 API</h1>
+        <p>RESTful API v2.0 - 策略管理與量化交易平台</p>
+    </div>
+    
+    <div id="swagger-ui"></div>
+    
+    <div class="footer">
+        <p>&copy; 2024 CBSC量化交易系統. All rights reserved.</p>
+        <p>
+            <a href="https://docs.cbsc.com" target="_blank">文檔中心</a> |
+            <a href="https://community.cbsc.com" target="_blank">社區</a> |
+            <a href="mailto:api-support@cbsc.com">聯繫支持</a>
+        </p>
+    </div>
+    
+    <script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            const ui = SwaggerUIBundle({
+                url: './openapi.yaml',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                defaultModelsExpandDepth: 1,
+                defaultModelExpandDepth: 1,
+                displayRequestDuration: true,
+                docExpansion: "list",
+                filter: true,
+                showExtensions: true,
+                showCommonExtensions: true,
+                tryItOutEnabled: true,
+                requestSnippetsEnabled: true,
+                requestSnippets: {
+                    generators: {
+                        curl: {
+                            "title": "cURL",
+                            "syntax": "bash"
+                        },
+                        "python": {
+                            "title": "Python (requests)",
+                            "syntax": "python"
+                        },
+                        "javascript": {
+                            "title": "JavaScript (fetch)",
+                            "syntax": "javascript"
+                        },
+                        "java": {
+                            "title": "Java (OkHttp)",
+                            "syntax": "java"
+                        },
+                        "csharp": {
+                            "title": "C# (HttpClient)",
+                            "syntax": "csharp"
+                        }
+                    },
+                    "defaultExpanded": true,
+                    "languages": ["curl", "python", "javascript", "java", "csharp"]
+                },
+                supportedSubmitMethods: [
+                    "get",
+                    "post",
+                    "put",
+                    "delete",
+                    "patch"
+                ],
+                validatorUrl: null,
+                oauth2RedirectUrl: window.location.origin + '/oauth2-redirect.html',
+                persistAuthorization: false,
+                displayOperationId: false,
+                showMutatedRequest: true,
+                withCredentials: false,
+                showRequestHeaders: true,
+                onComplete: function() {
+                    console.log("Swagger UI loaded successfully");
+                    
+                    // 添加自定義標記
+                    const infoSection = document.querySelector('.swagger-ui .info');
+                    if (infoSection) {
+                        const quickLinks = document.createElement('div');
+                        quickLinks.className = 'quick-links';
+                        quickLinks.innerHTML = `
+                            <h3>快速鏈接</h3>
+                            <ul>
+                                <li><a href="#tag/authentication" onclick="ui.scrollToElement(['tag', 'authentication'])">🔐 認證</a></li>
+                                <li><a href="#tag/strategies" onclick="ui.scrollToElement(['tag', 'strategies'])">📊 策略管理</a></li>
+                                <li><a href="#tag/executions" onclick="ui.scrollToElement(['tag', 'executions'])">⚡ 策略執行</a></li>
+                                <li><a href="#tag/market-data" onclick="ui.scrollToElement(['tag', 'market-data'])">📈 市場數據</a></li>
+                                <li><a href="#tag/backtest" onclick="ui.scrollToElement(['tag', 'backtest'])">🔄 回測分析</a></li>
+                                <li><a href="#tag/risk-management" onclick="ui.scrollToElement(['tag', 'risk-management'])">⚠️ 風險管理</a></li>
+                                <li><a href="./examples.md" target="_blank">📚 使用示例</a></li>
+                                <li><a href="./sdk.md" target="_blank">💻 SDK文檔</a></li>
+                            </ul>
+                        `;
+                        infoSection.parentNode.insertBefore(quickLinks, infoSection.nextSibling);
+                    }
+                    
+                    // 添加API信息卡片
+                    const description = document.querySelector('.swagger-ui .info .description');
+                    if (description) {
+                        const cards = document.createElement('div');
+                        cards.className = 'api-info-cards';
+                        cards.innerHTML = `
+                            <div class="info-card">
+                                <h4>📊 策略管理</h4>
+                                <p>創建、更新、刪除和查詢量化交易策略</p>
+                            </div>
+                            <div class="info-card">
+                                <h4>⚡ 實時執行</h4>
+                                <p>支持回測、模擬交易和實時交易執行</p>
+                            </div>
+                            <div class="info-card">
+                                <h4>📈 市場數據</h4>
+                                <p>提供歷史和實時市場數據服務</p>
+                            </div>
+                            <div class="info-card">
+                                <h4>⚠️ 風險管理</h4>
+                                <p>VaR計算、投資組合風險分析工具</p>
+                            </div>
+                            <div class="info-card">
+                                <h4>🔄 WebSocket</h4>
+                                <p>實時數據推送和執行情況監控</p>
+                            </div>
+                            <div class="info-card">
+                                <h4>💻 SDK支持</h4>
+                                <p>Python、JavaScript、Java、Go等多語言SDK</p>
+                            </div>
+                        `;
+                        description.parentNode.insertBefore(cards, description.nextSibling);
+                    }
+                },
+                requestInterceptor: function(request) {
+                    // 自動添加Authorization header（如果有token）
+                    const token = localStorage.getItem('cbsc_api_token');
+                    if (token) {
+                        request.headers['Authorization'] = 'Bearer ' + token;
+                    }
+                    return request;
+                },
+                responseInterceptor: function(response) {
+                    // 處理401錯誤，提示用戶更新token
+                    if (response.status === 401) {
+                        const token = prompt('請輸入您的API Token:');
+                        if (token) {
+                            localStorage.setItem('cbsc_api_token', token);
+                        }
+                    }
+                    return response;
+                }
+            });
+            
+            // 添加自定義功能
+            window.ui = ui;
+            
+            // 實現滾動到元素的方法
+            ui.scrollToElement = function(path) {
+                const element = document.querySelector(`[data-tag="${path[1]}"]`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            };
+        };
+    </script>
+</body>
+</html>

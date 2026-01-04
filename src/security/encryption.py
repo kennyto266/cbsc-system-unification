@@ -27,9 +27,9 @@ class DataEncryption:
     """Encryption service for sensitive financial data"""
 
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
         self.key = self._load_or_generate_key()
         self.fernet = Fernet(self.key)
-        self.logger = logging.getLogger(__name__)
 
     def _load_or_generate_key(self) -> bytes:
         """Load encryption key from environment or generate new one"""

@@ -1,0 +1,82 @@
+# CBSC Real Backend Dockerfile - Full VectorBT Support
+# 真實後端 Dockerfile - 完整 VectorBT 支持
+
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app:/app/src:/app/backend \
+    STRATEGY_API_VERSION=2 \
+    VECTORBT_CACHE_DIR=/app/cache/vectorbt \
+    TOKENIZERS_PARALLELISM=false \
+    TRANSFORMERS_CACHE=/app/cache/transformers
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    gfortran \
+    libpq-dev \
+    libhdf5-dev \
+    curl \
+    wget \
+    postgresql-client \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements files
+COPY requirements-real.txt .
+
+# Upgrade pip and install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements-real.txt
+
+# Copy application code
+COPY src/ ./src/
+COPY backend/ ./backend/
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/data/backtest /app/data/results \
+    /app/logs /app/logs/strategies /app/logs/api /app/logs/websocket \
+    /app/uploads /app/static \
+    /app/cache/vectorbt /app/cache/transformers \
+    && chmod -R 755 /app/data /app/logs /app/cache
+
+# Expose ports
+EXPOSE 3004 3005
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3004/health || exit 1
+
+# Add labels
+LABEL maintainer="CBSC Team" \
+      version="2.0.0" \
+      description="CBSC Real Backend with VectorBT Multi-process Backtest" \
+      api.url="http://localhost:3004" \
+      api.docs="http://localhost:3004/docs" \
+      backtest.engine="vectorbt-multiprocess"
+
+# Copy and set entrypoint before switching user
+COPY entrypoint-real.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Run as non-root user
+RUN useradd --create-home --shell /bin/bash cbsc && \
+    chown -R cbsc:cbsc /app
+USER cbsc
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Default command - start real backend
+CMD ["python", "-m", "uvicorn", "src.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "3004", \
+     "--workers", "1", \
+     "--loop", "asyncio", \
+     "--access-log", \
+     "--log-level", "info"]

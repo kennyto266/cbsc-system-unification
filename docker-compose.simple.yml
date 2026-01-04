@@ -1,0 +1,224 @@
+# CBSC Strategy Management System - Simple Development Environment
+# CBSC 策略管理系統 - 簡化開發環境
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: cbsc-postgres-dev
+    environment:
+      POSTGRES_DB: cbsc_production
+      POSTGRES_USER: cbsc_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password_123}
+    ports:
+      - "5432:5432"
+    networks:
+      - cbsc-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cbsc_admin -d cbsc_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cbsc-redis-dev
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_password_123}
+    ports:
+      - "6379:6379"
+    networks:
+      - cbsc-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Mock Backend Service (Simple Python API)
+  backend:
+    image: python:3.11-slim
+    container_name: cbsc-backend-dev
+    command: |
+      bash -c "
+        apt-get update && apt-get install -y curl &&
+        pip install fastapi uvicorn &&
+        cat > /app/main.py << 'EOF'
+      from fastapi import FastAPI
+      from fastapi.middleware.cors import CORSMiddleware
+
+      app = FastAPI(title='CBSC Strategy Management API', version='1.0.0')
+
+      app.add_middleware(
+          CORSMiddleware,
+          allow_origins=['*'],
+          allow_credentials=True,
+          allow_methods=['*'],
+          allow_headers=['*'],
+      )
+
+      @app.get('/')
+      async def root():
+          return {'message': 'CBSC Strategy Management System API', 'version': '1.0.0'}
+
+      @app.get('/health')
+      async def health():
+          return {'status': 'healthy', 'database': 'healthy', 'version': '1.0.0'}
+
+      @app.get('/api/v1/strategies')
+      async def get_strategies():
+          return {
+              'items': [
+                  {
+                      'id': 1,
+                      'name': 'Moving Average Crossover',
+                      'description': 'Strategy based on moving average crossover signals',
+                      'strategy_type': 'technical',
+                      'is_active': True,
+                      'performance': {'total_return': 0.15, 'sharpe_ratio': 1.2}
+                  }
+              ],
+              'total': 1,
+              'page': 1,
+              'page_size': 20
+          }
+
+      if __name__ == '__main__':
+          import uvicorn
+          uvicorn.run(app, host='0.0.0.0', port=8000)
+      EOF
+        python /app/main.py
+      "
+    environment:
+      - DATABASE_URL=postgresql://cbsc_admin:${POSTGRES_PASSWORD:-dev_password_123}@postgres:5432/cbsc_production
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_password_123}@redis:6379/0
+    ports:
+      - "8000:8000"
+    networks:
+      - cbsc-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Mock Frontend Service (Simple Nginx with HTML)
+  frontend:
+    image: nginx:alpine
+    container_name: cbsc-frontend-dev
+    command: |
+      sh -c "
+        cat > /usr/share/nginx/html/index.html << 'EOF'
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <title>CBSC Strategy Management System</title>
+          <style>
+              body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+              .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .header { text-align: center; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 20px; margin-bottom: 30px; }
+              .status { background: #e8f5e8; padding: 10px; border-radius: 4px; margin: 10px 0; }
+              .api-section { margin: 20px 0; }
+              button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+              button:hover { background: #0056b3; }
+              .result { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px; white-space: pre-wrap; }
+          </style>
+      </head>
+      <body>
+          <div class='container'>
+              <div class='header'>
+                  <h1>CBSC 策略管理系統</h1>
+                  <h2>Strategy Management System Dashboard</h2>
+              </div>
+
+              <div class='status'>
+                  <strong>系統狀態:</strong> <span id='status'>檢查中...</span>
+              </div>
+
+              <div class='api-section'>
+                  <h3>API 測試</h3>
+                  <button onclick='testHealth()'>健康檢查</button>
+                  <button onclick='testStrategies()'>獲取策略列表</button>
+                  <div id='result' class='result'></div>
+              </div>
+
+              <div class='api-section'>
+                  <h3>快速訪問</h3>
+                  <a href='http://localhost:8000/docs' target='_blank'>
+                      <button>API 文檔</button>
+                  </a>
+              </div>
+          </div>
+
+          <script>
+              async function testHealth() {
+                  try {
+                      const response = await fetch('http://localhost:8000/health');
+                      const data = await response.json();
+                      document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+                      document.getElementById('status').textContent = '✅ 系統正常';
+                      document.getElementById('status').style.color = 'green';
+                  } catch (error) {
+                      document.getElementById('result').textContent = 'Error: ' + error.message;
+                      document.getElementById('status').textContent = '❌ 系統異常';
+                      document.getElementById('status').style.color = 'red';
+                  }
+              }
+
+              async function testStrategies() {
+                  try {
+                      const response = await fetch('http://localhost:8000/api/v1/strategies');
+                      const data = await response.json();
+                      document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+                  } catch (error) {
+                      document.getElementById('result').textContent = 'Error: ' + error.message;
+                  }
+              }
+
+              // Auto-check health on page load
+              testHealth();
+          </script>
+      </body>
+      </html>
+      EOF
+        nginx -g 'daemon off;'
+      "
+    ports:
+      - "3005:80"
+    networks:
+      - cbsc-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # Grafana for monitoring
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cbsc-grafana-dev
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: false
+    ports:
+      - "8888:3000"
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+
+# Development Networks
+networks:
+  cbsc-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

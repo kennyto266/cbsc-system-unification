@@ -1,0 +1,62 @@
+{
+  "services": {
+    "database": {
+      "enabled": true,
+      "port": 5432,
+      "check_url": "http://localhost:5432",
+      "description": "PostgreSQL數據庫"
+    },
+    "redis": {
+      "enabled": true,
+      "port": 6379,
+      "check_url": "http://localhost:6379",
+      "description": "Redis緩存服務"
+    },
+    "backend": {
+      "enabled": true,
+      "port": 3004,
+      "check_url": "http://localhost:3004/health",
+      "command": ["python", "-m", "uvicorn", "main:app", "--reload", "--port", "3004"],
+      "cwd": "src/api",
+      "description": "後端API服務"
+    },
+    "frontend": {
+      "enabled": true,
+      "port": 3000,
+      "check_url": "http://localhost:3000",
+      "command": ["npm", "run", "dev"],
+      "cwd": "frontend",
+      "env": {
+        "PORT": "3000",
+        "REACT_APP_API_URL": "http://localhost:3004"
+      },
+      "description": "前端React應用"
+    },
+    "monitoring": {
+      "enabled": true,
+      "port": 3001,
+      "check_url": "http://localhost:3001",
+      "command": ["python", "app.py"],
+      "cwd": "monitoring",
+      "description": "監控服務"
+    },
+    "influxdb": {
+      "enabled": false,
+      "port": 8086,
+      "check_url": "http://localhost:8086/ping",
+      "description": "InfluxDB時序數據庫"
+    }
+  },
+  "startup_order": ["database", "redis", "backend", "frontend", "monitoring", "influxdb"],
+  "health_check_interval": 5,
+  "max_retries": 30,
+  "log_level": "INFO",
+  "features": {
+    "trading_engine": true,
+    "risk_management": true,
+    "backtest_engine": true,
+    "realtime_monitoring": true,
+    "responsive_ui": true,
+    "dark_mode": true
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "timestamp": "2025-12-19T13:01:00.521654",
+  "user_id": "2860386",
+  "market_data": null,
+  "trading_decision": {
+    "action": "HOLD",
+    "reason": "No market data available"
+  },
+  "order_simulation": {
+    "status": "SKIPPED",
+    "reason": "HOLD signal"
+  },
+  "price_history": []
+}

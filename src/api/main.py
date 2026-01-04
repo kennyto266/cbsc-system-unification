@@ -23,14 +23,19 @@ from api.user_endpoints import router as user_router
 from api.personal_strategy_endpoints import router as personal_strategy_router
 from api.cbsc_strategy_api import router as cbsc_strategy_router
 from api.cbsc_data_api import router as cbsc_data_router
-from api.unified_strategy_endpoints import router as unified_strategy_router
+# Temporarily disabled due to import issues
+# from api.unified_strategy_endpoints import router as unified_strategy_router
+unified_strategy_router = None
 from api.websocket_server import websocket_router
 from api.non_price_endpoints import router as non_price_router
 from api.market_data_endpoints import router as analytics_router
 
 # 导入新的统一策略架构 (Issue #20/21 实现)
-from api.strategies import router as new_strategies_router
-from api.strategies.v2 import v2_router
+# Temporarily disabled due to boto3 dependency
+# from api.strategies import router as new_strategies_router
+new_strategies_router = None
+# from api.strategies.v2 import v2_router
+v2_router = None
 
 # 导入服务
 from auth_simple import init_auth_service
@@ -40,14 +45,6 @@ from api.middleware import setup_middleware
 from api.websocket_server import get_websocket_manager
 from api.unified_strategy_service import init_unified_strategy_manager
 from api.strategy_execution_engine import initialize_execution_engine, shutdown_execution_engine
-
-# 导入监控模块
-try:
-    from monitoring.metrics import MetricsMiddleware, initialize_metrics, metrics_endpoint
-    MONITORING_ENABLED = True
-except ImportError:
-    MONITORING_ENABLED = False
-    logger.warning("Monitoring module not available, metrics disabled")
 
 # 配置日志
 logging.basicConfig(
@@ -59,6 +56,14 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# 导入监控模块
+try:
+    from monitoring.metrics import MetricsMiddleware, initialize_metrics, metrics_endpoint
+    MONITORING_ENABLED = True
+except ImportError:
+    MONITORING_ENABLED = False
+    logger.warning("Monitoring module not available, metrics disabled")
 
 # 创建FastAPI应用
 app = FastAPI(
@@ -101,19 +106,25 @@ app.include_router(auth_router)
 app.include_router(user_router)
 
 # 新的统一策略架构路由 (v2.0) - Issue #20/21 Phase 3 实现
-app.include_router(v2_router)
+if v2_router:
+    app.include_router(v2_router)
 
 # 新的统一策略架构路由 (v1.0) - Issue #20/21 实现
-app.include_router(new_strategies_router, prefix="/api/v1", tags=["策略管理v1"])
+if new_strategies_router:
+    app.include_router(new_strategies_router, prefix="/api/v1", tags=["策略管理v1"])
 
 # 保留旧路由用于向后兼容 (v0.x) - 逐步废弃
 app.include_router(personal_strategy_router, tags=["策略管理v0-个人"])
 app.include_router(cbsc_strategy_router, tags=["策略管理v0-CBSC"])
 app.include_router(cbsc_data_router, tags=["CBSC数据"])
-app.include_router(unified_strategy_router, tags=["策略管理v0-统一"])
+if unified_strategy_router:
+    app.include_router(unified_strategy_router, tags=["策略管理v0-统一"])
 app.include_router(websocket_router)
 app.include_router(non_price_router)
 app.include_router(analytics_router)
+
+# 设置中间件 (必须在应用启动前)
+setup_middleware(app)
 
 # 全局异常处理器
 @app.exception_handler(Exception)
@@ -177,21 +188,35 @@ async def root():
 async def health_check():
     """健康检查端点"""
     try:
-        # 检查数据库连接
-        from auth_simple import auth_service
-        db = next(auth_service.get_db())
-        db.execute("SELECT 1")
-        db.close()
-
         # 检查缓存服务
         cache_status = await cache_service.get_cache_info()
 
+        # 检查数据库连接 - 使用 text() 包装 SQL
+        from auth_simple import auth_service
+        from sqlalchemy import text
+        db_status = {"status": "unknown"}
+        try:
+            db_gen = auth_service.get_db()
+            db = next(db_gen)
+            # 使用 text() 明确声明为文本 SQL
+            result = db.execute(text("SELECT 1"))
+            db.close()
+            db_status = {"status": "healthy", "result": "Connection OK"}
+        except Exception as db_error:
+            db_status = {"status": "unhealthy", "error": str(db_error)}
+
+        # 判断整体健康状态
+        is_healthy = (
+            db_status.get("status") == "healthy" and
+            cache_status.get("connected", False)
+        )
+
         return {
-            "status": "healthy",
+            "status": "healthy" if is_healthy else "degraded",
             "timestamp": datetime.utcnow().isoformat(),
             "version": "1.0.0",
             "checks": {
-                "database": {"status": "healthy"},
+                "database": db_status,
                 "cache": cache_status,
                 "api": {"status": "healthy"}
             }
@@ -252,19 +277,26 @@ async def startup_event():
         # 初始化认证服务
         init_auth_service()
 
-        # 初始化用户资料服务
-        init_user_profile_service()
+        # 初始化用户资料服务 (handle FK error gracefully)
+        try:
+            init_user_profile_service()
+        except Exception as e:
+            if "NoReferencedTableError" in str(e) or "Foreign key" in str(e):
+                logger.warning("⚠️ 用户资料表已存在或将在认证服务中创建")
+            else:
+                raise
 
         # 初始化统一策略管理器
         init_unified_strategy_manager()
         logger.info("✅ 统一策略管理器初始化成功")
 
         # 初始化策略执行引擎
-        await initialize_execution_engine()
-        logger.info("✅ 策略执行引擎初始化成功")
-
-        # 设置中间件
-        setup_middleware(app)
+        try:
+            await initialize_execution_engine()
+            logger.info("✅ 策略执行引擎初始化成功")
+        except Exception as e:
+            logger.warning(f"⚠️ 策略执行引擎初始化失敗: {e}")
+            logger.info("📊 API將在無策略執行情況下運行")
 
         # 启动WebSocket数据模拟
         ws_manager = get_websocket_manager()
@@ -272,22 +304,25 @@ async def startup_event():
         logger.info("✅ WebSocket实时数据模拟已启动")
 
         logger.info("✅ CBSC用户管理系统API启动成功")
-        logger.info("📚 API文档: http://localhost:3004/docs")
-        logger.info("🔍 健康检查: http://localhost:3004/health")
+
+        # 从环境变量获取端口，默认使用3004
+        port = os.getenv("PORT", "3007")
+        logger.info(f"📚 API文档: http://localhost:{port}/docs")
+        logger.info(f"🔍 健康检查: http://localhost:{port}/health")
 
         # 新的统一架构API (Issue #20/21 实现)
-        logger.info("🚀 新统一策略管理API v1.0: http://localhost:3004/api/v1/strategies")
-        logger.info("📊 个人策略API v1.0: http://localhost:3004/api/v1/strategies/personal")
-        logger.info("⚡ 策略执行API v1.0: http://localhost:3004/api/v1/strategies/execution")
-        logger.info("🔌 WebSocket v1.0: ws://localhost:3004/api/v1/ws/strategies")
+        logger.info(f"🚀 新统一策略管理API v1.0: http://localhost:{port}/api/v1/strategies")
+        logger.info(f"📊 个人策略API v1.0: http://localhost:{port}/api/v1/strategies/personal")
+        logger.info(f"⚡ 策略执行API v1.0: http://localhost:{port}/api/v1/strategies/execution")
+        logger.info(f"🔌 WebSocket v1.0: ws://localhost:{port}/api/v1/ws/strategies")
 
         # 旧版本API (向后兼容，逐步废弃)
-        logger.info("📊 个人策略管理API v0.x: http://localhost:3004/api/personal-strategies")
-        logger.info("🧠 CBSC策略管理API v0.x: http://localhost:3004/api/strategies")
-        logger.info("🔌 WebSocket端点 v0.x: ws://localhost:3004/ws/strategies")
-        logger.info("🏛️ 非价格策略API: http://localhost:3004/api/non-price")
-        logger.info("📈 HKMA宏观数据: http://localhost:3004/api/non-price/hkma")
-        logger.info("💭 情绪分析API: http://localhost:3004/api/non-price/sentiment")
+        logger.info(f"📊 个人策略管理API v0.x: http://localhost:{port}/api/personal-strategies")
+        logger.info(f"🧠 CBSC策略管理API v0.x: http://localhost:{port}/api/strategies")
+        logger.info(f"🔌 WebSocket端点 v0.x: ws://localhost:{port}/ws/strategies")
+        logger.info(f"🏛️ 非价格策略API: http://localhost:{port}/api/non-price")
+        logger.info(f"📈 HKMA宏观数据: http://localhost:{port}/api/non-price/hkma")
+        logger.info(f"💭 情绪分析API: http://localhost:{port}/api/non-price/sentiment")
 
     except Exception as e:
         logger.error(f"❌ 应用启动失败: {e}")
@@ -345,9 +380,9 @@ if __name__ == "__main__":
         logger.info("🚀 启动开发服务器...")
 
         uvicorn.run(
-            "main:app",
+            "api.main:app",
             host="0.0.0.0",
-            port=3004,
+            port=3005,
             reload=True,
             log_level="info",
             access_log=True

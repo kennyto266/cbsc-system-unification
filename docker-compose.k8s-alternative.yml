@@ -1,0 +1,260 @@
+# CBSC Strategy Management System - Kubernetes Alternative Development Environment
+# CBSC 策略管理系統 - Kubernetes替代開發環境
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: cbsc-postgres-dev
+    environment:
+      POSTGRES_DB: cbsc_production
+      POSTGRES_USER: cbsc_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password_123}
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - cbsc-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cbsc_admin -d cbsc_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cbsc-redis-dev
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_password_123}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - cbsc-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # InfluxDB Time Series Database
+  influxdb:
+    image: influxdb:2.7
+    container_name: cbsc-influxdb-dev
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: cbsc_admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD:-influx_password_123}
+      DOCKER_INFLUXDB_INIT_ORG: CBSC-Development
+      DOCKER_INFLUXDB_INIT_BUCKET: strategy_metrics
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_TOKEN:-dev_token_1234567890123456789012345678901234567890}
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data_dev:/var/lib/influxdb2
+      - influxdb_config_dev:/etc/influxdb2
+    networks:
+      - cbsc-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8086/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Backend API Service
+  backend:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    container_name: cbsc-backend-dev
+    environment:
+      - DATABASE_URL=postgresql://cbsc_admin:${POSTGRES_PASSWORD:-dev_password_123}@postgres:5432/cbsc_production
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_password_123}@redis:6379/0
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN:-dev_token_1234567890123456789012345678901234567890}
+      - INFLUXDB_ORG=CBSC-Development
+      - INFLUXDB_BUCKET=strategy_metrics
+      - JWT_SECRET=${JWT_SECRET:-dev_jwt_secret_1234567890123456789012345678901234567890}
+      - APP_SECRET_KEY=${APP_SECRET_KEY:-dev_app_secret_key_1234567890123456789012345678901234567890}
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+    networks:
+      - cbsc-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Frontend Development Server
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cbsc-frontend-dev
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_WS_URL=ws://localhost:8000
+      - VITE_ENVIRONMENT=development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - /app/node_modules
+    networks:
+      - cbsc-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Mock Nginx Ingress Controller
+  nginx:
+    image: nginx:alpine
+    container_name: cbsc-nginx-dev
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/dev.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - cbsc-network
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+
+  # Prometheus Monitoring (Mock Kubernetes Service)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cbsc-prometheus-dev
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./k8s/monitoring/prometheus-config.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data_dev:/prometheus
+    networks:
+      - cbsc-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  # Grafana Visualization (Mock Kubernetes Service)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cbsc-grafana-dev
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_SERVER_DOMAIN: localhost
+      GF_SERVER_ROOT_URL: http://localhost:3001/
+      GF_SECURITY_ALLOW_EMBEDDING: true
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data_dev:/var/lib/grafana
+      - ./k8s/monitoring/grafana-provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - cbsc-network
+    depends_on:
+      prometheus:
+        condition: service_started
+    restart: unless-stopped
+
+  # Redis Exporter for Monitoring
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: cbsc-redis-exporter-dev
+    environment:
+      REDIS_ADDR: redis://redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password_123}
+    ports:
+      - "9121:9121"
+    networks:
+      - cbsc-network
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # PostgreSQL Exporter for Monitoring
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: cbsc-postgres-exporter-dev
+    environment:
+      DATA_SOURCE_NAME: postgresql://cbsc_admin:${POSTGRES_PASSWORD:-dev_password_123}@postgres:5432/cbsc_production?sslmode=disable
+    ports:
+      - "9187:9187"
+    networks:
+      - cbsc-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # InfluxDB Exporter for Monitoring
+  influxdb-exporter:
+    image: telegraf:latest
+    container_name: cbsc-influxdb-exporter-dev
+    volumes:
+      - ./monitoring/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    networks:
+      - cbsc-network
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+
+# Development Networks
+networks:
+  cbsc-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Development Volumes
+volumes:
+  postgres_data_dev:
+    driver: local
+  redis_data_dev:
+    driver: local
+  influxdb_data_dev:
+    driver: local
+  influxdb_config_dev:
+    driver: local
+  prometheus_data_dev:
+    driver: local
+  grafana_data_dev:
+    driver: local

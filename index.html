@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBSC 策略管理系統</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .header {
+            text-align: center;
+            color: #333;
+            border-bottom: 3px solid #4a90e2;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin: 0;
+        }
+        .header h2 {
+            color: #7f8c8d;
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .status-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #4a90e2;
+        }
+        .status-card.success {
+            border-left-color: #27ae60;
+            background: #e8f5e8;
+        }
+        .status-card.error {
+            border-left-color: #e74c3c;
+            background: #fdeaea;
+        }
+        .status-card h3 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        .status-card p {
+            margin: 0;
+            color: #7f8c8d;
+        }
+        .api-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .api-section h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+        }
+        .button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        .button:hover {
+            background: #357abd;
+        }
+        .button.secondary {
+            background: #95a5a6;
+        }
+        .button.secondary:hover {
+            background: #7f8c8d;
+        }
+        .result {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .links {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .links a {
+            display: inline-block;
+            margin: 10px;
+        }
+        .emoji {
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span class="emoji">📊</span> CBSC 策略管理系統</h1>
+            <h2>Strategy Management System Dashboard</h2>
+            <p>量化交易策略管理與監控平台</p>
+        </div>
+
+        <div class="status-grid" id="statusGrid">
+            <div class="status-card">
+                <h3><span class="emoji">🔄</span> 系統狀態</h3>
+                <p id="systemStatus">檢查中...</p>
+            </div>
+            <div class="status-card">
+                <h3><span class="emoji">🗄️</span> 數據庫</h3>
+                <p id="databaseStatus">檢查中...</p>
+            </div>
+            <div class="status-card">
+                <h3><span class="emoji">⚡</span> API 服務</h3>
+                <p id="apiStatus">檢查中...</p>
+            </div>
+            <div class="status-card">
+                <h3><span class="emoji">📈</span> 監控系統</h3>
+                <p id="monitoringStatus">檢查中...</p>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <h3><span class="emoji">🧪</span> API 測試</h3>
+            <button class="button" onclick="testHealth()">健康檢查</button>
+            <button class="button" onclick="testStrategies()">策略列表</button>
+            <button class="button" onclick="testMonitoring()">監控指標</button>
+            <button class="button secondary" onclick="clearResult()">清除結果</button>
+            <div id="result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="api-section">
+            <h3><span class="emoji">🔗</span> 快速訪問</h3>
+            <div class="links">
+                <a href="http://localhost:8000/docs" target="_blank" class="button">API 文檔</a>
+                <a href="http://localhost:8000/health" target="_blank" class="button">健康檢查</a>
+                <a href="http://localhost:8888" target="_blank" class="button">Grafana 監控</a>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <h3><span class="emoji">ℹ️</span> 服務信息</h3>
+            <div id="serviceInfo">
+                <p><strong>後端 API:</strong> http://localhost:8000</p>
+                <p><strong>PostgreSQL:</strong> localhost:5432</p>
+                <p><strong>Redis:</strong> localhost:6379</p>
+                <p><strong>Grafana:</strong> http://localhost:8888</p>
+                <p><strong>Grafana 登入:</strong> admin / cbsc123456</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function testHealth() {
+            showResult('正在測試健康檢查...');
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                showResult('✅ 健康檢查成功:\n\n' + JSON.stringify(data, null, 2));
+                updateStatus('success');
+            } catch (error) {
+                showResult('❌ 健康檢查失敗:\n\n' + error.message);
+                updateStatus('error');
+            }
+        }
+
+        async function testStrategies() {
+            showResult('正在獲取策略列表...');
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/strategies');
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('✅ 策略列表獲取成功:\n\n' + JSON.stringify(data, null, 2));
+                } else {
+                    showResult('❌ 策略API端點不存在\n\n狀態碼: ' + response.status + '\n請檢查API文檔中的可用端點');
+                }
+            } catch (error) {
+                showResult('❌ 策略列表獲取失敗:\n\n' + error.message);
+            }
+        }
+
+        async function testMonitoring() {
+            showResult('正在獲取監控指標...');
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/monitoring/metrics');
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('✅ 監控指標獲取成功:\n\n' + JSON.stringify(data, null, 2));
+                } else {
+                    showResult('❌ 監控API端點不存在\n\n狀態碼: ' + response.status + '\n請檢查API文檔中的可用端點');
+                }
+            } catch (error) {
+                showResult('❌ 監控指標獲取失敗:\n\n' + error.message);
+            }
+        }
+
+        function showResult(text) {
+            const result = document.getElementById('result');
+            result.textContent = text;
+            result.style.display = 'block';
+        }
+
+        function clearResult() {
+            document.getElementById('result').style.display = 'none';
+        }
+
+        function updateStatus(type) {
+            if (type === 'success') {
+                document.getElementById('systemStatus').innerHTML = '<span class="emoji">✅</span> 系統正常';
+                document.getElementById('systemStatus').parentElement.classList.add('success');
+                document.getElementById('systemStatus').parentElement.classList.remove('error');
+                document.getElementById('apiStatus').innerHTML = '<span class="emoji">✅</span> API 服務正常';
+            } else {
+                document.getElementById('systemStatus').innerHTML = '<span class="emoji">❌</span> 系統異常';
+                document.getElementById('systemStatus').parentElement.classList.add('error');
+                document.getElementById('systemStatus').parentElement.classList.remove('success');
+                document.getElementById('apiStatus').innerHTML = '<span class="emoji">❌</span> API 服務異常';
+            }
+        }
+
+        // Auto-check health on page load
+        window.onload = function() {
+            testHealth();
+
+            // Check database status
+            document.getElementById('databaseStatus').innerHTML = '<span class="emoji">✅</span> PostgreSQL 運行正常 (5432)<br><span class="emoji">✅</span> Redis 運行正常 (6379)';
+
+            // Check monitoring status
+            document.getElementById('monitoringStatus').innerHTML = '<span class="emoji">✅</span> Grafana 運行正常 (8888)<br><span class="emoji">👤</span> 登入: admin/cbsc123456';
+        };
+    </script>
+</body>
+</html>

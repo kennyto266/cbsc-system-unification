@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": true,
+    "strict": false,
+    "types": ["@testing-library/jest-dom", "vitest/globals", "node"]
+  },
+  "include": [
+    "**/*.test.{ts,tsx}",
+    "**/*.spec.{ts,tsx}",
+    "**/__tests__/**",
+    "src/**/__mocks__/**"
+  ]
+}

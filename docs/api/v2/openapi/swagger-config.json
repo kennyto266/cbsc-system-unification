@@ -1,0 +1,142 @@
+{
+  "swaggerUiConfig": {
+    "url": "./openapi.yaml",
+    "dom_id": "#swagger-ui",
+    "deepLinking": true,
+    "presets": [
+      SwaggerUIBundle.presets.apis,
+      SwaggerUIStandalonePreset
+    ],
+    "plugins": [
+      SwaggerUIBundle.plugins.DownloadUrl
+    ],
+    "layout": "StandaloneLayout",
+    "defaultModelsExpandDepth": 1,
+    "defaultModelExpandDepth": 1,
+    "displayRequestDuration": true,
+    "docExpansion": "none",
+    "filter": true,
+    "showExtensions": true,
+    "showCommonExtensions": true,
+    "tryItOutEnabled": true,
+    "requestSnippetsEnabled": true,
+    "requestSnippets": {
+      "generators": {
+        "curl": {
+          "title": "cURL",
+          "syntax": "bash"
+        },
+        "python": {
+          "title": "Python",
+          "syntax": "python"
+        },
+        "javascript": {
+          "title": "JavaScript",
+          "syntax": "javascript"
+        }
+      },
+      "defaultExpanded": true,
+      "languages": ["curl", "python", "javascript"]
+    },
+    "supportedSubmitMethods": [
+      "get",
+      "post",
+      "put",
+      "delete",
+      "patch"
+    ],
+    "validatorUrl": null,
+    "oauth2RedirectUrl": "https://api.cbsc.com/v2/oauth2-redirect.html",
+    "persistAuthorization": false,
+    "displayOperationId": false,
+    "showMutatedRequest": true,
+    "withCredentials": true,
+    "showRequestHeaders": true
+  },
+  "customOptions": {
+    "theme": {
+      "title": {
+        "color": "#3b4151"
+      },
+      "header": {
+        "backgroundColor": "#4285F4"
+      },
+      "http": {
+        "get": {
+          "color": "#61affe"
+        },
+        "post": {
+          "color": "#49cc90"
+        },
+        "put": {
+          "color": "#fca130"
+        },
+        "delete": {
+          "color": "#f93e3e"
+        },
+        "patch": {
+          "color": "#50e3c2"
+        }
+      }
+    },
+    "showInfo": true,
+    "showExtensions": true,
+    "showCommonExtensions": true,
+    "disableSyntaxHighlighting": false,
+    "syntaxHighlightTheme": "agate",
+    "backgroundColor": "#ffffff",
+    " textColor": "#3b4151",
+    "headerColor": "#4285F4",
+    "primaryColor": "#4285F4",
+    "successColor": "#49cc90",
+    "warningColor": "#fca130",
+    "errorColor": "#f93e3e",
+    "linkColor": "#4285F4"
+  },
+  "servers": [
+    {
+      "url": "https://api.cbsc.com/v2",
+      "description": "生產環境"
+    },
+    {
+      "url": "https://api-test.cbsc.com/v2",
+      "description": "測試環境"
+    },
+    {
+      "url": "http://localhost:3003/api/v2",
+      "description": "開發環境"
+    }
+  ],
+  "securitySchemes": {
+    "bearerAuth": {
+      "type": "http",
+      "scheme": "bearer",
+      "bearerFormat": "JWT",
+      "description": "JWT Token from /auth/login endpoint"
+    }
+  },
+  "apiKeys": {
+    "Authorization": {
+      "name": "Authorization",
+      "in": "header",
+      "description": "Bearer {token}"
+    }
+  },
+  "oAuth2": {
+    "type": "oauth2",
+    "description": "OAuth2認證",
+    "flows": {
+      "authorizationCode": {
+        "authorizationUrl": "https://api.cbsc.com/v2/oauth/authorize",
+        "tokenUrl": "https://api.cbsc.com/v2/oauth/token",
+        "scopes": {
+          "read:strategies": "讀取策略",
+          "write:strategies": "創建和更新策略",
+          "execute:strategies": "執行策略",
+          "read:market": "讀取市場數據",
+          "read:backtest": "讀取回測結果"
+        }
+      }
+    }
+  }
+}

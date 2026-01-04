@@ -4,9 +4,9 @@
  * Integration with CBSC Backend System
  */
 
-// API基础配置
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:9000';
-const WS_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:8000';
+// API基础配置 - 使用 Vite 环境变量
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3007';
 
 // Request interceptor - 添加认证token
 const getAuthHeaders = () => {
@@ -248,5 +248,29 @@ export class WebSocketManager {
 // 创建WebSocket管理器实例
 export const wsManager = new WebSocketManager();
 
-// 导出API基础URL，供其他模块使用
+// Export API base URL for other modules
 export { API_BASE_URL };
+
+// Generic API client for economicStrategyApi
+export const api = {
+  get: async (endpoint, options = {}) => {
+    return apiRequest(endpoint, { method: 'GET', ...options });
+  },
+  post: async (endpoint, data, options = {}) => {
+    return apiRequest(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      ...options
+    });
+  },
+  put: async (endpoint, data, options = {}) => {
+    return apiRequest(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+      ...options
+    });
+  },
+  delete: async (endpoint, options = {}) => {
+    return apiRequest(endpoint, { method: 'DELETE', ...options });
+  },
+};

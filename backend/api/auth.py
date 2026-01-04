@@ -12,44 +12,77 @@ import hashlib
 
 try:
     from models.auth import (
-        TokenRequest, TokenResponse, RefreshTokenRequest,
-        UserCreate, UserLogin, User, UserRole, GrantType
+        TokenRequest,
+        TokenResponse,
+        RefreshTokenRequest,
+        UserCreate,
+        UserLogin,
+        User,
+        UserRole,
+        GrantType,
     )
     from models.api_keys import APIKey, APIKeyCreate, APIKeyStatus, APIKeyPermission
     from utils.auth import (
-        create_access_token, create_refresh_token, verify_token,
-        hash_password, verify_password, create_user_token_data,
-        verify_client_credentials, hash_client_credentials,
-        generate_client_credentials, AuthenticationError,
-        get_auth_error_message
+        create_access_token,
+        create_refresh_token,
+        verify_token,
+        hash_password,
+        verify_password,
+        create_user_token_data,
+        verify_client_credentials,
+        hash_client_credentials,
+        generate_client_credentials,
+        AuthenticationError,
+        get_auth_error_message,
     )
     from utils.api_keys import (
-        generate_api_key, verify_api_key, validate_api_key_status,
-        get_api_key_prefix, create_api_key_response,
-        validate_api_key_request, APIKeyError
+        generate_api_key,
+        verify_api_key,
+        validate_api_key_status,
+        get_api_key_prefix,
+        create_api_key_response,
+        validate_api_key_request,
+        APIKeyError,
     )
     from config.api_config import settings
 except ImportError:
     # Fallback for different import paths
     import sys
     import os
+
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from models.auth import (
-        TokenRequest, TokenResponse, RefreshTokenRequest,
-        UserCreate, UserLogin, User, UserRole, GrantType
+        TokenRequest,
+        TokenResponse,
+        RefreshTokenRequest,
+        UserCreate,
+        UserLogin,
+        User,
+        UserRole,
+        GrantType,
     )
     from models.api_keys import APIKey, APIKeyCreate, APIKeyStatus, APIKeyPermission
     from utils.auth import (
-        create_access_token, create_refresh_token, verify_token,
-        hash_password, verify_password, create_user_token_data,
-        verify_client_credentials, hash_client_credentials,
-        generate_client_credentials, AuthenticationError,
-        get_auth_error_message
+        create_access_token,
+        create_refresh_token,
+        verify_token,
+        hash_password,
+        verify_password,
+        create_user_token_data,
+        verify_client_credentials,
+        hash_client_credentials,
+        generate_client_credentials,
+        AuthenticationError,
+        get_auth_error_message,
     )
     from utils.api_keys import (
-        generate_api_key, verify_api_key, validate_api_key_status,
-        get_api_key_prefix, create_api_key_response,
-        validate_api_key_request, APIKeyError
+        generate_api_key,
+        verify_api_key,
+        validate_api_key_status,
+        get_api_key_prefix,
+        create_api_key_response,
+        validate_api_key_request,
+        APIKeyError,
     )
     from config.api_config import settings
 
@@ -69,7 +102,7 @@ MOCK_USERS = [
         "is_active": True,
         "created_at": "2024-01-01T00:00:00Z",
         "updated_at": "2024-01-01T00:00:00Z",
-        "last_login": None
+        "last_login": None,
     },
     {
         "id": "user_2",
@@ -81,8 +114,20 @@ MOCK_USERS = [
         "is_active": True,
         "created_at": "2024-01-02T00:00:00Z",
         "updated_at": "2024-01-02T00:00:00Z",
-        "last_login": None
-    }
+        "last_login": None,
+    },
+    {
+        "id": "user_3",
+        "username": "guest",
+        "email": "guest@cbsc.com",
+        "password_hash": "",  # Empty password - no password required
+        "full_name": "Guest User (No Password)",
+        "role": UserRole.USER,
+        "is_active": True,
+        "created_at": "2024-01-03T00:00:00Z",
+        "updated_at": "2024-01-03T00:00:00Z",
+        "last_login": None,
+    },
 ]
 
 # 模拟客户端应用数据 (使用预哈希的凭据)
@@ -93,12 +138,13 @@ MOCK_CLIENTS = [
         "secret_hash": hashlib.sha256(b"test:test").hexdigest(),
         "scopes": ["read", "write", "api_access"],
         "is_active": True,
-        "created_at": "2024-01-01T00:00:00Z"
+        "created_at": "2024-01-01T00:00:00Z",
     }
 ]
 
 # 模拟API密钥数据
 MOCK_API_KEYS = []
+
 
 @router.post("/auth/token")
 async def get_token(request: TokenRequest):
@@ -106,43 +152,29 @@ async def get_token(request: TokenRequest):
     try:
         # 验证授权类型
         if request.grant_type != GrantType.CLIENT_CREDENTIALS:
-            raise HTTPException(
-                status_code=400,
-                detail="不支持的授权类型"
-            )
+            raise HTTPException(status_code=400, detail="不支持的授权类型")
 
         # 查找客户端
         client = next((c for c in MOCK_CLIENTS if c["id"] == request.client_id), None)
         if not client:
-            raise HTTPException(
-                status_code=401,
-                detail="客户端认证失败"
-            )
+            raise HTTPException(status_code=401, detail="客户端认证失败")
 
         # 验证客户端凭据
         if not verify_client_credentials(
-            request.client_id,
-            request.client_secret,
-            client["secret_hash"]
+            request.client_id, request.client_secret, client["secret_hash"]
         ):
-            raise HTTPException(
-                status_code=401,
-                detail="客户端认证失败"
-            )
+            raise HTTPException(status_code=401, detail="客户端认证失败")
 
         # 检查客户端状态
         if not client["is_active"]:
-            raise HTTPException(
-                status_code=403,
-                detail="客户端已被禁用"
-            )
+            raise HTTPException(status_code=403, detail="客户端已被禁用")
 
         # 创建访问令牌
         token_data = {
             "sub": f"client:{request.client_id}",
             "username": request.client_id,
             "role": UserRole.DEVELOPER,
-            "scopes": request.scope.split() if request.scope else client["scopes"]
+            "scopes": request.scope.split() if request.scope else client["scopes"],
         }
 
         access_token = create_access_token(token_data)
@@ -158,20 +190,18 @@ async def get_token(request: TokenRequest):
                 "token_type": "Bearer",
                 "expires_in": settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
                 "refresh_token": refresh_token,
-                "scope": request.scope or " ".join(client["scopes"])
+                "scope": request.scope or " ".join(client["scopes"]),
             },
             "message": "访问令牌获取成功",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"获取访问令牌失败: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="获取访问令牌失败"
-        )
+        raise HTTPException(status_code=500, detail="获取访问令牌失败")
+
 
 @router.post("/auth/refresh")
 async def refresh_token(request: RefreshTokenRequest):
@@ -188,7 +218,7 @@ async def refresh_token(request: RefreshTokenRequest):
             "sub": token_data.user_id,
             "username": token_data.username,
             "role": token_data.role,
-            "scopes": token_data.scopes
+            "scopes": token_data.scopes,
         }
 
         access_token = create_access_token(new_token_data)
@@ -201,20 +231,18 @@ async def refresh_token(request: RefreshTokenRequest):
                 "access_token": access_token,
                 "token_type": "Bearer",
                 "expires_in": settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-                "scope": " ".join(token_data.scopes)
+                "scope": " ".join(token_data.scopes),
             },
             "message": "访问令牌刷新成功",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     except AuthenticationError as e:
         raise HTTPException(status_code=401, detail=str(e))
     except Exception as e:
         logger.error(f"刷新访问令牌失败: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="刷新访问令牌失败"
-        )
+        raise HTTPException(status_code=500, detail="刷新访问令牌失败")
+
 
 @router.post("/auth/login")
 async def login(request: UserLogin):
@@ -222,85 +250,28 @@ async def login(request: UserLogin):
     try:
         # 查找用户
         user = next(
-            (u for u in MOCK_USERS if u["username"] == request.username or u["email"] == request.username),
-            None
+            (
+                u
+                for u in MOCK_USERS
+                if u["username"] == request.username or u["email"] == request.username
+            ),
+            None,
         )
 
         if not user:
-            raise HTTPException(
-                status_code=401,
-                detail="用户名或密码错误"
-            )
+            raise HTTPException(status_code=401, detail="用户名或密码错误")
 
-        # 验证密码
-        if not verify_password(request.password, user["password_hash"]):
-            raise HTTPException(
-                status_code=401,
-                detail="用户名或密码错误"
-            )
-
-        # 检查用户状态
-        if not user["is_active"]:
-            raise HTTPException(
-                status_code=403,
-                detail="用户账户已被禁用"
-            )
-
-        # 创建令牌
-        user_obj = User(**user)
-        token_data = create_user_token_data(user_obj)
-
-        access_token = create_access_token(token_data)
-        refresh_token = create_refresh_token(token_data)
-
-        # 更新最后登录时间
-        user["last_login"] = datetime.now().isoformat()
-
-        logger.info(f"用户 {user['username']} 登录成功")
-
-        return {
-            "success": True,
-            "data": {
-                "access_token": access_token,
-                "token_type": "Bearer",
-                "expires_in": settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-                "refresh_token": refresh_token,
-                "user": {
-                    "id": user["id"],
-                    "username": user["username"],
-                    "email": user["email"],
-                    "full_name": user["full_name"],
-                    "role": user["role"].value
-                }
-            },
-            "message": "登录成功",
-            "timestamp": datetime.now().isoformat()
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"用户登录失败: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="登录失败"
-        )
-
-@router.post("/auth/register")
-async def register(request: UserCreate):
-    """用户注册"""
-    try:
-        # 检查用户名是否已存在
-        existing_user = next(
-            (u for u in MOCK_USERS if u["username"] == request.username or u["email"] == request.email),
-            None
-        )
+        # 验证密码（支持空密码/免密登录）
+        # 如果用户的password_hash为空，允许空密码登录
+        if user["password_hash"]:  # 有密码要求
+            if not verify_password(request.password, user["password_hash"]):
+                raise HTTPException(status_code=401, detail="用户名或密码错误")
+        else:  # 无密码要求（免密登录）
+            if request.password:  # 如果提供了密码但用户不需要密码
+                raise HTTPException(status_code=401, detail="用户名或密码错误")
 
         if existing_user:
-            raise HTTPException(
-                status_code=409,
-                detail="用户名或邮箱已存在"
-            )
+            raise HTTPException(status_code=409, detail="用户名或邮箱已存在")
 
         # 创建新用户
         new_user = {
@@ -313,7 +284,7 @@ async def register(request: UserCreate):
             "is_active": True,
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
-            "last_login": None
+            "last_login": None,
         }
 
         MOCK_USERS.append(new_user)
@@ -328,20 +299,18 @@ async def register(request: UserCreate):
                 "email": new_user["email"],
                 "full_name": new_user["full_name"],
                 "role": new_user["role"].value,
-                "created_at": new_user["created_at"]
+                "created_at": new_user["created_at"],
             },
             "message": "用户注册成功",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"用户注册失败: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="用户注册失败"
-        )
+        raise HTTPException(status_code=500, detail="用户注册失败")
+
 
 @router.get("/auth/me")
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -365,10 +334,10 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
                     "id": client["id"],
                     "name": client["name"],
                     "scopes": token_data.scopes,
-                    "role": token_data.role.value
+                    "role": token_data.role.value,
                 },
                 "message": "获取客户端信息成功",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
         # 如果是用户令牌
@@ -387,10 +356,10 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
                 "full_name": user["full_name"],
                 "role": user["role"].value,
                 "scopes": token_data.scopes,
-                "last_login": user["last_login"]
+                "last_login": user["last_login"],
             },
             "message": "获取用户信息成功",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     except AuthenticationError as e:
@@ -399,10 +368,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise
     except Exception as e:
         logger.error(f"获取当前用户信息失败: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="获取用户信息失败"
-        )
+        raise HTTPException(status_code=500, detail="获取用户信息失败")
+
 
 @router.post("/auth/logout")
 async def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -416,25 +383,18 @@ async def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
         logger.info(f"用户 {token_data.username} 登出成功")
 
-        return {
-            "success": True,
-            "message": "登出成功",
-            "timestamp": datetime.now().isoformat()
-        }
+        return {"success": True, "message": "登出成功", "timestamp": datetime.now().isoformat()}
 
     except AuthenticationError as e:
         raise HTTPException(status_code=401, detail=str(e))
     except Exception as e:
         logger.error(f"用户登出失败: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="登出失败"
-        )
+        raise HTTPException(status_code=500, detail="登出失败")
+
 
 @router.post("/auth/api-keys")
 async def create_api_key(
-    request: Dict[str, Any],
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    request: Dict[str, Any], credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """创建API密钥"""
     try:
@@ -443,20 +403,14 @@ async def create_api_key(
 
         # 检查权限
         if "api_access" not in token_data.scopes and token_data.role != UserRole.ADMIN:
-            raise HTTPException(
-                status_code=403,
-                detail="权限不足，无法创建API密钥"
-            )
+            raise HTTPException(status_code=403, detail="权限不足，无法创建API密钥")
 
         # 验证请求数据
         api_key_request = APIKeyCreate(**request)
         is_valid, error_message = validate_api_key_request(api_key_request)
 
         if not is_valid:
-            raise HTTPException(
-                status_code=400,
-                detail=error_message
-            )
+            raise HTTPException(status_code=400, detail=error_message)
 
         # 生成API密钥
         full_api_key, key_hash = generate_api_key()
@@ -473,10 +427,12 @@ async def create_api_key(
             "allowed_ips": api_key_request.allowed_ips,
             "rate_limit": api_key_request.rate_limit,
             "status": APIKeyStatus.ACTIVE,
-            "expires_at": api_key_request.expires_at.isoformat() if api_key_request.expires_at else None,
+            "expires_at": api_key_request.expires_at.isoformat()
+            if api_key_request.expires_at
+            else None,
             "last_used_at": None,
             "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().isoformat(),
         }
 
         MOCK_API_KEYS.append(new_api_key)
@@ -495,10 +451,10 @@ async def create_api_key(
                 "rate_limit": new_api_key["rate_limit"],
                 "status": new_api_key["status"].value,
                 "expires_at": new_api_key["expires_at"],
-                "created_at": new_api_key["created_at"]
+                "created_at": new_api_key["created_at"],
             },
             "message": "API密钥创建成功",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     except AuthenticationError as e:
@@ -507,10 +463,8 @@ async def create_api_key(
         raise
     except Exception as e:
         logger.error(f"创建API密钥失败: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="创建API密钥失败"
-        )
+        raise HTTPException(status_code=500, detail="创建API密钥失败")
+
 
 @router.get("/auth/api-keys")
 async def list_api_keys(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -528,7 +482,7 @@ async def list_api_keys(credentials: HTTPAuthorizationCredentials = Depends(secu
                 "permissions": [perm.value for perm in key["permissions"]],
                 "status": key["status"].value,
                 "last_used_at": key["last_used_at"],
-                "created_at": key["created_at"]
+                "created_at": key["created_at"],
             }
             for key in MOCK_API_KEYS
             if key["user_id"] == token_data.user_id
@@ -538,14 +492,11 @@ async def list_api_keys(credentials: HTTPAuthorizationCredentials = Depends(secu
             "success": True,
             "data": user_api_keys,
             "message": "API密钥列表获取成功",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     except AuthenticationError as e:
         raise HTTPException(status_code=401, detail=str(e))
     except Exception as e:
         logger.error(f"获取API密钥列表失败: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="获取API密钥列表失败"
-        )
+        raise HTTPException(status_code=500, detail="获取API密钥列表失败")

@@ -135,7 +135,7 @@ export const useWebSocketAdvanced = (
     options: SubscriptionOptions;
     throttledHandler?: Function;
     debouncedHandler?: Function;
-  }>>(new Map());
+  } >>(new Map());
   const [cache, setCache] = useState<Map<string, CacheEntry>>(new Map());
   const [messageHistory, setMessageHistory] = useState<BaseMessage[]>([]);
   const [messageBatches, setMessageBatches] = useState<Map<string, MessageBatch>>(new Map()));

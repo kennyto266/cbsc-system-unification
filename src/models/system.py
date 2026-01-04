@@ -72,7 +72,7 @@ class SystemConfig(UnifiedBaseModel):
 
     # 配置來源和同步
     source = Column(String(50), default="database", nullable=False)  # database, file, env, remote
-    last_synced_at = Column(DateTime(timezone=True), nullable=True)
+    last_synced_at = Column(DateTime, nullable=True)
     sync_status = Column(String(20), default="synced", nullable=False)
 
     # 複合索引
@@ -170,11 +170,11 @@ class AuditLog(UnifiedBaseModel):
     method = Column(String(10), nullable=True)
 
     # 時間信息
-    timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     correlation_id = Column(String(100), nullable=True, index=True)
 
     # 附加數據
-    metadata = Column(JSONB, nullable=True)
+    meta_data = Column(JSONB, nullable=True)
     tags = Column(JSONB, nullable=True)
 
     # 複合索引
@@ -225,12 +225,12 @@ class DataSchema(UnifiedBaseModel):
     # 使用和部署
     is_active = Column(Boolean, default=False, nullable=False)
     deployment_status = Column(String(20), nullable=False)  # draft, testing, deployed, retired
-    deployed_at = Column(DateTime(timezone=True), nullable=True)
+    deployed_at = Column(DateTime, nullable=True)
     deployed_environments = Column(JSONB, nullable=True)
 
     # 統計信息
     usage_count = Column(Integer, default=0, nullable=False)
-    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    last_used_at = Column(DateTime, nullable=True)
     data_volume = Column(Integer, nullable=True)  # 預估數據量
 
     # 複合索引
@@ -257,7 +257,7 @@ class SystemHealth(UnifiedBaseModel):
     response_time_ms = Column(Integer, nullable=True)
     error_rate = Column(Float, nullable=True)
     availability_percent = Column(Float, nullable=True)
-    last_check_time = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    last_check_time = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
 
     # 閾值配置
     warning_threshold = Column(Float, nullable=True)
@@ -271,8 +271,8 @@ class SystemHealth(UnifiedBaseModel):
     # 連續狀態
     consecutive_failures = Column(Integer, default=0, nullable=False)
     consecutive_successes = Column(Integer, default=0, nullable=False)
-    last_failure_time = Column(DateTime(timezone=True), nullable=True)
-    last_recovery_time = Column(DateTime(timezone=True), nullable=True)
+    last_failure_time = Column(DateTime, nullable=True)
+    last_recovery_time = Column(DateTime, nullable=True)
 
     # 複合索引
     __table_args__ = (

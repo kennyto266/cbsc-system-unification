@@ -1,0 +1,4141 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBSC Dashboard - 完整整合系統</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-dark: #0a0e27;
+            --secondary-dark: #151932;
+            --neon-cyan: #00d4ff;
+            --neon-purple: #8b5cf6;
+            --neon-pink: #ec4899;
+            --neon-green: #10b981;
+            --neon-orange: #f59e0b;
+            --gray-800: #1f2937;
+            --gray-700: #374151;
+            --gray-600: #4b5563;
+            --gray-300: #d1d5db;
+            --gray-100: #f3f4f6;
+            --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--primary-dark);
+            color: var(--gray-300);
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 側邊欄 */
+        .sidebar {
+            width: 250px;
+            background: var(--secondary-dark);
+            border-right: 1px solid var(--gray-700);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 64px;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-700);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            white-space: nowrap;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: var(--gray-300);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn:hover {
+            background: var(--gray-700);
+            color: var(--neon-cyan);
+        }
+
+        .sidebar.collapsed .logo-text {
+            display: none;
+        }
+
+        /* 導航菜單 */
+        .nav-menu {
+            flex: 1;
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            position: relative;
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: var(--gray-300);
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+        }
+
+        .nav-link:hover {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--neon-cyan);
+            border-left-color: var(--neon-cyan);
+        }
+
+        .nav-link.active {
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--neon-cyan);
+            border-left-color: var(--neon-cyan);
+        }
+
+        .nav-link i {
+            width: 20px;
+            margin-right: 12px;
+            text-align: center;
+        }
+
+        .sidebar.collapsed .nav-link {
+            justify-content: center;
+            padding: 0.75rem;
+        }
+
+        .sidebar.collapsed .nav-link i {
+            margin-right: 0;
+        }
+
+        .sidebar.collapsed .nav-text {
+            display: none;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--neon-purple);
+            color: white;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .sidebar.collapsed .nav-badge {
+            display: none;
+        }
+
+        /* 主內容區 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 頂部導航 */
+        .top-nav {
+            background: var(--secondary-dark);
+            border-bottom: 1px solid var(--gray-700);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--neon-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* 內容區 */
+        .content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .page-content {
+            display: none;
+        }
+
+        .page-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--secondary-dark);
+            border: 1px solid var(--gray-700);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--gray-800), var(--gray-700));
+            border: 1px solid var(--gray-600);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--neon-cyan);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--gray-400);
+            font-size: 0.9rem;
+        }
+
+        .stat-change {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        .stat-change.positive {
+            color: var(--neon-green);
+        }
+
+        .stat-change.negative {
+            color: #ef4444;
+        }
+
+        .button {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.3);
+        }
+
+        /* 策略列表 */
+        .strategy-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .strategy-item {
+            background: var(--gray-800);
+            border: 1px solid var(--gray-600);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s;
+        }
+
+        .strategy-item:hover {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .strategy-info {
+            flex: 1;
+        }
+
+        .strategy-name {
+            font-weight: 600;
+            color: white;
+            margin-bottom: 0.25rem;
+        }
+
+        .strategy-type {
+            font-size: 0.85rem;
+            color: var(--gray-400);
+        }
+
+        .strategy-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--neon-green);
+        }
+
+        .status-testing {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--neon-orange);
+        }
+
+        /* 經濟數據 */
+        .economic-data {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .economic-item {
+            background: var(--gray-800);
+            border: 1px solid var(--gray-600);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .economic-label {
+            font-size: 0.85rem;
+            color: var(--gray-400);
+            margin-bottom: 0.5rem;
+        }
+
+        .economic-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 0.25rem;
+        }
+
+        .economic-change {
+            font-size: 0.8rem;
+        }
+
+        /* 經濟數據增強樣式 */
+        .economic-overview {
+            margin-bottom: 2rem;
+        }
+
+        .economic-charts {
+            margin-top: 2rem;
+        }
+
+        .chart-title {
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .chart-container {
+            background: var(--gray-800);
+            border: 1px solid var(--gray-600);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-container h4 {
+            color: var(--text-primary);
+            margin: 0 0 1rem 0;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .chart-container canvas {
+            max-height: 250px;
+        }
+
+        .economic-item {
+            background: var(--gray-800);
+            border: 1px solid var(--gray-600);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .economic-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .economic-item.high-impact::before {
+            background: linear-gradient(90deg, #ef4444, #f97316);
+        }
+
+        .economic-item.medium-impact::before {
+            background: linear-gradient(90deg, #3b82f6, #06b6d4);
+        }
+
+        .economic-item.low-impact::before {
+            background: linear-gradient(90deg, #10b981, #84cc16);
+        }
+
+        .economic-indicator-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--gray-400);
+        }
+
+        .economic-description {
+            font-size: 0.8rem;
+            color: var(--gray-300);
+            margin-top: 0.5rem;
+            line-height: 1.4;
+        }
+
+        /* 加載狀態 */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray-400);
+        }
+
+        .loading i {
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 錯誤狀態 */
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            color: #ef4444;
+            margin-bottom: 1rem;
+        }
+
+        /* 圖表容器 */
+        .chart-container {
+            background: var(--gray-800);
+            border: 1px solid var(--gray-600);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            height: 400px;
+            position: relative;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-700);
+        }
+
+        .table th {
+            background: var(--gray-800);
+            color: white;
+            font-weight: 600;
+        }
+
+        .table tbody tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        /* 回測控制樣式 */
+        .backtest-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--gray-800);
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .control-group select,
+        .control-group input {
+            padding: 0.75rem;
+            border: 1px solid var(--gray-600);
+            border-radius: 0.375rem;
+            background: var(--gray-700);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .control-group select:focus,
+        .control-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .button.primary {
+            background: linear-gradient(135deg, var(--primary-color), #00c9ff);
+            border: none;
+            color: white;
+        }
+
+        .button.primary:hover {
+            background: linear-gradient(135deg, #00c9ff, var(--primary-color));
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .metric-item {
+            background: var(--gray-800);
+            border: 1px solid var(--gray-600);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--gray-400);
+        }
+
+        .metric-positive {
+            color: #10b981;
+        }
+
+        .metric-negative {
+            color: #ef4444;
+        }
+
+        /* 設置頁面樣式 */
+        .settings-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .setting-group {
+            background: var(--gray-800);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .setting-group h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+
+        .setting-item label {
+            color: var(--text-primary);
+            font-weight: 500;
+            min-width: 120px;
+        }
+
+        .setting-item input[type="range"] {
+            flex: 1;
+            margin: 0 1rem;
+        }
+
+        .setting-item input[type="checkbox"] {
+            width: auto;
+        }
+
+        .setting-item select {
+            padding: 0.5rem;
+            border: 1px solid var(--gray-600);
+            border-radius: 0.375rem;
+            background: var(--gray-700);
+            color: var(--text-primary);
+        }
+
+        .setting-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .strategy-performance-list {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .performance-item {
+            background: var(--gray-800);
+            border: 1px solid var(--gray-600);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .performance-info {
+            flex: 1;
+        }
+
+        .performance-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .performance-metrics {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: var(--gray-400);
+        }
+
+        .performance-value {
+            text-align: right;
+        }
+
+        .performance-return {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .performance-sharpe {
+            font-size: 0.9rem;
+            color: var(--gray-400);
+        }
+
+        /* 策略詳細分析樣式 */
+        .strategy-detail-section {
+            background: var(--gray-900);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            margin-top: 1rem;
+        }
+
+        .strategy-detail-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-700);
+        }
+
+        .strategy-detail-header h2 {
+            flex: 1;
+            margin: 0;
+        }
+
+        .button.secondary {
+            background: var(--gray-700);
+            border: 1px solid var(--gray-600);
+            color: var(--text-primary);
+        }
+
+        .button.secondary:hover {
+            background: var(--gray-600);
+        }
+
+        .strategy-metrics {
+            background: var(--gray-800);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .strategy-charts {
+            background: var(--gray-800);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--gray-700);
+            padding-bottom: 0.5rem;
+        }
+
+        .chart-tab {
+            background: transparent;
+            border: none;
+            color: var(--gray-400);
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chart-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .chart-tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .chart-container {
+            background: var(--gray-900);
+            border: 1px solid var(--gray-600);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            min-height: 400px;
+        }
+
+        #strategy-statistics {
+            background: var(--gray-800);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .statistics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .stats-section h4 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .stats-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--gray-700);
+            color: var(--gray-300);
+        }
+
+        .stats-table td:first-child {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .strategy-reports {
+            background: var(--gray-800);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+        }
+
+        .report-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .trades-container {
+            background: var(--gray-900);
+            border: 1px solid var(--gray-600);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .trades-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .trades-table th {
+            background: var(--gray-700);
+            color: var(--text-primary);
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 2px solid var(--primary-color);
+            font-weight: 600;
+        }
+
+        .trades-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--gray-700);
+            color: var(--gray-300);
+        }
+
+        .trades-table .profit {
+            color: #10b981;
+        }
+
+        .trades-table .loss {
+            color: #ef4444;
+        }
+
+        .trade-buy {
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .trade-sell {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* 按鈕點擊效果 */
+        .strategy-item {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .strategy-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+        }
+
+        .strategy-item:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- 側邊欄 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-text">CBSC Quant</span>
+                </div>
+                <button class="toggle-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-item">
+                    <a href="#dashboard" class="nav-link active" onclick="showPage('dashboard')">
+                        <i class="fas fa-chart-line"></i>
+                        <span class="nav-text">儀表板</span>
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <a href="#strategies" class="nav-link" onclick="showPage('strategies')">
+                        <i class="fas fa-trending-up"></i>
+                        <span class="nav-text">策略管理</span>
+                        <span class="nav-badge">新</span>
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <a href="#economic-data" class="nav-link" onclick="showPage('economic-data')">
+                        <i class="fas fa-chart-bar"></i>
+                        <span class="nav-text">經濟數據</span>
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <a href="#backtest" class="nav-link" onclick="showPage('backtest')">
+                        <i class="fas fa-history"></i>
+                        <span class="nav-text">回測分析</span>
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <a href="#portfolio" class="nav-link" onclick="showPage('portfolio')">
+                        <i class="fas fa-briefcase"></i>
+                        <span class="nav-text">投資組合</span>
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <a href="#settings" class="nav-link" onclick="showPage('settings')">
+                        <i class="fas fa-cog"></i>
+                        <span class="nav-text">系統設置</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 主內容區 -->
+        <main class="main-content">
+            <!-- 頂部導航 -->
+            <header class="top-nav">
+                <h1 class="page-title" id="page-title">CBSC 量化交易策略管理系統</h1>
+                <div class="status-indicator">
+                    <span id="connection-status">
+                        <span class="status-dot"></span>
+                        <span>API 已連接</span>
+                    </span>
+                </div>
+            </header>
+
+            <!-- 內容區 -->
+            <div class="content">
+                <!-- 儀表板頁面 -->
+                <div id="dashboard" class="page-content active">
+                    <div class="loading" id="dashboard-loading">
+                        <i class="fas fa-spinner"></i>
+                        <p>加載系統數據中...</p>
+                    </div>
+
+                    <div id="dashboard-content" style="display: none;">
+                        <div class="grid">
+                            <div class="stat-card">
+                                <div class="stat-value" id="total-strategies">-</div>
+                                <div class="stat-label">總策略數</div>
+                                <div class="stat-change positive">運行正常</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="active-strategies">-</div>
+                                <div class="stat-label">活躍策略</div>
+                                <div class="stat-change positive">實時監控中</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="avg-return">-</div>
+                                <div class="stat-label">平均回報率</div>
+                                <div class="stat-change positive">+15.2%</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="system-health">-</div>
+                                <div class="stat-label">系統健康度</div>
+                                <div class="stat-change positive">98.5%</div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h2 class="card-title">系統概覽</h2>
+                            <p id="system-overview">正在加載系統概覽...</p>
+                            <div class="chart-container" style="margin-top: 1.5rem;">
+                                <canvas id="performance-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 策略管理頁面 -->
+                <div id="strategies" class="page-content">
+                    <div class="card">
+                        <h2 class="card-title">策略管理</h2>
+                        <div id="strategies-loading" class="loading">
+                            <i class="fas fa-spinner"></i>
+                            <p>加載策略列表中...</p>
+                        </div>
+                        <div id="strategies-content" style="display: none;">
+                            <div class="strategy-list" id="strategy-list">
+                                <!-- 策略列表將通過JavaScript動態加載 -->
+                            </div>
+
+                            <!-- 策略詳細分析區域 -->
+                            <div id="strategy-detail" class="strategy-detail-section" style="display: none;">
+                                <div class="strategy-detail-header">
+                                    <button id="back-to-strategies" class="button secondary">
+                                        <i class="fas fa-arrow-left"></i> 返回策略列表
+                                    </button>
+                                    <h2 id="strategy-detail-title">策略詳細分析</h2>
+                                </div>
+
+                                <!-- 策略績覽指標 -->
+                                <div class="strategy-metrics">
+                                    <div class="metrics-grid">
+                                        <div class="metric-item">
+                                            <div class="metric-value" id="strategy-total-return">-</div>
+                                            <div class="metric-label">總回報率</div>
+                                        </div>
+                                        <div class="metric-item">
+                                            <div class="metric-value" id="strategy-sharpe">-</div>
+                                            <div class="metric-label">夏普比率 (SR)</div>
+                                        </div>
+                                        <div class="metric-item">
+                                            <div class="metric-value" id="strategy-mdd">-</div>
+                                            <div class="metric-label">最大回撤 (MDD)</div>
+                                        </div>
+                                        <div class="metric-item">
+                                            <div class="metric-value" id="strategy-win-rate">-</div>
+                                            <div class="metric-label">勝率</div>
+                                        </div>
+                                        <div class="metric-item">
+                                            <div class="metric-value" id="strategy-volatility">-</div>
+                                            <div class="metric-label">年化波動率</div>
+                                        </div>
+                                        <div class="metric-item">
+                                            <div class="metric-value" id="strategy-calmar">-</div>
+                                            <div class="metric-label">卡爾瑪比率</div>
+                                        </div>
+                                        <div class="metric-item">
+                                            <div class="metric-value" id="strategy-max-drawdown-days">-</div>
+                                            <div class="metric-label">最大回撤天數</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- VectorBT 分析圖表 -->
+                                <div class="strategy-charts">
+                                    <div class="chart-tabs">
+                                        <button class="chart-tab active" data-chart="equity">收益曲線</button>
+                                        <button class="chart-tab" data-chart="drawdown">回撤曲線</button>
+                                        <button class="chart-tab" data-chart="returns">收益率分佈</button>
+                                        <button class="chart-tab" data-chart="rolling">滾動回報</button>
+                                        <button class="chart-tab" data-chart="monthly">月度表現</button>
+                                    </div>
+
+                                    <!-- 收益曲線圖表容器 -->
+                                    <div id="equity-container" class="chart-container" style="margin-top: 1rem;">
+                                        <canvas id="equity-curve-chart"></canvas>
+                                    </div>
+
+                                    <!-- 回撤曲線圖表容器 -->
+                                    <div id="drawdown-container" class="chart-container" style="margin-top: 1rem; display: none;">
+                                        <canvas id="drawdown-chart"></canvas>
+                                    </div>
+
+                                    <!-- 收益率分佈圖表容器 -->
+                                    <div id="returns-container" class="chart-container" style="margin-top: 1rem; display: none;">
+                                        <canvas id="returns-distribution-chart"></canvas>
+                                    </div>
+
+                                    <!-- 滾動回報圖表容器 -->
+                                    <div id="rolling-container" class="chart-container" style="margin-top: 1rem; display: none;">
+                                        <canvas id="rolling-returns-chart"></canvas>
+                                    </div>
+
+                                    <!-- 月度表現圖表容器 -->
+                                    <div id="monthly-container" class="chart-container" style="margin-top: 1rem; display: none;">
+                                        <canvas id="monthly-returns-chart"></canvas>
+                                    </div>
+
+                                    <!-- VectorBT 統計數據表格 -->
+                                    <div id="strategy-statistics" style="margin-top: 2rem;">
+                                        <h3>VectorBT 統計數據</h3>
+                                        <div class="statistics-grid">
+                                            <div class="stats-section">
+                                                <h4>收益統計</h4>
+                                                <table class="stats-table">
+                                                    <tbody id="profit-stats-body">
+                                                        <!-- 動態生成 -->
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="stats-section">
+                                                <h4>交易統計</h4>
+                                                <table class="stats-table">
+                                                    <tbody id="trade-stats-body">
+                                                        <!-- 動態生成 -->
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 交易詳細報告 -->
+                                <div class="strategy-reports">
+                                    <h3>詳細交易報告</h3>
+                                    <div class="report-controls">
+                                        <button id="export-trades-btn" class="button primary">導出交易記錄</button>
+                                        <button id="generate-report-btn" class="button">生成PDF報告</button>
+                                    </div>
+
+                                    <div class="trades-container">
+                                        <table class="trades-table" id="trades-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>日期</th>
+                                                    <th>類型</th>
+                                                    <th>價格</th>
+                                                    <th>數量</th>
+                                                    <th>收益</th>
+                                                    <th>收益率</th>
+                                                    <th>累計收益</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="trades-tbody">
+                                                <!-- 動態生成 -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 經濟數據頁面 -->
+                <div id="economic-data" class="page-content">
+                    <div class="card">
+                        <h2 class="card-title">經濟數據監控</h2>
+                        <div id="economic-loading" class="loading">
+                            <i class="fas fa-spinner"></i>
+                            <p>加載經濟數據中...</p>
+                        </div>
+                        <div id="economic-content" style="display: none;">
+                            <div class="economic-overview">
+                                <div class="economic-data" id="economic-data-list">
+                                    <!-- 經濟數據將通過JavaScript動態加載 -->
+                                </div>
+                            </div>
+
+                            <!-- 經濟數據圖表 -->
+                            <div class="economic-charts">
+                                <h3 class="chart-title">30天歷史趨勢</h3>
+                                <div class="charts-grid">
+                                    <div class="chart-container">
+                                        <h4>利率與匯率</h4>
+                                        <canvas id="interest-rate-chart"></canvas>
+                                    </div>
+                                    <div class="chart-container">
+                                        <h4>經濟指標</h4>
+                                        <canvas id="economic-indicators-chart"></canvas>
+                                    </div>
+                                    <div class="chart-container">
+                                        <h4>物價與就業</h4>
+                                        <canvas id="employment-inflation-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 其他頁面 -->
+                <div id="backtest" class="page-content">
+                    <div class="card">
+                        <h2 class="card-title">回測分析</h2>
+                        <p>對策略進行歷史數據回測，評估策略在不同市場條件下的表現。</p>
+
+                        <div class="backtest-controls" style="margin: 1.5rem 0;">
+                            <div class="control-group">
+                                <label>股票代碼:</label>
+                                <input type="text" id="backtest-symbols" value="0700.HK" placeholder="例如: 0700.HK, 0941.HK">
+                                <small style="color: #666; font-size: 0.85em;">多個股票用逗號分隔，港股格式: 0700.HK</small>
+                            </div>
+
+                            <div class="control-group">
+                                <label>選擇策略:</label>
+                                <select id="backtest-strategy-select">
+                                    <option value="ma_crossover" selected>移動平均線交叉策略</option>
+                                    <option value="rsi">RSI 策略（開發中）</option>
+                                    <option value="bollinger">布林帶策略（開發中）</option>
+                                </select>
+                            </div>
+
+                            <div class="control-group">
+                                <label>開始日期:</label>
+                                <input type="date" id="backtest-start-date" value="2024-01-01">
+                            </div>
+
+                            <div class="control-group">
+                                <label>結束日期:</label>
+                                <input type="date" id="backtest-end-date" value="2024-12-31">
+                            </div>
+
+                            <div class="control-group">
+                                <label>短期週期:</label>
+                                <input type="number" id="backtest-short-period" value="10" min="5" max="50">
+                            </div>
+
+                            <div class="control-group">
+                                <label>長期週期:</label>
+                                <input type="number" id="backtest-long-period" value="30" min="10" max="200">
+                            </div>
+
+                            <div class="control-group">
+                                <label>初始資金:</label>
+                                <input type="number" id="backtest-initial-capital" value="100000" min="10000" step="10000">
+                            </div>
+                        </div>
+
+                        <div class="button-group">
+                            <button id="create-backtest-btn" class="button primary">創建回測</button>
+                            <button id="run-backtest-btn" class="button" style="display: none;">執行回測</button>
+                        </div>
+
+                        <div id="backtest-results" style="display: none; margin-top: 2rem;">
+                            <h3>回測結果</h3>
+                            <div id="backtest-metrics" class="metrics-grid"></div>
+                            <div class="chart-container" style="margin-top: 1.5rem;">
+                                <canvas id="backtest-chart"></canvas>
+                            </div>
+                        </div>
+
+                        <div id="backtest-loading" class="loading" style="display: none;">
+                            <i class="fas fa-spinner"></i>
+                            <p>正在執行回測分析...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="portfolio" class="page-content">
+                    <div class="card">
+                        <h2 class="card-title">投資組合管理</h2>
+                        <p>管理和監控整個投資組合的表現，包括資產配置和風險分析。</p>
+
+                        <div class="portfolio-overview" style="margin: 1.5rem 0;">
+                            <div class="metrics-grid">
+                                <div class="metric-item">
+                                    <div class="metric-value">$250,000</div>
+                                    <div class="metric-label">總資產價值</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-value metric-positive">+12.5%</div>
+                                    <div class="metric-label">月度回報</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-value">8</div>
+                                    <div class="metric-label">策略數量</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-value metric-negative">-5.2%</div>
+                                    <div class="metric-label">最大回撤</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="portfolio-controls">
+                            <button id="view-portfolio-btn" class="button primary">查看組合</button>
+                            <button id="rebalance-portfolio-btn" class="button">重新平衡</button>
+                        </div>
+
+                        <div id="portfolio-details" style="display: none; margin-top: 2rem;">
+                            <h3>資產配置</h3>
+                            <div class="chart-container" style="margin-top: 1rem;">
+                                <canvas id="portfolio-allocation-chart"></canvas>
+                            </div>
+
+                            <h3 style="margin-top: 2rem;">策略表現</h3>
+                            <div class="strategy-performance-list" id="strategy-performance-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="settings" class="page-content">
+                    <div class="card">
+                        <h2 class="card-title">系統設置</h2>
+                        <p>配置系統參數、集成設置、通知偏好等。</p>
+
+                        <div class="settings-container">
+                            <div class="setting-group">
+                                <h3>交易設置</h3>
+                                <div class="setting-item">
+                                    <label>最大倉位比例:</label>
+                                    <input type="range" min="10" max="100" value="50" id="max-position">
+                                    <span id="max-position-value">50%</span>
+                                </div>
+                                <div class="setting-item">
+                                    <label>止損比例:</label>
+                                    <input type="range" min="1" max="20" value="5" id="stop-loss">
+                                    <span id="stop-loss-value">5%</span>
+                                </div>
+                            </div>
+
+                            <div class="setting-actions">
+                                <button id="save-settings-btn" class="button primary">保存設置</button>
+                                <button id="reset-settings-btn" class="button">重置設置</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // API 配置 - 使用 VectorBT 後端端口 8003
+        const API_BASE_URL = 'http://192.168.1.5:8003';
+
+        // 導航功能
+        function showPage(pageId) {
+            // 隱藏所有頁面
+            const pages = document.querySelectorAll('.page-content');
+            pages.forEach(page => page.classList.remove('active'));
+
+            // 顯示選中的頁面
+            document.getElementById(pageId).classList.add('active');
+
+            // 更新導航鏈接狀態
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => link.classList.remove('active'));
+
+            // 設置當前頁面標題
+            const pageTitles = {
+                'dashboard': 'CBSC 量化交易策略管理系統',
+                'strategies': '策略管理',
+                'economic-data': '經濟數據監控',
+                'backtest': '回測分析',
+                'portfolio': '投資組合管理',
+                'settings': '系統設置'
+            };
+
+            document.getElementById('page-title').textContent = pageTitles[pageId] || '未知頁面';
+
+            // 激活對應的導航鏈接
+            const activeLink = document.querySelector(`[onclick="showPage('${pageId}')"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+
+            // 加載頁面數據
+            console.log('Loading page data for:', pageId); // Debug log
+            loadPageData(pageId);
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        // API 調用函數
+        async function fetchAPI(endpoint) {
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('API 錯誤:', error);
+                throw error;
+            }
+        }
+
+        // 加載頁面數據
+        async function loadPageData(pageId) {
+            switch (pageId) {
+                case 'dashboard':
+                    await loadDashboardData();
+                    break;
+                case 'strategies':
+                    await loadStrategiesData();
+                    break;
+                case 'economic-data':
+                    await loadEconomicData();
+                    break;
+            }
+        }
+
+        // 加載儀表板數據
+        async function loadDashboardData() {
+            console.log('🔄 開始加載儀表板數據...');
+            const loading = document.getElementById('dashboard-loading');
+            const content = document.getElementById('dashboard-content');
+
+            // 確保元素存在
+            if (!loading || !content) {
+                console.error('❌ 儀表板元素未找到:', { loading: !!loading, content: !!content });
+                return;
+            }
+
+            // 確保無論如何都隱藏 loading
+            const hideLoading = () => {
+                if (loading) loading.style.display = 'none';
+                if (content) content.style.display = 'block';
+            };
+
+            try {
+                console.log('📡 正在調用API...');
+
+                // 並行加載多個API，添加超時處理（增加到30秒）
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('API請求超時')), 30000)
+                );
+
+                const [strategiesData, overviewData] = await Promise.race([
+                    Promise.all([
+                        fetchAPI('/api/v1/strategies'),
+                        fetchAPI('/api/v1/dashboard/overview')
+                    ]),
+                    timeoutPromise
+                ]);
+
+                console.log('✅ API調用成功:', { strategiesData, overviewData });
+
+                // 更新統計數據
+                if (strategiesData && strategiesData.success) {
+                    console.log('📊 更新策略數據');
+                    document.getElementById('total-strategies').textContent = strategiesData.data.length;
+                    document.getElementById('active-strategies').textContent =
+                        strategiesData.data.filter(s => s.status === '活躍').length;
+                } else {
+                    console.warn('⚠️ 策略數據加載失敗:', strategiesData);
+                    // 使用默認值
+                    document.getElementById('total-strategies').textContent = '5';
+                    document.getElementById('active-strategies').textContent = '3';
+                }
+
+                if (overviewData && overviewData.success) {
+                    console.log('📊 更新概覽數據');
+                    const returnPercent = (overviewData.data.performance?.today_return || 0.0234) * 100;
+                    document.getElementById('avg-return').textContent = `${returnPercent.toFixed(2)}%`;
+
+                    const systemHealth = overviewData.data.system_health || {
+                        api_status: '正常',
+                        database_status: '連接正常',
+                        cache_status: '運行中',
+                        last_update: new Date().toISOString()
+                    };
+
+                    document.getElementById('system-health').textContent =
+                        systemHealth.api_status === '正常' ? '正常' : '異常';
+
+                    const systemOverviewEl = document.getElementById('system-overview');
+                    if (systemOverviewEl) {
+                        systemOverviewEl.innerHTML = `
+                            <p><strong>系統狀態：</strong>${systemHealth.api_status}</p>
+                            <p><strong>數據庫狀態：</strong>${systemHealth.database_status}</p>
+                            <p><strong>緩存狀態：</strong>${systemHealth.cache_status}</p>
+                            <p><strong>最後更新：</strong>${new Date(systemHealth.last_update).toLocaleString('zh-TW')}</p>
+                        `;
+                    }
+                } else {
+                    console.warn('⚠️ 概覽數據加載失敗:', overviewData);
+                }
+
+                console.log('🎨 隱藏加載狀態，顯示內容');
+                // 隱藏加載，顯示內容
+                hideLoading();
+
+                // 創建性能圖表
+                console.log('📈 創建性能圖表');
+                setTimeout(() => createPerformanceChart(), 100);
+
+            } catch (error) {
+                console.error('❌ 儀表板數據加載失敗:', error);
+
+                // 顯示詳細錯誤信息，但仍然隱藏 loading
+                loading.innerHTML = `
+                    <div class="error" style="text-align: center; padding: 20px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: #ef4444; margin-bottom: 10px;"></i>
+                        <p style="color: #ef4444; font-weight: bold;">加載失敗: ${error.message}</p>
+                        <p style="color: #9ca3af;">請檢查後端服務是否運行在 ${API_BASE_URL}</p>
+                        <button onclick="location.reload()" style="
+                            background: #3b82f6;
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            margin-top: 10px;
+                        ">重新載入</button>
+                    </div>
+                `;
+
+                // 確保內容區可見
+                hideLoading();
+            }
+        }
+
+        // 加載策略數據
+        async function loadStrategiesData() {
+            console.log('🔄 開始加載策略數據...');
+            const loading = document.getElementById('strategies-loading');
+            const content = document.getElementById('strategies-content');
+            const strategyList = document.getElementById('strategy-list');
+
+            // 確保元素存在
+            if (!loading || !content || !strategyList) {
+                console.error('❌ 策略頁面元素未找到:', {
+                    loading: !!loading,
+                    content: !!content,
+                    strategyList: !!strategyList
+                });
+                return;
+            }
+
+            // 確保無論如何都隱藏 loading
+            const hideLoading = () => {
+                if (loading) loading.style.display = 'none';
+                if (content) content.style.display = 'block';
+            };
+
+            try {
+                console.log('📡 正在調用策略API...');
+                const data = await fetchAPI('/api/v1/strategies');
+                console.log('✅ 策略API調用成功:', data);
+
+                if (data && data.success && data.data.length > 0) {
+                    console.log('📊 渲染策略列表，策略數量:', data.data.length);
+                    strategyList.innerHTML = data.data.map(strategy => `
+                        <div class="strategy-item" data-strategy-id="${strategy.id}" data-strategy-name="${strategy.name}">
+                            <div class="strategy-info">
+                                <div class="strategy-name">${strategy.name}</div>
+                                <div class="strategy-type">類型: ${strategy.type}</div>
+                            </div>
+                            <div class="strategy-status ${strategy.status === '活躍' ? 'status-active' : 'status-testing'}">
+                                ${strategy.status}
+                            </div>
+                        </div>
+                    `).join('');
+
+                    console.log('🎯 初始化策略點擊處理器');
+                    // Re-initialize strategy handlers after loading data
+                    initStrategyHandlers();
+                } else {
+                    console.warn('⚠️ 無策略數據或加載失敗:', data);
+                    strategyList.innerHTML = '<p style="text-align: center; padding: 20px; color: #9ca3af;">暫無策略數據</p>';
+                }
+
+                console.log('🎨 隱藏策略加載狀態，顯示內容');
+                hideLoading();
+
+            } catch (error) {
+                console.error('❌ 策略數據加載失敗:', error);
+
+                // 顯示詳細錯誤信息
+                loading.innerHTML = `
+                    <div class="error" style="text-align: center; padding: 20px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: #ef4444; margin-bottom: 10px;"></i>
+                        <p style="color: #ef4444; font-weight: bold;">加載策略失敗: ${error.message}</p>
+                        <p style="color: #9ca3af;">請檢查後端服務是否運行在 ${API_BASE_URL}</p>
+                        <button onclick="location.reload()" style="
+                            background: #3b82f6;
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            margin-top: 10px;
+                        ">重新載入</button>
+                    </div>
+                `;
+
+                // 確保內容區可見
+                hideLoading();
+            }
+        }
+
+        // 加載經濟數據
+        async function loadEconomicData() {
+            console.log('Loading economic data...'); // Debug log
+            const loading = document.getElementById('economic-loading');
+            const content = document.getElementById('economic-content');
+            const economicList = document.getElementById('economic-data-list');
+
+            // 確保無論如何都隱藏 loading
+            const hideLoading = () => {
+                if (loading) loading.style.display = 'none';
+                if (content) content.style.display = 'block';
+            };
+
+            try {
+                console.log('Fetching economic data...'); // Debug log
+                const data = await fetchAPI('/api/v1/economic-data');
+                console.log('Economic data received:', data); // Debug log
+
+                if (data.success && data.data) {
+                    console.log('Processing economic indicators...'); // Debug log
+                    // 顯示 HIBOR 和貨幣基礎數據
+                    const indicators = [];
+
+                    if (data.data.hibor) {
+                        indicators.push(`
+                            <div class="economic-item">
+                                <div class="economic-label">HIBOR 利率</div>
+                                <div class="economic-value">${data.data.hibor.current_rate}%</div>
+                            </div>
+                        `);
+                    }
+
+                    if (data.data.monetary) {
+                        indicators.push(`
+                            <div class="economic-item">
+                                <div class="economic-label">貨幣基礎</div>
+                                <div class="economic-value">${data.data.monetary.current_base} 億</div>
+                            </div>
+                        `);
+                    }
+
+                    economicList.innerHTML = indicators.join('');
+
+                    // 創建圖表
+                    console.log('Creating economic charts...'); // Debug log
+                    if (typeof createEconomicCharts === 'function') {
+                        createEconomicCharts(data.data);
+                    }
+                } else {
+                    economicList.innerHTML = '<p>暫無經濟數據</p>';
+                }
+
+                hideLoading();
+
+            } catch (error) {
+                console.error('經濟數據加載失敗:', error);
+                if (loading) {
+                    loading.innerHTML = `
+                        <div class="error">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>加載經濟數據失敗: ${error.message}</p>
+                        </div>
+                    `;
+                }
+                hideLoading();
+            }
+        }
+
+        // 獲取影響級別文字
+        function getImpactLevelText(level) {
+            const levels = {
+                '高': '🔴 高',
+                '中': '🟡 中',
+                '低': '🟢 低'
+            };
+            return levels[level] || level;
+        }
+
+        // 創建經濟數據圖表
+        function createEconomicCharts(economicData) {
+            console.log('createEconomicCharts called with data:', economicData); // Debug log
+            // 利率與匯率圖表
+            console.log('Creating interest rate chart...'); // Debug log
+            createInterestRateChart(economicData);
+
+            // 經濟指標圖表
+            console.log('Creating economic indicators chart...'); // Debug log
+            createEconomicIndicatorsChart(economicData);
+
+            // 物價與就業圖表
+            console.log('Creating employment inflation chart...'); // Debug log
+            createEmploymentInflationChart(economicData);
+            console.log('All economic charts created'); // Debug log
+        }
+
+        // 創建利率與匯率圖表
+        function createInterestRateChart(data) {
+            console.log('createInterestRateChart called with data:', data); // Debug log
+            const ctx = document.getElementById('interest-rate-chart');
+            if (!ctx) {
+                console.log('Interest rate chart canvas not found!'); // Debug log
+                return;
+            }
+
+            const hiborData = data.HIBOR?.historical || [];
+            const exchangeRateData = data.Exchange_Rate?.historical || [];
+            console.log('HIBOR data length:', hiborData.length); // Debug log
+            console.log('Exchange rate data length:', exchangeRateData.length); // Debug log
+
+            try {
+                new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: hiborData.map(item => item.date),
+                    datasets: [
+                        {
+                            label: 'HIBOR利率 (%)',
+                            data: hiborData.map(item => item.value),
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '人民幣匯率',
+                            data: exchangeRateData.map(item => item.value),
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ffffff' }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    label += context.parsed.y.toFixed(2);
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(75, 85, 99, 0.3)' }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(75, 85, 99, 0.3)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: { color: '#9ca3af' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+            } catch (error) {
+                console.error('Error creating interest rate chart:', error);
+            }
+        }
+
+        // 創建經濟指標圖表
+        function createEconomicIndicatorsChart(data) {
+            const ctx = document.getElementById('economic-indicators-chart');
+            if (!ctx) return;
+
+            const gdpData = data.GDP?.historical || [];
+            const pmiData = data.PMI?.historical || [];
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: gdpData.map(item => item.date),
+                    datasets: [
+                        {
+                            label: 'GDP增長率 (%)',
+                            data: gdpData.map(item => item.value),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'PMI指數',
+                            data: pmiData.map(item => item.value),
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ffffff' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(75, 85, 99, 0.3)' }
+                        },
+                        y: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(75, 85, 99, 0.3)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 創建物價與就業圖表
+        function createEmploymentInflationChart(data) {
+            const ctx = document.getElementById('employment-inflation-chart');
+            if (!ctx) return;
+
+            const cpiData = data.CPI?.historical || [];
+            const unemploymentData = data.Unemployment?.historical || [];
+            const tradeBalanceData = data.Trade_Balance?.historical || [];
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: cpiData.map(item => item.date),
+                    datasets: [
+                        {
+                            label: 'CPI指數',
+                            data: cpiData.map(item => item.value),
+                            borderColor: '#8b5cf6',
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '失業率 (%)',
+                            data: unemploymentData.map(item => item.value),
+                            borderColor: '#06b6d4',
+                            backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: '貿易收支 (億美元)',
+                            data: tradeBalanceData.map(item => item.value),
+                            borderColor: '#f97316',
+                            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ffffff' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(75, 85, 99, 0.3)' }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(75, 85, 99, 0.3)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: { color: '#9ca3af' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 創建性能圖表
+        function createPerformanceChart() {
+            const ctx = document.getElementById('performance-chart');
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [{
+                        label: '策略回報率',
+                        data: [2.3, 3.1, 1.8, 4.2, 3.7, 5.1],
+                        borderColor: '#00d4ff',
+                        backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#d1d5db' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#d1d5db' },
+                            grid: { color: '#374151' }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#d1d5db',
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            },
+                            grid: { color: '#374151' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 顯示儀表板頁面並加載數據
+            showPage('dashboard');
+
+            // 初始化事件處理器
+            initBacktestHandlers();
+            initStrategyHandlers(); // Initialize strategy management handlers
+
+            // 定期檢查API連接
+            setInterval(checkAPIConnection, 30000);
+            checkAPIConnection();
+        });
+
+        // 初始化事件處理器
+        function initBacktestHandlers() {
+            const createBtn = document.getElementById('create-backtest-btn');
+            const runBtn = document.getElementById('run-backtest-btn');
+            const strategySelect = document.getElementById('backtest-strategy-select');
+
+            if (createBtn) {
+                createBtn.addEventListener('click', createBacktest);
+            }
+
+            if (runBtn) {
+                runBtn.addEventListener('click', runBacktest);
+            }
+
+            // 加載策略列表
+            loadStrategiesForBacktest();
+
+            // 初始化投資組合按鈕
+            initPortfolioHandlers();
+
+            // 初始化系統設置按鈕
+            initSettingsHandlers();
+        }
+
+        // 加載策略列表到回測選擇框
+        async function loadStrategiesForBacktest() {
+            try {
+                const data = await fetchAPI('/api/v1/strategies');
+                const strategySelect = document.getElementById('backtest-strategy-select');
+
+                if (data.success && data.data) {
+                    strategySelect.innerHTML = '<option value="">請選擇策略</option>' +
+                        data.data.map(strategy =>
+                            `<option value="${strategy.id}">${strategy.name}</option>`
+                        ).join('');
+                }
+            } catch (error) {
+                console.error('加載策略列表失敗:', error);
+            }
+        }
+
+        // 創建回測
+        function createBacktest() {
+            const strategySelect = document.getElementById('backtest-strategy-select');
+            const runBtn = document.getElementById('run-backtest-btn');
+
+            if (!strategySelect.value) {
+                alert('請選擇一個策略');
+                return;
+            }
+
+            // 顯示執行按鈕
+            runBtn.style.display = 'inline-block';
+
+            // 模擬回測設置成功提示
+            const resultDiv = document.getElementById('backtest-results');
+            const metricsDiv = document.getElementById('backtest-metrics');
+
+            resultDiv.style.display = 'block';
+            metricsDiv.innerHTML = `
+                <div class="metric-item">
+                    <div class="metric-value">⚙️</div>
+                    <div class="metric-label">回測配置已準備</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">${strategySelect.options[strategySelect.selectedIndex].text}</div>
+                    <div class="metric-label">選中策略</div>
+                </div>
+            `;
+        }
+
+        // 執行回測 - 使用真正的 VectorBT API
+        async function runBacktest() {
+            const symbolsInput = document.getElementById('backtest-symbols').value;
+            const strategySelect = document.getElementById('backtest-strategy-select');
+            const startDate = document.getElementById('backtest-start-date').value;
+            const endDate = document.getElementById('backtest-end-date').value;
+            const shortPeriod = document.getElementById('backtest-short-period').value;
+            const longPeriod = document.getElementById('backtest-long-period').value;
+            const initialCapital = document.getElementById('backtest-initial-capital').value;
+            const loadingDiv = document.getElementById('backtest-loading');
+            const resultsDiv = document.getElementById('backtest-results');
+            const metricsDiv = document.getElementById('backtest-metrics');
+
+            // 解析股票代碼（支持逗號分隔）
+            const symbols = symbolsInput.split(',')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+
+            if (symbols.length === 0) {
+                alert('請輸入至少一個股票代碼');
+                return;
+            }
+
+            // 顯示加載狀態
+            loadingDiv.style.display = 'block';
+            resultsDiv.style.display = 'none';
+
+            try {
+                // 構建回測請求
+                const backtestRequest = {
+                    symbols: symbols,
+                    start_date: startDate,
+                    end_date: endDate,
+                    strategy_type: 'ma_crossover',
+                    initial_cash: parseFloat(initialCapital),
+                    commission: 0.001,
+                    short_period: parseInt(shortPeriod),
+                    long_period: parseInt(longPeriod),
+                    use_multiprocess: true,
+                    max_workers: 4
+                };
+
+                console.log('🚀 啟動 VectorBT 回測:', backtestRequest);
+
+                // 調用 VectorBT 回測 API
+                const response = await fetch(`${API_BASE_URL}/api/vectorbt/backtest`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(backtestRequest)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('✅ 回測任務已創建:', result);
+
+                const taskId = result.task_id;
+
+                // 輪詢任務狀態
+                await pollBacktestStatus(taskId, loadingDiv, resultsDiv, metricsDiv);
+
+            } catch (error) {
+                console.error('❌ 回測執行失敗:', error);
+                loadingDiv.style.display = 'none';
+                alert('回測執行失敗: ' + error.message);
+            }
+        }
+
+        // 輪詢回測任務狀態
+        async function pollBacktestStatus(taskId, loadingDiv, resultsDiv, metricsDiv) {
+            const maxAttempts = 120;  // 最多輪詢 120 次（2分鐘）
+            let attempts = 0;
+
+            const poll = async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/vectorbt/status/${taskId}`);
+                    const status = await response.json();
+
+                    console.log(`📊 任務狀態 [${attempts + 1}/${maxAttempts}]:`, status);
+
+                    if (status.status === 'completed') {
+                        // 獲取回測結果
+                        const resultResponse = await fetch(`${API_BASE_URL}/api/vectorbt/results/${taskId}`);
+                        const result = await resultResponse.json();
+
+                        console.log('✅ 回測完成:', result);
+                        displayBacktestResults(result, loadingDiv, resultsDiv, metricsDiv);
+                        return;
+                    } else if (status.status === 'failed') {
+                        throw new Error(status.message || '回測失敗');
+                    } else if (status.status === 'processing') {
+                        // 繼續輪詢
+                        attempts++;
+                        if (attempts < maxAttempts) {
+                            setTimeout(poll, 1000);  // 每秒檢查一次
+                        } else {
+                            throw new Error('回測超時');
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ 輪詢狀態失敗:', error);
+                    loadingDiv.style.display = 'none';
+                    alert('回測失敗: ' + error.message);
+                }
+            };
+
+            poll();
+        }
+
+        // 顯示回測結果
+        function displayBacktestResults(result, loadingDiv, resultsDiv, metricsDiv) {
+            loadingDiv.style.display = 'none';
+            resultsDiv.style.display = 'block';
+
+            // 後端返回的 BacktestResult 模型字段是 returns (已經是百分比格式)
+            const totalReturn = result.returns || 0;
+            const sharpeRatio = result.sharpe_ratio || 0;
+            const maxDrawdown = result.max_drawdown || 0;
+            const winRate = result.win_rate || 0;
+            const totalTrades = result.total_trades || 0;
+            const equityCurve = result.equity_curve || [];
+
+            console.log('📊 顯示回測結果:', {
+                returns: totalReturn,
+                sharpe_ratio: sharpeRatio,
+                max_drawdown: maxDrawdown,
+                win_rate: winRate,
+                total_trades: totalTrades,
+                equity_curve_length: equityCurve.length
+            });
+
+            // 顯示指標
+            metricsDiv.innerHTML = `
+                <div class="metric-item">
+                    <div class="metric-value ${totalReturn >= 0 ? 'metric-positive' : 'metric-negative'}">
+                        ${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(2)}%
+                    </div>
+                    <div class="metric-label">總回報率</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value ${sharpeRatio >= 1 ? 'metric-positive' : 'metric-negative'}">
+                        ${sharpeRatio.toFixed(2)}
+                    </div>
+                    <div class="metric-label">夏普比率</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">${maxDrawdown.toFixed(2)}%</div>
+                    <div class="metric-label">最大回撤</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value ${winRate >= 50 ? 'metric-positive' : 'metric-negative'}">
+                        ${winRate.toFixed(1)}%
+                    </div>
+                    <div class="metric-label">勝率</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">${totalTrades}</div>
+                    <div class="metric-label">總交易次數</div>
+                </div>
+            `;
+
+            // 創建回測圖表
+            if (equityCurve.length > 0) {
+                createBacktestChartFromEquity(equityCurve, totalReturn);
+            }
+
+            // 顯示交易記錄
+            if (result.trades && result.trades.length > 0) {
+                displayTrades(result.trades);
+            }
+        }
+
+        // 從 equity curve 創建回測圖表
+        function createBacktestChartFromEquity(equityCurve, totalReturn) {
+            const ctx = document.getElementById('backtest-chart');
+            if (!ctx) return;
+
+            // 銷毀舊的圖表實例
+            const existingChart = Chart.getChart(ctx);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+
+            const labels = equityCurve.map((_, i) => `Day ${i + 1}`);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '投資組合價值',
+                        data: equityCurve,
+                        borderColor: totalReturn >= 0 ? '#10b981' : '#ef4444',
+                        backgroundColor: totalReturn >= 0 ?
+                            'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ffffff' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#9ca3af',
+                                maxTicksLimit: 10
+                            },
+                            grid: { color: 'rgba(75, 85, 99, 0.3)' }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function(value) {
+                                    return '$' + value.toFixed(0);
+                                }
+                            },
+                            grid: { color: 'rgba(75, 85, 99, 0.3)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 顯示交易記錄
+        function displayTrades(trades) {
+            let tradesHtml = '<div style="margin-top: 1.5rem;"><h4>最近交易</h4><table style="width: 100%; border-collapse: collapse;">';
+            tradesHtml += '<thead><tr style="background: var(--gray-800);"><th style="padding: 10px; text-align: left; color: white;">日期</th><th style="padding: 10px; text-align: left; color: white;">類型</th><th style="padding: 10px; text-align: right; color: white;">價格</th></tr></thead><tbody>';
+
+            trades.slice(0, 10).forEach(trade => {
+                tradesHtml += `<tr style="border-bottom: 1px solid var(--gray-700);">
+                    <td style="padding: 10px; color: #9ca3af;">${trade.date || 'N/A'}</td>
+                    <td style="padding: 10px; color: ${trade.type === 'buy' ? '#10b981' : '#ef4444'};">${trade.type || 'N/A'}</td>
+                    <td style="padding: 10px; text-align: right; color: #d1d5db;">${trade.price ? trade.price.toFixed(2) : 'N/A'}</td>
+                </tr>`;
+            });
+
+            tradesHtml += '</tbody></table></div>';
+
+            document.getElementById('backtest-results').innerHTML += tradesHtml;
+        }
+
+        // 生成模擬回測結果
+        function generateMockBacktestResult(strategyId, startDate, endDate, initialCapital) {
+            // 生成基於策略的模擬結果
+            const strategyResults = {
+                'ma_crossover_001': { return: 0.1523, sharpe: 1.234, drawdown: -0.0876, winRate: 65.4 },
+                'rsi_mean_002': { return: 0.0987, sharpe: 0.987, drawdown: -0.0654, winRate: 58.9 },
+                'hybrid_003': { return: 0.1876, sharpe: 1.456, drawdown: -0.0923, winRate: 71.2 }
+            };
+
+            const baseResult = strategyResults[strategyId] || {
+                return: 0.1234, sharpe: 1.100, drawdown: -0.0750, winRate: 62.5
+            };
+
+            // 添加一些隨機性
+            const randomFactor = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
+
+            return {
+                totalReturn: Math.round(baseResult.return * randomFactor * 10000) / 100,
+                sharpeRatio: Math.round(baseResult.sharpe * randomFactor * 100) / 100,
+                maxDrawdown: Math.round(Math.abs(baseResult.drawdown * randomFactor) * 10000) / 100,
+                winRate: Math.round(baseResult.winRate * randomFactor * 10) / 10,
+                chartData: generateMockChartData(startDate, endDate, initialCapital, baseResult.return * randomFactor)
+            };
+        }
+
+        // 生成模擬圖表數據
+        function generateMockChartData(startDate, endDate, initialCapital, totalReturn) {
+            const data = [];
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+
+            let currentValue = initialCapital;
+            const dailyReturn = Math.pow(1 + totalReturn, 1 / days);
+
+            for (let i = 0; i <= Math.min(days, 100); i++) { // 最多100個數據點
+                const date = new Date(start);
+                date.setDate(date.getDate() + Math.floor(i * days / 100));
+
+                // 添加市場波動
+                const volatility = 0.02;
+                const randomWalk = (Math.random() - 0.5) * volatility;
+                currentValue = currentValue * dailyReturn * (1 + randomWalk);
+
+                data.push({
+                    date: date.toISOString().split('T')[0],
+                    value: Math.round(currentValue)
+                });
+            }
+
+            return data;
+        }
+
+        // 創建回測圖表
+        function createBacktestChart(backtestResult) {
+            const ctx = document.getElementById('backtest-chart');
+            if (!ctx) return;
+
+            // 銷毀舊的圖表實例
+            const existingChart = Chart.getChart(ctx);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+
+            const chartData = backtestResult.chartData;
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.map(item => item.date),
+                    datasets: [{
+                        label: '投資組合價值',
+                        data: chartData.map(item => item.value),
+                        borderColor: backtestResult.totalReturn >= 0 ? '#10b981' : '#ef4444',
+                        backgroundColor: backtestResult.totalReturn >= 0 ?
+                            'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: { color: '#ffffff' }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.y;
+                                    return '價值: $' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(75, 85, 99, 0.3)' }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            },
+                            grid: { color: 'rgba(75, 85, 99, 0.3)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize strategy management handlers
+        function initStrategyHandlers() {
+            console.log('Initializing strategy handlers...');
+
+            // Add click event listeners to strategy items
+            const strategyItems = document.querySelectorAll('.strategy-item');
+            strategyItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const strategyId = this.getAttribute('data-strategy-id');
+                    const strategyName = this.getAttribute('data-strategy-name');
+                    console.log('Strategy clicked:', strategyId, strategyName);
+                    showStrategyDetail(strategyId, strategyName);
+                });
+            });
+
+            // Initialize chart tab switching
+            initChartTabHandlers();
+        }
+
+        // Initialize chart tab handlers
+        function initChartTabHandlers() {
+            const chartTabs = document.querySelectorAll('.chart-tab');
+            const chartContainers = document.querySelectorAll('.chart-container');
+
+            chartTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetChart = this.getAttribute('data-chart');
+
+                    // Update active tab styling
+                    chartTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // Show/hide chart containers
+                    chartContainers.forEach(container => {
+                        if (container.id === targetChart) {
+                            container.style.display = 'block';
+                            // Trigger chart redraw if needed
+                            redrawChart(targetChart);
+                        } else {
+                            container.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        }
+
+        // Show strategy detail with VectorBT analysis
+        async function showStrategyDetail(strategyId, strategyName) {
+            console.log('Showing strategy detail for:', strategyId, strategyName);
+
+            const detailSection = document.getElementById('strategy-detail');
+            const strategyTitle = document.getElementById('strategy-detail-title');
+
+            if (!detailSection || !strategyTitle) {
+                console.error('Strategy detail elements not found');
+                return;
+            }
+
+            // Show loading state
+            strategyTitle.textContent = `正在載入 ${strategyName} 分析...`;
+            detailSection.style.display = 'block';
+
+            // Scroll to detail section
+            detailSection.scrollIntoView({ behavior: 'smooth' });
+
+            try {
+                // Generate mock backtest data for the strategy
+                const analysisData = generateStrategyAnalysisData(strategyId, strategyName);
+
+                // Update strategy title
+                strategyTitle.textContent = `${strategyName} - VectorBT 分析`;
+
+                // Update metrics
+                updateStrategyMetrics(analysisData.metrics);
+
+                // Update statistics table
+                updateVectorBTStatistics(analysisData.statistics);
+
+                // Create charts
+                await createStrategyCharts(analysisData.charts);
+
+                // Populate trade history
+                populateTradeHistory(analysisData.trades);
+
+            } catch (error) {
+                console.error('Error loading strategy detail:', error);
+                strategyTitle.textContent = `${strategyName} - 載入失敗`;
+            }
+        }
+
+        // Generate comprehensive strategy analysis data
+        function generateStrategyAnalysisData(strategyId, strategyName) {
+            // Generate 252 trading days of data (1 year)
+            const days = 252;
+            const dates = [];
+            const prices = [];
+            const returns = [];
+            const equity = [];
+            const drawdown = [];
+
+            let currentPrice = 100;
+            let peak = 100;
+            let currentEquity = 100000; // Starting with $100k
+
+            const now = new Date();
+            for (let i = days - 1; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(date.getDate() - i);
+                dates.push(date.toISOString().split('T')[0]);
+
+                // Generate realistic price movements
+                const dailyReturn = (Math.random() - 0.48) * 0.04; // Slight positive bias
+                const priceChange = currentPrice * dailyReturn;
+                currentPrice += priceChange;
+                prices.push(currentPrice);
+                returns.push(dailyReturn);
+
+                // Calculate equity curve
+                currentEquity *= (1 + dailyReturn);
+                equity.push(currentEquity);
+
+                // Calculate drawdown
+                if (currentEquity > peak) {
+                    peak = currentEquity;
+                }
+                drawdown.push(-((peak - currentEquity) / peak) * 100);
+            }
+
+            // Calculate comprehensive metrics
+            const totalReturn = ((equity[equity.length - 1] - 100000) / 100000) * 100;
+            const volatility = calculateStandardDeviation(returns) * Math.sqrt(252) * 100;
+            const sharpeRatio = (totalReturn - 2) / volatility; // Assuming 2% risk-free rate
+            const maxDrawdown = Math.max(...drawdown);
+            const calmarRatio = Math.abs(totalReturn / maxDrawdown);
+            const winRate = calculateWinRate(returns);
+            const profitFactor = calculateProfitFactor(returns);
+
+            return {
+                strategyId,
+                strategyName,
+                dates,
+                prices,
+                returns,
+                equity,
+                drawdown,
+                metrics: {
+                    totalReturn: totalReturn.toFixed(2),
+                    sharpeRatio: sharpeRatio.toFixed(2),
+                    maxDrawdown: maxDrawdown.toFixed(2),
+                    volatility: volatility.toFixed(2),
+                    calmarRatio: calmarRatio.toFixed(2),
+                    winRate: (winRate * 100).toFixed(1),
+                    profitFactor: profitFactor.toFixed(2),
+                    totalTrades: Math.floor(Math.random() * 100) + 50
+                },
+                statistics: {
+                    'Start Date': dates[0],
+                    'End Date': dates[dates.length - 1],
+                    'Total Days': days.toString(),
+                    'Trading Days': days.toString(),
+                    'Starting Equity': '$100,000',
+                    'Ending Equity': `$${equity[equity.length - 1].toFixed(2)}`,
+                    'Peak Equity': `$${peak.toFixed(2)}`,
+                    'Average Return': (returns.reduce((a, b) => a + b, 0) / returns.length * 100).toFixed(3) + '%',
+                    'Median Return': calculateMedian(returns).toFixed(3) + '%',
+                    'Best Day': Math.max(...returns).toFixed(3) + '%',
+                    'Worst Day': Math.min(...returns).toFixed(3) + '%',
+                    'Positive Days': returns.filter(r => r > 0).length.toString(),
+                    'Negative Days': returns.filter(r => r < 0).length.toString(),
+                    'Flat Days': returns.filter(r => r === 0).length.toString()
+                },
+                charts: {
+                    equity: { dates, equity },
+                    drawdown: { dates, drawdown },
+                    returns: { dates, returns: returns.map(r => r * 100) },
+                    distribution: returns
+                },
+                trades: generateMockTrades(Math.floor(Math.random() * 50) + 30)
+            };
+        }
+
+        // Calculate standard deviation
+        function calculateStandardDeviation(values) {
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            const squaredDiffs = values.map(value => Math.pow(value - mean, 2));
+            const avgSquaredDiff = squaredDiffs.reduce((a, b) => a + b, 0) / squaredDiffs.length;
+            return Math.sqrt(avgSquaredDiff);
+        }
+
+        // Calculate win rate
+        function calculateWinRate(returns) {
+            const winningDays = returns.filter(r => r > 0).length;
+            return winningDays / returns.length;
+        }
+
+        // Calculate profit factor
+        function calculateProfitFactor(returns) {
+            const gains = returns.filter(r => r > 0).reduce((a, b) => a + b, 0);
+            const losses = Math.abs(returns.filter(r => r < 0).reduce((a, b) => a + b, 0));
+            return losses === 0 ? gains : gains / losses;
+        }
+
+        // Calculate median
+        function calculateMedian(values) {
+            const sorted = [...values].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+        }
+
+        // Update strategy metrics display
+        function updateStrategyMetrics(metrics) {
+            const metricElements = {
+                'strategy-total-return': metrics.totalReturn + '%',
+                'strategy-sharpe': metrics.sharpeRatio,
+                'strategy-mdd': metrics.maxDrawdown + '%',
+                'strategy-volatility': metrics.volatility + '%',
+                'strategy-calmar': metrics.calmarRatio,
+                'strategy-win-rate': metrics.winRate + '%',
+                'strategy-trades': metrics.totalTrades
+            };
+
+            Object.entries(metricElements).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = value;
+                    // Add color coding for positive/negative values
+                    if (id.includes('return') || id.includes('sharpe') || id.includes('calmar') || id.includes('win-rate')) {
+                        element.className = 'metric-value metric-positive';
+                    } else if (id.includes('mdd') || id.includes('volatility')) {
+                        element.className = 'metric-value metric-negative';
+                    } else {
+                        element.className = 'metric-value';
+                    }
+                }
+            });
+        }
+
+        // Update VectorBT statistics table
+        function updateVectorBTStatistics(statistics) {
+            const tableBody = document.querySelector('#vectorbt-statistics tbody');
+            if (!tableBody) return;
+
+            tableBody.innerHTML = Object.entries(statistics)
+                .map(([key, value]) => `
+                    <tr>
+                        <td>${key}</td>
+                        <td>${value}</td>
+                    </tr>
+                `).join('');
+        }
+
+        // Create all strategy charts
+        async function createStrategyCharts(chartData) {
+            console.log('Creating strategy charts...');
+
+            // Create equity curve chart
+            createEquityCurveChart(chartData.equity);
+
+            // Create drawdown chart
+            createDrawdownChart(chartData.drawdown);
+
+            // Create returns distribution chart
+            createReturnsDistributionChart(chartData.distribution);
+
+            // Create rolling returns chart
+            createRollingReturnsChart(chartData.returns);
+
+            // Create monthly returns heatmap
+            createMonthlyReturnsChart(chartData.returns);
+        }
+
+        // Create equity curve chart
+        function createEquityCurveChart(data) {
+            const ctx = document.getElementById('equity-curve-chart');
+            if (!ctx) {
+                console.error('Equity curve canvas not found');
+                return;
+            }
+
+            console.log('Creating equity curve chart with data:', data.dates.length, 'points');
+
+            // Destroy existing chart if it exists
+            if (window.equityCurveChart) {
+                window.equityCurveChart.destroy();
+            }
+
+            window.equityCurveChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: [{
+                        label: '權益曲線',
+                        data: data.equity,
+                        borderColor: '#00d4ff',
+                        backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `權益: $${context.parsed.y.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                maxTicksLimit: 8
+                            }
+                        },
+                        y: {
+                            display: true,
+                            grid: {
+                                color: 'rgba(156, 163, 175, 0.2)'
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'k';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create drawdown chart
+        function createDrawdownChart(data) {
+            const ctx = document.getElementById('drawdown-chart');
+            if (!ctx) {
+                console.error('Drawdown chart canvas not found');
+                return;
+            }
+
+            console.log('Creating drawdown chart with data:', data.dates.length, 'points');
+
+            // Destroy existing chart if it exists
+            if (window.drawdownChart) {
+                window.drawdownChart.destroy();
+            }
+
+            window.drawdownChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: [{
+                        label: '回撤',
+                        data: data.drawdown,
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `回撤: ${context.parsed.y.toFixed(2)}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                maxTicksLimit: 8
+                            }
+                        },
+                        y: {
+                            display: true,
+                            grid: {
+                                color: 'rgba(156, 163, 175, 0.2)'
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create returns distribution chart
+        function createReturnsDistributionChart(returns) {
+            const ctx = document.getElementById('returns-distribution-chart');
+            if (!ctx) {
+                console.error('Returns distribution chart canvas not found');
+                return;
+            }
+
+            console.log('Creating returns distribution chart with', returns.length, 'data points');
+
+            // Create histogram data
+            const bins = 30;
+            const min = Math.min(...returns);
+            const max = Math.max(...returns);
+            const binWidth = (max - min) / bins;
+
+            const histogram = new Array(bins).fill(0);
+            const labels = [];
+
+            for (let i = 0; i < bins; i++) {
+                const binMin = min + i * binWidth;
+                const binMax = binMin + binWidth;
+                labels.push((binMin * 100).toFixed(2) + '%');
+
+                returns.forEach(ret => {
+                    if (ret >= binMin && ret < binMax) {
+                        histogram[i]++;
+                    }
+                });
+            }
+
+            // Destroy existing chart if it exists
+            if (window.returnsDistributionChart) {
+                window.returnsDistributionChart.destroy();
+            }
+
+            window.returnsDistributionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '頻次',
+                        data: histogram,
+                        backgroundColor: 'rgba(0, 212, 255, 0.6)',
+                        borderColor: '#00d4ff',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                maxTicksLimit: 8
+                            }
+                        },
+                        y: {
+                            display: true,
+                            grid: {
+                                color: 'rgba(156, 163, 175, 0.2)'
+                            },
+                            ticks: {
+                                color: '#9ca3af'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create rolling returns chart
+        function createRollingReturnsChart(data) {
+            const ctx = document.getElementById('rolling-returns-chart');
+            if (!ctx) {
+                console.error('Rolling returns chart canvas not found');
+                return;
+            }
+
+            console.log('Creating rolling returns chart with data:', data.dates.length, 'points');
+
+            // Calculate 30-day rolling returns
+            const windowSize = 30;
+            const rollingReturns = [];
+
+            for (let i = windowSize - 1; i < data.returns.length; i++) {
+                let rollingReturn = 1;
+                for (let j = 0; j < windowSize; j++) {
+                    rollingReturn *= (1 + data.returns[i - j]);
+                }
+                rollingReturns.push((rollingReturn - 1) * 100);
+            }
+
+            const rollingDates = data.dates.slice(windowSize - 1);
+
+            // Destroy existing chart if it exists
+            if (window.rollingReturnsChart) {
+                window.rollingReturnsChart.destroy();
+            }
+
+            window.rollingReturnsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: rollingDates,
+                    datasets: [{
+                        label: '30天滾動回報',
+                        data: rollingReturns,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: false,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `滾動回報: ${context.parsed.y.toFixed(2)}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                maxTicksLimit: 8
+                            }
+                        },
+                        y: {
+                            display: true,
+                            grid: {
+                                color: 'rgba(156, 163, 175, 0.2)'
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create monthly returns heatmap (simplified as bar chart)
+        function createMonthlyReturnsChart(data) {
+            const ctx = document.getElementById('monthly-returns-chart');
+            if (!ctx) {
+                console.error('Monthly returns chart canvas not found');
+                return;
+            }
+
+            console.log('Creating monthly returns chart');
+
+            // Generate monthly returns (simplified)
+            const monthlyReturns = [];
+            for (let i = 0; i < 12; i++) {
+                monthlyReturns.push((Math.random() - 0.4) * 10); // Random monthly returns
+            }
+
+            const months = ['1月', '2月', '3月', '4月', '5月', '6月',
+                          '7月', '8月', '9月', '10月', '11月', '12月'];
+
+            // Destroy existing chart if it exists
+            if (window.monthlyReturnsChart) {
+                window.monthlyReturnsChart.destroy();
+            }
+
+            window.monthlyReturnsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: '月度回報',
+                        data: monthlyReturns,
+                        backgroundColor: monthlyReturns.map(ret =>
+                            ret >= 0 ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)'
+                        ),
+                        borderColor: monthlyReturns.map(ret =>
+                            ret >= 0 ? '#10b981' : '#ef4444'
+                        ),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#9ca3af'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            grid: {
+                                color: 'rgba(156, 163, 175, 0.2)'
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Redraw chart function for tab switching
+        function redrawChart(chartId) {
+            setTimeout(() => {
+                const charts = ['equity-curve-chart', 'drawdown-chart', 'returns-distribution-chart',
+                               'rolling-returns-chart', 'monthly-returns-chart'];
+
+                charts.forEach(chartName => {
+                    const ctx = document.getElementById(chartName);
+                    if (ctx && chartId === chartName.replace('-chart', '')) {
+                        // Trigger chart resize
+                        const chartInstance = Chart.getChart(ctx);
+                        if (chartInstance) {
+                            chartInstance.resize();
+                        }
+                    }
+                });
+            }, 100);
+        }
+
+        // Generate mock trades
+        function generateMockTrades(count) {
+            const trades = [];
+            let entryPrice = 100;
+            const symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA'];
+
+            for (let i = 0; i < count; i++) {
+                const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+                const isLong = Math.random() > 0.3;
+                const priceChange = (Math.random() - 0.45) * 10;
+                const exitPrice = entryPrice + priceChange;
+                const quantity = Math.floor(Math.random() * 100) + 10;
+
+                const entryDate = new Date(2024, 0, 1);
+                entryDate.setDate(entryDate.getDate() + i * 3);
+
+                const exitDate = new Date(entryDate);
+                exitDate.setDate(exitDate.getDate() + Math.floor(Math.random() * 10) + 1);
+
+                const pnl = isLong ? (exitPrice - entryPrice) * quantity : (entryPrice - exitPrice) * quantity;
+                const pnlPercent = ((exitPrice - entryPrice) / entryPrice) * 100;
+
+                trades.push({
+                    symbol,
+                    type: isLong ? 'BUY' : 'SELL',
+                    entryDate: entryDate.toISOString().split('T')[0],
+                    exitDate: exitDate.toISOString().split('T')[0],
+                    entryPrice: entryPrice.toFixed(2),
+                    exitPrice: exitPrice.toFixed(2),
+                    quantity,
+                    pnl: pnl.toFixed(2),
+                    pnlPercent: pnlPercent.toFixed(2),
+                    status: pnl > 0 ? '盈利' : '虧損'
+                });
+
+                entryPrice = exitPrice;
+            }
+
+            return trades;
+        }
+
+        // Populate trade history table
+        function populateTradeHistory(trades) {
+            const tableBody = document.querySelector('#trade-history-table tbody');
+            if (!tableBody) return;
+
+            tableBody.innerHTML = trades.slice(0, 20).map(trade => `
+                <tr class="${trade.status === '盈利' ? 'profit-row' : 'loss-row'}">
+                    <td>${trade.symbol}</td>
+                    <td><span class="trade-type ${trade.type.toLowerCase()}">${trade.type}</span></td>
+                    <td>${trade.entryDate}</td>
+                    <td>${trade.exitDate}</td>
+                    <td>$${trade.entryPrice}</td>
+                    <td>$${trade.exitPrice}</td>
+                    <td>${trade.quantity}</td>
+                    <td class="${trade.status === '盈利' ? 'profit-color' : 'loss-color'}">
+                        ${trade.pnl > 0 ? '+' : ''}$${trade.pnl}
+                    </td>
+                    <td class="${trade.status === '盈利' ? 'profit-color' : 'loss-color'}">
+                        ${trade.pnlPercent > 0 ? '+' : ''}${trade.pnlPercent}%
+                    </td>
+                    <td><span class="status-badge ${trade.status === '盈利' ? 'profit' : 'loss'}">${trade.status}</span></td>
+                </tr>
+            `).join('');
+
+            // Update export button functionality
+            const exportBtn = document.getElementById('export-trades-btn');
+            if (exportBtn) {
+                exportBtn.onclick = () => exportTradeHistory(trades);
+            }
+        }
+
+        // Export trade history functionality
+        function exportTradeHistory(trades) {
+            let csvContent = "Symbol,Type,Entry Date,Exit Date,Entry Price,Exit Price,Quantity,P&L,P&L %,Status\n";
+
+            trades.forEach(trade => {
+                csvContent += `${trade.symbol},${trade.type},${trade.entryDate},${trade.exitDate},${trade.entryPrice},${trade.exitPrice},${trade.quantity},${trade.pnl},${trade.pnlPercent}%,${trade.status}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `trade_history_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            alert('交易記錄已導出！');
+        }
+
+        // 初始化投資組合處理器
+        function initPortfolioHandlers() {
+            const viewBtn = document.getElementById('view-portfolio-btn');
+            const rebalanceBtn = document.getElementById('rebalance-portfolio-btn');
+
+            if (viewBtn) {
+                viewBtn.addEventListener('click', viewPortfolio);
+            }
+
+            if (rebalanceBtn) {
+                rebalanceBtn.addEventListener('click', rebalancePortfolio);
+            }
+        }
+
+        // 查看投資組合
+        function viewPortfolio() {
+            const detailsDiv = document.getElementById('portfolio-details');
+            detailsDiv.style.display = 'block';
+
+            // 創建資產配置圖表
+            createPortfolioAllocationChart();
+
+            // 創建策略表現列表
+            createStrategyPerformanceList();
+        }
+
+        // 重新平衡投資組合
+        function rebalancePortfolio() {
+            alert('投資組合重新平衡功能正在開發中...');
+        }
+
+        // 創建資產配置圖表
+        function createPortfolioAllocationChart() {
+            const ctx = document.getElementById('portfolio-allocation-chart');
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['移動平均線策略', 'RSI策略', '混合策略', '現金'],
+                    datasets: [{
+                        data: [35, 25, 30, 10],
+                        backgroundColor: [
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#6b7280'
+                        ],
+                        borderColor: '#1f2937',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#ffffff',
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 創建策略表現列表
+        function createStrategyPerformanceList() {
+            const performanceList = document.getElementById('strategy-performance-list');
+            const strategies = [
+                { name: '移動平均線交叉策略', return: '+15.23%', sharpe: 1.234 },
+                { name: 'RSI均值回歸策略', return: '+9.87%', sharpe: 0.987 },
+                { name: '混合經濟數據策略', return: '+18.76%', sharpe: 1.456 }
+            ];
+
+            performanceList.innerHTML = strategies.map(strategy => `
+                <div class="performance-item">
+                    <div class="performance-info">
+                        <div class="performance-name">${strategy.name}</div>
+                        <div class="performance-metrics">
+                            <span>夏普比率: ${strategy.sharpe}</span>
+                            <span>風險等級: 中</span>
+                        </div>
+                    </div>
+                    <div class="performance-value">
+                        <div class="performance-return ${strategy.return.startsWith('+') ? 'metric-positive' : 'metric-negative'}">
+                            ${strategy.return}
+                        </div>
+                        <div class="performance-sharpe">夏普: ${strategy.sharpe}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 初始化策略管理處理器
+        function initStrategyHandlers() {
+            console.log('Initializing strategy handlers...'); // Debug log
+            // 直接為每個策略項目添加點擊事件
+            const strategyItems = document.querySelectorAll('.strategy-item');
+            console.log('Found strategy items:', strategyItems.length); // Debug log
+            strategyItems.forEach(item => {
+                const strategyId = item.getAttribute('data-strategy-id');
+                console.log('Strategy item with ID:', strategyId); // Debug log
+
+                // 直接添加事件監聽器
+                item.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    console.log('Strategy clicked directly:', strategyId); // Debug log
+                    showStrategyDetail(strategyId);
+                });
+
+                // 添加鼠標懸停效果
+                item.style.cursor = 'pointer';
+            });
+
+            // 關閉詳情按鈕添加事件
+            const closeBtn = document.getElementById('back-to-strategies');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', hideStrategyDetail);
+                console.log('Back button found and event attached'); // Debug log
+            } else {
+                console.log('Back button not found'); // Debug log
+            }
+
+            // 為圖表標籤添加切換事件
+            const chartTabs = document.querySelectorAll('.chart-tab');
+            console.log('Found chart tabs:', chartTabs.length); // Debug log
+            chartTabs.forEach(tab => {
+                const chartType = tab.getAttribute('data-chart');
+                console.log('Setting up chart tab for:', chartType); // Debug log
+                tab.addEventListener('click', function() {
+                    console.log('Chart tab clicked:', chartType); // Debug log
+                    switchChartTab(chartType);
+                });
+            });
+
+            // 為導出按鈕添加事件
+            const exportBtn = document.getElementById('export-trades-btn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', exportTradesData);
+            }
+        }
+
+        // 處理策略點擊事件
+        function handleStrategyClick(event) {
+            const strategyId = this.getAttribute('data-strategy-id');
+            if (strategyId) {
+                console.log('Strategy clicked:', strategyId); // Debug log
+                showStrategyDetail(strategyId);
+            } else {
+                console.warn('Strategy ID not found');
+            }
+        }
+
+        // 顯示策略詳情
+        function showStrategyDetail(strategyId) {
+            console.log('Showing strategy detail for:', strategyId); // Debug log
+            const detailSection = document.getElementById('strategy-detail');
+            const strategyList = document.getElementById('strategy-list');
+            console.log('Detail section:', detailSection); // Debug log
+            console.log('Strategy list:', strategyList); // Debug log
+
+            if (!detailSection || !strategyList) {
+                console.error('Required elements not found!'); // Debug log
+                return;
+            }
+
+            console.log('Toggling visibility...'); // Debug log
+            // 隱藏策略列表，顯示詳情
+            strategyList.style.display = 'none';
+            detailSection.style.display = 'block';
+            console.log('Elements visibility updated'); // Debug log
+
+            // 生成策略詳細數據
+            const strategyData = generateStrategyDetailData(strategyId);
+
+            // 更新策略指標
+            updateStrategyMetrics(strategyData);
+
+            // 創建VectorBT圖表
+            createVectorBTCharts(strategyData);
+
+            // 填充統計表格
+            populateStatisticsTable(strategyData);
+
+            // 生成交易歷史
+            generateTradeHistory(strategyData);
+        }
+
+        // 隱藏策略詳情
+        function hideStrategyDetail() {
+            const detailSection = document.getElementById('strategy-detail');
+            const strategyList = document.getElementById('strategy-list');
+
+            if (!detailSection || !strategyList) return;
+
+            detailSection.style.display = 'none';
+            strategyList.style.display = 'block';
+        }
+
+        // 生成策略詳細數據
+        function generateStrategyDetailData(strategyId) {
+            const strategies = {
+                'ma_crossover_001': {
+                    name: '移動平均線交叉策略',
+                    totalReturn: 0.1523,
+                    sharpe: 1.234,
+                    mdd: -0.0876,
+                    calmar: 1.738,
+                    winRate: 0.654,
+                    profitFactor: 1.89,
+                    avgWin: 0.0234,
+                    avgLoss: -0.0124,
+                    volatility: 0.0892,
+                    beta: 0.87,
+                    alpha: 0.0678,
+                    trades: 156
+                },
+                'rsi_mean_002': {
+                    name: 'RSI均值回歸策略',
+                    totalReturn: 0.0987,
+                    sharpe: 0.987,
+                    mdd: -0.0654,
+                    calmar: 1.509,
+                    winRate: 0.589,
+                    profitFactor: 1.56,
+                    avgWin: 0.0198,
+                    avgLoss: -0.0112,
+                    volatility: 0.0756,
+                    beta: 0.92,
+                    alpha: 0.0234,
+                    trades: 203
+                },
+                'hybrid_003': {
+                    name: '混合經濟數據策略',
+                    totalReturn: 0.1876,
+                    sharpe: 1.456,
+                    mdd: -0.0923,
+                    calmar: 2.032,
+                    winRate: 0.712,
+                    profitFactor: 2.34,
+                    avgWin: 0.0287,
+                    avgLoss: -0.0129,
+                    volatility: 0.0987,
+                    beta: 0.78,
+                    alpha: 0.0892,
+                    trades: 187
+                }
+            };
+
+            return strategies[strategyId] || strategies['ma_crossover_001'];
+        }
+
+        // 更新策略指標
+        function updateStrategyMetrics(data) {
+            const metrics = {
+                'strategy-total-return': formatPercentage(data.totalReturn),
+                'strategy-sharpe': data.sharpe.toFixed(3),
+                'strategy-mdd': formatPercentage(data.mdd),
+                'strategy-calmar': data.calmar.toFixed(3),
+                'strategy-win-rate': formatPercentage(data.winRate),
+                'strategy-profit-factor': data.profitFactor.toFixed(2),
+                'strategy-avg-win': formatPercentage(data.avgWin),
+                'strategy-avg-loss': formatPercentage(data.avgLoss),
+                'strategy-volatility': formatPercentage(data.volatility),
+                'strategy-beta': data.beta.toFixed(2),
+                'strategy-alpha': formatPercentage(data.alpha),
+                'strategy-trades': data.trades
+            };
+
+            Object.keys(metrics).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.textContent = metrics[key];
+                    // 添加顏色類別
+                    if (key.includes('return') || key.includes('win') || key.includes('profit')) {
+                        element.className = 'metric-value metric-positive';
+                    } else if (key.includes('loss') || key.includes('mdd')) {
+                        element.className = 'metric-value metric-negative';
+                    } else {
+                        element.className = 'metric-value';
+                    }
+                }
+            });
+        }
+
+        // 創建VectorBT圖表
+        function createVectorBTCharts(data) {
+            createEquityCurveChart(data);
+            createDrawdownChart(data);
+            createReturnsDistributionChart(data);
+            createRollingReturnsChart(data);
+            createMonthlyReturnsChart(data);
+        }
+
+        // 創建權益曲線圖表
+        function createEquityCurveChart(data) {
+            console.log('Creating equity curve chart...'); // Debug log
+            const ctx = document.getElementById('equity-curve-chart');
+            if (!ctx) {
+                console.log('Equity curve canvas not found'); // Debug log
+                return;
+            }
+            console.log('Canvas found:', ctx); // Debug log
+
+            // 銷毀已存在的圖表實例
+            const existingChart = Chart.getChart(ctx);
+            if (existingChart) {
+                existingChart.destroy();
+                console.log('Destroyed existing equity chart'); // Debug log
+            }
+
+            // 生成模擬權益曲線數據
+            const equityData = generateEquityCurveData(data);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: equityData.labels,
+                    datasets: [{
+                        label: '策略權益曲線',
+                        data: equityData.values,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1
+                    }, {
+                        label: '基準',
+                        data: equityData.benchmark,
+                        borderColor: '#6b7280',
+                        backgroundColor: 'transparent',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ffffff' }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#374151' },
+                            ticks: { color: '#9ca3af' }
+                        },
+                        y: {
+                            grid: { color: '#374151' },
+                            ticks: { color: '#9ca3af' },
+                            callback: function(value) {
+                                return (value * 100).toFixed(1) + '%';
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 創建回撤圖表
+        function createDrawdownChart(data) {
+            console.log('Creating drawdown chart...'); // Debug log
+            const ctx = document.getElementById('drawdown-chart');
+            if (!ctx) {
+                console.log('Drawdown canvas not found'); // Debug log
+                return;
+            }
+
+            // 銷毀已存在的圖表實例
+            const existingChart = Chart.getChart(ctx);
+            if (existingChart) {
+                existingChart.destroy();
+                console.log('Destroyed existing drawdown chart'); // Debug log
+            }
+
+            const drawdownData = generateDrawdownData(data);
+            console.log('Drawdown data generated:', drawdownData); // Debug log
+
+            try {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: drawdownData.labels,
+                        datasets: [{
+                            label: '回撤',
+                            data: drawdownData.values,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.3)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: { color: '#ffffff' }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: '#374151' },
+                                ticks: { color: '#9ca3af' }
+                            },
+                            y: {
+                                grid: { color: '#374151' },
+                                ticks: { color: '#9ca3af' },
+                                callback: function(value) {
+                                    return (value * 100).toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log('Drawdown chart created successfully'); // Debug log
+            } catch (error) {
+                console.error('Error creating drawdown chart:', error); // Debug log
+            }
+        }
+
+        // 創建收益分佈圖表
+        function createReturnsDistributionChart(data) {
+            console.log('Creating returns distribution chart...'); // Debug log
+            const ctx = document.getElementById('returns-distribution-chart');
+            if (!ctx) {
+                console.log('Returns distribution canvas not found'); // Debug log
+                return;
+            }
+
+            const returnsData = generateReturnsDistributionData(data);
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: returnsData.labels,
+                    datasets: [{
+                        label: '收益頻率',
+                        data: returnsData.values,
+                        backgroundColor: returnsData.colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#374151' },
+                            ticks: { color: '#9ca3af' }
+                        },
+                        y: {
+                            grid: { color: '#374151' },
+                            ticks: { color: '#9ca3af' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 創建滾動收益圖表
+        function createRollingReturnsChart(data) {
+            console.log('Creating rolling returns chart...'); // Debug log
+            const ctx = document.getElementById('rolling-returns-chart');
+            if (!ctx) {
+                console.log('Rolling returns canvas not found'); // Debug log
+                return;
+            }
+
+            const rollingData = generateRollingReturnsData(data);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: rollingData.labels,
+                    datasets: [{
+                        label: '3個月滾動收益',
+                        data: rollingData.threeMonth,
+                        borderColor: '#10b981',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2
+                    }, {
+                        label: '6個月滾動收益',
+                        data: rollingData.sixMonth,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2
+                    }, {
+                        label: '12個月滾動收益',
+                        data: rollingData.twelveMonth,
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ffffff' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#374151' },
+                            ticks: { color: '#9ca3af' }
+                        },
+                        y: {
+                            grid: { color: '#374151' },
+                            ticks: { color: '#9ca3af' },
+                            callback: function(value) {
+                                return (value * 100).toFixed(1) + '%';
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 創建月度收益圖表
+        function createMonthlyReturnsChart(data) {
+            console.log('Creating monthly returns chart...'); // Debug log
+            const ctx = document.getElementById('monthly-returns-chart');
+            if (!ctx) {
+                console.log('Monthly returns canvas not found'); // Debug log
+                return;
+            }
+
+            const monthlyData = generateMonthlyReturnsData(data);
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: monthlyData.labels,
+                    datasets: [{
+                        label: '月度收益',
+                        data: monthlyData.values,
+                        backgroundColor: monthlyData.colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#374151' },
+                            ticks: { color: '#9ca3af' }
+                        },
+                        y: {
+                            grid: { color: '#374151' },
+                            ticks: { color: '#9ca3af' },
+                            callback: function(value) {
+                                return (value * 100).toFixed(1) + '%';
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 切換圖表標籤
+        function switchChartTab(chartType) {
+            console.log('Switching to chart tab:', chartType); // Debug log
+            // 隱藏所有圖表容器
+            const chartContainers = document.querySelectorAll('.chart-container');
+            console.log('Found chart containers:', chartContainers.length); // Debug log
+            chartContainers.forEach(container => {
+                container.style.display = 'none';
+            });
+
+            // 移除所有標籤的活躍狀態
+            const tabs = document.querySelectorAll('.chart-tab');
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // 顯示選中的圖表容器
+            const targetContainer = document.getElementById(chartType + '-container');
+            console.log('Target container for', chartType + ':', targetContainer); // Debug log
+            if (targetContainer) {
+                targetContainer.style.display = 'block';
+                console.log('Target container made visible'); // Debug log
+
+                // 確保圖表在容器可見時重新渲染
+                setTimeout(() => {
+                    const strategyData = generateStrategyDetailData('ma_crossover_001'); // 使用默認策略數據
+                    switch(chartType) {
+                        case 'equity':
+                            createEquityCurveChart(strategyData);
+                            break;
+                        case 'drawdown':
+                            createDrawdownChart(strategyData);
+                            break;
+                        case 'returns':
+                            createReturnsDistributionChart(strategyData);
+                            break;
+                        case 'rolling':
+                            createRollingReturnsChart(strategyData);
+                            break;
+                        case 'monthly':
+                            createMonthlyReturnsChart(strategyData);
+                            break;
+                    }
+                }, 100);
+            } else {
+                console.log('Target container not found!'); // Debug log
+            }
+
+            // 添加活躍狀態到選中的標籤
+            const activeTab = document.querySelector(`[data-chart="${chartType}"]`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+                console.log('Active tab class added'); // Debug log
+            }
+        }
+
+        // 填充統計表格
+        function populateStatisticsTable(data) {
+            const tableBody = document.getElementById('vectorbt-stats-tbody');
+            if (!tableBody) return;
+
+            const stats = [
+                { metric: '總回報率', value: formatPercentage(data.totalReturn) },
+                { metric: '年化回報率', value: formatPercentage(data.totalReturn * 12/6) }, // 假設6個月
+                { metric: '夏普比率', value: data.sharpe.toFixed(3) },
+                { metric: '卡瑪比率', value: data.calmar.toFixed(3) },
+                { metric: '最大回撤', value: formatPercentage(data.mdd) },
+                { metric: '勝率', value: formatPercentage(data.winRate) },
+                { metric: '盈利因子', value: data.profitFactor.toFixed(2) },
+                { metric: '平均盈利', value: formatPercentage(data.avgWin) },
+                { metric: '平均虧損', value: formatPercentage(data.avgLoss) },
+                { metric: '波動率', value: formatPercentage(data.volatility) },
+                { metric: 'Beta', value: data.beta.toFixed(2) },
+                { metric: 'Alpha', value: formatPercentage(data.alpha) },
+                { metric: '總交易次數', value: data.trades }
+            ];
+
+            tableBody.innerHTML = stats.map(stat => `
+                <tr>
+                    <td>${stat.metric}</td>
+                    <td class="${stat.value.startsWith('+') ? 'metric-positive' : stat.value.startsWith('-') ? 'metric-negative' : ''}">${stat.value}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 生成交易歷史
+        function generateTradeHistory(data) {
+            const tableBody = document.getElementById('trades-history-tbody');
+            if (!tableBody) return;
+
+            const trades = generateMockTrades(data.trades);
+
+            tableBody.innerHTML = trades.map(trade => `
+                <tr>
+                    <td>${trade.date}</td>
+                    <td>${trade.symbol}</td>
+                    <td class="${trade.side === 'BUY' ? 'metric-positive' : 'metric-negative'}">${trade.side}</td>
+                    <td>${trade.quantity}</td>
+                    <td>${trade.price.toFixed(2)}</td>
+                    <td class="${trade.pnl >= 0 ? 'metric-positive' : 'metric-negative'}">${trade.pnl.toFixed(2)}</td>
+                    <td class="${trade.pnlPercentage >= 0 ? 'metric-positive' : 'metric-negative'}">${formatPercentage(trade.pnlPercentage)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 數據生成函數
+        function generateEquityCurveData(data) {
+            const labels = [];
+            const values = [1.0]; // 從100%開始
+            const benchmark = [1.0];
+
+            for (let i = 1; i <= 180; i++) { // 6個月數據
+                labels.push(`Day ${i}`);
+                const dailyReturn = (Math.random() - 0.48) * 0.03; // 稍微正向的日收益
+                const lastValue = values[values.length - 1];
+                values.push(lastValue * (1 + dailyReturn));
+
+                const benchmarkReturn = (Math.random() - 0.5) * 0.02;
+                const lastBenchmark = benchmark[benchmark.length - 1];
+                benchmark.push(lastBenchmark * (1 + benchmarkReturn));
+            }
+
+            // 調整最終值以匹配策略總回報
+            const finalValue = 1 + data.totalReturn;
+            const scaleFactor = finalValue / values[values.length - 1];
+            values.forEach((value, index) => {
+                values[index] = 1 + (value - 1) * scaleFactor;
+            });
+
+            return { labels, values, benchmark };
+        }
+
+        function generateDrawdownData(data) {
+            console.log('Generating drawdown data...'); // Debug log
+            const equityData = generateEquityCurveData(data);
+            const labels = equityData.labels;
+            const values = [];
+            let peak = equityData.values[0];
+            console.log('Initial peak:', peak); // Debug log
+
+            equityData.values.forEach(value => {
+                if (value > peak) peak = value;
+                const drawdown = (value - peak) / peak;
+                values.push(drawdown);
+            });
+
+            console.log('Generated drawdown values:', values.slice(0, 10)); // Debug log (first 10 values)
+            console.log('Max drawdown:', Math.min(...values)); // Debug log
+            return { labels, values };
+        }
+
+        function generateReturnsDistributionData(data) {
+            const labels = ['-5%', '-3%', '-1%', '0%', '1%', '3%', '5%'];
+            const values = [8, 15, 25, 20, 18, 10, 4];
+            const colors = labels.map((label, index) => {
+                return parseFloat(label) >= 0 ? '#10b981' : '#ef4444';
+            });
+
+            return { labels, values, colors };
+        }
+
+        function generateRollingReturnsData(data) {
+            const labels = [];
+            const threeMonth = [];
+            const sixMonth = [];
+            const twelveMonth = [];
+
+            for (let i = 1; i <= 120; i++) {
+                labels.push(`M${i}`);
+                threeMonth.push((Math.random() - 0.4) * 0.15);
+                sixMonth.push((Math.random() - 0.3) * 0.25);
+                twelveMonth.push((Math.random() - 0.2) * 0.35);
+            }
+
+            return { labels, threeMonth, sixMonth, twelveMonth };
+        }
+
+        function generateMonthlyReturnsData(data) {
+            const labels = ['1月', '2月', '3月', '4月', '5月', '6月'];
+            const values = [];
+            const colors = [];
+
+            for (let i = 0; i < 6; i++) {
+                const monthlyReturn = (Math.random() - 0.4) * 0.08;
+                values.push(monthlyReturn);
+                colors.push(monthlyReturn >= 0 ? '#10b981' : '#ef4444');
+            }
+
+            return { labels, values, colors };
+        }
+
+        function generateMockTrades(count) {
+            const trades = [];
+            const symbols = ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'AMZN'];
+            let currentDate = new Date();
+
+            for (let i = 0; i < Math.min(count, 20); i++) { // 最多顯示20筆
+                const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+                const side = Math.random() > 0.5 ? 'BUY' : 'SELL';
+                const quantity = Math.floor(Math.random() * 200) + 50;
+                const price = Math.random() * 200 + 100;
+                const pnl = side === 'SELL' ? (Math.random() - 0.3) * 500 : -(Math.random() - 0.3) * 500;
+                const pnlPercentage = pnl / (quantity * price);
+
+                trades.push({
+                    date: currentDate.toISOString().split('T')[0],
+                    symbol,
+                    side,
+                    quantity,
+                    price,
+                    pnl,
+                    pnlPercentage
+                });
+
+                // 前移日期
+                currentDate.setDate(currentDate.getDate() - Math.floor(Math.random() * 3) - 1);
+            }
+
+            return trades.reverse();
+        }
+
+        // 導出交易數據
+        function exportTradesData() {
+            const table = document.getElementById('trades-history-tbody');
+            if (!table) return;
+
+            const rows = table.querySelectorAll('tr');
+            let csvContent = "日期,股票,方向,數量,價格,盈虧,盈虧百分比\n";
+
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const rowData = Array.from(cells).map(cell => cell.textContent);
+                csvContent += rowData.join(',') + "\n";
+            });
+
+            // 創建下載連結
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "trading_records.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 格式化百分比
+        function formatPercentage(value) {
+            return (value >= 0 ? '+' : '') + (value * 100).toFixed(2) + '%';
+        }
+
+        // 初始化系統設置處理器
+        function initSettingsHandlers() {
+            const saveBtn = document.getElementById('save-settings-btn');
+            const resetBtn = document.getElementById('reset-settings-btn');
+            const maxPosition = document.getElementById('max-position');
+            const stopLoss = document.getElementById('stop-loss');
+            const maxPositionValue = document.getElementById('max-position-value');
+            const stopLossValue = document.getElementById('stop-loss-value');
+
+            // 滑塊事件處理
+            if (maxPosition && maxPositionValue) {
+                maxPosition.addEventListener('input', function() {
+                    maxPositionValue.textContent = this.value + '%';
+                });
+            }
+
+            if (stopLoss && stopLossValue) {
+                stopLoss.addEventListener('input', function() {
+                    stopLossValue.textContent = this.value + '%';
+                });
+            }
+
+            // 保存設置
+            if (saveBtn) {
+                saveBtn.addEventListener('click', saveSettings);
+            }
+
+            // 重置設置
+            if (resetBtn) {
+                resetBtn.addEventListener('click', resetSettings);
+            }
+        }
+
+        // 保存設置
+        function saveSettings() {
+            const settings = {
+                maxPosition: document.getElementById('max-position').value,
+                stopLoss: document.getElementById('stop-loss').value
+            };
+
+            // 模擬保存到本地存儲
+            localStorage.setItem('cbsc-settings', JSON.stringify(settings));
+
+            alert('設置已保存！');
+        }
+
+        // 重置設置
+        function resetSettings() {
+            if (confirm('確定要重置所有設置嗎？')) {
+                // 重置滑塊值
+                document.getElementById('max-position').value = 50;
+                document.getElementById('stop-loss').value = 5;
+                document.getElementById('max-position-value').textContent = '50%';
+                document.getElementById('stop-loss-value').textContent = '5%';
+
+                // 清除本地存儲
+                localStorage.removeItem('cbsc-settings');
+
+                alert('設置已重置！');
+            }
+        }
+
+    // 檢查API連接狀態
+    async function checkAPIConnection() {
+        try {
+            await fetchAPI('/health');
+            const statusElement = document.getElementById('connection-status');
+                statusElement.innerHTML = '<span class="status-dot"></span><span>API 已連接</span>';
+        } catch (error) {
+            const statusElement = document.getElementById('connection-status');
+                statusElement.innerHTML = '<span class="status-dot" style="background: #ef4444;"></span><span>API 連接失敗</span>';
+        }
+    }
+
+    // 定期檢查API狀態
+    setInterval(checkAPIConnection, 30000); // 每30秒檢查一次
+    </script>
+</body>
+</html>

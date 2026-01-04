@@ -1,0 +1,424 @@
+# InfluxDB Market Data Schema Design
+# InfluxDB 市場數據架構設計
+# Phase 1.2 - 時序數據庫配置
+
+# Database Configuration
+database:
+  url: "http://localhost:8086"
+  token: "${INFLUXDB_TOKEN}"
+  org: "cbsc"
+  retention_policy: "autogen"
+
+# Bucket Configuration
+buckets:
+  # Raw market data with high retention
+  market_data_raw:
+    name: "market_data_raw"
+    description: "Raw market data with minute-level granularity"
+    retention: "90d"
+    shard_group_duration: "1d"
+
+  # Aggregated market data for faster queries
+  market_data_hourly:
+    name: "market_data_hourly"
+    description: "Hourly aggregated market data"
+    retention: "2y"
+    shard_group_duration: "7d"
+
+  market_data_daily:
+    name: "market_data_daily"
+    description: "Daily aggregated market data"
+    retention: "10y"
+    shard_group_duration: "30d"
+
+  # Strategy performance data
+  strategy_performance:
+    name: "strategy_performance"
+    description: "Strategy performance metrics and analytics"
+    retention: "5y"
+    shard_group_duration: "7d"
+
+  # Risk metrics data
+  risk_metrics:
+    name: "risk_metrics"
+    description: "Risk calculation results and VaR/ES metrics"
+    retention: "5y"
+    shard_group_duration: "7d"
+
+  # Trading signals and orders
+  trading_signals:
+    name: "trading_signals"
+    description: "Trading signals, orders, and execution data"
+    retention: "2y"
+    shard_group_duration: "1d"
+
+  # System monitoring
+  system_metrics:
+    name: "system_metrics"
+    description: "System performance and monitoring metrics"
+    retention: "30d"
+    shard_group_duration: "1h"
+
+# Market Data Measurements
+measurements:
+  # OHLCV Price Data
+  stock_price:
+    description: "Stock price OHLCV data"
+    tags:
+      - symbol: "Stock symbol (e.g., AAPL, MSFT)"
+      - exchange: "Exchange name (e.g., NASDAQ, NYSE)"
+      - currency: "Currency code (e.g., USD, EUR)"
+      - market: "Market type (e.g., equity, forex, crypto)"
+      - data_source: "Data provider (e.g., yahoo, alpha_vantage, polygon)"
+      - quality: "Data quality flag (e.g., real_time, delayed, estimated)"
+    fields:
+      open: "float, Opening price"
+      high: "float, Highest price"
+      low: "float, Lowest price"
+      close: "float, Closing price"
+      volume: "integer, Trading volume"
+      vwap: "float, Volume-weighted average price"
+      num_trades: "integer, Number of trades"
+      turnover: "float, Total turnover value"
+    timestamp: "Time of the price bar"
+
+  # Technical Indicators
+  technical_indicators:
+    description: "Technical analysis indicators"
+    tags:
+      - symbol: "Stock symbol"
+      - indicator_type: "Type of indicator (e.g., ma, rsi, macd, bollinger)"
+      - indicator_name: "Specific indicator name (e.g., SMA_20, RSI_14)"
+      - exchange: "Exchange name"
+      - timeframe: "Timeframe (e.g., 1m, 5m, 1h, 1d)"
+    fields:
+      value: "float, Indicator value"
+      signal: "string, Trading signal (buy/sell/hold)"
+      confidence: "float, Signal confidence (0-1)"
+      upper_band: "float, Upper band (for envelope indicators)"
+      lower_band: "float, Lower band (for envelope indicators)"
+      histogram: "float, Histogram value (for MACD)"
+    timestamp: "Time of calculation"
+
+  # Market Depth / Order Book
+  market_depth:
+    description: "Order book and market depth data"
+    tags:
+      - symbol: "Stock symbol"
+      - exchange: "Exchange name"
+      - side: "Bid or Ask"
+      - level: "Price level in order book"
+      - data_source: "Data provider"
+    fields:
+      price: "float, Price level"
+      quantity: "float, Quantity at price level"
+      orders_count: "integer, Number of orders at level"
+      total_volume: "float, Total volume at level"
+    timestamp: "Time of snapshot"
+
+  # Market Sentiment
+  market_sentiment:
+    description: "Market sentiment indicators"
+    tags:
+      - symbol: "Stock symbol"
+      - sentiment_type: "Type of sentiment (e.g., news, social, analyst)"
+      - source: "Sentiment data source"
+    fields:
+      score: "float, Sentiment score (-1 to 1)"
+      confidence: "float, Confidence score (0-1)"
+      volume: "integer, Mention volume"
+      positive_count: "integer, Positive mentions"
+      negative_count: "integer, Negative mentions"
+      neutral_count: "integer, Neutral mentions"
+    timestamp: "Time of sentiment calculation"
+
+# Strategy Performance Measurements
+strategy_performance:
+  # Strategy Returns
+  strategy_returns:
+    description: "Strategy return metrics"
+    tags:
+      - strategy_id: "Unique strategy identifier"
+      - strategy_name: "Human-readable strategy name"
+      - user_id: "Strategy owner ID"
+      - portfolio_id: "Portfolio identifier"
+      - benchmark: "Benchmark symbol (e.g., SPY, QQQ)"
+      - frequency: "Calculation frequency (daily, weekly, monthly)"
+    fields:
+      total_return: "float, Total return percentage"
+      daily_return: "float, Daily return"
+      cumulative_return: "float, Cumulative return"
+      annualized_return: "float, Annualized return"
+      excess_return: "float, Return over benchmark"
+      alpha: "float, Alpha relative to benchmark"
+      beta: "float, Beta relative to benchmark"
+      tracking_error: "float, Tracking error"
+    timestamp: "Time of calculation"
+
+  # Risk Metrics
+  strategy_risk:
+    description: "Strategy risk metrics"
+    tags:
+      - strategy_id: "Strategy identifier"
+      - risk_type: "Type of risk calculation (e.g., VaR, ES, volatility)"
+      - confidence_level: "Confidence level (e.g., 95, 99)"
+      - time_horizon: "Time horizon in days"
+      - calculation_method: "Method used (e.g., historical, parametric, monte_carlo)"
+    fields:
+      value: "float, Risk metric value"
+      historical_var: "float, Historical VaR"
+      parametric_var: "float, Parametric VaR"
+      expected_shortfall: "float, Expected Shortfall (CVaR)"
+      volatility: "float, Volatility (standard deviation)"
+      downside_deviation: "float, Downside deviation"
+      maximum_drawdown: "float, Maximum drawdown"
+      current_drawdown: "float, Current drawdown"
+      drawdown_duration: "integer, Drawdown duration in days"
+      var_breach: "boolean, VaR breach indicator"
+    timestamp: "Time of calculation"
+
+  # Performance Ratios
+  strategy_ratios:
+    description: "Strategy performance ratios"
+    tags:
+      - strategy_id: "Strategy identifier"
+      - ratio_type: "Type of ratio (e.g., sharpe, sortino, calmar)"
+      - risk_free_rate: "Risk-free rate used"
+      - benchmark: "Benchmark for comparison"
+    fields:
+      sharpe_ratio: "float, Sharpe ratio"
+      sortino_ratio: "float, Sortino ratio"
+      calmar_ratio: "float, Calmar ratio"
+      information_ratio: "float, Information ratio"
+      treynor_ratio: "float, Treynor ratio"
+      win_rate: "float, Win rate percentage"
+      profit_factor: "float, Profit factor"
+      recovery_factor: "float, Recovery factor"
+    timestamp: "Time of calculation"
+
+  # Trade Analysis
+  trade_analysis:
+    description: "Individual trade analysis"
+    tags:
+      - strategy_id: "Strategy identifier"
+      - trade_id: "Unique trade identifier"
+      - symbol: "Traded symbol"
+      - direction: "Long or Short"
+      - exit_reason: "Reason for exit (e.g., stop_loss, take_profit, signal)"
+    fields:
+      entry_price: "float, Entry price"
+      exit_price: "float, Exit price"
+      quantity: "float, Trade quantity"
+      entry_time: "timestamp, Entry time"
+      exit_time: "timestamp, Exit time"
+      duration: "integer, Trade duration in bars/minutes"
+      return_pct: "float, Return percentage"
+      return_amount: "float, Return amount"
+      commission: "float, Commission paid"
+      slippage: "float, Slippage cost"
+      pnl: "float, Profit/Loss"
+    timestamp: "Time of trade closure"
+
+# System Measurements
+system_metrics:
+  # API Performance
+  api_performance:
+    description: "API endpoint performance metrics"
+    tags:
+      - endpoint: "API endpoint name"
+      - method: "HTTP method"
+      - status_code: "HTTP status code"
+      - service: "Service name"
+    fields:
+      response_time: "float, Response time in milliseconds"
+      request_size: "integer, Request size in bytes"
+      response_size: "integer, Response size in bytes"
+      error_rate: "float, Error rate percentage"
+      request_count: "integer, Number of requests"
+    timestamp: "Time of measurement"
+
+  # Database Performance
+  database_performance:
+    description: "Database performance metrics"
+    tags:
+      - database_type: "Database type (postgres, redis, influxdb)"
+      - operation_type: "Type of operation (read, write, query)"
+      - table_name: "Table or measurement name"
+    fields:
+      query_time: "float, Query execution time"
+      connections_active: "integer, Active connections"
+      connections_idle: "integer, Idle connections"
+      memory_usage: "float, Memory usage percentage"
+      cpu_usage: "float, CPU usage percentage"
+      disk_io: "float, Disk I/O operations per second"
+    timestamp: "Time of measurement"
+
+# Data Retention and Downsampling Policies
+retention_policies:
+  # Raw market data: Keep 90 days, then downsample
+  market_data_raw:
+    duration: "90d"
+    shard_duration: "1d"
+    default: false
+    downsample_to:
+      - target_bucket: "market_data_hourly"
+        interval: "1h"
+        aggregations:
+          - field: "open"
+            function: "first"
+          - field: "high"
+            function: "max"
+          - field: "low"
+            function: "min"
+          - field: "close"
+            function: "last"
+          - field: "volume"
+            function: "sum"
+
+  # Hourly data: Keep 2 years, then downsample to daily
+  market_data_hourly:
+    duration: "730d"
+    shard_duration: "7d"
+    downsample_to:
+      - target_bucket: "market_data_daily"
+        interval: "1d"
+        aggregations:
+          - field: "open"
+            function: "first"
+          - field: "high"
+            function: "max"
+          - field: "low"
+            function: "min"
+          - field: "close"
+            function: "last"
+          - field: "volume"
+            function: "sum"
+
+  # Daily data: Keep 10 years
+  market_data_daily:
+    duration: "3650d"
+    shard_duration: "30d"
+    default: true
+
+  # Strategy performance: Keep 5 years
+  strategy_performance:
+    duration: "1825d"
+    shard_duration: "7d"
+
+  # Risk metrics: Keep 5 years
+  risk_metrics:
+    duration: "1825d"
+    shard_duration: "7d"
+
+  # Trading signals: Keep 2 years
+  trading_signals:
+    duration: "730d"
+    shard_duration: "1d"
+
+  # System metrics: Keep 30 days
+  system_metrics:
+    duration: "30d"
+    shard_duration: "1h"
+
+# Query Optimization
+query_optimization:
+  # Index strategy for tags
+  indexed_tags:
+    - symbol
+    - exchange
+    - strategy_id
+    - user_id
+    - indicator_type
+    - measurement_type
+
+  # Common query patterns with suggested optimizations
+  common_queries:
+    - name: "Latest price for symbol"
+      description: "Get the latest price data for a specific symbol"
+      optimization: "Use reverse chronological order and limit"
+      flux_pattern: |
+        from(bucket: "market_data_raw")
+          |> range(start: -24h)
+          |> filter(fn: (r) => r._measurement == "stock_price")
+          |> filter(fn: (r) => r.symbol == "AAPL")
+          |> last()
+
+    - name: "Strategy performance over time"
+      description: "Get strategy returns for a time period"
+      optimization: "Use appropriate time range and aggregate by day"
+      flux_pattern: |
+        from(bucket: "strategy_performance")
+          |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+          |> filter(fn: (r) => r._measurement == "strategy_returns")
+          |> filter(fn: (r) => r.strategy_id == "strategy-001")
+          |> aggregateWindow(every: 1d, fn: mean, createEmpty: false)
+
+    - name: "Risk metrics calculation"
+      description: "Calculate rolling risk metrics"
+      optimization: "Use window functions and appropriate granularity"
+      flux_pattern: |
+        from(bucket: "strategy_performance")
+          |> range(start: -365d)
+          |> filter(fn: (r) => r._measurement == "strategy_returns")
+          |> filter(fn: (r) => r.strategy_id == "strategy-001")
+          |> map(fn: (r) => ({r with _value: r.daily_return}))
+          |> cumulativeSum()
+          |> yield(name: "cumulative_returns")
+
+# Data Quality Checks
+data_quality:
+  # Validation rules
+  validation_rules:
+    - measurement: "stock_price"
+      rules:
+        - field: "close"
+          type: "range"
+          min_value: 0
+          max_value: 1000000
+        - field: "volume"
+          type: "non_negative"
+        - field: "high"
+          type: "comparison"
+          comparison: "high >= low"
+        - field: "high"
+          type: "comparison"
+          comparison: "high >= open"
+        - field: "high"
+          type: "comparison"
+          comparison: "high >= close"
+
+    - measurement: "technical_indicators"
+      rules:
+        - field: "value"
+          type: "not_null"
+        - field: "confidence"
+          type: "range"
+          min_value: 0
+          max_value: 1
+
+  # Anomaly detection thresholds
+  anomaly_detection:
+    price_jump_threshold: 20  # Percentage change threshold
+    volume_spike_threshold: 5  # Standard deviations from mean
+    missing_data_threshold: 0.1  # Percentage of missing data acceptable
+
+# Integration Points
+integrations:
+  # PostgreSQL integration for strategy metadata
+  postgresql:
+    strategy_metadata_table: "strategies"
+    user_profiles_table: "users"
+    sync_frequency: "5m"
+
+  # Redis integration for caching
+  redis:
+    latest_price_ttl: 60  # seconds
+    strategy_summary_ttl: 300  # seconds
+    market_overview_ttl: 600  # seconds
+
+  # Kafka integration for real-time data streaming
+  kafka:
+    market_data_topic: "market-data-stream"
+    strategy_signals_topic: "strategy-signals"
+    risk_alerts_topic: "risk-alerts"
+    consumer_group: "influxdb-writer"

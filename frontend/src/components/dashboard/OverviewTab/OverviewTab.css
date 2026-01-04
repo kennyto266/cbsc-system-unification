@@ -1,0 +1,176 @@
+/**
+ * Overview Tab Styles
+ */
+
+.overview-tab {
+  width: 100%;
+}
+
+/* Sections */
+.overview-section {
+  margin-bottom: 32px;
+}
+
+/* Grid Layout */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 6fr 4fr; /* 60% - 40% split */
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.overview-grid-section {
+  width: 100%;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .overview-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .overview-grid-section-left,
+  .overview-grid-section-right {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .overview-tab {
+    padding: 0;
+  }
+
+  .overview-section {
+    margin-bottom: 24px;
+  }
+
+  .overview-grid {
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .overview-grid-section {
+    padding: 0;
+  }
+}
+
+/* Loading State */
+.overview-tab.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Section Spacing */
+.overview-section + .overview-section {
+  margin-top: 24px;
+}
+
+.overview-grid + .overview-section {
+  margin-top: 32px;
+}
+
+/* Card Container */
+.overview-card-container {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.dark .overview-card-container {
+  background: #1f2937;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Section Headers */
+.overview-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .overview-section-header {
+  border-bottom-color: #374151;
+}
+
+.overview-section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.dark .overview-section-title {
+  color: #f9fafb;
+}
+
+.overview-section-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Empty State */
+.overview-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.overview-empty-state-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  color: #d1d5db;
+}
+
+.overview-empty-state-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.overview-empty-state-description {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 24px 0;
+}
+
+.dark .overview-empty-state-title {
+  color: #e5e7eb;
+}
+
+.dark .overview-empty-state-description {
+  color: #9ca3af;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.overview-tab > * {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.overview-tab > *:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.overview-tab > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.overview-tab > *:nth-child(3) {
+  animation-delay: 0.2s;
+}

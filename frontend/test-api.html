@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - CBSC</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .test-section {
+            background: #16213e;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border: 1px solid #0f3460;
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #10b981;
+            color: white;
+        }
+        .status.error {
+            background: #ef4444;
+            color: white;
+        }
+        .status.loading {
+            background: #f59e0b;
+            color: white;
+        }
+        pre {
+            background: #0a0e27;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 CBSC API 測試頁面</h1>
+    <p>API Base URL: <code id="api-url">http://192.168.1.5:8001</code></p>
+
+    <div class="test-section">
+        <div class="test-title">1. 健康檢查</div>
+        <button onclick="testHealth()">測試</button>
+        <div id="health-status"></div>
+        <pre id="health-result"></pre>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">2. Dashboard Overview</div>
+        <button onclick="testDashboard()">測試</button>
+        <div id="dashboard-status"></div>
+        <pre id="dashboard-result"></pre>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">3. 策略列表</div>
+        <button onclick="testStrategies()">測試</button>
+        <div id="strategies-status"></div>
+        <pre id="strategies-result"></pre>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">4. 經濟數據</div>
+        <button onclick="testEconomic()">測試</button>
+        <div id="economic-status"></div>
+        <pre id="economic-result"></pre>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">5. VectorBT 端點</div>
+        <button onclick="testVectorBT()">測試</button>
+        <div id="vectorbt-status"></div>
+        <pre id="vectorbt-result"></pre>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">6. 全部測試</div>
+        <button onclick="runAllTests()">🚀 執行所有測試</button>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://192.168.1.5:8001';
+
+        async function testAPI(endpoint, statusId, resultId) {
+            const statusEl = document.getElementById(statusId);
+            const resultEl = document.getElementById(resultId);
+
+            statusEl.className = 'status loading';
+            statusEl.textContent = '⏳ 加載中...';
+            resultEl.textContent = '';
+
+            try {
+                console.log(`Testing: ${API_BASE_URL}${endpoint}`);
+                const response = await fetch(`${API_BASE_URL}${endpoint}`);
+
+                console.log(`Response status: ${response.status}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                statusEl.className = 'status success';
+                statusEl.textContent = '✅ 成功';
+                resultEl.textContent = JSON.stringify(data, null, 2);
+
+                return { success: true, data };
+            } catch (error) {
+                console.error(`Error testing ${endpoint}:`, error);
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ 失敗: ${error.message}`;
+                resultEl.textContent = `Error: ${error.message}\n\nPlease check:\n1. Backend is running on ${API_BASE_URL}\n2. CORS is enabled\n3. Network connection`;
+
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function testHealth() {
+            await testAPI('/health', 'health-status', 'health-result');
+        }
+
+        async function testDashboard() {
+            await testAPI('/api/v1/dashboard/overview', 'dashboard-status', 'dashboard-result');
+        }
+
+        async function testStrategies() {
+            await testAPI('/api/v1/strategies', 'strategies-status', 'strategies-result');
+        }
+
+        async function testEconomic() {
+            const result = await testAPI('/api/v1/economic-data', 'economic-status', 'economic-result');
+            // Truncate result if too long
+            if (result.success) {
+                const resultEl = document.getElementById('economic-result');
+                resultEl.textContent = JSON.stringify(result.data, null, 2).substring(0, 1000) + '...';
+            }
+        }
+
+        async function testVectorBT() {
+            await testAPI('/api/vectorbt/health', 'vectorbt-status', 'vectorbt-result');
+        }
+
+        async function runAllTests() {
+            console.log('🚀 Running all API tests...');
+            await testHealth();
+            await testDashboard();
+            await testStrategies();
+            await testEconomic();
+            await testVectorBT();
+            console.log('✅ All tests completed');
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Page loaded, running tests...');
+            setTimeout(runAllTests, 500);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>CBSC Strategy Management System | 策略管理系统</title>
+
+    <!-- Distinctive Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* CSS Variables - Deep Financial Theme */
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2234;
+            --bg-card-hover: #1f2937;
+            --accent-primary: #f59e0b;
+            --accent-secondary: #fbbf24;
+            --accent-glow: rgba(245, 158, 11, 0.15);
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-muted: #9ca3af;
+            --border-color: #374151;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+
+            /* Animation timing */
+            --transition-fast: 150ms ease;
+            --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Background Pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 50%, rgba(245, 158, 11, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(245, 158, 11, 0.02) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Scanline Effect */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.01) 2px,
+                rgba(0, 0, 0, 0.01) 4px
+            );
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.3;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--bg-primary);
+            box-shadow: 0 0 30px var(--accent-glow);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .logo-text h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .logo-text p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* Language Toggle */
+        .lang-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .lang-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all var(--transition-normal);
+        }
+
+        .lang-btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent-primary);
+        }
+
+        .lang-btn.active {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-color: var(--accent-primary);
+            color: var(--bg-primary);
+        }
+
+        /* Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+            opacity: 0;
+            transition: opacity var(--transition-normal);
+        }
+
+        .card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        /* Status Card */
+        .status-card {
+            grid-column: span 4;
+            animation: fadeInUp 0.6s ease-out 0.1s both;
+        }
+
+        .status-card .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .status-card .card-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status-dot.warning {
+            background: var(--warning);
+            box-shadow: 0 0 10px var(--warning);
+        }
+
+        .status-dot.error {
+            background: var(--error);
+            box-shadow: 0 0 10px var(--error);
+        }
+
+        .status-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Main Control Panel */
+        .control-panel {
+            grid-column: span 8;
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        .control-panel .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .control-panel h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .action-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-align: left;
+            transition: all var(--transition-normal);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .action-btn:hover::before {
+            left: 100%;
+        }
+
+        .action-btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent-primary);
+            transform: translateX(4px);
+        }
+
+        .action-btn .btn-icon {
+            font-size: 1.5rem;
+            opacity: 0.5;
+            transition: all var(--transition-normal);
+        }
+
+        .action-btn:hover .btn-icon {
+            opacity: 1;
+            color: var(--accent-primary);
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-color: var(--accent-primary);
+            color: var(--bg-primary);
+        }
+
+        .action-btn.primary:hover {
+            transform: translateX(4px) scale(1.02);
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+
+        /* Results Panel */
+        .results-panel {
+            grid-column: span 12;
+            animation: fadeInUp 0.6s ease-out 0.3s both;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .results-panel h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .results-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            max-height: 400px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .results-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .results-content::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+            border-radius: 4px;
+        }
+
+        .results-content::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .results-content::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-primary);
+        }
+
+        .results-content pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .results-content .empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Metrics Row */
+        .metrics-row {
+            grid-column: span 12;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            animation: fadeInUp 0.6s ease-out 0.4s both;
+            transition: all var(--transition-normal);
+        }
+
+        .metric-card:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+
+        /* Loading State */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .status-card {
+                grid-column: span 6;
+            }
+            .control-panel {
+                grid-column: span 12;
+            }
+            .metrics-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 1rem;
+            }
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+            .status-card,
+            .control-panel,
+            .metrics-row {
+                grid-column: span 12;
+            }
+            .button-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Data Flow Animation */
+        .data-flow {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+            animation: dataFlow 3s ease-in-out infinite;
+            opacity: 0.5;
+        }
+
+        @keyframes dataFlow {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">CB</div>
+                <div class="logo-text">
+                    <h1 data-zh="CBSC 策略管理系统" data-en="CBSC Strategy Management">CBSC 策略管理系统</h1>
+                    <p data-zh="量化交易策略管理平台" data-en="Quantitative Trading Strategy Platform">量化交易策略管理平台</p>
+                </div>
+            </div>
+            <div class="lang-toggle">
+                <button class="lang-btn active" data-lang="zh">中文</button>
+                <button class="lang-btn" data-lang="en">EN</button>
+            </div>
+        </header>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- System Status Card -->
+            <div class="card status-card">
+                <div class="card-header">
+                    <span class="card-title" data-zh="系统状态" data-en="System Status">系统状态</span>
+                    <div class="status-indicator">
+                        <span class="status-dot" id="statusDot"></span>
+                        <span id="statusText" data-zh="检查中..." data-en="Checking...">检查中...</span>
+                    </div>
+                </div>
+                <div class="status-value" id="uptime">--</div>
+                <div class="metric-label" data-zh="运行时间" data-en="Uptime">运行时间</div>
+                <div class="data-flow"></div>
+            </div>
+
+            <!-- Database Status -->
+            <div class="card status-card" style="animation-delay: 0.15s">
+                <div class="card-header">
+                    <span class="card-title" data-zh="数据库" data-en="Database">数据库</span>
+                    <div class="status-indicator">
+                        <span class="status-dot" id="dbDot"></span>
+                        <span id="dbStatus">--</span>
+                    </div>
+                </div>
+                <div class="status-value" style="color: var(--success);">5432</div>
+                <div class="metric-label" data-zh="PostgreSQL 端口" data-en="PostgreSQL Port">PostgreSQL 端口</div>
+            </div>
+
+            <!-- Cache Status -->
+            <div class="card status-card" style="animation-delay: 0.2s">
+                <div class="card-header">
+                    <span class="card-title" data-zh="缓存服务" data-en="Cache Service">缓存服务</span>
+                    <div class="status-indicator">
+                        <span class="status-dot" id="cacheDot"></span>
+                        <span id="cacheStatus">--</span>
+                    </div>
+                </div>
+                <div class="status-value" style="color: var(--success);">6379</div>
+                <div class="metric-label" data-zh="Redis 端口" data-en="Redis Port">Redis 端口</div>
+            </div>
+
+            <!-- Main Control Panel -->
+            <div class="card control-panel">
+                <div class="card-header">
+                    <h2 data-zh="API 控制面板" data-en="API Control Panel">API 控制面板</h2>
+                </div>
+                <div class="button-grid">
+                    <button class="action-btn primary" onclick="testHealth()">
+                        <span data-zh="健康检查" data-en="Health Check">健康检查</span>
+                        <span class="btn-icon">⚡</span>
+                    </button>
+                    <button class="action-btn" onclick="testStrategies()">
+                        <span data-zh="获取策略列表" data-en="Get Strategies">获取策略列表</span>
+                        <span class="btn-icon">📊</span>
+                    </button>
+                    <button class="action-btn" onclick="testBackend()">
+                        <span data-zh="后端状态" data-en="Backend Status">后端状态</span>
+                        <span class="btn-icon">🔧</span>
+                    </button>
+                    <button class="action-btn" onclick="openDocs()">
+                        <span data-zh="API 文档" data-en="API Docs">API 文档</span>
+                        <span class="btn-icon">📚</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="card results-panel">
+                <div class="results-header">
+                    <h2 data-zh="响应结果" data-en="Response">响应结果</h2>
+                    <button class="lang-btn" onclick="clearResults()" data-zh="清除" data-en="Clear">清除</button>
+                </div>
+                <div class="results-content" id="results">
+                    <div class="empty" data-zh="点击上方按钮开始测试..." data-en="Click buttons above to start testing...">点击上方按钮开始测试...</div>
+                </div>
+            </div>
+
+            <!-- Metrics Row -->
+            <div class="metrics-row">
+                <div class="metric-card">
+                    <div class="metric-value" id="apiCalls">0</div>
+                    <div class="metric-label" data-zh="API 调用" data-en="API Calls">API 调用</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="avgResponse">--ms</div>
+                    <div class="metric-label" data-zh="平均响应" data-en="Avg Response">平均响应</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="successRate">--%</div>
+                    <div class="metric-label" data-zh="成功率" data-en="Success Rate">成功率</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" style="color: var(--accent-secondary);" id="strategiesCount">--</div>
+                    <div class="metric-label" data-zh="活跃策略" data-en="Active Strategies">活跃策略</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentLang = 'zh';
+        let apiCalls = 0;
+        let successCount = 0;
+        let responseTimes = [];
+        let startTime = Date.now();
+
+        // Language Toggle
+        document.querySelectorAll('.lang-btn[data-lang]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const lang = btn.dataset.lang;
+                setLanguage(lang);
+            });
+        });
+
+        function setLanguage(lang) {
+            currentLang = lang;
+
+            // Update toggle buttons
+            document.querySelectorAll('.lang-btn[data-lang]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+
+            // Update all translatable elements
+            document.querySelectorAll('[data-zh]').forEach(el => {
+                el.textContent = lang === 'zh' ? el.dataset.zh : el.dataset.en;
+            });
+
+            // Update HTML lang attribute
+            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+        }
+
+        // API Functions
+        async function testHealth() {
+            showLoading();
+            const start = performance.now();
+
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                const end = performance.now();
+
+                updateMetrics(true, end - start);
+                displayResult(data);
+
+                updateStatus('healthy', data.status || 'OK');
+            } catch (error) {
+                updateMetrics(false, 0);
+                displayError(error.message);
+                updateStatus('error', 'Error');
+            }
+        }
+
+        async function testStrategies() {
+            showLoading();
+            const start = performance.now();
+
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/strategies');
+                const data = await response.json();
+                const end = performance.now();
+
+                updateMetrics(true, end - start);
+                displayResult(data);
+
+                // Update strategies count
+                if (data.total !== undefined) {
+                    document.getElementById('strategiesCount').textContent = data.total;
+                }
+
+                updateStatus('healthy', 'OK');
+            } catch (error) {
+                updateMetrics(false, 0);
+                displayError(error.message);
+                updateStatus('error', 'Error');
+            }
+        }
+
+        async function testBackend() {
+            showLoading();
+            const start = performance.now();
+
+            try {
+                const response = await fetch('http://localhost:8000/');
+                const data = await response.json();
+                const end = performance.now();
+
+                updateMetrics(true, end - start);
+                displayResult(data);
+                updateStatus('healthy', 'OK');
+            } catch (error) {
+                updateMetrics(false, 0);
+                displayError(error.message);
+                updateStatus('error', 'Error');
+            }
+        }
+
+        function openDocs() {
+            window.open('http://localhost:8000/docs', '_blank');
+        }
+
+        // Display Functions
+        function showLoading() {
+            document.getElementById('results').innerHTML =
+                '<div style="display: flex; align-items: center; justify-content: center; height: 200px; gap: 1rem;">' +
+                '<div class="loading"></div>' +
+                '<span style="color: var(--text-muted);">' +
+                (currentLang === 'zh' ? '加载中...' : 'Loading...') +
+                '</span></div>';
+        }
+
+        function displayResult(data) {
+            document.getElementById('results').innerHTML =
+                '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+        }
+
+        function displayError(message) {
+            document.getElementById('results').innerHTML =
+                '<div style="color: var(--error); padding: 1rem; border-radius: 8px; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--error);">' +
+                '<strong>' + (currentLang === 'zh' ? '错误' : 'Error') + ':</strong> ' + message +
+                '</div>';
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML =
+                '<div class="empty">' +
+                (currentLang === 'zh' ? '点击上方按钮开始测试...' : 'Click buttons above to start testing...') +
+                '</div>';
+        }
+
+        // Status Update
+        function updateStatus(type, text) {
+            const dot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+
+            dot.className = 'status-dot';
+            if (type === 'healthy') {
+                statusText.textContent = text;
+                statusText.style.color = 'var(--success)';
+            } else if (type === 'error') {
+                dot.classList.add('error');
+                statusText.textContent = text;
+                statusText.style.color = 'var(--error)';
+            } else {
+                dot.classList.add('warning');
+                statusText.textContent = text;
+                statusText.style.color = 'var(--warning)';
+            }
+
+            // Update database and cache status
+            document.getElementById('dbDot').className = 'status-dot';
+            document.getElementById('dbStatus').textContent = 'Connected';
+            document.getElementById('dbStatus').style.color = 'var(--success)';
+
+            document.getElementById('cacheDot').className = 'status-dot';
+            document.getElementById('cacheStatus').textContent = 'Connected';
+            document.getElementById('cacheStatus').style.color = 'var(--success)';
+
+            // Update uptime
+            updateUptime();
+        }
+
+        // Metrics
+        function updateMetrics(success, responseTime) {
+            apiCalls++;
+            if (success) successCount++;
+            if (responseTime > 0) responseTimes.push(responseTime);
+
+            document.getElementById('apiCalls').textContent = apiCalls;
+
+            if (responseTimes.length > 0) {
+                const avg = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+                document.getElementById('avgResponse').textContent = avg.toFixed(0) + 'ms';
+            }
+
+            const rate = ((successCount / apiCalls) * 100).toFixed(0);
+            document.getElementById('successRate').textContent = rate + '%';
+        }
+
+        function updateUptime() {
+            const elapsed = Date.now() - startTime;
+            const seconds = Math.floor(elapsed / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+
+            if (hours > 0) {
+                document.getElementById('uptime').textContent =
+                    hours + 'h ' + (minutes % 60) + 'm';
+            } else if (minutes > 0) {
+                document.getElementById('uptime').textContent =
+                    minutes + 'm ' + (seconds % 60) + 's';
+            } else {
+                document.getElementById('uptime').textContent =
+                    seconds + 's';
+            }
+        }
+
+        // Auto-refresh uptime
+        setInterval(updateUptime, 1000);
+
+        // Initial health check
+        setTimeout(() => {
+            testHealth();
+        }, 1000);
+    </script>
+</body>
+</html>

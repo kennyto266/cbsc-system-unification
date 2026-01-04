@@ -65,7 +65,7 @@ class UserActivity(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     activity_type = Column(String(50))  # login, trade, strategy, settings, export
     description = Column(Text)
-    metadata = Column(JSON)  # 额外的活动数据
+    activity_metadata = Column(JSON)  # 额外的活动数据
     ip_address = Column(String(45))
     created_at = Column(DateTime, default=datetime.utcnow)
 

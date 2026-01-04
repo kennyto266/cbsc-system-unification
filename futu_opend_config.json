@@ -1,0 +1,7 @@
+{
+  "timestamp": "2025-12-19T19:26:08.800487",
+  "opend_running": false,
+  "opend_path": null,
+  "pdt_protection_setting": "Unknown (requires manual check)",
+  "recommended_action": "Set pdt_protection=0 if simulation access fails"
+}

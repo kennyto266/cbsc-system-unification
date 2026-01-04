@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grafana 登入測試</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .test-buttons {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .test-buttons button {
+            margin: 5px;
+            width: auto;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Grafana 登入測試</h1>
+        <p>測試 CBSC 系統中的 Grafana 監控面板登入功能</p>
+
+        <div class="login-form">
+            <div class="form-group">
+                <label for="username">用戶名:</label>
+                <input type="text" id="username" value="admin" placeholder="輸入用戶名">
+            </div>
+            <div class="form-group">
+                <label for="password">密碼:</label>
+                <input type="password" id="password" value="admin" placeholder="輸入密碼">
+            </div>
+            <button onclick="testLogin()">🔐 測試登入</button>
+        </div>
+
+        <div class="test-buttons">
+            <button onclick="testAdminLogin()">使用 admin/admin</button>
+            <button onclick="testAlternativeLogin()">使用替代密碼</button>
+            <button onclick="openGrafana()">直接打開 Grafana</button>
+        </div>
+
+        <div id="status" class="status info" style="display: none;">
+            準備測試 Grafana 登入...
+        </div>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.textContent = message;
+            status.style.display = 'block';
+        }
+
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showStatus('❌ 請輸入用戶名和密碼', 'error');
+                return;
+            }
+
+            showStatus('🔄 正在測試登入...', 'info');
+
+            try {
+                // 創建一個隱藏的表單來提交登入
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'http://localhost:8888/login';
+                form.target = '_blank';
+
+                const usernameInput = document.createElement('input');
+                usernameInput.type = 'hidden';
+                usernameInput.name = 'user';
+                usernameInput.value = username;
+
+                const passwordInput = document.createElement('input');
+                passwordInput.type = 'hidden';
+                passwordInput.name = 'password';
+                passwordInput.value = password;
+
+                form.appendChild(usernameInput);
+                form.appendChild(passwordInput);
+                document.body.appendChild(form);
+
+                showStatus('✅ 登入表單已提交，請檢查新開啟的 Grafana 頁面', 'success');
+
+                setTimeout(() => {
+                    document.body.removeChild(form);
+                }, 5000);
+
+                form.submit();
+
+            } catch (error) {
+                showStatus('❌ 登入失敗: ' + error.message, 'error');
+            }
+        }
+
+        function testAdminLogin() {
+            document.getElementById('username').value = 'admin';
+            document.getElementById('password').value = 'admin';
+            showStatus('👤 已設置為 admin/admin', 'info');
+        }
+
+        function testAlternativeLogin() {
+            document.getElementById('username').value = 'admin';
+            document.getElementById('password').value = 'cbsc123456';
+            showStatus('🔐 已設置為 admin/cbsc123456', 'info');
+        }
+
+        function openGrafana() {
+            window.open('http://localhost:8888', '_blank');
+            showStatus('🌐 已在新標籤頁中打開 Grafana', 'info');
+        }
+
+        // 測試 Grafana 連接
+        async function testConnection() {
+            try {
+                const response = await fetch('http://localhost:8888/api/health');
+                const text = await response.text();
+                if (response.ok) {
+                    showStatus('✅ Grafana 服務連接正常', 'success');
+                } else {
+                    showStatus('⚠️ Grafana 服務響應異常: ' + response.status, 'error');
+                }
+            } catch (error) {
+                showStatus('❌ 無法連接到 Grafana: ' + error.message, 'error');
+            }
+        }
+
+        // 頁面加載時測試連接
+        window.onload = function() {
+            testConnection();
+        };
+    </script>
+</body>
+</html>

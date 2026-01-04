@@ -1,0 +1,1828 @@
+openapi: 3.0.3
+info:
+  title: CBSC量化交易策略管理系統 API
+  description: |
+    ## CBSC量化交易策略管理系統 API v2.0
+    
+    本API提供完整的量化交易策略管理功能，包括：
+    
+    - 策略創建與管理
+    - 實時策略執行
+    - 歷史數據查詢
+    - 經濟指標監控
+    - 風險管理
+    - 回測分析
+    
+    ### 認證方式
+    
+    API使用JWT Bearer Token認證。請在請求頭中包含：
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+    
+    ### 基礎URL
+    ```
+    生產環境: https://api.cbsc.com/v2
+    測試環境: https://api-test.cbsc.com/v2
+    開發環境: http://localhost:3003/api/v2
+    ```
+    
+    ### API版本控制
+    
+    - 使用 `API-Version` header指定版本（默認：2.0）
+    - 向後兼容原則：新版本保持對舊版本的兼容
+    - 廢棄通知：提前3個月通知API廢棄
+    
+    ### 聯繫方式
+    
+    - 技術支持: api-support@cbsc.com
+    - 文檔: https://docs.cbsc.com/api
+    - 狀態頁: https://status.cbsc.com
+  
+  version: 2.0.0
+  contact:
+    name: CBSC API Support
+    email: api-support@cbsc.com
+    url: https://cbsc.com/support
+  license:
+    name: Commercial License
+    url: https://cbsc.com/license
+
+servers:
+  - url: https://api.cbsc.com/v2
+    description: 生產環境
+  - url: https://api-test.cbsc.com/v2
+    description: 測試環境
+  - url: http://localhost:3003/api/v2
+    description: 開發環境
+
+tags:
+  - name: authentication
+    description: 認證相關接口
+  - name: strategies
+    description: 策略管理接口
+  - name: executions
+    description: 策略執行接口
+  - name: market-data
+    description: 市場數據接口
+  - name: economic-indicators
+    description: 經濟指標接口
+  - name: backtest
+    description: 回測分析接口
+  - name: risk-management
+    description: 風險管理接口
+  - name: users
+    description: 用戶管理接口
+  - name: websocket
+    description: WebSocket實時數據
+
+paths:
+  # ========================================================================
+  # Authentication Endpoints
+  # ========================================================================
+  /auth/login:
+    post:
+      tags:
+        - authentication
+      summary: 用戶登錄
+      description: 用戶使用憑證登錄獲取JWT Token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              username: "john.doe@example.com"
+              password: "SecurePassword123!"
+              remember_me: false
+      responses:
+        '200':
+          description: 登錄成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                token_type: "bearer"
+                expires_in: 3600
+                user:
+                  id: 123
+                  username: "john.doe@example.com"
+                  email: "john.doe@example.com"
+                  roles: ["trader"]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/refresh:
+    post:
+      tags:
+        - authentication
+      summary: 刷新Token
+      description: 使用refresh token獲取新的access token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token刷新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags:
+        - authentication
+      summary: 用戶登出
+      description: 注銷當前用戶，使token失效
+      operationId: logout
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 登出成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Successfully logged out"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ========================================================================
+  # Strategy Management Endpoints
+  # ========================================================================
+  /strategies:
+    get:
+      tags:
+        - strategies
+      summary: 獲取策略列表
+      description: 獲取用戶的策略列表，支持分頁、排序、過濾和搜索
+      operationId: listStrategies
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - $ref: '#/components/parameters/FilterType'
+        - $ref: '#/components/parameters/FilterStatus'
+        - $ref: '#/components/parameters/Search'
+      responses:
+        '200':
+          description: 策略列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StrategyListResponse'
+              example:
+                data:
+                  - id: "str_001"
+                    name: "移動平均線交叉策略"
+                    type: "technical"
+                    status: "active"
+                    created_at: "2024-01-15T10:30:00Z"
+                    updated_at: "2024-01-20T14:45:00Z"
+                    performance:
+                      total_return: 15.3
+                      sharpe_ratio: 1.25
+                pagination:
+                  page: 1
+                  pageSize: 20
+                  total: 45
+                  pages: 3
+                  hasNext: true
+                  hasPrev: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - strategies
+      summary: 創建新策略
+      description: 創建一個新的交易策略
+      operationId: createStrategy
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StrategyCreateRequest'
+            example:
+              name: "RSI超賣反轉策略"
+              description: "基於RSI指標的超賣反轉策略"
+              type: "technical"
+              parameters:
+                rsi_period: 14
+                rsi_oversold: 30
+                rsi_overbought: 70
+              risk_settings:
+                max_position_size: 0.1
+                stop_loss: 0.05
+              symbols: ["AAPL", "MSFT", "GOOGL"]
+      responses:
+        '201':
+          description: 策略創建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StrategyResponse'
+              example:
+                id: "str_002"
+                name: "RSI超賣反轉策略"
+                status: "created"
+                created_at: "2024-01-18T09:15:00Z"
+                message: "策略創建成功，正在初始化..."
+          headers:
+            Location:
+              description: 策略詳情URL
+              schema:
+                type: string
+                example: "/api/v2/strategies/str_002"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /strategies/{strategy_id}:
+    get:
+      tags:
+        - strategies
+      summary: 獲取策略詳情
+      description: 獲取指定策略的詳細信息
+      operationId: getStrategy
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/StrategyId'
+        - name: include
+          in: query
+          description: 包含額外數據（performance,executions,backtests）
+          schema:
+            type: string
+            example: "performance,executions"
+      responses:
+        '200':
+          description: 策略詳情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StrategyDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - strategies
+      summary: 更新策略
+      description: 更新策略配置和參數
+      operationId: updateStrategy
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/StrategyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StrategyUpdateRequest'
+      responses:
+        '200':
+          description: 策略更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StrategyUpdateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - strategies
+      summary: 刪除策略
+      description: 刪除指定的策略
+      operationId: deleteStrategy
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/StrategyId'
+        - name: force
+          in: query
+          description: 強制刪除（即使有活躍執行）
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '204':
+          description: 策略刪除成功
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 策略有活躍執行，無法刪除
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ========================================================================
+  # Strategy Execution Endpoints
+  # ========================================================================
+  /strategies/{strategy_id}/executions:
+    post:
+      tags:
+        - executions
+      summary: 執行策略
+      description: 啟動策略執行
+      operationId: executeStrategy
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/StrategyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutionRequest'
+            example:
+              start_date: "2024-01-01T00:00:00Z"
+              end_date: "2024-01-31T23:59:59Z"
+              initial_capital: 100000
+              symbols: ["AAPL", "MSFT"]
+              execution_mode: "backtest"
+      responses:
+        '202':
+          description: 策略執行已排隊
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionQueuedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    get:
+      tags:
+        - executions
+      summary: 獲取執行歷史
+      description: 獲取策略的執行歷史記錄
+      operationId: getExecutionHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/StrategyId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - name: status
+          in: query
+          description: 過濾執行狀態
+          schema:
+            type: string
+            enum: [queued, running, completed, failed, stopped]
+      responses:
+        '200':
+          description: 執行歷史
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionHistoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /strategies/{strategy_id}/executions/{execution_id}:
+    get:
+      tags:
+        - executions
+      summary: 獲取執行詳情
+      description: 獲取指定執行的詳細信息和狀態
+      operationId: getExecutionDetails
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/StrategyId'
+        - $ref: '#/components/parameters/ExecutionId'
+      responses:
+        '200':
+          description: 執行詳情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - executions
+      summary: 停止執行
+      description: 停止正在運行的策略執行
+      operationId: stopExecution
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/StrategyId'
+        - $ref: '#/components/parameters/ExecutionId'
+      responses:
+        '200':
+          description: 執行已停止
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionStoppedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ========================================================================
+  # Market Data Endpoints
+  # ========================================================================
+  /market-data/{symbol}/history:
+    get:
+      tags:
+        - market-data
+      summary: 獲取歷史市場數據
+      description: 獲取指定股票的歷史價格數據
+      operationId: getHistoricalData
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          description: 股票代碼
+          schema:
+            type: string
+            example: "AAPL"
+        - name: interval
+          in: query
+          description: 時間間隔
+          schema:
+            type: string
+            enum: [1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w, 1M]
+            default: 1d
+        - name: start_date
+          in: query
+          description: 開始日期 (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+            example: "2024-01-01"
+        - name: end_date
+          in: query
+          description: 結束日期 (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+            example: "2024-01-31"
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - name: adjusted
+          in: query
+          description: 是否包含復權價格
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: 歷史數據
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoricalDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /market-data/{symbol}/realtime:
+    get:
+      tags:
+        - market-data
+      summary: 獲取實時市場數據
+      description: 獲取指定股票的實時價格信息
+      operationId: getRealtimeData
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          description: 股票代碼
+          schema:
+            type: string
+            example: "AAPL"
+        - name: fields
+          in: query
+          description: 返回字段列表
+          schema:
+            type: string
+            example: "price,change,volume,bid,ask"
+      responses:
+        '200':
+          description: 實時數據
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RealtimeDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /market-data/bulk/realtime:
+    get:
+      tags:
+        - market-data
+      summary: 批量獲取實時數據
+      description: 批量獲取多個股票的實時價格
+      operationId: getBulkRealtimeData
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: symbols
+          in: query
+          required: true
+          description: 股票代碼列表（最多100個）
+          schema:
+            type: string
+            example: "AAPL,MSFT,GOOGL"
+        - name: fields
+          in: query
+          description: 返回字段列表
+          schema:
+            type: string
+            example: "price,change"
+      responses:
+        '200':
+          description: 批量實時數據
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkRealtimeDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ========================================================================
+  # Economic Indicators Endpoints
+  # ========================================================================
+  /economic-indicators/:
+    get:
+      tags:
+        - economic-indicators
+      summary: 獲取經濟指標列表
+      description: 獲取所有可用的經濟指標
+      operationId: listEconomicIndicators
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          description: 指標類別
+          schema:
+            type: string
+            enum: [interest_rates, gdp, employment, inflation, pmi]
+        - name: country
+          in: query
+          description: 國家代碼
+          schema:
+            type: string
+            default: "US"
+      responses:
+        '200':
+          description: 經濟指標列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EconomicIndicatorsListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /economic-indicators/{indicator}/data:
+    get:
+      tags:
+        - economic-indicators
+      summary: 獲取經濟指標數據
+      description: 獲取指定經濟指標的歷史數據
+      operationId: getEconomicIndicatorData
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: indicator
+          in: path
+          required: true
+          description: 指標代碼
+          schema:
+            type: string
+            example: "Fed_Funds"
+        - name: country
+          in: query
+          description: 國家代碼
+          schema:
+            type: string
+            default: "US"
+        - name: start_date
+          in: query
+          description: 開始日期
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: 結束日期
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 經濟指標數據
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EconomicIndicatorDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /economic-indicators/hibor:
+    get:
+      tags:
+        - economic-indicators
+      summary: 獲取HIBOR利率
+      description: 獲取香港銀行同業拆借利率
+      operationId: getHIBORRates
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenor
+          in: query
+          description: 期限
+          schema:
+            type: string
+            enum: [ON, 1W, 1M, 3M, 6M, 12M]
+            default: "3M"
+        - name: start_date
+          in: query
+          description: 開始日期
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: 結束日期
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: HIBOR利率數據
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HIBORRatesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ========================================================================
+  # Backtest Endpoints
+  # ========================================================================
+  /backtest/run:
+    post:
+      tags:
+        - backtest
+      summary: 運行回測
+      description: 對策略進行歷史回測分析
+      operationId: runBacktest
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BacktestRequest'
+            example:
+              strategy_id: "str_001"
+              start_date: "2023-01-01"
+              end_date: "2023-12-31"
+              initial_capital: 100000
+              symbols: ["AAPL", "MSFT"]
+              commission: 0.001
+              slippage: 0.0001
+      responses:
+        '202':
+          description: 回測已開始
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BacktestStartedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /backtest/{backtest_id}:
+    get:
+      tags:
+        - backtest
+      summary: 獲取回測結果
+      description: 獲取回測的詳細結果和報告
+      operationId: getBacktestResults
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: backtest_id
+          in: path
+          required: true
+          description: 回測ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 回測結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BacktestResultsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ========================================================================
+  # Risk Management Endpoints
+  # ========================================================================
+  /risk/portfolio:
+    get:
+      tags:
+        - risk-management
+      summary: 獲取投資組合風險
+      description: 獲取當前投資組合的風險指標
+      operationId: getPortfolioRisk
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 投資組合風險指標
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioRiskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /risk/var:
+    post:
+      tags:
+        - risk-management
+      summary: 計算VaR
+      description: 計算風險價值(VaR)
+      operationId: calculateVaR
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaRRequest'
+      responses:
+        '200':
+          description: VaR計算結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaRResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# ========================================================================
+# Components
+# ========================================================================
+components:
+  # ========================================================================
+  # Security Schemes
+  # ========================================================================
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "JWT Token from /auth/login endpoint"
+
+  # ========================================================================
+  # Parameters
+  # ========================================================================
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: 頁碼
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      example: 1
+
+    PageSize:
+      name: page_size
+      in: query
+      description: 每頁記錄數
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      example: 20
+
+    SortBy:
+      name: sort_by
+      in: query
+      description: 排序字段
+      schema:
+        type: string
+        enum: [name, created_at, updated_at, performance]
+      example: "created_at"
+
+    SortOrder:
+      name: sort_order
+      in: query
+      description: 排序順序
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+      example: "desc"
+
+    FilterType:
+      name: filter_type
+      in: query
+      description: 按策略類型過濾
+      schema:
+        type: string
+        enum: [technical, fundamental, quantitative, algorithmic]
+      example: "technical"
+
+    FilterStatus:
+      name: filter_status
+      in: query
+      description: 按狀態過濾
+      schema:
+        type: string
+        enum: [active, inactive, draft, archived]
+      example: "active"
+
+    Search:
+      name: search
+      in: query
+      description: 搜索關鍵詞
+      schema:
+        type: string
+      example: "移動平均"
+
+    StrategyId:
+      name: strategy_id
+      in: path
+      required: true
+      description: 策略ID
+      schema:
+        type: string
+        format: uuid
+      example: "str_001"
+
+    ExecutionId:
+      name: execution_id
+      in: path
+      required: true
+      description: 執行ID
+      schema:
+        type: string
+        format: uuid
+      example: "exec_001"
+
+  # ========================================================================
+  # Schemas
+  # ========================================================================
+  schemas:
+    # Request Schemas
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: 用戶名或郵箱
+          example: "john.doe@example.com"
+        password:
+          type: string
+          description: 密碼
+          format: password
+          example: "SecurePassword123!"
+        remember_me:
+          type: boolean
+          description: 記住登錄狀態
+          default: false
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+          description: 刷新令牌
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    StrategyCreateRequest:
+      type: object
+      required:
+        - name
+        - type
+        - parameters
+      properties:
+        name:
+          type: string
+          description: 策略名稱
+          example: "RSI超賣反轉策略"
+        description:
+          type: string
+          description: 策略描述
+          example: "基於RSI指標的超賣反轉策略"
+        type:
+          type: string
+          enum: [technical, fundamental, quantitative, algorithmic]
+          description: 策略類型
+          example: "technical"
+        parameters:
+          type: object
+          description: 策略參數
+          example:
+            rsi_period: 14
+            rsi_oversold: 30
+            rsi_overbought: 70
+        risk_settings:
+          $ref: '#/components/schemas/RiskSettings'
+        symbols:
+          type: array
+          items:
+            type: string
+          description: 交易標的列表
+          example: ["AAPL", "MSFT", "GOOGL"]
+
+    StrategyUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 策略名稱
+        description:
+          type: string
+          description: 策略描述
+        parameters:
+          type: object
+          description: 策略參數
+        risk_settings:
+          $ref: '#/components/schemas/RiskSettings'
+        symbols:
+          type: array
+          items:
+            type: string
+          description: 交易標的列表
+
+    ExecutionRequest:
+      type: object
+      required:
+        - execution_mode
+      properties:
+        start_date:
+          type: string
+          format: date-time
+          description: 開始時間
+        end_date:
+          type: string
+          format: date-time
+          description: 結束時間
+        initial_capital:
+          type: number
+          format: float
+          description: 初始資金
+          example: 100000
+        symbols:
+          type: array
+          items:
+            type: string
+          description: 交易標的
+        execution_mode:
+          type: string
+          enum: [backtest, paper_trading, live_trading]
+          description: 執行模式
+
+    BacktestRequest:
+      type: object
+      required:
+        - strategy_id
+        - start_date
+        - end_date
+      properties:
+        strategy_id:
+          type: string
+          description: 策略ID
+        start_date:
+          type: string
+          format: date
+          description: 回測開始日期
+        end_date:
+          type: string
+          format: date
+          description: 回測結束日期
+        initial_capital:
+          type: number
+          format: float
+          description: 初始資金
+          default: 100000
+        symbols:
+          type: array
+          items:
+            type: string
+          description: 回測標的
+        commission:
+          type: number
+          format: float
+          description: 佣金費率
+          default: 0.001
+        slippage:
+          type: number
+          format: float
+          description: 滑點
+          default: 0.0001
+
+    VaRRequest:
+      type: object
+      required:
+        - portfolio
+        - confidence_level
+      properties:
+        portfolio:
+          type: object
+          description: 投資組合
+          properties:
+            positions:
+              type: array
+              items:
+                type: object
+                properties:
+                  symbol:
+                    type: string
+                  quantity:
+                    type: number
+                  current_price:
+                    type: number
+        confidence_level:
+          type: number
+          enum: [0.90, 0.95, 0.99]
+          description: 置信水平
+          example: 0.95
+        time_horizon:
+          type: integer
+          description: 時間範圍（天）
+          default: 1
+
+    RiskSettings:
+      type: object
+      properties:
+        max_position_size:
+          type: number
+          format: float
+          description: 最大持倉比例
+          example: 0.1
+        stop_loss:
+          type: number
+          format: float
+          description: 止損比例
+          example: 0.05
+        take_profit:
+          type: number
+          format: float
+          description: 止盈比例
+          example: 0.15
+        max_drawdown:
+          type: number
+          format: float
+          description: 最大回撤限制
+          example: 0.2
+
+    # Response Schemas
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: 訪問令牌
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refresh_token:
+          type: string
+          description: 刷新令牌
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        token_type:
+          type: string
+          example: "bearer"
+        expires_in:
+          type: integer
+          description: Token過期時間（秒）
+          example: 3600
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 123
+            username:
+              type: string
+              example: "john.doe@example.com"
+            email:
+              type: string
+              example: "john.doe@example.com"
+            roles:
+              type: array
+              items:
+                type: string
+              example: ["trader"]
+
+    RefreshTokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        expires_in:
+          type: integer
+        token_type:
+          type: string
+          example: "bearer"
+
+    StrategyListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Strategy'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        filters:
+          type: object
+          description: 應用的過濾條件
+        sort:
+          type: object
+          description: 排序選項
+        timestamp:
+          type: string
+          format: date-time
+
+    StrategyDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/Strategy'
+        - type: object
+          properties:
+            performance:
+              $ref: '#/components/schemas/PerformanceMetrics'
+            executions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Execution'
+            backtests:
+              type: array
+              items:
+                $ref: '#/components/schemas/Backtest'
+
+    Strategy:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "str_001"
+        name:
+          type: string
+          example: "移動平均線交叉策略"
+        description:
+          type: string
+          example: "基於移動平均線交叉的技術分析策略"
+        type:
+          type: string
+          enum: [technical, fundamental, quantitative, algorithmic]
+        status:
+          type: string
+          enum: [active, inactive, draft, archived]
+        parameters:
+          type: object
+          example:
+            short_period: 10
+            long_period: 30
+        risk_settings:
+          $ref: '#/components/schemas/RiskSettings'
+        symbols:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    StrategyResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        message:
+          type: string
+
+    StrategyUpdateResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+        message:
+          type: string
+
+    ExecutionQueuedResponse:
+      type: object
+      properties:
+        execution_id:
+          type: string
+          example: "exec_001"
+        strategy_id:
+          type: string
+        status:
+          type: string
+          enum: [queued]
+        message:
+          type: string
+        queued_at:
+          type: string
+          format: date-time
+
+    ExecutionHistoryResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Execution'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    ExecutionDetailResponse:
+      type: object
+      properties:
+        execution_id:
+          type: string
+        strategy_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, completed, failed, stopped]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        results:
+          type: object
+        error_message:
+          type: string
+
+    ExecutionStoppedResponse:
+      type: object
+      properties:
+        execution_id:
+          type: string
+        strategy_id:
+          type: string
+        status:
+          type: string
+          enum: [stopped]
+        stopped_at:
+          type: string
+          format: date-time
+
+    Execution:
+      type: object
+      properties:
+        id:
+          type: string
+        strategy_id:
+          type: string
+        status:
+          type: string
+        execution_mode:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        initial_capital:
+          type: number
+        final_capital:
+          type: number
+        total_return:
+          type: number
+        sharpe_ratio:
+          type: number
+
+    BacktestStartedResponse:
+      type: object
+      properties:
+        backtest_id:
+          type: string
+        status:
+          type: string
+          enum: [started]
+        estimated_time:
+          type: string
+        message:
+          type: string
+
+    BacktestResultsResponse:
+      type: object
+      properties:
+        backtest_id:
+          type: string
+        strategy_id:
+          type: string
+        status:
+          type: string
+          enum: [completed, failed]
+        performance:
+          $ref: '#/components/schemas/PerformanceMetrics'
+        trades:
+          type: array
+          items:
+            type: object
+            properties:
+              symbol:
+                type: string
+              type:
+                type: string
+                enum: [buy, sell]
+              quantity:
+                type: number
+              price:
+                type: number
+              timestamp:
+                type: string
+                format: date-time
+        equity_curve:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              equity:
+                type: number
+
+    Backtest:
+      type: object
+      properties:
+        id:
+          type: string
+        strategy_id:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        initial_capital:
+          type: number
+        total_return:
+          type: number
+        sharpe_ratio:
+          type: number
+        max_drawdown:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+
+    HistoricalDataResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+          example: "AAPL"
+        interval:
+          type: string
+          example: "1d"
+        currency:
+          type: string
+          example: "USD"
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              open:
+                type: number
+              high:
+                type: number
+              low:
+                type: number
+              close:
+                type: number
+              volume:
+                type: integer
+              adjusted_close:
+                type: number
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        metadata:
+          type: object
+          properties:
+            startDate:
+              type: string
+              format: date-time
+            endDate:
+              type: string
+              format: date-time
+            adjusted:
+              type: boolean
+            dataPoints:
+              type: integer
+        timestamp:
+          type: string
+          format: date-time
+
+    RealtimeDataResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+        price:
+          type: number
+        change:
+          type: number
+        change_percent:
+          type: number
+        volume:
+          type: integer
+        bid:
+          type: number
+        ask:
+          type: number
+        high:
+          type: number
+        low:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+        market_state:
+          type: string
+          enum: [open, closed, pre_market, post_market]
+
+    BulkRealtimeDataResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/RealtimeDataResponse'
+        timestamp:
+          type: string
+          format: date-time
+
+    EconomicIndicatorsListResponse:
+      type: object
+      properties:
+        country:
+          type: string
+          example: "US"
+        indicators:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              unit:
+                type: string
+              frequency:
+                type: string
+        categories:
+          type: array
+          items:
+            type: string
+
+    EconomicIndicatorDataResponse:
+      type: object
+      properties:
+        indicator:
+          type: string
+        country:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date-time
+              value:
+                type: number
+              unit:
+                type: string
+              source:
+                type: string
+        statistics:
+          type: object
+          properties:
+            min:
+              type: number
+            max:
+              type: number
+            average:
+              type: number
+            latest:
+              type: number
+            change:
+              type: number
+
+    HIBORRatesResponse:
+      type: object
+      properties:
+        tenor:
+          type: string
+          example: "3M"
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              rate:
+                type: number
+        statistics:
+          type: object
+          properties:
+            latest:
+              type: number
+            change:
+              type: number
+            high:
+              type: number
+            low:
+              type: number
+
+    PortfolioRiskResponse:
+      type: object
+      properties:
+        portfolio_value:
+          type: number
+        total_risk:
+          type: number
+        systematic_risk:
+          type: number
+        unsystematic_risk:
+          type: number
+        var_95:
+          type: number
+        beta:
+          type: number
+        sharpe_ratio:
+          type: number
+        max_drawdown:
+          type: number
+        diversification_ratio:
+          type: number
+
+    VaRResponse:
+      type: object
+      properties:
+        portfolio_value:
+          type: number
+        confidence_level:
+          type: number
+        time_horizon:
+          type: integer
+        var_value:
+          type: number
+        var_percent:
+          type: number
+        expected_shortfall:
+          type: number
+        calculation_method:
+          type: string
+          example: "Historical Simulation"
+
+    PerformanceMetrics:
+      type: object
+      properties:
+        total_return:
+          type: number
+          format: float
+          description: 總收益率
+        annualized_return:
+          type: number
+          format: float
+          description: 年化收益率
+        sharpe_ratio:
+          type: number
+          format: float
+          description: 夏普比率
+        sortino_ratio:
+          type: number
+          format: float
+          description: 索提諾比率
+        max_drawdown:
+          type: number
+          format: float
+          description: 最大回撤
+        volatility:
+          type: number
+          format: float
+          description: 波動率
+        win_rate:
+          type: number
+          format: float
+          description: 勝率
+        profit_factor:
+          type: number
+          format: float
+          description: 盈利因子
+        calmar_ratio:
+          type: number
+          format: float
+          description: 卡爾瑪比率
+        information_ratio:
+          type: number
+          format: float
+          description: 信息比率
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 100
+        pages:
+          type: integer
+          example: 5
+        hasNext:
+          type: boolean
+          example: true
+        hasPrev:
+          type: boolean
+          example: false
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              example: "Invalid input parameters"
+            details:
+              type: object
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-18T10:30:00Z"
+
+  # ========================================================================
+  # Responses
+  # ========================================================================
+  responses:
+    BadRequest:
+      description: 請求參數錯誤
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: "VALIDATION_ERROR"
+              message: "Invalid date format"
+              details:
+                field: "start_date"
+                reason: "Must be in YYYY-MM-DD format"
+            timestamp: "2024-01-18T10:30:00Z"
+
+    Unauthorized:
+      description: 未授權訪問
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: "UNAUTHORIZED"
+              message: "Invalid or expired token"
+            timestamp: "2024-01-18T10:30:00Z"
+
+    NotFound:
+      description: 資源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: "NOT_FOUND"
+              message: "Strategy not found"
+            timestamp: "2024-01-18T10:30:00Z"
+
+    TooManyRequests:
+      description: 請求頻率超限
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: "RATE_LIMIT_EXCEEDED"
+              message: "Too many requests"
+              details:
+                retry_after: 60
+            timestamp: "2024-01-18T10:30:00Z"

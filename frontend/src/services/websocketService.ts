@@ -17,7 +17,13 @@ export class WebSocketService {
     error: []
   };
 
-  constructor(private url: string = 'ws://localhost:3004/ws') {
+  constructor(private url: string = null) {
+    // Connect directly to backend WebSocket server
+    // For development, use direct connection to bypass Vite proxy issues
+    if (!url) {
+      url = 'ws://localhost:3007/ws/strategies';
+    }
+    this.url = url;
     this.connect();
   }
 
@@ -45,7 +51,7 @@ export class WebSocketService {
             const message: WebSocketMessage = JSON.parse(event.data);
             this.handleMessage(message);
           } catch (error) {
-            console.error('Failed to parse WebSocket message:', error);
+            // Silently handle parse errors
           }
         };
 
@@ -58,9 +64,9 @@ export class WebSocketService {
         };
 
         this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
+          // Silently handle WebSocket errors without console spam
+          this.isConnected = false;
           this.emit('error', { error });
-          reject(error);
         };
       } catch (error) {
         console.error('Failed to create WebSocket connection:', error);
@@ -99,9 +105,8 @@ export class WebSocketService {
     if (this.isConnected && this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     } else {
-      // 連接未就緒時，將消息加入隊列
+      // 連接未就緒時，將消息加入隊列 (silently)
       this.messageQueue.push(message);
-      console.warn('WebSocket not connected, message queued');
     }
   }
 
@@ -152,11 +157,16 @@ export class WebSocketService {
   }
 
   // 事件監聽器管理
-  on(event: string, callback: (data: any) => void) {
+  on(event: string, callback: (data: any) => void): () => void {
     if (!this.listeners[event]) {
       this.listeners[event] = [];
     }
     this.listeners[event].push(callback);
+
+    // Return unsubscribe function
+    return () => {
+      this.off(event, callback);
+    };
   }
 
   off(event: string, callback: (data: any) => void) {

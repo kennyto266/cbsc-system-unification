@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="个人策略管理Dashboard - 实时监控和管理量化交易策略">
+    <meta name="keywords" content="量化交易,策略管理,Sharpe比率,最大回撤,Dashboard">
+    <meta name="author" content="CBSC Trading System">
+
+    <title>个人策略管理Dashboard</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
+
+    <!-- CSS Stylesheets -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/forms.css">
+
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="assets/icons/refresh.svg" as="image">
+    <link rel="preload" href="assets/icons/moon.svg" as="image">
+    <link rel="preload" href="assets/icons/sun.svg" as="image">
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="个人策略管理Dashboard">
+    <meta property="og:description" content="实时监控和管理量化交易策略">
+    <meta property="og:type" content="website">
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#4299e1">
+    <meta name="msapplication-TileColor" content="#4299e1">
+</head>
+<body>
+    <div id="app">
+        <!-- 导航栏 -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <h1>策略管理Dashboard</h1>
+            </div>
+            <div class="nav-actions">
+                <button id="refresh-btn" class="btn btn-secondary" title="刷新数据">
+                    <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6"/>
+                        <path d="M1 20v-6h6"/>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                    </svg>
+                    <span class="btn-text">刷新数据</span>
+                </button>
+                <button id="theme-toggle" class="btn btn-secondary" title="切换主题">
+                    <svg class="icon icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                    <svg class="icon icon-sun" style="display:none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"/>
+                        <path d="M12 1v2m0 16v2m4.22-13.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                    </svg>
+                </button>
+            </div>
+        </nav>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 概览面板 -->
+            <section class="overview-panel">
+                <h2>策略概览</h2>
+                <div class="overview-cards">
+                    <div class="card overview-card">
+                        <div class="card-content">
+                            <div class="card-title">总收益率</div>
+                            <div class="card-value" id="total-return">--%</div>
+                            <div class="card-change" id="total-return-change">
+                                <span class="change-value">--</span>
+                                <span class="change-period">（今日）</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card overview-card">
+                        <div class="card-content">
+                            <div class="card-title">平均Sharpe比率</div>
+                            <div class="card-value" id="avg-sharpe">--</div>
+                            <div class="card-change positive" id="avg-sharpe-change">
+                                <span class="change-value">+0.00</span>
+                                <span class="change-period">（本周）</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card overview-card">
+                        <div class="card-content">
+                            <div class="card-title">最大回撤</div>
+                            <div class="card-value" id="max-drawdown">--%</div>
+                            <div class="card-change" id="max-drawdown-change">
+                                <span class="change-value">--</span>
+                                <span class="change-period">（本月）</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card overview-card">
+                        <div class="card-content">
+                            <div class="card-title">运行中策略</div>
+                            <div class="card-value" id="running-strategies">--/4</div>
+                            <div class="card-info" id="strategy-status-info">
+                                <span class="status-running">运行中</span>:
+                                <span id="running-count">--</span>
+                                <span class="status-stopped">已停止</span>:
+                                <span id="stopped-count">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 策略列表 -->
+            <section class="strategies-section">
+                <div class="section-header">
+                    <h2>策略列表</h2>
+                    <div class="section-actions">
+                        <button id="add-strategy-btn" class="btn btn-primary">
+                            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            添加策略
+                        </button>
+                    </div>
+                </div>
+                <div id="strategy-list-container">
+                    <!-- 策略列表将在这里动态生成 -->
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="9" y1="9" x2="15" y2="9"/>
+                                <line x1="9" y1="12" x2="15" y2="12"/>
+                                <line x1="9" y1="15" x2="11" y2="15"/>
+                            </svg>
+                        </div>
+                        <h3 class="empty-state-title">暂无策略</h3>
+                        <p class="empty-state-description">点击"添加策略"按钮创建您的第一个交易策略</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 图表区域 -->
+            <section class="charts-section">
+                <h2>策略表现</h2>
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>净值曲线</h3>
+                            <select id="net-value-period" class="form-select">
+                                <option value="1d">1天</option>
+                                <option value="1w">1周</option>
+                                <option value="1m" selected>1个月</option>
+                                <option value="3m">3个月</option>
+                                <option value="6m">6个月</option>
+                                <option value="1y">1年</option>
+                                <option value="all">全部</option>
+                            </select>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="net-value-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>回撤分析</h3>
+                            <select id="drawdown-strategy" class="form-select">
+                                <option value="" selected>所有策略</option>
+                            </select>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="drawdown-chart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Enhanced Sharpe Ratio Analysis -->
+                    <div class="chart-container full-width">
+                        <div class="chart-header">
+                            <h3>Sharpe比率分析</h3>
+                            <div class="chart-actions">
+                                <button class="btn btn-sm btn-secondary" id="sharpe-analysis-toggle" title="切换分析控制面板">
+                                    <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 12h18m-9-9v18"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                    分析控制
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="sharpe-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Sharpe分析控制面板容器 -->
+                    <div class="chart-container full-width">
+                        <div id="sharpe-controls-container"></div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>月度收益热力图</h3>
+                            <button class="btn btn-sm btn-secondary" id="heatmap-help" title="帮助">
+                                <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="chart-wrapper">
+                            <div id="monthly-heatmap">
+                                <div class="empty-state">
+                                    <p>暂无数据</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 加载指示器 -->
+        <div id="loading" class="loading-indicator" style="display:none;">
+            <div class="spinner"></div>
+            <div class="loading-text">加载数据中...</div>
+        </div>
+
+        <!-- 通知容器 -->
+        <div id="notifications" class="notifications-container"></div>
+
+        <!-- 策略表单模态框 -->
+        <div id="strategy-form-modal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <!-- 表单内容将在这里动态生成 -->
+            </div>
+        </div>
+
+        <!-- 策略详情模态框 -->
+        <div id="strategy-detail-modal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <!-- 详情内容将在这里动态生成 -->
+            </div>
+        </div>
+
+        <!-- 热力图帮助模态框 -->
+        <div id="heatmap-help-modal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <div class="form-header">
+                    <h2>月度收益热力图说明</h2>
+                    <button class="btn-close" id="close-heatmap-help">&times;</button>
+                </div>
+                <div class="form-container">
+                    <p>热力图显示每月的收益率情况：</p>
+                    <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+                        <li><span style="color: #22c55e;">绿色</span>：收益率 > 5%</li>
+                        <li><span style="color: #84cc16;">浅绿</span>：收益率 0% ~ 5%</li>
+                        <li><span style="color: #eab308;">黄色</span>：收益率 -2% ~ 0%</li>
+                        <li><span style="color: #ef4444;">红色</span>：收益率 < -2%</li>
+                    </ul>
+                    <p style="margin-top: 1rem;">点击任意月份可查看该月的详细收益数据。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <!-- Load Chart.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Chart.js plugins for enhanced features -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+    <!-- Core modules -->
+    <script type="module" src="js/constants.js"></script>
+    <script type="module" src="js/utils.js"></script>
+    <script type="module" src="js/storage.js"></script>
+    <script type="module" src="js/api.js"></script>
+    <script type="module" src="js/event-bus.js"></script>
+
+    <!-- Chart modules -->
+    <script type="module" src="js/chart.js"></script>
+    <script type="module" src="js/net-value-chart.js"></script>
+    <script type="module" src="js/drawdown-chart.js"></script>
+    <script type="module" src="js/sharpe-chart.js"></script>
+    <script type="module" src="js/heatmap.js"></script>
+
+    <!-- Enhanced Sharpe Analysis modules -->
+    <script type="module" src="js/sharpe-analysis-service.js"></script>
+    <script type="module" src="js/sharpe-analysis-controls.js"></script>
+
+    <!-- Management modules -->
+    <script type="module" src="js/strategy-manager.js"></script>
+    <script type="module" src="js/strategy-list.js"></script>
+    <script type="module" src="js/strategy-form.js"></script>
+
+    <!-- Main application -->
+    <script type="module" src="js/dashboard.js"></script>
+
+    <!-- Service Worker Registration (for PWA support) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+
+    <!-- Error Tracking -->
+    <script>
+        window.addEventListener('error', (event) => {
+            console.error('Global error:', event.error);
+            // 可以在这里添加错误上报逻辑
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+            // 可以在这里添加错误上报逻辑
+        });
+    </script>
+
+    <!-- Performance Monitoring -->
+    <script>
+        // 监控页面加载性能
+        window.addEventListener('load', () => {
+            if ('performance' in window) {
+                const perfData = performance.getEntriesByType('navigation')[0];
+                console.log('Page Load Time:', perfData.loadEventEnd - perfData.fetchStart, 'ms');
+            }
+        });
+    </script>
+</body>
+</html>

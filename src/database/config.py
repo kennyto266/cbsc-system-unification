@@ -20,7 +20,7 @@ class DatabaseConfig:
     database_type: str = "postgresql"  # postgresql, sqlite
     host: str = "localhost"
     port: int = 5432
-    database: str = "cbsc_unified"
+    database: str = "cbsc_strategy"  # Match docker-compose.yml
     username: str = "cbsc_user"
     password: str = "cbsc_password"
     schema: str = "public"
