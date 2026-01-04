@@ -1,15 +1,35 @@
 import React from 'react'
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
+import { render, screen, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { ThemeProvider } from '@/contexts/ThemeContext'
+import { createMemoryHistory } from 'history'
+import { Router } from 'react-router-dom'
 import PerformanceAnalysis from '../PerformanceAnalysis'
-import { useGetStrategyQuery } from '../../../../store/api/apiSlice'
+
+// Simple mock store for Redux Provider
+const mockStore = {
+  getState: () => ({
+    api: {
+      config: { url: 'http://localhost:3007' },
+      queries: {},
+      mutations: {},
+      provided: {},
+      subscriptions: {},
+    },
+  }),
+  subscribe: () => () => {},
+  dispatch: () => ({}),
+}
 
 // Mock the API hooks
-jest.mock('../../../../store/api/apiSlice', () => ({
-  useGetStrategyQuery: jest.fn(),
-  useGetPerformanceQuery: jest.fn()
+const mockUseGetStrategyQuery = jest.fn()
+jest.mock('../../../store/api/apiSlice', () => ({
+  useGetStrategyQuery: () => mockUseGetStrategyQuery(),
+  useGetPerformanceQuery: jest.fn(),
+  apiSlice: {
+    reducer: () => ({}),
+    reducerPath: 'api',
+    middleware: () => () => (next) => (action) => next(action),
+  },
 }))
 
 // Mock recharts components
@@ -32,23 +52,17 @@ jest.mock('recharts', () => ({
   ReferenceLine: () => <div data-testid="mock-reference-line" />
 }))
 
-// Mock URL.createObjectURL for download functionality
-global.URL.createObjectURL = jest.fn(() => 'mock-url')
-global.URL.revokeObjectURL = jest.fn()
+// Mock ThemeContext
+jest.mock('../../../contexts/ThemeContext', () => ({
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}))
 
-// Test wrapper with router - 带路由的测试包装器
-const TestWrapper: React.FC<{ children: React.ReactNode; initialEntries?: string[] }> = ({
-  children,
-  initialEntries = ['/strategies/123/analysis']
-}) => (
-  <ThemeProvider>
-    <MemoryRouter initialEntries={initialEntries}>
-      <Routes>
-        <Route path="/strategies/:id/analysis" element={children} />
-      </Routes>
-    </MemoryRouter>
-  </ThemeProvider>
-)
+// Mock useParams
+const mockUseParams = jest.fn()
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useParams: () => mockUseParams(),
+}))
 
 // Mock strategy data
 const mockStrategy = {
@@ -66,7 +80,8 @@ describe('PerformanceAnalysis Component', () => {
 
   beforeEach(() => {
     // Reset mocks
-    ;(useGetStrategyQuery as jest.Mock).mockReturnValue({
+    mockUseParams.mockReturnValue({ id: '123' })
+    mockUseGetStrategyQuery.mockReturnValue({
       data: mockStrategy,
       isLoading: false,
       error: null
@@ -91,10 +106,12 @@ describe('PerformanceAnalysis Component', () => {
   // Basic rendering tests
   describe('Rendering', () => {
     test('renders with strategy data', () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       expect(screen.getByText('测试策略')).toBeInTheDocument()
@@ -102,10 +119,12 @@ describe('PerformanceAnalysis Component', () => {
     })
 
     test('renders performance metrics cards', () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       expect(screen.getByText('总回报')).toBeInTheDocument()
@@ -115,10 +134,12 @@ describe('PerformanceAnalysis Component', () => {
     })
 
     test('renders charts section', () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       expect(screen.getByText('资金曲线')).toBeInTheDocument()
@@ -128,10 +149,12 @@ describe('PerformanceAnalysis Component', () => {
     })
 
     test('renders risk metrics section', () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       expect(screen.getByText('风险指标')).toBeInTheDocument()
@@ -141,10 +164,12 @@ describe('PerformanceAnalysis Component', () => {
     })
 
     test('renders detailed statistics table', () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       expect(screen.getByText('详细统计')).toBeInTheDocument()
@@ -155,10 +180,12 @@ describe('PerformanceAnalysis Component', () => {
     })
 
     test('renders analysis summary', () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       expect(screen.getByText('分析总结')).toBeInTheDocument()
@@ -171,16 +198,18 @@ describe('PerformanceAnalysis Component', () => {
   // Loading state tests
   describe('Loading state', () => {
     test('shows loading spinner when loading strategy', () => {
-      ;(useGetStrategyQuery as jest.Mock).mockReturnValue({
+      mockUseGetStrategyQuery.mockReturnValue({
         data: null,
         isLoading: true,
         error: null
       })
 
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       const loadingSpinner = document.querySelector('.animate-spin')
@@ -191,16 +220,18 @@ describe('PerformanceAnalysis Component', () => {
   // Error state tests
   describe('Error state', () => {
     test('shows error message when strategy loading fails', () => {
-      ;(useGetStrategyQuery as jest.Mock).mockReturnValue({
+      mockUseGetStrategyQuery.mockReturnValue({
         data: null,
         isLoading: false,
         error: new Error('Failed to load strategy')
       })
 
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       expect(screen.getByText('加载策略失败')).toBeInTheDocument()
@@ -211,10 +242,12 @@ describe('PerformanceAnalysis Component', () => {
   // Period selector tests
   describe('Period selector', () => {
     test('renders all period options', () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       const periods = ['1天', '1周', '1月', '3月', '6月', '1年', '全部']
@@ -224,10 +257,12 @@ describe('PerformanceAnalysis Component', () => {
     })
 
     test('highlights selected period', () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       const selectedButton = screen.getByText('1年')
@@ -235,10 +270,12 @@ describe('PerformanceAnalysis Component', () => {
     })
 
     test('changes period when clicked', async () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       const monthButton = screen.getByText('1月')
@@ -259,10 +296,12 @@ describe('PerformanceAnalysis Component', () => {
       }
       ;(document.createElement as jest.Mock).mockReturnValue(mockLink)
 
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       const exportButton = screen.getByText('导出报告')
@@ -283,10 +322,12 @@ describe('PerformanceAnalysis Component', () => {
       const mockCreateObjectURL = global.URL.createObjectURL as jest.Mock
       mockCreateObjectURL.mockReturnValue('blob:mock-url')
 
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       const exportButton = screen.getByText('导出报告')
@@ -303,10 +344,12 @@ describe('PerformanceAnalysis Component', () => {
   // Performance metrics tests
   describe('Performance metrics display', () => {
     test('displays total return with correct color', () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       const totalReturnElement = screen.getByText(/\d+\.\d+%/)
@@ -315,10 +358,12 @@ describe('PerformanceAnalysis Component', () => {
     })
 
     test('displays risk level indicators correctly', () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       // Check for risk level badges (they contain text like "低风险", "中风险", "高风险")
@@ -327,14 +372,16 @@ describe('PerformanceAnalysis Component', () => {
     })
 
     test('displays performance indicators correctly', () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       // Check for performance level badges (they contain text like "优秀", "一般", "较差")
-      const performanceIndicators = screen.getAllTextMatching(/优秀|一般|较差/)
+      const performanceIndicators = screen.getAllByText(/优秀|一般|较差/)
       expect(performanceIndicators.length).toBeGreaterThan(0)
     })
   })
@@ -342,10 +389,12 @@ describe('PerformanceAnalysis Component', () => {
   // Chart rendering tests
   describe('Chart rendering', () => {
     test('renders all chart components', () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       // Check for mocked chart components
@@ -355,10 +404,12 @@ describe('PerformanceAnalysis Component', () => {
     })
 
     test('renders chart axes and grids', () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       expect(screen.getAllByTestId('mock-xaxis').length).toBeGreaterThan(0)
@@ -370,16 +421,18 @@ describe('PerformanceAnalysis Component', () => {
   // Edge cases tests
   describe('Edge cases', () => {
     test('handles missing strategy data gracefully', () => {
-      ;(useGetStrategyQuery as jest.Mock).mockReturnValue({
+      mockUseGetStrategyQuery.mockReturnValue({
         data: null,
         isLoading: false,
         error: null
       })
 
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       // Should not crash and should show no data message
@@ -387,10 +440,14 @@ describe('PerformanceAnalysis Component', () => {
     })
 
     test('handles strategy without ID', () => {
+      mockUseParams.mockReturnValue({ id: undefined })
+
+      const history = createMemoryHistory({ initialEntries: ['/strategies//analysis'] })
+
       render(
-        <TestWrapper initialEntries={['/strategies//analysis']}>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       // Should not crash when ID is missing
@@ -401,10 +458,12 @@ describe('PerformanceAnalysis Component', () => {
   // Accessibility tests
   describe('Accessibility', () => {
     test('has proper heading hierarchy', () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       // Check for main heading (h1)
@@ -418,10 +477,12 @@ describe('PerformanceAnalysis Component', () => {
     })
 
     test('supports keyboard navigation for period selector', async () => {
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       const firstPeriodButton = screen.getByText('1天')
@@ -440,10 +501,12 @@ describe('PerformanceAnalysis Component', () => {
     test('renders efficiently with large dataset', async () => {
       const startTime = performance.now()
 
+      const history = createMemoryHistory({ initialEntries: ['/strategies/123/analysis'] })
+
       render(
-        <TestWrapper>
+        <Router location={history.location} navigator={history}>
           <PerformanceAnalysis />
-        </TestWrapper>
+        </Router>
       )
 
       // Wait for component to fully render

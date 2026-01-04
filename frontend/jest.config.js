@@ -6,6 +6,11 @@ module.exports = {
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
 
+  // Ensure DOM is properly set up
+  testEnvironmentOptions: {
+    url: 'http://localhost:3000',
+  },
+
   // Module file extensions
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 
