@@ -3,6 +3,9 @@
  * 测试环境配置文件
  */
 
+// Import jest-dom for custom matchers
+import '@testing-library/jest-dom'
+
 // @ts-ignore
 import { TextEncoder, TextDecoder } from 'util'
 
