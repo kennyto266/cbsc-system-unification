@@ -39,6 +39,10 @@ class ObjectiveFunction:
         if len(returns) < 2:
             return 0.0
 
+        # Check for zero variance (constant returns) using small threshold
+        if returns.std() < 1e-10:
+            return 0.0
+
         # Calculate metrics
         sharpe = self._calculate_sharpe_ratio(returns)
         mdd = self._calculate_max_drawdown(returns)
@@ -58,6 +62,10 @@ class ObjectiveFunction:
             - self.beta * abs(mdd)
             + self.gamma * calmar
         )
+
+        # Final safety check
+        if np.isnan(score) or np.isinf(score):
+            return 0.0
 
         return float(score)
 
@@ -101,6 +109,10 @@ class ObjectiveFunction:
         if len(returns) < 2:
             return 0.0
 
+        # Check for zero variance using small threshold
+        if returns.std() < 1e-10:
+            return 0.0
+
         # Annualized return
         annual_return = (1 + returns.mean()) ** 252 - 1
 
@@ -112,6 +124,11 @@ class ObjectiveFunction:
             return 0.0
 
         calmar = annual_return / abs(mdd)
+
+        # Safety check for extreme values
+        if np.isnan(calmar) or np.isinf(calmar):
+            return 0.0
+
         return float(calmar)
 
     def calculate_metrics(self, returns: pd.Series) -> Dict[str, float]:
