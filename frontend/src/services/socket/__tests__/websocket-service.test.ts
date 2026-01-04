@@ -15,6 +15,7 @@ jest.mock('socket.io-client', () => ({
     emit: jest.fn(),
     disconnect: jest.fn(),
     removeAllListeners: jest.fn(),
+    once: jest.fn(),
   })),
 }));
 
@@ -29,6 +30,7 @@ describe('WebSocketService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
 
     mockSocket = {
       connected: false,
@@ -52,6 +54,7 @@ describe('WebSocketService', () => {
   });
 
   afterEach(() => {
+    jest.useRealTimers();
     service.destroy();
   });
 

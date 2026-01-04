@@ -9,11 +9,12 @@ global.fetch = jest.fn();
 
 describe('RealtimeManager', () => {
   let realtimeManager: RealtimeManager;
-  let mockWebSocketService: jest.Mocked<ReturnType<typeof WebSocketService>>;
+  let mockWebSocketService: any;
 
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
+    jest.useFakeTimers();
 
     // Create mock WebSocket service
     mockWebSocketService = {
@@ -39,6 +40,10 @@ describe('RealtimeManager', () => {
       enableWebSocket: true,
       enablePeriodicRefresh: true
     });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   afterEach(() => {
