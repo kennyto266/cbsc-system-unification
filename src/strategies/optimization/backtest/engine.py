@@ -29,19 +29,34 @@ class BacktestEngine:
         self.slippage = slippage
 
     def run(self, data: pd.DataFrame,
-            strategy: Callable) -> Dict[str, Any]:
+            strategy: Callable,
+            window_size: int = 50) -> Dict[str, Any]:
         """
         Run backtest with given strategy
 
         Args:
             data: DataFrame with OHLCV data
             strategy: Function that takes data window and returns position (-1, 0, 1)
+            window_size: Rolling window size for signal generation (default: 50)
 
         Returns:
             Dictionary with backtest results
+
+        Raises:
+            ValueError: If data is empty, missing 'close' column, or has insufficient rows
         """
+        # Input validation
+        if data.empty:
+            raise ValueError("Input data cannot be empty")
+
+        if 'close' not in data.columns:
+            raise ValueError("Data must contain 'close' column")
+
+        if len(data) < window_size:
+            raise ValueError(f"Data must have at least {window_size} rows (got {len(data)})")
+
         # Generate signals
-        signals = self._generate_signals(data, strategy)
+        signals = self._generate_signals(data, strategy, window_size)
 
         # Calculate returns
         returns = self._calculate_returns(data, signals)
@@ -49,16 +64,26 @@ class BacktestEngine:
         # Calculate metrics
         metrics = self._calculate_metrics(returns, data['close'])
 
+        # Add initial capital info to results
+        metrics['initial_capital'] = self.initial_capital
+        metrics['final_equity'] = self.initial_capital * (1 + metrics['total_return'])
+
         return metrics
 
     def _generate_signals(self, data: pd.DataFrame,
-                         strategy: Callable) -> pd.Series:
-        """Generate trading signals using strategy"""
+                         strategy: Callable,
+                         window_size: int) -> pd.Series:
+        """
+        Generate trading signals using strategy
+
+        Args:
+            data: Price data
+            strategy: Strategy function
+            window_size: Size of rolling window for signal generation
+        """
         signals = pd.Series(0, index=data.index)
 
         # Rolling window strategy application
-        window_size = 50  # Adjust based on strategy needs
-
         for i in range(window_size, len(data)):
             window = data.iloc[i-window_size:i]
             signal = strategy(window)
@@ -69,8 +94,8 @@ class BacktestEngine:
     def _calculate_returns(self, data: pd.DataFrame,
                           signals: pd.Series) -> pd.Series:
         """Calculate returns from signals"""
-        # Calculate price returns
-        price_returns = data['close'].pct_change()
+        # Calculate price returns (fill_method=None to avoid deprecation warning)
+        price_returns = data['close'].pct_change(fill_method=None)
 
         # Apply signals with lag (trade at next open)
         position = signals.shift(1)
