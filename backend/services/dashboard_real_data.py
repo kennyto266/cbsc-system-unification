@@ -16,6 +16,11 @@ from data_config import DataSourceConfig
 logger = logging.getLogger(__name__)
 
 
+class DashboardDataError(Exception):
+    """Dashboard 數據錯誤"""
+    pass
+
+
 class DashboardDataService:
     """Dashboard 真實數據服務"""
 
