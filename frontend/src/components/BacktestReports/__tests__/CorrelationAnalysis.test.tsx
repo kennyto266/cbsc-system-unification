@@ -3,6 +3,13 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import CorrelationAnalysis from '../CorrelationAnalysis';
 
+// Mock heroicons React icons
+jest.mock('@heroicons/react/24/outline', () => ({
+  ChartBarIcon: () => <div data-testid="chart-bar" />,
+  InformationCircleIcon: () => <div data-testid="information-circle" />,
+  AcademicCapIcon: () => <div data-testid="academic-cap" />,
+}));
+
 // Mock recharts
 jest.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

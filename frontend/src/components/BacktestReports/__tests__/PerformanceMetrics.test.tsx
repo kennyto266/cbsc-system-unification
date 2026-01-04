@@ -3,6 +3,16 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import PerformanceMetrics from '../PerformanceMetrics';
 
+// Mock heroicons React icons
+jest.mock('@heroicons/react/24/outline', () => ({
+  ArrowTrendingUpIcon: () => <div data-testid="arrow-trending-up" />,
+  ArrowTrendingDownIcon: () => <div data-testid="arrow-trending-down" />,
+  ShieldCheckIcon: () => <div data-testid="shield-check" />,
+  CurrencyDollarIcon: () => <div data-testid="currency-dollar" />,
+  ChartBarIcon: () => <div data-testid="chart-bar" />,
+  InformationCircleIcon: () => <div data-testid="information-circle" />,
+}));
+
 // Mock Recharts components
 jest.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
