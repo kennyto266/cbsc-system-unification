@@ -6,6 +6,19 @@ import { TextEncoder, TextDecoder } from 'util'
 global.TextEncoder = TextEncoder as any
 global.TextDecoder = TextDecoder as any
 
+// Mock window dimensions for useResponsive hook
+Object.defineProperty(window, 'innerWidth', {
+  writable: true,
+  configurable: true,
+  value: 1024,
+})
+
+Object.defineProperty(window, 'innerHeight', {
+  writable: true,
+  configurable: true,
+  value: 768,
+})
+
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
