@@ -244,6 +244,33 @@ jest.mock('@monaco-editor/react', () => ({
   Editor: () => null,
 }))
 
+// Mock @heroicons/react
+const React = require('react')
+jest.mock('@heroicons/react/24/outline', () => {
+  const createIconMock = (displayName: string) => {
+    const IconComponent = ({ className = '' }: { className?: string }) =>
+      React.createElement('svg', {
+        className,
+        'data-testid': `icon-${displayName}`,
+        'aria-hidden': 'true'
+      })
+    IconComponent.displayName = displayName
+    return IconComponent
+  }
+
+  return {
+    ArrowTrendingUpIcon: createIconMock('ArrowTrendingUpIcon'),
+    ArrowTrendingDownIcon: createIconMock('ArrowTrendingDownIcon'),
+    ShieldCheckIcon: createIconMock('ShieldCheckIcon'),
+    CurrencyDollarIcon: createIconMock('CurrencyDollarIcon'),
+    ChartBarIcon: createIconMock('ChartBarIcon'),
+    InformationCircleIcon: createIconMock('InformationCircleIcon'),
+    ChartPieIcon: createIconMock('ChartPieIcon'),
+    ArrowsRightLeftIcon: createIconMock('ArrowsRightLeftIcon'),
+    AcademicCapIcon: createIconMock('AcademicCapIcon'),
+  }
+})
+
 // Mock file download
 global.URL.createObjectURL = jest.fn(() => 'mock-url')
 global.URL.revokeObjectURL = jest.fn()
