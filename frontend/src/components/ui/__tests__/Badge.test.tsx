@@ -1,15 +1,7 @@
 import React from 'react'
 import { render, screen, cleanup } from '@testing-library/react'
 import { Badge } from '../Badge'
-import { ThemeProvider } from '@/contexts/ThemeContext'
 import type { BadgeProps } from '../Badge'
-
-// Test wrapper - 测试包装器
-const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ThemeProvider>
-    {children}
-  </ThemeProvider>
-)
 
 describe('Badge Component', () => {
   // Helper function to render Badge with props
@@ -17,11 +9,7 @@ describe('Badge Component', () => {
     const defaultProps: BadgeProps = {
       children: 'Test Badge'
     }
-    return render(
-      <TestWrapper>
-        <Badge {...defaultProps} {...props} />
-      </TestWrapper>
-    )
+    return render(<Badge {...defaultProps} {...props} />)
   }
 
   afterEach(() => {
@@ -250,9 +238,9 @@ describe('Badge Component', () => {
       expect(badge).toBeInTheDocument()
       expect(badge).toHaveAttribute('style')
       // Style properties are applied via inline styles
-      expect(badge.style.backgroundColor).toBe('')
-      expect(badge.style.color).toBe('')
-      expect(badge.style.fontWeight).toBe('')
+      expect(badge.style.backgroundColor).toBe('red')
+      expect(badge.style.color).toBe('white')
+      expect(badge.style.fontWeight).toBe('bold')
     })
   })
 
@@ -296,12 +284,10 @@ describe('Badge Component', () => {
   describe('Integration', () => {
     test('works inside other components', () => {
       render(
-        <TestWrapper>
-          <div className="flex items-center space-x-2">
-            <span>Notifications:</span>
-            <Badge variant="error" size="sm">3</Badge>
-          </div>
-        </TestWrapper>
+        <div className="flex items-center space-x-2">
+          <span>Notifications:</span>
+          <Badge variant="error" size="sm">3</Badge>
+        </div>
       )
 
       expect(screen.getByText('Notifications:')).toBeInTheDocument()
@@ -323,7 +309,7 @@ describe('Badge Component', () => {
       ]
 
       render(
-        <TestWrapper>
+        <div>
           {statuses.map(status => (
             <div key={status.label} className="flex items-center space-x-2">
               <Badge
@@ -337,7 +323,7 @@ describe('Badge Component', () => {
               <span>{status.label}</span>
             </div>
           ))}
-        </TestWrapper>
+        </div>
       )
 
       statuses.forEach(status => {
@@ -349,19 +335,17 @@ describe('Badge Component', () => {
 
     test('works for notification count', () => {
       render(
-        <TestWrapper>
-          <button className="relative">
-            <span>Inbox</span>
-            <Badge
-              variant="error"
-              size="xs"
-              className="absolute -top-1 -right-1"
-              data-testid="notification-badge"
-            >
-              99+
-            </Badge>
-          </button>
-        </TestWrapper>
+        <button className="relative">
+          <span>Inbox</span>
+          <Badge
+            variant="error"
+            size="xs"
+            className="absolute -top-1 -right-1"
+            data-testid="notification-badge"
+          >
+            99+
+          </Badge>
+        </button>
       )
 
       const badge = screen.getByTestId('notification-badge')
@@ -412,19 +396,17 @@ describe('Badge Component', () => {
     test('renders many badges efficiently', () => {
       const count = 100
       render(
-        <TestWrapper>
-          <div data-testid="badge-container">
-            {Array.from({ length: count }, (_, i) => (
-              <Badge
-                key={i}
-                variant={i % 2 === 0 ? 'primary' : 'success'}
-                size="sm"
-              >
-                Badge {i}
-              </Badge>
-            ))}
-          </div>
-        </TestWrapper>
+        <div data-testid="badge-container">
+          {Array.from({ length: count }, (_, i) => (
+            <Badge
+              key={i}
+              variant={i % 2 === 0 ? 'primary' : 'success'}
+              size="sm"
+            >
+              Badge {i}
+            </Badge>
+          ))}
+        </div>
       )
 
       const container = screen.getByTestId('badge-container')
