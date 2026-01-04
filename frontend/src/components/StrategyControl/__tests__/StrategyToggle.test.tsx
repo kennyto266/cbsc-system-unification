@@ -105,6 +105,7 @@ describe('StrategyToggleEnhanced', () => {
       data: { success: true },
     });
 
+    const { toast } = require('react-toastify');
     const onToggle = jest.fn();
     renderComponent({ onToggle });
 
@@ -122,7 +123,11 @@ describe('StrategyToggleEnhanced', () => {
       expect(onToggle).toHaveBeenCalledWith(mockStrategy.id, true);
     });
 
-    expect(screen.getByText('策略 "测试策略" 已成功启用')).toBeInTheDocument();
+    // Check that success toast was called
+    expect(toast.success).toHaveBeenCalledWith(
+      '策略 "测试策略" 已成功启用',
+      expect.any(Object)
+    );
   });
 
   it('handles toggle to disabled state with confirmation', async () => {
