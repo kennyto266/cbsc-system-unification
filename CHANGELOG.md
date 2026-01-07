@@ -1,3 +1,75 @@
+# CBSC Strategy Management System Changelog
+
+## [2026-01-07] - AI Strategy Development Tool v0.1.0
+
+### 🎯 Overview
+Initial release of the AI Strategy Development Tool - a VSCode extension and backend service that enables users to create, test, and deploy quantitative trading strategies using GLM 4.7 AI.
+
+### ✨ Added
+- **VSCode Extension (ai-strategy-vscode)**
+  - AI-powered strategy generation from natural language
+  - Interactive chat interface with GLM 4.7
+  - Jupyter notebook integration
+  - One-click code insertion into notebooks
+  - Strategy execution and testing
+
+- **Backend Service (ai-strategy-service)**
+  - FastAPI-based REST API
+  - GLM 4.7 AI integration
+  - Strategy generation endpoint
+  - CBSC system deployment integration
+  - Notebook template system
+  - Jupyter execution service
+
+- **Pre-built Strategy Templates**
+  - Breakout strategy (moving average confirmation)
+  - Mean reversion strategy (Bollinger Bands)
+  - Extensible template system
+
+- **Documentation**
+  - Complete setup guide (docs/setup-guide.md)
+  - API reference documentation (docs/api-reference.md)
+  - Environment configuration templates
+  - Troubleshooting guides
+
+### 🔧 Technical Stack
+- **Frontend**: TypeScript, VSCode Extension API
+- **Backend**: Python 3.10+, FastAPI, Uvicorn
+- **AI**: GLM-4 Plus API (智譜AI)
+- **Notebooks**: Jupyter, nbconvert, ipykernel
+- **Testing**: Jest, pytest, pytest-asyncio
+
+### 📦 Dependencies
+- fastapi==0.104.1
+- uvicorn[standard]==0.24.0
+- httpx==0.25.1
+- jupyter==1.0.0
+- pandas==2.1.3
+- numpy==1.26.2
+- matplotlib==3.8.2
+
+### 📝 API Endpoints
+- POST /api/strategy/generate - Generate strategies from descriptions
+- POST /api/strategy/deploy - Deploy to CBSC system
+- GET /api/strategy/sync/{user_id} - Sync strategies
+- GET /api/templates - List available templates
+- POST /api/notebooks/execute - Execute notebooks
+- POST /api/notebooks/validate - Validate notebooks
+
+### 🧪 Testing
+- VSCode extension tests: 100% passing
+- Backend service tests: 100% passing
+- E2E integration tests: Complete workflow coverage
+- Test coverage: >80%
+
+### 📚 Documentation
+- Setup guide with troubleshooting
+- Complete API reference
+- Environment configuration examples
+- Usage examples and tutorials
+
+---
+
 # CCPM Changelog
 
 ## [2025-01-24] - Major Cleanup & Issue Resolution Release
