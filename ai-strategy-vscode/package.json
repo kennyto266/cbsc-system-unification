@@ -82,7 +82,14 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile",
-    "test": "jest src/test/"
+    "test": "jest src/test/",
+    "test:e2e": "pytest ../ai-strategy-service/tests/test_e2e.py -v",
+    "test:all": "npm run test && npm run test:e2e",
+    "test:backend": "cd ../ai-strategy-service && pytest tests/ -v",
+    "test:watch": "jest --watch",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package",
+    "install:all": "npm install && cd ../ai-strategy-service && pip install -r requirements.txt"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
