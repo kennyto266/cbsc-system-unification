@@ -46,6 +46,13 @@ export interface Strategy {
   volatility?: number;
   trading_frequency?: 'low' | 'medium' | 'high' | 'monthly' | 'daily' | 'weekly';
   grade?: string;
+
+  // AI-generated strategy fields
+  aiGenerated?: boolean;
+  sourceNotebook?: string;
+  aiModelVersion?: string;  // e.g., "glm-4-plus"
+  validationStatus?: 'pending' | 'validated' | 'failed';
+  lastValidated?: string;
 }
 
 // 向後兼容的策略接口

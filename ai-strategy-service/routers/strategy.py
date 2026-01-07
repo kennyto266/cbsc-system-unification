@@ -14,6 +14,7 @@ import re
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from services.glm_service import GLMService, GLMMessage
+from services.cbsc_integration import cbsc_integration
 
 router = APIRouter(prefix="/api/strategy", tags=["strategy"])
 
@@ -301,3 +302,100 @@ def contains_strategy_code(text: str) -> bool:
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "strategy-generation"}
+
+
+# Deployment and integration endpoints
+
+class DeployRequest(BaseModel):
+    """Request model for deploying a strategy to CBSC"""
+    notebook_path: str = Field(..., description="Path to the strategy notebook file")
+    strategy_name: str = Field(..., description="Name for the strategy")
+    user_id: str = Field(..., description="User ID who is deploying the strategy")
+
+
+class ValidateRequest(BaseModel):
+    """Request model for validating a strategy before deployment"""
+    notebook_path: str = Field(..., description="Path to the strategy notebook file")
+
+
+@router.post("/deploy")
+async def deploy_strategy(request: DeployRequest):
+    """
+    Deploy a generated strategy to the CBSC system
+
+    This endpoint:
+    1. Extracts parameters from the notebook
+    2. Creates a strategy configuration
+    3. Registers it with the CBSC backend
+    4. Returns the strategy ID
+
+    Args:
+        request: Deployment request with notebook path and strategy info
+
+    Returns:
+        Deployment result with strategy ID
+    """
+    try:
+        result = await cbsc_integration.deploy_strategy(
+            notebook_path=request.notebook_path,
+            strategy_name=request.strategy_name,
+            user_id=request.user_id
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Strategy deployment failed: {str(e)}"
+        )
+
+
+@router.post("/validate")
+async def validate_strategy(request: ValidateRequest):
+    """
+    Validate a strategy notebook before deployment
+
+    Performs validation checks:
+    - Valid JSON structure
+    - Required cells present
+    - Parameters defined
+    - No syntax errors
+
+    Args:
+        request: Validation request with notebook path
+
+    Returns:
+        Validation result with status and any errors/warnings
+    """
+    try:
+        result = await cbsc_integration.validate_strategy_before_deployment(
+            notebook_path=request.notebook_path
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Validation failed: {str(e)}"
+        )
+
+
+@router.get("/sync/{user_id}")
+async def sync_strategies(user_id: str):
+    """
+    Sync strategies to personal dashboard
+
+    Fetches all strategies for a user from the CBSC system.
+
+    Args:
+        user_id: User ID to sync strategies for
+
+    Returns:
+        Sync result with strategy count and list
+    """
+    try:
+        result = await cbsc_integration.sync_to_dashboard(user_id)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Sync failed: {str(e)}"
+        )
