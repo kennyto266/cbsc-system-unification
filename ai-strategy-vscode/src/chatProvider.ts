@@ -6,6 +6,30 @@
 import * as vscode from 'vscode';
 import { GLMClient } from './api/glmClient';
 
+/**
+ * Keywords that trigger strategy generation mode
+ */
+const STRATEGY_KEYWORDS = [
+  'strategy',
+  'trading',
+  'backtest',
+  'algorithm',
+  'quantitative',
+  'breakout',
+  'mean reversion',
+  'momentum',
+  'buy',
+  'sell',
+  'signal',
+  'indicator',
+  'moving average',
+  'bollinger',
+  'rsi',
+  'macd',
+  'portfolio',
+  'position'
+] as const;
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -62,15 +86,8 @@ export class ChatProvider {
    * @returns True if message contains strategy-related keywords
    */
   private isStrategyRequest(message: string): boolean {
-    const strategyKeywords = [
-      'strategy', 'trading', 'algorithm', 'backtest',
-      'buy', 'sell', 'signal', 'indicator', 'moving average',
-      'breakout', 'momentum', 'mean reversion', 'bollinger',
-      'rsi', 'macd', 'portfolio', 'position'
-    ];
-
     const lowerMessage = message.toLowerCase();
-    return strategyKeywords.some(keyword => lowerMessage.includes(keyword));
+    return STRATEGY_KEYWORDS.some(keyword => lowerMessage.includes(keyword));
   }
 
   /**

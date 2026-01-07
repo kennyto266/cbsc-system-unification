@@ -82,7 +82,7 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile",
-    "test": "node ./out/test/runTest.js"
+    "test": "jest src/test/"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

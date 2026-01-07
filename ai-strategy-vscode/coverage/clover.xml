@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1767758279126" clover="3.2.0">
+  <project timestamp="1767758279126" name="All files">
+    <metrics statements="36" coveredstatements="32" conditionals="0" coveredconditionals="0" methods="14" coveredmethods="10" elements="50" coveredelements="42" complexity="0" loc="36" ncloc="36" packages="1" files="2" classes="2"/>
+    <file name="notebookTemplate.ts" path="C:\Users\Penguin8n\CODEX--\ai-strategy-vscode\src\templates\notebookTemplate.ts">
+      <metrics statements="9" coveredstatements="6" conditionals="0" coveredconditionals="0" methods="6" coveredmethods="3"/>
+      <line num="33" count="2" type="stmt"/>
+      <line num="36" count="24" type="stmt"/>
+      <line num="39" count="24" type="stmt"/>
+      <line num="40" count="24" type="stmt"/>
+      <line num="49" count="132" type="stmt"/>
+      <line num="62" count="4" type="stmt"/>
+      <line num="85" count="0" type="stmt"/>
+      <line num="93" count="0" type="stmt"/>
+      <line num="101" count="0" type="stmt"/>
+    </file>
+    <file name="templateManager.ts" path="C:\Users\Penguin8n\CODEX--\ai-strategy-vscode\src\templates\templateManager.ts">
+      <metrics statements="27" coveredstatements="26" conditionals="0" coveredconditionals="0" methods="8" coveredmethods="7"/>
+      <line num="7" count="1" type="stmt"/>
+      <line num="14" count="1" type="stmt"/>
+      <line num="18" count="9" type="stmt"/>
+      <line num="19" count="9" type="stmt"/>
+      <line num="26" count="9" type="stmt"/>
+      <line num="27" count="9" type="stmt"/>
+      <line num="35" count="9" type="stmt"/>
+      <line num="41" count="9" type="stmt"/>
+      <line num="44" count="9" type="stmt"/>
+      <line num="58" count="9" type="stmt"/>
+      <line num="78" count="9" type="stmt"/>
+      <line num="98" count="9" type="stmt"/>
+      <line num="119" count="9" type="stmt"/>
+      <line num="129" count="9" type="stmt"/>
+      <line num="151" count="9" type="stmt"/>
+      <line num="159" count="9" type="stmt"/>
+      <line num="165" count="9" type="stmt"/>
+      <line num="168" count="9" type="stmt"/>
+      <line num="182" count="9" type="stmt"/>
+      <line num="197" count="9" type="stmt"/>
+      <line num="216" count="9" type="stmt"/>
+      <line num="237" count="9" type="stmt"/>
+      <line num="247" count="9" type="stmt"/>
+      <line num="270" count="9" type="stmt"/>
+      <line num="279" count="7" type="stmt"/>
+      <line num="287" count="4" type="stmt"/>
+      <line num="299" count="0" type="stmt"/>
+    </file>
+  </project>
+</coverage>
