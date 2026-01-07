@@ -18,6 +18,16 @@ from services.cbsc_integration import cbsc_integration
 
 router = APIRouter(prefix="/api/strategy", tags=["strategy"])
 
+# Global service instance (initialized on first use)
+_glm_service = None
+
+def get_glm_service():
+    """Get or create GLM service singleton"""
+    global _glm_service
+    if _glm_service is None:
+        _glm_service = GLMService()
+    return _glm_service
+
 
 class StrategyRequest(BaseModel):
     """Request model for strategy generation"""
@@ -59,7 +69,7 @@ async def generate_strategy(request: StrategyRequest):
         StrategyResponse with generated code, explanation, and parameters
     """
     try:
-        glm_service = GLMService()
+        glm_service = get_glm_service()
 
         # Construct system prompt with context
         system_prompt_content = f"""You are a quantitative trading strategy expert. Generate Python code for trading strategies.
@@ -115,7 +125,8 @@ Ensure the code is production-ready and follows best practices."""
         # Extract parameters
         parameters = extract_parameters(ai_response)
 
-        await glm_service.close()
+        # Note: Don't close the client - singleton pattern keeps it alive
+        # await glm_service.close()
 
         return StrategyResponse(
             code=code_cells,
@@ -140,7 +151,7 @@ async def chat(request: ChatRequest):
         ChatResponse with AI response
     """
     try:
-        glm_service = GLMService()
+        glm_service = get_glm_service()
 
         # Build message list
         messages = []
@@ -156,7 +167,8 @@ async def chat(request: ChatRequest):
         # Get AI response
         response = await glm_service.chat(messages)
 
-        await glm_service.close()
+        # Note: Don't close the client - singleton pattern keeps it alive
+        # await glm_service.close()
 
         # Check if response contains strategy code
         is_strategy = contains_strategy_code(response)
