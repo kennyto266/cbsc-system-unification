@@ -107,4 +107,13 @@ Return ONLY valid Python code that can be executed in a Jupyter notebook.`
 
     return await this.chat([systemPrompt, userMessage]);
   }
+
+  /**
+   * Cleanup method for consistency with Python service
+   * No-op for fetch-based client but maintains API compatibility
+   */
+  async close(): Promise<void> {
+    // No cleanup needed for fetch API
+    // Kept for API compatibility with Python service
+  }
 }

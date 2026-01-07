@@ -181,4 +181,27 @@ describe('GLMClient', () => {
 
     await expect(client.chat(messages)).rejects.toThrow();
   });
+
+  it('should have close method for API compatibility', async () => {
+    // Verify close method exists and is callable
+    expect(typeof client.close).toBe('function');
+
+    // close() should resolve without errors
+    await expect(client.close()).resolves.toBeUndefined();
+
+    // Multiple close calls should be safe
+    await expect(client.close()).resolves.toBeUndefined();
+  });
+
+  it('should maintain API consistency with Python service', async () => {
+    // Verify GLMClient has the same interface as Python GLMService
+    expect(client.chat).toBeDefined();
+    expect(client.generateStrategy).toBeDefined();
+    expect(client.close).toBeDefined();
+
+    // All methods should be functions
+    expect(typeof client.chat).toBe('function');
+    expect(typeof client.generateStrategy).toBe('function');
+    expect(typeof client.close).toBe('function');
+  });
 });
