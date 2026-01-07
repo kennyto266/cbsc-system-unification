@@ -34,7 +34,32 @@ jest.mock('../../../services/apiClient', () => ({
     put: jest.fn(),
     delete: jest.fn(),
   },
-}));
+}))
+
+// Mock framer-motion to avoid matchMedia issues
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+    button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  },
+  AnimatePresence: ({ children }: any) => <>{children}</>,
+}))
+
+// Mock browser APIs
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+});
 
 import React from 'react';
 import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
@@ -45,17 +70,17 @@ import '@testing-library/jest-dom';
 
 import { wsManager } from '../../../services/websocketManager';
 import UnifiedDashboard from '../UnifiedDashboard';
-import dashboardReducer from '../../../store/slices/dashboardSlice';
-import strategyReducer from '../../../store/slices/strategySlice';
-import authReducer from '../../../store/slices/authSlice';
+import { dashboardSlice } from '../../../store/slices/dashboardSlice';
+import { strategySlice } from '../../../store/slices/strategySlice';
+import { authSlice } from '../../../store/slices/authSlice';
 
 // Create test store
 function createTestStore(preloadedState = {}) {
   return configureStore({
     reducer: {
-      dashboard: dashboardReducer,
-      strategy: strategyReducer,
-      auth: authReducer,
+      dashboard: dashboardSlice.reducer,
+      strategy: strategySlice.reducer,
+      auth: authSlice.reducer,
     },
     preloadedState: {
       dashboard: {
@@ -131,6 +156,18 @@ describe('UnifiedDashboard Component', () => {
         // No-op unsubscribe function
       };
     });
+
+    // Ensure matchMedia is properly mocked
+    window.matchMedia = jest.fn().mockImplementation(query => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })) as any;
   });
 
   afterEach(() => {

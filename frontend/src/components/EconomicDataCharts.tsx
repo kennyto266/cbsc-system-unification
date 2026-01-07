@@ -8,6 +8,7 @@ import {
   ComposedChart,
   Line,
   Bar,
+  BarChart,
   Scatter,
   ScatterChart,
   LineChart,
@@ -427,7 +428,7 @@ export default function EconomicDataCharts({
     return (
       <div className={`flex items-center justify-center h-96 ${className}`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" role="status" aria-label="Loading"></div>
           <p className="mt-4 text-gray-600">Loading economic data...</p>
         </div>
       </div>
@@ -453,6 +454,7 @@ export default function EconomicDataCharts({
           {['timeSeries', 'scatter', 'heatmap', 'correlation', 'comparison'].map((type) => (
             <button
               key={type}
+              type="button"
               onClick={() => {/* Handle chart type change */}}
               className={`px-4 py-2 rounded-md font-medium transition-colors ${
                 chartType === type

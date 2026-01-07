@@ -263,16 +263,30 @@ class StrategyDataService {
   constructor() {
     this.httpClient = new HttpClient();
     this.cache = new DataCache();
-    this.wsService = getWebSocketService();
 
-    // Setup WebSocket listeners for real-time updates
-    this.setupWebSocketListeners();
+    // Try to get WebSocket service, but don't fail if not available (e.g., in tests)
+    try {
+      this.wsService = getWebSocketService();
+    } catch (error) {
+      console.warn('[StrategyDataService] WebSocket service not available:', error);
+      this.wsService = null;
+    }
 
-    // Periodically clean cache
-    setInterval(() => this.cache.cleanup(), 60000); // Clean every minute
+    // Setup WebSocket listeners for real-time updates (only if wsService is available)
+    if (this.wsService) {
+      this.setupWebSocketListeners();
+    }
+
+    // Periodically clean cache - store interval ID for cleanup
+    const cleanupInterval = setInterval(() => this.cache.cleanup(), 60000);
+    this.refreshIntervals.set('cache_cleanup', cleanupInterval);
   }
 
   private setupWebSocketListeners(): void {
+    if (!this.wsService) {
+      return; // Skip if WebSocket service is not available
+    }
+
     // Listen for strategy updates
     this.wsService.on('message', (data: any) => {
       switch (data.type) {
@@ -534,8 +548,18 @@ class StrategyDataService {
   }
 }
 
-// Create and export singleton instance
-const strategyDataService = new StrategyDataService();
+// Lazy initialization for singleton to allow mocking in tests
+let _strategyDataService: StrategyDataService | null = null;
 
-export default strategyDataService;
+const getStrategyDataServiceInstance = (): StrategyDataService => {
+  if (!_strategyDataService) {
+    _strategyDataService = new StrategyDataService();
+  }
+  return _strategyDataService;
+};
+
+// Export the class and lazy-loaded singleton
 export { StrategyDataService, DataCache, HttpClient };
+
+// Default export is the singleton getter
+export default getStrategyDataServiceInstance();

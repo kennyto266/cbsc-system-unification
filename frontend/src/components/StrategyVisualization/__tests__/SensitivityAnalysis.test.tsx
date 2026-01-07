@@ -3,31 +3,64 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import { SensitivityAnalysis } from '../SensitivityAnalysis'
 
-// Mock recharts
-jest.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="responsive-container">{children}</div>
-  ),
-  LineChart: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="line-chart">{children}</div>
-  ),
-  Line: (props: any) => <div data-testid="line" {...props} />,
-  XAxis: (props: any) => <div data-testid="x-axis" {...props} />,
-  YAxis: (props: any) => <div data-testid="y-axis" {...props} />,
-  CartesianGrid: (props: any) => <div data-testid="cartesian-grid" {...props} />,
-  Tooltip: (props: any) => <div data-testid="tooltip" {...props} />,
-  Legend: (props: any) => <div data-testid="legend" {...props} />,
-  ScatterChart: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="scatter-chart">{children}</div>
-  ),
-  Scatter: (props: any) => <div data-testid="scatter" {...props} />,
-  Cell: (props: any) => <div data-testid="cell" {...props} />,
-  Surface: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="surface">{children}</div>
-  )
-}))
+// Mock recharts with prop filtering
+jest.mock('recharts', () => {
+  const React = require('react')
+  const RECHARTS_PROPS = [
+    'dataKey', 'name', 'data', 'cx', 'cy', 'r', 'fill', 'stroke', 'strokeWidth',
+    'labelLine', 'outerRadius', 'innerRadius', 'startAngle', 'endAngle',
+    'label', 'legendType', 'hide', 'barSize', 'barGap', 'barCategoryGap',
+    'tickFormatter', 'ticks', 'interval', 'angle', 'domain', 'type',
+    'connectNulls', 'isAnimationActive', 'animationBegin', 'animationDuration',
+    'layout', 'stackOffset', 'stackId', 'unit', 'nameKey', 'width', 'height',
+    'min', 'max', 'padding', 'allowDataOverflow', 'margin', 'reverse',
+    'x', 'y', 'z', 'line', 'lineType', 'dot', 'activeDot', 'hide',
+    'isFront', 'background', 'clockwise', 'textBreakPoints'
+  ]
 
-jest.mock('../../contexts/ThemeContext', () => ({
+  const filterProps = (props: any) => {
+    const filtered: any = {}
+    const dataAttrs: any = {}
+    Object.entries(props).forEach(([key, value]) => {
+      if (RECHARTS_PROPS.includes(key)) {
+        // Skip Recharts props
+      } else if (key.startsWith('data-')) {
+        dataAttrs[key] = value
+      } else if (key === 'dot' && value === false) {
+        // Convert boolean false to string for DOM
+        filtered[key] = 'false'
+      } else {
+        filtered[key] = value
+      }
+    })
+    return { ...filtered, ...dataAttrs }
+  }
+
+  return {
+    ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+      React.createElement('div', { 'data-testid': 'responsive-container' }, children)
+    ),
+    LineChart: ({ children }: { children: React.ReactNode }) => (
+      React.createElement('div', { 'data-testid': 'line-chart' }, children)
+    ),
+    Line: (props: any) => React.createElement('div', { 'data-testid': 'line', ...filterProps(props) }),
+    XAxis: (props: any) => React.createElement('div', { 'data-testid': 'x-axis', ...filterProps(props) }),
+    YAxis: (props: any) => React.createElement('div', { 'data-testid': 'y-axis', ...filterProps(props) }),
+    CartesianGrid: (props: any) => React.createElement('div', { 'data-testid': 'cartesian-grid', ...filterProps(props) }),
+    Tooltip: (props: any) => React.createElement('div', { 'data-testid': 'tooltip', ...filterProps(props) }),
+    Legend: (props: any) => React.createElement('div', { 'data-testid': 'legend', ...filterProps(props) }),
+    ScatterChart: ({ children }: { children: React.ReactNode }) => (
+      React.createElement('div', { 'data-testid': 'scatter-chart' }, children)
+    ),
+    Scatter: (props: any) => React.createElement('div', { 'data-testid': 'scatter', ...filterProps(props) }),
+    Cell: (props: any) => React.createElement('div', { 'data-testid': 'cell', ...filterProps(props) }),
+    Surface: ({ children }: { children: React.ReactNode }) => (
+      React.createElement('div', { 'data-testid': 'surface' }, children)
+    )
+  }
+})
+
+jest.mock('@/contexts/ThemeContext', () => ({
   useTheme: () => ({
     resolvedTheme: 'light'
   }),
@@ -109,7 +142,8 @@ describe('SensitivityAnalysis', () => {
     render(<SensitivityAnalysis {...defaultProps} />)
 
     expect(screen.getByTestId('line-chart')).toBeInTheDocument()
-    expect(screen.getByTestId('line')).toBeInTheDocument()
+    const lines = screen.getAllByTestId('line')
+    expect(lines.length).toBeGreaterThan(0)
   })
 
   it('shows multiple metrics in chart', () => {

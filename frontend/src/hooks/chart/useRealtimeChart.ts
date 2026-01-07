@@ -120,14 +120,51 @@ const DEFAULT_CONFIG: Partial<RealtimeChartConfig> = {
 };
 
 // Utility functions
-const debounce = <T extends (...args: any[]) => any>(
+const createAccumulatingDebounce = <T extends (...args: any[]) => any>(
   func: T,
-  wait: number
+  wait: number,
+  getIsPaused: () => boolean
 ): ((...args: Parameters<T>) => void) => {
-  let timeout: NodeJS.Timeout;
+  let timeout: NodeJS.Timeout | undefined;
+  let accumulatedPoints: any[] = [];
+  let flushScheduled = false;
+
   return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
+    // Accumulate points if the first arg is an array
+    if (Array.isArray(args[0])) {
+      accumulatedPoints.push(...args[0]);
+    } else {
+      accumulatedPoints.push(...args);
+    }
+
+    // If wait is 0, execute immediately and synchronously
+    if (wait === 0) {
+      // Execute immediately if not paused
+      if (!getIsPaused() && accumulatedPoints.length > 0) {
+        func(accumulatedPoints as Parameters<T>);
+      }
+      accumulatedPoints = [];
+      return;
+    }
+
+    // For non-zero wait, use debounce with setTimeout
+    if (timeout !== undefined) {
+      clearTimeout(timeout);
+    }
+
+    // Schedule the flush, but only once
+    if (!flushScheduled) {
+      flushScheduled = true;
+      timeout = setTimeout(() => {
+        // Check pause state at execution time, not at call time
+        if (!getIsPaused() && accumulatedPoints.length > 0) {
+          func(accumulatedPoints as Parameters<T>);
+        }
+        accumulatedPoints = [];
+        flushScheduled = false;
+        timeout = undefined;
+      }, wait);
+    }
   };
 };
 
@@ -178,11 +215,21 @@ export const useRealtimeChart = (config: RealtimeChartConfig): UseRealtimeChartR
   const lastDataRateCalculation = useRef(Date.now());
   const recentDataPoints = useRef<ChartDataPoint[]>([]);
   const timeoutRef = useRef<NodeJS.Timeout>();
+  const isPausedRef = useRef(isPaused);
+  // Ref to hold debounce state that persists across re-renders
+  const debounceStateRef = useRef<{
+    accumulatedPoints: ChartDataPoint[];
+    flushScheduled: boolean;
+  }>({
+    accumulatedPoints: [],
+    flushScheduled: false,
+  });
 
-  // Update ref when data changes
+  // Update refs when state changes
   useEffect(() => {
     dataRef.current = data;
-  }, [data]);
+    isPausedRef.current = isPaused;
+  }, [data, isPaused]);
 
   // WebSocket connection
   const ws = useWebSocket(
@@ -207,70 +254,168 @@ export const useRealtimeChart = (config: RealtimeChartConfig): UseRealtimeChartR
     }
   );
 
+  // Memoize config to prevent unnecessary recreates
+  const memoizedConfig = useMemo(() => finalConfig, [
+    finalConfig.channelId,
+    finalConfig.maxDataPoints,
+    finalConfig.updateThrottleMs,
+    finalConfig.enableDeduplication,
+    finalConfig.dataWindowMs,
+    finalConfig.enableDebug,
+  ]);
+
   // Data processing function with debouncing
-  const processNewData = useCallback(
-    debounce((newPoints: ChartDataPoint[]) => {
-      if (isPaused || newPoints.length === 0) return;
+  const processNewData = useCallback((pointsToAdd: ChartDataPoint[]) => {
+    // Accumulate points in the ref
+    if (Array.isArray(pointsToAdd)) {
+      debounceStateRef.current.accumulatedPoints.push(...pointsToAdd);
+    } else {
+      debounceStateRef.current.accumulatedPoints.push(...(pointsToAdd as any));
+    }
 
-      setData(prevData => {
-        let updatedData = [...prevData];
-        let removedCount = 0;
-        let duplicateCount = 0;
+    const wait = memoizedConfig.updateThrottleMs ?? 100;
 
-        // Add new points with deduplication
-        newPoints.forEach(newPoint => {
-          // Check for duplicates if enabled
-          if (finalConfig.enableDeduplication) {
-            const isDuplicate = updatedData.some(existingPoint =>
-              isDataPointEqual(existingPoint, newPoint)
-            );
-            if (isDuplicate) {
-              duplicateCount++;
-              return;
+    // If wait is 0, execute immediately and synchronously
+    if (wait === 0) {
+      // Always take a snapshot of accumulated points and clear immediately
+      const pointsToProcess = [...debounceStateRef.current.accumulatedPoints];
+      debounceStateRef.current.accumulatedPoints = [];
+
+      // Execute immediately if not paused and has points
+      if (!isPausedRef.current && pointsToProcess.length > 0) {
+        setData(prevData => {
+          let updatedData = [...prevData];
+          let removedCount = 0;
+          let duplicateCount = 0;
+
+          // Add new points with deduplication
+          pointsToProcess.forEach(newPoint => {
+            // Check for duplicates if enabled
+            if (memoizedConfig.enableDeduplication) {
+              const isDuplicate = updatedData.some(existingPoint =>
+                isDataPointEqual(existingPoint, newPoint)
+              );
+              if (isDuplicate) {
+                duplicateCount++;
+                return;
+              }
             }
+
+            updatedData.push(newPoint);
+            memoizedConfig.onDataAdd?.(newPoint);
+          });
+
+          // Update duplicate count
+          if (duplicateCount > 0) {
+            setDuplicatePointsFiltered(prev => prev + duplicateCount);
           }
 
-          updatedData.push(newPoint);
-          finalConfig.onDataAdd?.(newPoint);
+          // Apply data windowing if enabled
+          if (memoizedConfig.dataWindowMs) {
+            const cutoffTime = Date.now() - memoizedConfig.dataWindowMs;
+            const beforeCount = updatedData.length;
+            updatedData = updatedData.filter(point => point.timestamp > cutoffTime);
+            removedCount += beforeCount - updatedData.length;
+          }
+
+          // Apply max data points limit
+          if (memoizedConfig.maxDataPoints && updatedData.length > memoizedConfig.maxDataPoints) {
+            const excessCount = updatedData.length - memoizedConfig.maxDataPoints;
+            updatedData = updatedData.slice(excessCount);
+            removedCount += excessCount;
+          }
+
+          // Sort by timestamp
+          updatedData.sort((a, b) => a.timestamp - b.timestamp);
+
+          // Notify about removed data
+          if (removedCount > 0) {
+            memoizedConfig.onDataRemove?.(removedCount);
+          }
+
+          return updatedData;
         });
+      }
+      return;
+    }
 
-        // Update duplicate count
-        if (duplicateCount > 0) {
-          setDuplicatePointsFiltered(prev => prev + duplicateCount);
+    // For non-zero wait, use debounce with setTimeout
+    if (timeoutRef.current !== undefined) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Schedule the flush, but only once
+    if (!debounceStateRef.current.flushScheduled) {
+      debounceStateRef.current.flushScheduled = true;
+      timeoutRef.current = setTimeout(() => {
+        // Check pause state at execution time, not at call time
+        if (!isPausedRef.current && debounceStateRef.current.accumulatedPoints.length > 0) {
+          const pointsToProcess = [...debounceStateRef.current.accumulatedPoints];
+          debounceStateRef.current.accumulatedPoints = [];
+
+          setData(prevData => {
+            let updatedData = [...prevData];
+            let removedCount = 0;
+            let duplicateCount = 0;
+
+            // Add new points with deduplication
+            pointsToProcess.forEach(newPoint => {
+              // Check for duplicates if enabled
+              if (memoizedConfig.enableDeduplication) {
+                const isDuplicate = updatedData.some(existingPoint =>
+                  isDataPointEqual(existingPoint, newPoint)
+                );
+                if (isDuplicate) {
+                  duplicateCount++;
+                  return;
+                }
+              }
+
+              updatedData.push(newPoint);
+              memoizedConfig.onDataAdd?.(newPoint);
+            });
+
+            // Update duplicate count
+            if (duplicateCount > 0) {
+              setDuplicatePointsFiltered(prev => prev + duplicateCount);
+            }
+
+            // Apply data windowing if enabled
+            if (memoizedConfig.dataWindowMs) {
+              const cutoffTime = Date.now() - memoizedConfig.dataWindowMs;
+              const beforeCount = updatedData.length;
+              updatedData = updatedData.filter(point => point.timestamp > cutoffTime);
+              removedCount += beforeCount - updatedData.length;
+            }
+
+            // Apply max data points limit
+            if (memoizedConfig.maxDataPoints && updatedData.length > memoizedConfig.maxDataPoints) {
+              const excessCount = updatedData.length - memoizedConfig.maxDataPoints;
+              updatedData = updatedData.slice(excessCount);
+              removedCount += excessCount;
+            }
+
+            // Sort by timestamp
+            updatedData.sort((a, b) => a.timestamp - b.timestamp);
+
+            // Notify about removed data
+            if (removedCount > 0) {
+              memoizedConfig.onDataRemove?.(removedCount);
+            }
+
+            return updatedData;
+          });
         }
 
-        // Apply data windowing if enabled
-        if (finalConfig.dataWindowMs) {
-          const cutoffTime = Date.now() - finalConfig.dataWindowMs;
-          const beforeCount = updatedData.length;
-          updatedData = updatedData.filter(point => point.timestamp > cutoffTime);
-          removedCount += beforeCount - updatedData.length;
-        }
-
-        // Apply max data points limit
-        if (finalConfig.maxDataPoints && updatedData.length > finalConfig.maxDataPoints) {
-          const excessCount = updatedData.length - finalConfig.maxDataPoints;
-          updatedData = updatedData.slice(excessCount);
-          removedCount += excessCount;
-        }
-
-        // Sort by timestamp
-        updatedData.sort((a, b) => a.timestamp - b.timestamp);
-
-        // Notify about removed data
-        if (removedCount > 0) {
-          finalConfig.onDataRemove?.(removedCount);
-        }
-
-        return updatedData;
-      });
-    }, finalConfig.updateThrottleMs || 100),
-    [isPaused, finalConfig]
-  );
+        debounceStateRef.current.flushScheduled = false;
+        timeoutRef.current = undefined;
+      }, wait);
+    }
+  }, [memoizedConfig]);
 
   // WebSocket message handler
   const handleWebSocketMessage = useCallback((message: WSMessage) => {
-    if (isPaused) return;
+    if (isPausedRef.current) return;
 
     try {
       // Use custom transformer if provided, otherwise use default
@@ -286,11 +431,11 @@ export const useRealtimeChart = (config: RealtimeChartConfig): UseRealtimeChartR
     } catch (error) {
       console.error('[useRealtimeChart] Error processing WebSocket message:', error);
     }
-  }, [isPaused, finalConfig, processNewData]);
+  }, [finalConfig, processNewData]);
 
   // Subscribe to WebSocket channel
   useEffect(() => {
-    if (ws.isConnected && finalConfig.channelId) {
+    if (ws?.isConnected && finalConfig.channelId) {
       const unsubscribe = ws.subscribe(
         finalConfig.channelId,
         handleWebSocketMessage,
@@ -301,7 +446,7 @@ export const useRealtimeChart = (config: RealtimeChartConfig): UseRealtimeChartR
         unsubscribe();
       };
     }
-  }, [ws.isConnected, finalConfig.channelId, finalConfig.filters, handleWebSocketMessage, ws]);
+  }, [ws?.isConnected, finalConfig.channelId, finalConfig.filters, handleWebSocketMessage, ws]);
 
   // Calculate data rate periodically
   useEffect(() => {
@@ -340,6 +485,8 @@ export const useRealtimeChart = (config: RealtimeChartConfig): UseRealtimeChartR
   const addDataPoint = useCallback((point: ChartDataPoint) => {
     processNewData([point]);
     setTotalPointsReceived(prev => prev + 1);
+    // Also track in recentDataPoints for rate calculation
+    recentDataPoints.current.push(point);
   }, [processNewData]);
 
   const clearData = useCallback(() => {
@@ -393,12 +540,12 @@ export const useRealtimeChart = (config: RealtimeChartConfig): UseRealtimeChartR
   const returnValue = useMemo<UseRealtimeChartReturn>(() => ({
     // State
     data,
-    isConnected: ws.isConnected,
-    error: ws.error,
+    isConnected: ws?.isConnected ?? false,
+    error: ws?.error ?? null,
     totalPointsReceived,
     duplicatePointsFiltered,
     reconnectAttempt,
-    connectionQuality: ws.connectionQuality,
+    connectionQuality: ws?.connectionQuality ?? 'good',
     lastUpdate: data.length > 0 ? data[data.length - 1].timestamp : null,
     dataRate,
 
@@ -412,9 +559,9 @@ export const useRealtimeChart = (config: RealtimeChartConfig): UseRealtimeChartR
     reconnect,
   }), [
     data,
-    ws.isConnected,
-    ws.error,
-    ws.connectionQuality,
+    ws?.isConnected,
+    ws?.error,
+    ws?.connectionQuality,
     totalPointsReceived,
     duplicatePointsFiltered,
     reconnectAttempt,

@@ -100,6 +100,10 @@ export const StrategyWizard: React.FC<StrategyWizardProps> = ({
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Use ref to track wizardData for auto-save without causing re-renders
+  const wizardDataRef = React.useRef(wizardData);
+  wizardDataRef.current = wizardData;
+
   // Load initial data
   useEffect(() => {
     if (isOpen) {
@@ -116,16 +120,18 @@ export const StrategyWizard: React.FC<StrategyWizardProps> = ({
     }
   }, [isOpen, initialData, initialDraft]);
 
-  // Auto-save draft
+  // Auto-save draft - only depend on hasChanges and isOpen
+  // Use ref to access current wizardData value without triggering re-render
   useEffect(() => {
     if (!isOpen || !hasChanges) return;
 
     const saveDraftTimeout = setTimeout(() => {
-      saveDraft();
+      // Use ref to get latest wizardData
+      saveDraft(wizardDataRef.current);
     }, 3000); // Auto-save after 3 seconds of inactivity
 
     return () => clearTimeout(saveDraftTimeout);
-  }, [wizardData, hasChanges, isOpen]);
+  }, [hasChanges, isOpen]);
 
   // Load draft from storage
   const loadDraft = async (draftId: string) => {
@@ -142,16 +148,16 @@ export const StrategyWizard: React.FC<StrategyWizardProps> = ({
   };
 
   // Save draft to storage
-  const saveDraft = async () => {
+  const saveDraft = async (dataToSave: WizardData = wizardData) => {
     if (!hasChanges) return;
 
     try {
       setIsSaving(true);
       const draft = await exportService.saveDraft({
         id: draftId || undefined,
-        name: wizardData.name || '未命名草稿',
+        name: dataToSave.name || '未命名草稿',
         step: currentStep,
-        data: wizardData,
+        data: dataToSave,
         timestamp: new Date().toISOString()
       });
 
@@ -170,8 +176,36 @@ export const StrategyWizard: React.FC<StrategyWizardProps> = ({
     setHasChanges(true);
   }, []);
 
-  // Validate current step
+  // Validate current step - pure validation function, doesn't set errors
   const validateStep = useCallback((step: number): boolean => {
+    switch (step) {
+      case 1:
+        if (!wizardData.name.trim() || !wizardData.description.trim()) {
+          return false;
+        }
+        break;
+
+      case 2:
+        if (wizardData.initial_capital <= 0 ||
+            wizardData.position_sizing <= 0 ||
+            wizardData.position_sizing > 1 ||
+            (wizardData.stop_loss && wizardData.stop_loss >= 0)) {
+          return false;
+        }
+        break;
+
+      case 4:
+        if (wizardData.symbols.length === 0) {
+          return false;
+        }
+        break;
+    }
+
+    return true;
+  }, [wizardData]);
+
+  // Set errors for current step - separate function to avoid re-render loop
+  const setStepErrors = useCallback((step: number) => {
     const newErrors: Record<string, string> = {};
 
     switch (step) {
@@ -204,13 +238,13 @@ export const StrategyWizard: React.FC<StrategyWizardProps> = ({
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   }, [wizardData]);
 
   // Handle step navigation
   const handleStepChange = async (newStep: number) => {
     // Validate current step before moving
     if (newStep > currentStep && !validateStep(currentStep)) {
+      setStepErrors(currentStep);
       return;
     }
 
@@ -224,9 +258,11 @@ export const StrategyWizard: React.FC<StrategyWizardProps> = ({
 
   // Handle next step
   const handleNext = () => {
-    if (validateStep(currentStep)) {
-      handleStepChange(currentStep + 1);
+    if (!validateStep(currentStep)) {
+      setStepErrors(currentStep);
+      return;
     }
+    handleStepChange(currentStep + 1);
   };
 
   // Handle previous step
@@ -542,7 +578,7 @@ function Step1BasicInfo({
             value={data.name}
             onChange={(e) => onChange({ name: e.target.value })}
             placeholder="例如：RSI 動量策略"
-            error={errors.name}
+            errorText={errors.name}
           />
         </div>
 
@@ -621,7 +657,7 @@ function Step2RiskConfig({
             value={data.initial_capital}
             onChange={(e) => onChange({ initial_capital: parseFloat(e.target.value) || 0 })}
             placeholder="10000"
-            error={errors.initial_capital}
+            errorText={errors.initial_capital}
           />
         </div>
       </div>
@@ -639,7 +675,7 @@ function Step2RiskConfig({
             value={data.position_sizing}
             onChange={(e) => onChange({ position_sizing: parseFloat(e.target.value) || 0 })}
             placeholder="0.1 (10%)"
-            error={errors.position_sizing}
+            errorText={errors.position_sizing}
           />
           <p className="mt-1 text-xs text-gray-500">
             每次交易使用的資金比例（0-1）
@@ -658,7 +694,7 @@ function Step2RiskConfig({
               stop_loss: e.target.value ? parseFloat(e.target.value) : undefined
             })}
             placeholder="-5"
-            error={errors.stop_loss}
+            errorText={errors.stop_loss}
           />
           <p className="mt-1 text-xs text-gray-500">
             負數表示虧損百分比

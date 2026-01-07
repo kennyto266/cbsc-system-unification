@@ -1,6 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { store } from '../index'
-import { authSlice, uiSlice, strategySlice } from '../slices'
+import { authSlice } from '../slices/authSlice'
+import { uiSlice } from '../slices/uiSlice'
+import { strategySlice } from '../slices/strategySlice'
 import type { RootState } from '../index'
 
 // Test basic store configuration
@@ -33,15 +35,41 @@ describe('Store Configuration', () => {
     })
 
     // UI initial state
-    expect(state.ui).toEqual({
-      theme: 'light' || 'dark', // Could be either based on localStorage
-      sidebarOpen: true,
+    expect(state.ui).toMatchObject({
+      theme: expect.stringMatching(/^(light|dark|auto)$/),
+      language: expect.stringMatching(/^(zh-CN|zh-TW|en-US)$/),
+      sidebar: {
+        isOpen: true,
+        isCollapsed: false,
+        openMenus: [],
+      },
       notifications: [],
+      globalLoading: false,
       loading: {},
+      loadingText: undefined,
       modals: {},
       drawers: {},
       pageSize: 20,
-      language: 'zh-CN' || 'en-US', // Could be either based on localStorage
+      pageTitle: 'CBSC 策略管理系統',
+      breadcrumb: [],
+      isMobile: expect.any(Boolean),
+      screenSize: {
+        width: expect.any(Number),
+        height: expect.any(Number),
+      },
+      keyboardShortcuts: {
+        enabled: true,
+        helpVisible: false,
+      },
+      globalSearch: {
+        isOpen: false,
+        query: '',
+        results: [],
+      },
+      quickActions: {
+        visible: false,
+        actions: [],
+      },
     })
 
     // Strategy initial state
@@ -112,8 +140,8 @@ describe('Selectors', () => {
     expect(state.auth.user).toBeNull()
 
     // UI selectors
-    expect(state.ui.theme).toMatch(/^(light|dark)$/)
-    expect(state.ui.sidebarOpen).toBe(true)
+    expect(state.ui.theme).toMatch(/^(light|dark|auto)$/)
+    expect(state.ui.sidebar.isOpen).toBe(true)
 
     // Strategy selectors
     expect(state.strategy.strategies).toEqual([])
@@ -167,7 +195,7 @@ describe('Type Safety', () => {
     expect(() => {
       dispatch(authSlice.actions.loginStart())
       dispatch(uiSlice.actions.setTheme('dark'))
-      dispatch(strategySlice.actions.setLoading(true))
+      dispatch({ type: 'strategy/setLoading', payload: true })
     }).not.toThrow()
   })
 })

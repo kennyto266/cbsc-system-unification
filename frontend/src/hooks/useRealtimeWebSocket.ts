@@ -389,8 +389,22 @@ export function createWebSocketHook(wsUrl: string) {
 }
 
 // Create hook with default URL
+// Helper to get env vars safely in both Jest and Vite
+const getEnvVar = (key: string, defaultValue: string): string => {
+  if (typeof process !== 'undefined' && process.env?.[key]) {
+    return process.env[key];
+  }
+  try {
+    const metaEnv = (0, eval)('typeof import.meta !== "undefined" ? import.meta.env : undefined');
+    if (metaEnv?.[key]) return metaEnv[key];
+  } catch {
+    // Fall through
+  }
+  return defaultValue;
+};
+
 export const useRealtimeWebSocket = createWebSocketHook(
-  import.meta.env.VITE_WS_URL || 'ws://localhost:8001/ws'
+  getEnvVar('VITE_WS_URL', 'ws://localhost:8001/ws')
 );
 
 // Specialized hooks

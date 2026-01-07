@@ -1,5 +1,8 @@
 /** @type {import('jest').Config} */
 module.exports = {
+  // Only scan for tests in frontend/src directory
+  roots: ['<rootDir>/src'],
+
   // Test environment
   testEnvironment: 'jsdom',
 
@@ -79,16 +82,13 @@ module.exports = {
     },
   },
 
-  // Ignore patterns
+  // Ignore patterns - exclude other test directories
   testPathIgnorePatterns: [
     '/node_modules/',
     '/coverage/',
     '/dist/',
     '/build/',
     '/src/test/',
-    '/src/utils/',
-    '/src/types/',
-    '/src/views/',
   ],
 
   // Mock configurations

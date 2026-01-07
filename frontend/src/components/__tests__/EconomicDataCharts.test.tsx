@@ -8,35 +8,83 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
 import EconomicDataCharts from '../EconomicDataCharts'
-import economicDataSlice from '../../store/slices/economicDataSlice'
-import { useEconomicData } from '../../hooks/useEconomicData'
+import economicDataReducer from '../../store/slices/economicDataSlice'
 
-// Mock the useEconomicData hook
-jest.mock('../../hooks/useEconomicData', () => ({
-  useEconomicData: jest.fn()
-}))
+// Mock recharts
+jest.mock('recharts', () => {
+  const React = require('react')
 
-// Mock the recharts components
-jest.mock('recharts', () => ({
-  ComposedChart: ({ children }: { children: React.ReactNode }) => <div data-testid="composed-chart">{children}</div>,
-  Line: () => <div data-testid="line-chart"></div>,
-  Bar: () => <div data-testid="bar-chart"></div>,
-  Scatter: ({ data }: { data: any[] }) => <div data-testid="scatter-chart">Data points: {data?.length || 0}</div>,
-  AreaChart: ({ children }: { children: React.ReactNode }) => <div data-testid="area-chart">{children}</div>,
-  XAxis: () => <div data-testid="x-axis"></div>,
-  YAxis: () => <div data-testid="y-axis"></div>,
-  CartesianGrid: () => <div data-testid="cartesian-grid"></div>,
-  Tooltip: ({ content }: { content: any }) => <div data-testid="tooltip">{content}</div>,
-  Legend: () => <div data-testid="legend"></div>,
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="responsive-container">{children}</div>,
-  Cell: () => <div data-testid="cell"></div>,
-  ReferenceLine: ({ label }: { label: string }) => <div data-testid="reference-line">{label}</div>,
-  Area: () => <div data-testid="area"></div>
-}))
+  // All recharts-specific props that should be filtered
+  const RECHARTS_PROPS = new Set([
+    'dataKey', 'data', 'name', 'type', 'unit', 'stackId', 'hide', 'layout',
+    'tickFormatter', 'tickLine', 'tickSize', 'tickCount', 'ticks', 'interval',
+    'label', 'labelPosition', 'labelLine', 'angle', 'radius', 'innerRadius',
+    'outerRadius', 'cx', 'cy', 'r', 'width', 'height', 'x', 'y', 'yAxisId', 'xAxisId',
+    'zAxisId', 'line', 'bar', 'area', 'scatter', 'pie', 'radar', 'funnel',
+    'fill', 'stroke', 'strokeWidth', 'strokeDasharray', 'strokeDashoffset',
+    'dot', 'connectNulls', 'isAnimationActive', 'animationBegin', 'animationDuration',
+    'animationEasing', 'legendType', 'minPointSize', 'maxPointSize', 'shape',
+    'activeDot', 'activeShape', 'activeBar', 'background', 'baseLine', 'points',
+    'textBreakAll', 'textBreakWord', 'allowEscapeViewBox', 'coordinate', 'position',
+    'color', 'colors', 'range', 'scale', 'domain', 'includeHidden', 'payload',
+    'verticalAnchor', 'horizontalAnchor', 'offset', 'content',
+    'margin', 'barCategoryGap', 'barGap', 'maxBarSize', 'stackOffset', 'reverseStackOrder'
+  ])
+
+  const createMockComponent = (displayName: string) => {
+    const MockComponent = React.forwardRef<any, any>(({ children, ...props }: any, ref) => {
+      // Only pass through non-recharts props to DOM
+      const domProps: any = {}
+      Object.keys(props).forEach(key => {
+        if (!RECHARTS_PROPS.has(key)) {
+          domProps[key] = props[key]
+        }
+      })
+
+      // Convert PascalCase to kebab-case
+      const kebabCase = displayName
+        .replace(/([A-Z])/g, '-$1')
+        .toLowerCase()
+        .replace(/^-/, '') // Remove leading hyphen
+
+      return (
+        <div
+          data-testid={`recharts-${kebabCase}`}
+          ref={ref}
+          {...domProps}
+        >
+          {children}
+        </div>
+      )
+    })
+    MockComponent.displayName = displayName
+    return MockComponent
+  }
+
+  return {
+    ComposedChart: createMockComponent('ComposedChart'),
+    Line: createMockComponent('Line'),
+    Bar: createMockComponent('Bar'),
+    BarChart: createMockComponent('BarChart'),
+    Scatter: createMockComponent('Scatter'),
+    ScatterChart: createMockComponent('ScatterChart'),
+    LineChart: createMockComponent('LineChart'),
+    XAxis: createMockComponent('XAxis'),
+    YAxis: createMockComponent('YAxis'),
+    CartesianGrid: createMockComponent('CartesianGrid'),
+    Tooltip: createMockComponent('Tooltip'),
+    Legend: createMockComponent('Legend'),
+    ResponsiveContainer: createMockComponent('ResponsiveContainer'),
+    Cell: createMockComponent('Cell'),
+    ReferenceLine: createMockComponent('ReferenceLine'),
+    Area: createMockComponent('Area'),
+    AreaChart: createMockComponent('AreaChart'),
+  }
+})
 
 // Mock date-fns
 jest.mock('date-fns', () => ({
-  format: (date: Date | number, formatStr: string) => {
+  format: (date: any, formatStr: any) => {
     if (typeof date === 'number') {
       return '2024-01-15'
     }
@@ -44,24 +92,15 @@ jest.mock('date-fns', () => ({
   }
 }))
 
+// Mock useEconomicData module
+jest.mock('../../hooks/useEconomicData', () => ({
+  useEconomicData: jest.fn()
+}))
+
+import { useEconomicData } from '../../hooks/useEconomicData'
+
 describe('EconomicDataCharts', () => {
-  let store: ReturnType<typeof configureStore>
-
-  beforeEach(() => {
-    jest.clearAllMocks()
-
-    store = configureStore({
-      reducer: {
-        economicData: economicDataSlice.reducer,
-      },
-      middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware({
-          serializableCheck: {
-            ignoredActions: ['persist/PERSIST'],
-          },
-        }),
-    })
-  })
+  let store
 
   const mockEconomicData = {
     hibor: [
@@ -86,7 +125,7 @@ describe('EconomicDataCharts', () => {
     ]
   }
 
-  const mockUseEconomicData = (overrides = {}) => {
+  const createMockEconomicDataResponse = (overrides = {}) => {
     return {
       data: mockEconomicData,
       filteredData: mockEconomicData,
@@ -108,8 +147,25 @@ describe('EconomicDataCharts', () => {
     }
   }
 
+  beforeEach(() => {
+    // Reset useEconomicData mock to default behavior
+    useEconomicData.mockReturnValue(createMockEconomicDataResponse())
+
+    store = configureStore({
+      reducer: {
+        economicData: economicDataReducer,
+      },
+      middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware({
+          serializableCheck: {
+            ignoredActions: ['persist/PERSIST'],
+          },
+        }),
+    })
+  })
+
   const renderComponent = (props = {}) => {
-    (useEconomicData as any).mockReturnValue(mockUseEconomicData())
+    useEconomicData.mockReturnValue(createMockEconomicDataResponse())
 
     return render(
       <Provider store={store}>
@@ -143,8 +199,8 @@ describe('EconomicDataCharts', () => {
     test('renders default time series chart', () => {
       renderComponent()
 
-      expect(screen.getByTestId('composed-chart')).toBeInTheDocument()
-      expect(screen.getByTestId('responsive-container')).toBeInTheDocument()
+      expect(screen.getByTestId('recharts-composed-chart')).toBeInTheDocument()
+      expect(screen.getByTestId('recharts-responsive-container')).toBeInTheDocument()
     })
 
     test('renders with custom className', () => {
@@ -164,22 +220,30 @@ describe('EconomicDataCharts', () => {
 
   describe('Loading State', () => {
     test('renders loading spinner when loading', () => {
-      (useEconomicData as any).mockReturnValue(
-        mockUseEconomicData({ loading: true })
+      useEconomicData.mockReturnValue(
+        createMockEconomicDataResponse({ loading: true })
       )
 
-      renderComponent()
+      render(
+        <Provider store={store}>
+          <EconomicDataCharts />
+        </Provider>
+      )
 
       expect(screen.getByText('Loading economic data...')).toBeInTheDocument()
       expect(screen.getByRole('status')).toBeInTheDocument() // spinner
     })
 
     test('renders custom loading message', () => {
-      (useEconomicData as any).mockReturnValue(
-        mockUseEconomicData({ loading: true })
+      useEconomicData.mockReturnValue(
+        createMockEconomicDataResponse({ loading: true })
       )
 
-      renderComponent()
+      render(
+        <Provider store={store}>
+          <EconomicDataCharts />
+        </Provider>
+      )
 
       expect(screen.getByText('Loading economic data...')).toBeInTheDocument()
     })
@@ -187,27 +251,35 @@ describe('EconomicDataCharts', () => {
 
   describe('Error State', () => {
     test('renders error message when error occurs', () => {
-      (useEconomicData as any).mockReturnValue(
-        mockUseEconomicData({
+      useEconomicData.mockReturnValue(
+        createMockEconomicDataResponse({
           error: 'Failed to fetch data',
           loading: false
         })
       )
 
-      renderComponent()
+      render(
+        <Provider store={store}>
+          <EconomicDataCharts />
+        </Provider>
+      )
 
       expect(screen.getByText('Error loading data: Failed to fetch data')).toBeInTheDocument()
     })
 
     test('renders warning icon for error state', () => {
-      (useEconomicData as any).mockReturnValue(
-        mockUseEconomicData({
+      useEconomicData.mockReturnValue(
+        createMockEconomicDataResponse({
           error: 'API Error',
           loading: false
         })
       )
 
-      renderComponent()
+      render(
+        <Provider store={store}>
+          <EconomicDataCharts />
+        </Provider>
+      )
 
       expect(screen.getByText('⚠️')).toBeInTheDocument()
     })
@@ -219,13 +291,13 @@ describe('EconomicDataCharts', () => {
 
       expect(screen.getByText('X Axis:')).toBeInTheDocument()
       expect(screen.getByText('Y Axis:')).toBeInTheDocument()
-      expect(screen.getByTestId('scatter-chart')).toBeInTheDocument()
+      expect(screen.getByTestId('recharts-scatter-chart')).toBeInTheDocument()
     })
 
     test('renders heatmap when chartType is heatmap', () => {
       renderComponent({ chartType: 'heatmap' })
 
-      expect(screen.getByTestId('bar-chart')).toBeInTheDocument()
+      expect(screen.getByTestId('recharts-bar-chart')).toBeInTheDocument()
     })
 
     test('renders correlation controls when chartType is correlation', () => {
@@ -237,7 +309,7 @@ describe('EconomicDataCharts', () => {
     test('renders comparison chart when chartType is comparison', () => {
       renderComponent({ chartType: 'comparison' })
 
-      expect(screen.getByTestId('line-chart')).toBeInTheDocument()
+      expect(screen.getByTestId('recharts-line-chart')).toBeInTheDocument()
     })
   })
 
@@ -276,34 +348,43 @@ describe('EconomicDataCharts', () => {
     })
 
     test('uses useEconomicData hook with custom options', () => {
-      renderComponent({}, { autoFetch: false, cacheEnabled: false })
+      // Component always uses default options
+      renderComponent()
 
-      expect(useEconomicData).toHaveBeenCalledWith({ autoFetch: false, cacheEnabled: false })
+      expect(useEconomicData).toHaveBeenCalledWith({ autoFetch: true })
     })
 
     test('fetches data when timeRange prop changes', () => {
       const mockFetchAllIndicators = jest.fn()
-      (useEconomicData as any).mockReturnValue(
-        mockUseEconomicData({
+      useEconomicData.mockReturnValue(
+        createMockEconomicDataResponse({
           fetchAllIndicators: mockFetchAllIndicators
         })
       )
 
       const timeRange = { start: '2024-01-01', end: '2024-12-31' }
-      renderComponent({ timeRange })
+      render(
+        <Provider store={store}>
+          <EconomicDataCharts timeRange={timeRange} />
+        </Provider>
+      )
 
       expect(mockFetchAllIndicators).toHaveBeenCalledWith(timeRange)
     })
 
     test('handles empty timeRange gracefully', () => {
       const mockFetchAllIndicators = jest.fn()
-      (useEconomicData as any).mockReturnValue(
-        mockUseEconomicData({
+      useEconomicData.mockReturnValue(
+        createMockEconomicDataResponse({
           fetchAllIndicators: mockFetchAllIndicators
         })
       )
 
-      renderComponent({ timeRange: {} })
+      render(
+        <Provider store={store}>
+          <EconomicDataCharts timeRange={{}} />
+        </Provider>
+      )
 
       expect(mockFetchAllIndicators).not.toHaveBeenCalled()
     })
@@ -354,12 +435,16 @@ describe('EconomicDataCharts', () => {
         }))
       }
 
-      (useEconomicData as any).mockReturnValue(
-        mockUseEconomicData({ data: largeDataset })
+      useEconomicData.mockReturnValue(
+        createMockEconomicDataResponse({ data: largeDataset })
       )
 
       const startTime = performance.now()
-      renderComponent()
+      render(
+        <Provider store={store}>
+          <EconomicDataCharts />
+        </Provider>
+      )
       const endTime = performance.now()
 
       expect(endTime - startTime).toBeLessThan(100) // Should render within 100ms
@@ -376,7 +461,7 @@ describe('EconomicDataCharts', () => {
       )
 
       // Component should still be present and functional
-      expect(screen.getByTestId('composed-chart')).toBeInTheDocument()
+      expect(screen.getByTestId('recharts-composed-chart')).toBeInTheDocument()
     })
   })
 
@@ -390,22 +475,34 @@ describe('EconomicDataCharts', () => {
         unemployment: []
       }
 
-      (useEconomicData as any).mockReturnValue(
-        mockUseEconomicData({ data: malformedData })
+      useEconomicData.mockReturnValue(
+        createMockEconomicDataResponse({ data: malformedData })
       )
 
-      expect(() => renderComponent()).not.toThrow()
+      expect(() => {
+        render(
+          <Provider store={store}>
+            <EconomicDataCharts />
+          </Provider>
+        )
+      }).not.toThrow()
     })
 
     test('handles API errors in hook', () => {
-      (useEconomicData as any).mockReturnValue(
-        mockUseEconomicData({
+      useEconomicData.mockReturnValue(
+        createMockEconomicDataResponse({
           error: 'Network timeout',
           loading: false
         })
       )
 
-      expect(() => renderComponent()).not.toThrow()
+      expect(() => {
+        render(
+          <Provider store={store}>
+            <EconomicDataCharts />
+          </Provider>
+        )
+      }).not.toThrow()
       expect(screen.getByText(/Error loading data/)).toBeInTheDocument()
     })
   })
@@ -425,7 +522,7 @@ describe('EconomicDataCharts', () => {
       expect(useEconomicData).toHaveBeenCalled()
 
       // Verify that hook return values are used
-      expect(screen.getByTestId('composed-chart')).toBeInTheDocument()
+      expect(screen.getByTestId('recharts-composed-chart')).toBeInTheDocument()
     })
   })
 })

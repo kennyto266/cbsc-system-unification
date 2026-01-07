@@ -252,22 +252,24 @@ export const useChartExport = (config: ChartExportConfig): UseChartExportReturn 
     format: ExportFormat,
     options: ExportOptions = {}
   ): Promise<Blob | null> => {
-    if (!config.chartRef.current) {
-      throw new Error('Chart reference is null. Make sure the chart is mounted.');
-    }
-
-    if (isExportingRef.current) {
-      throw new Error('Export already in progress. Please wait for the current export to complete.');
-    }
-
     // Merge with default options
     const finalOptions = { ...finalConfig.defaultOptions, ...options };
 
-    setIsExporting(format);
-    isExportingRef.current = true;
     setError(null);
 
     try {
+      // Validation checks inside try-catch for proper error handling
+      if (!config.chartRef.current) {
+        throw new Error('Chart reference is null. Make sure the chart is mounted.');
+      }
+
+      if (isExportingRef.current) {
+        throw new Error('Export already in progress. Please wait for the current export to complete.');
+      }
+
+      // Set exporting state after validation passes
+      setIsExporting(format);
+      isExportingRef.current = true;
       let blob: Blob | null = null;
 
       // Use custom export function if provided

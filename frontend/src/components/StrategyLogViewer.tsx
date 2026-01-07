@@ -35,7 +35,8 @@ import {
   MessageSquare,
   Cpu,
   HardDrive,
-  Wifi
+  Wifi,
+  TrendingUp
 } from 'lucide-react'
 
 // Types
@@ -565,7 +566,7 @@ export default function StrategyLogViewer({
             {/* Export Menu */}
             {enableExport && (
               <div className="relative group">
-                <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title="導出">
                   <Download className="w-4 h-4" />
                 </button>
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">

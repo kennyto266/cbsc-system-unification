@@ -5,8 +5,22 @@ import type { RootState } from '../store'
 import { logout } from '../store/slices/authSlice'
 import type { ApiError } from '../types/api'
 
+// Helper to get env vars safely in both Jest and Vite
+const getEnvVar = (key: string, defaultValue: string): string => {
+  if (typeof process !== 'undefined' && process.env?.[key]) {
+    return process.env[key];
+  }
+  try {
+    const metaEnv = (0, eval)('typeof import.meta !== "undefined" ? import.meta.env : undefined');
+    if (metaEnv?.[key]) return metaEnv[key];
+  } catch {
+    // Fall through
+  }
+  return defaultValue;
+};
+
 // API base configuration - point to backend server
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3005'
+const API_BASE_URL = getEnvVar('VITE_API_BASE_URL', 'http://localhost:3005')
 
 const baseQuery = fetchBaseQuery({
   baseUrl: `${API_BASE_URL}/api`,

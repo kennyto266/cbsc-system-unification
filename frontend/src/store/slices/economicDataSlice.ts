@@ -317,6 +317,7 @@ export const selectUnemploymentData = (state: { economicData: EconomicDataState 
 
 // Reducer
 export default economicDataSlice.reducer
+export const economicDataReducer = economicDataSlice.reducer
 
 // Export types
 export type {

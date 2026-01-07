@@ -33,7 +33,7 @@ import {
   RefreshCw,
   Info
 } from 'lucide-react';
-import { useWebSocket } from '../hooks/useWebSocket';
+import { useWebSocket } from '@hooks/useWebSocket';
 import { cn } from '@/lib/utils';
 
 // Type definitions

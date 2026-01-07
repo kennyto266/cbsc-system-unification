@@ -74,7 +74,18 @@ class EconomicWebSocketService {
   private getWebSocketUrl(): string {
     if (typeof window !== 'undefined') {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const host = import.meta.env.VITE_WS_URL || window.location.host
+      // Get WS URL from environment (Jest: process.env, Vite: import.meta.env)
+      let host = window.location.host
+      try {
+        const metaEnv = (0, eval)('typeof import.meta !== "undefined" ? import.meta.env : undefined');
+        if (metaEnv && metaEnv.VITE_WS_URL) {
+          host = metaEnv.VITE_WS_URL;
+        } else if (typeof process !== 'undefined' && process.env?.VITE_WS_URL) {
+          host = process.env.VITE_WS_URL;
+        }
+      } catch {
+        // Use default host
+      }
       return `${protocol}//${host}/ws/economic`
     }
     return 'ws://localhost:3004/ws/economic'

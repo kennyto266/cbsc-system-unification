@@ -4,17 +4,28 @@
  */
 
 // Helper function to get env variables that works in both Jest and Vite
+// Use function evaluation to avoid compile-time import.meta parsing
+const getImportMetaEnv = () => {
+  try {
+    // Dynamic access to avoid compile-time parsing in Jest
+    return (0, eval)('typeof import.meta !== "undefined" ? import.meta.env : undefined');
+  } catch {
+    return undefined;
+  }
+};
+
 const getEnvVar = (key: string, defaultValue: string): string => {
-  // For Jest tests: check globals.import.meta.env
-  if (typeof (globalThis as any).import !== 'undefined' &&
-      (globalThis as any).import.meta &&
-      (globalThis as any).import.meta.env) {
-    return (globalThis as any).import.meta.env[key] || defaultValue;
+  // For Jest tests: check process.env
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key] || defaultValue;
   }
+
   // For Vite: check import.meta.env
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    return import.meta.env[key] || defaultValue;
+  const metaEnv = getImportMetaEnv();
+  if (metaEnv && metaEnv[key]) {
+    return metaEnv[key];
   }
+
   // Default fallback
   return defaultValue;
 };

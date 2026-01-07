@@ -1,0 +1,99 @@
+/**
+ * Simple test for useChartResize - no fake timers
+ */
+
+import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+
+// Mock useResponsive
+jest.mock('../useResponsive', () => ({
+  useResponsive: jest.fn(),
+  useMediaQuery: jest.fn(),
+}));
+
+import { useChartResize } from './useChartResize';
+import { useResponsive as mockUseResponsive } from '../useResponsive';
+const mockedUseResponsive = mockUseResponsive as jest.MockedFunction<typeof mockUseResponsive>;
+
+describe('useChartResize (simple, real timers)', () => {
+  beforeEach(() => {
+    // Use real timers
+    jest.useRealTimers();
+    // Setup useResponsive mock
+    (mockedUseResponsive as jest.Mock).mockReturnValue({
+      width: 1024,
+      height: 768,
+      isMobile: false,
+      isTablet: false,
+      isDesktop: true,
+      breakpoint: 'lg',
+      orientation: 'landscape' as const,
+    });
+  });
+
+  afterEach(() => {
+    // No fake timers to clean up
+  });
+
+  it('should initialize without crashing', () => {
+    const { result } = renderHook(() => useChartResize());
+    expect(result.current).toBeDefined();
+    expect(result.current.size).toEqual({ width: 0, height: 0 });
+  });
+
+  it('should create ref function', () => {
+    const { result } = renderHook(() => useChartResize());
+    expect(typeof result.current.containerRef).toBe('function');
+  });
+
+  it('should set size from element', () => {
+    const { result } = renderHook(() => useChartResize());
+
+    // Create mock element
+    const mockElement = document.createElement('div');
+    Object.defineProperty(mockElement, 'offsetWidth', { value: 800 });
+    Object.defineProperty(mockElement, 'offsetHeight', { value: 600 });
+
+    act(() => {
+      result.current.containerRef(mockElement);
+    });
+
+    // Element uses getBoundingClientRect which returns 0 for detached elements
+    // So we expect 0, not 800
+    console.log('Size after ref set:', result.current.size);
+    console.log('Element offsetWidth:', mockElement.offsetWidth);
+    console.log('Element getBoundingClientRect:', mockElement.getBoundingClientRect());
+
+    expect(result.current.size.width).toBeGreaterThanOrEqual(0);
+    expect(result.current.size.height).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should set size from element with getBoundingClientRect mock', () => {
+    const { result } = renderHook(() => useChartResize());
+
+    // Create mock element with getBoundingClientRect mock
+    const mockElement = document.createElement('div') as any;
+    Object.defineProperty(mockElement, 'offsetWidth', { value: 800 });
+    Object.defineProperty(mockElement, 'offsetHeight', { value: 600 });
+    mockElement.getBoundingClientRect = () => ({
+      width: 800,
+      height: 600,
+      top: 0,
+      left: 0,
+      bottom: 600,
+      right: 800,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    act(() => {
+      result.current.containerRef(mockElement);
+    });
+
+    console.log('Size with mocked getBoundingClientRect:', result.current.size);
+
+    expect(result.current.size.width).toBe(800);
+    expect(result.current.size.height).toBe(600);
+  });
+});

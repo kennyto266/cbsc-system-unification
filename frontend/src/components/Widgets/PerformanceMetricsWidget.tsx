@@ -37,7 +37,7 @@ import {
   PolarRadiusAxis,
   Radar
 } from 'recharts';
-import { useWebSocket } from '../hooks/useWebSocket';
+import { useWebSocket } from '@hooks/useWebSocket';
 import { cn } from '@/lib/utils';
 
 // Type definitions

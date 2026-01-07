@@ -382,6 +382,11 @@ export default defineConfig({
 
 ## 最近更新
 
+### 2026-01-06
+- ✅ **達成 884/884 (100%) 測試通過率**
+- ✅ 完成所有 StrategyWizard 和 StrategyList 測試修復
+- ✅ Ralph Loop 完成 - 從 98.87% 提升到 100%
+
 ### 2026-01-04
 - ✅ 修復前端 `process.env` 未定義錯誤
 - ✅ 完成 Phase 2 & 3 真實數據遷移
@@ -407,19 +412,86 @@ export default defineConfig({
 - **安全问题**: security@cbsc.com
 
 ---
-*最后更新: 2026-01-04*
+*最後更新: 2026-01-06*
 *版本: CBSC Strategy Management System v2.0*
-- 每次都要深思,優先用 Claude Code PM 執行任務流程
-- 标准 Epic 流程：prd-new → prd-parse → epic-decompose → epic-sync
-- 寫做策略管理架构分析报告.md
-- keyring 中的有效 token,GITHUB_TOKEN環境變量干擾了GitHub CLI。讓我暫時清除它並使用本地認證
 
-## 文档创建规则
+## Claude Code 工作規範
 
-默认情况下，不要创建任何新的说明文档或文档文件。
+### 標準工作模式
 
-不要自动生成 http://README.md、设计文档、使用说明、架构说明等。
+1. **中文回應** - 始終使用中文回應，代碼註釋使用英文
+2. **簡潔實用** - 代碼設計簡單易懂，避免過度設計
+3. **最小修改** - 改動時最小化修改，盡量不修改其他模塊
+4. **代碼復用** - 注意圈複雜度控制，代碼盡可能復用
+5. **模塊設計** - 使用設計模式，注意模塊間解耦
 
-只有在我明确要求"编写文档 / 生成 README / 写说明文档"时，才允许创建或修改文档。
+### Claude Code PM 工作流
 
-避免输出与代码无关的说明性文档。
+優先使用 Claude Code PM 執行任務流程：
+
+標準 Epic 流程：
+1. `prd-new` - 創建產品需求文檔
+2. `prd-parse` - 將 PRD 轉換為 Epic 實現方案
+3. `epic-decompose` - 將 Epic 拆分為任務
+4. `epic-sync` - 同步到 GitHub
+5. `epic-start` - 啟動並行執行
+
+### 路徑使用標準
+
+為確保文檔可移植性和隱私保護：
+
+**✅ 正確使用相對路徑：**
+```markdown
+- `src/components/Button.tsx`
+- `frontend/src/api/baseQuery.ts`
+- `../project-name/internal/auth/server.go`
+```
+
+**❌ 避免絕對路徑：**
+```markdown
+- C:\Users\Penguin8n\CODEX--\frontend\...
+- /Users/username/project/...
+```
+
+### 輸出格式標準
+
+**成功輸出：**
+```markdown
+✅ {操作} 完成
+  - 關鍵結果 1
+  - 關鍵結果 2
+下一步：建議操作
+```
+
+**錯誤輸出：**
+```markdown
+❌ {失敗原因}: {明確解決方案}
+例: "❌ 文件未找到: 請運行 npm install"
+```
+
+### 核心原則
+
+1. **快速失敗** - 只檢查關鍵前置條件
+2. **信任系統** - 不要過度驗證
+3. **明確錯誤** - 失敗時說明具體問題和修復方法
+4. **最小輸出** - 顯示重要信息，跳過裝飾
+
+### GitHub Token 處理
+
+- keyring 中的有效 token
+- `GITHUB_TOKEN` 環境變量會干擾 GitHub CLI
+- 需要時暫時清除並使用本地認證
+
+### 文檔創建規則
+
+默認情況下，不要創建任何新的說明文檔或文檔文件。
+
+不要自動生成 README.md、設計文檔、使用說明、架構說明等。
+
+只有在明確要求「編寫文檔 / 生成 README / 寫說明文檔」時，才允許創建或修改文檔。
+
+避免輸出與代碼無關的說明性文檔。
+
+---
+*最後更新: 2026-01-06*
+*版本: CBSC Strategy Management System v2.0*

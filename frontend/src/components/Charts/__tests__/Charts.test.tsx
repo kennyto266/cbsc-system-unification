@@ -6,6 +6,8 @@ import { ChartsDashboard } from '../ChartsDashboard';
 import { ChartManagerProvider } from '../ChartManager';
 import { Strategy } from '../../../types';
 
+// Import chart test setup
+
 // Mock strategy data for testing
 const mockStrategies: Strategy[] = [
   {

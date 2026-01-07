@@ -1,7 +1,7 @@
 import React from 'react'
 import { screen, fireEvent } from '@testing-library/react'
 import '@testing-library/jest-dom'
-import { render } from './testUtils'
+import { render } from '../test-helpers'
 import { TimeframeSelector } from '../TimeframeSelector'
 
 describe('TimeframeSelector', () => {

@@ -436,3 +436,4 @@ const MixedStrategyViewer: React.FC<MixedStrategyViewerProps> = ({
 }
 
 export default MixedStrategyViewer
+export { MixedStrategyViewer }

@@ -146,6 +146,17 @@ const debounce = <T extends (...args: any[]) => any>(
 };
 
 const getElementSize = (element: HTMLElement): ChartSize => {
+  // Prefer offsetWidth/offsetHeight for test compatibility
+  // getBoundingClientRect() returns 0 for detached elements in jsdom
+  const offsetWidth = element.offsetWidth;
+  const offsetHeight = element.offsetHeight;
+
+  // If offset dimensions are available, use them
+  if (offsetWidth > 0 || offsetHeight > 0) {
+    return { width: offsetWidth, height: offsetHeight };
+  }
+
+  // Fallback to getBoundingClientRect for attached elements
   const rect = element.getBoundingClientRect();
   return {
     width: rect.width,
@@ -220,7 +231,20 @@ const getCurrentBreakpoint = (
  * @returns Hook state, actions, and container ref
  */
 export const useChartResize = (config: ChartResizeConfig = {}): UseChartResizeReturn => {
-  const finalConfig = { ...DEFAULT_CONFIG, ...config };
+  // Memoize config to prevent infinite re-render loops
+  const finalConfig = useMemo(() => ({ ...DEFAULT_CONFIG, ...config }), [
+    config.debounceMs,
+    config.breakpoints,
+    config.enableAspectRatio,
+    config.aspectRatio,
+    config.minWidth,
+    config.minHeight,
+    config.maxWidth,
+    config.maxHeight,
+    config.padding,
+    config.onResize,
+    config.enableDebug,
+  ]);
 
   // State management
   const [size, setSize] = useState<ChartSize>({ width: 0, height: 0 });
@@ -232,6 +256,10 @@ export const useChartResize = (config: ChartResizeConfig = {}): UseChartResizeRe
   const containerRefElement = useRef<HTMLElement | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const resizeTimeoutRef = useRef<NodeJS.Timeout>();
+  const handleResizeRef = useRef<((entries: ResizeObserverEntry[]) => void) | null>(null);
+
+  // State to track element changes (triggers useEffect re-run)
+  const [element, setElement] = useState<HTMLElement | null>(null);
 
   // Use responsive hook for device detection
   const { isMobile: deviceIsMobile, isTablet: deviceIsTablet } = useResponsive();
@@ -241,8 +269,8 @@ export const useChartResize = (config: ChartResizeConfig = {}): UseChartResizeRe
     return getCurrentBreakpoint(size.width, finalConfig.breakpoints || {});
   }, [size.width, finalConfig.breakpoints]);
 
-  // Debounced resize handler
-  const handleResize = useCallback(
+  // Debounced resize handler - use ref to avoid dependency cycles
+  handleResizeRef.current = useMemo(() =>
     debounce((entries: ResizeObserverEntry[]) => {
       if (!containerRefElement.current) return;
 
@@ -287,23 +315,23 @@ export const useChartResize = (config: ChartResizeConfig = {}): UseChartResizeRe
       }, finalConfig.debounceMs);
 
     }, finalConfig.debounceMs || 150),
-    [finalConfig]
+    [finalConfig.debounceMs, finalConfig.enableDebug, finalConfig.onResize, finalConfig.padding]
   );
 
   // Set up ResizeObserver
   useEffect(() => {
-    if (!containerRefElement.current) return;
+    if (!element || !handleResizeRef.current) return;
 
     // Create ResizeObserver
-    resizeObserverRef.current = new ResizeObserver(handleResize);
+    resizeObserverRef.current = new ResizeObserver(handleResizeRef.current);
 
     // Start observing
-    resizeObserverRef.current.observe(containerRefElement.current, {
+    resizeObserverRef.current.observe(element, {
       box: 'border-box',
     });
 
     // Initial size measurement
-    const initialSize = getElementSize(containerRefElement.current);
+    const initialSize = getElementSize(element);
     const constrainedSize = applyConstraints(initialSize, finalConfig);
     const finalSize = applyPadding(constrainedSize, finalConfig.padding);
 
@@ -317,17 +345,21 @@ export const useChartResize = (config: ChartResizeConfig = {}): UseChartResizeRe
     return () => {
       if (resizeObserverRef.current) {
         resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
       }
       if (resizeTimeoutRef.current) {
         clearTimeout(resizeTimeoutRef.current);
       }
     };
-  }, [handleResize, finalConfig]);
+  }, [element, finalConfig]);
 
   // Combined ref function
   const containerRef = useCallback((node: HTMLElement | null) => {
     // Update ref
     containerRefElement.current = node;
+
+    // Update state to trigger useEffect re-run
+    setElement(node);
 
     // If an external ref is provided, update it as well
     if (finalConfig.ref) {

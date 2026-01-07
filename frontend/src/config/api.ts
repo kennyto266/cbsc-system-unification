@@ -1,17 +1,31 @@
 /**
  * API Configuration
- * 
+ *
  * Centralized API configuration for the CBSC Trading System frontend.
  * This module provides the base URL, headers, and utility functions for API calls.
  */
 
+// Helper to get env vars safely in both Jest and Vite
+const getEnvVar = (key: string, defaultValue: string): string => {
+  if (typeof process !== 'undefined' && process.env?.[key]) {
+    return process.env[key];
+  }
+  try {
+    const metaEnv = (0, eval)('typeof import.meta !== "undefined" ? import.meta.env : undefined');
+    if (metaEnv?.[key]) return metaEnv[key];
+  } catch {
+    // Fall through
+  }
+  return defaultValue;
+};
+
 // Get API base URL from environment variables
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
-const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:3004/ws';
+const API_BASE_URL = getEnvVar('VITE_API_BASE_URL', '/api');
+const WS_BASE_URL = getEnvVar('VITE_WS_BASE_URL', 'ws://localhost:3004/ws');
 
 // Feature flags
-const ENABLE_WEBSOCKET = import.meta.env.VITE_ENABLE_WEBSOCKET !== 'false';
-const ENABLE_REALTIME = import.meta.env.VITE_ENABLE_REALTIME !== 'false';
+const ENABLE_WEBSOCKET = getEnvVar('VITE_ENABLE_WEBSOCKET', 'true') !== 'false';
+const ENABLE_REALTIME = getEnvVar('VITE_ENABLE_REALTIME', 'true') !== 'false';
 
 /**
  * Build a full API URL for the given endpoint

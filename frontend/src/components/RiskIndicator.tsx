@@ -43,6 +43,13 @@ import {
   Info
 } from 'lucide-react'
 
+// Chart color categories
+const CHART_CATEGORIES = {
+  volatility: { color: '#8b5cf6' },
+  drawdown: { color: '#ef4444' },
+  var: { color: '#3b82f6' }
+} as const
+
 // Types
 interface RiskMetric {
   timestamp: string
@@ -272,7 +279,10 @@ export default function RiskIndicator({
 
   // Mock data generation
   const mockData = useMemo(() => {
-    if (data) return data
+    // Check if data has actual content (is non-empty object)
+    if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+      return data
+    }
 
     // Generate mock risk metrics
     const metrics: RiskMetric[] = []
@@ -415,7 +425,7 @@ export default function RiskIndicator({
     }
   }, [autoRefresh, refreshInterval])
 
-  const { metrics, alerts, limits, riskScore, positions, stressTest } = mockData
+  const { metrics = [], alerts = [], limits = [], riskScore = { overall: 50 }, positions = [], stressTest = [] } = mockData
 
   // Calculate current risk values
   const latestMetrics = useMemo(() => {
@@ -429,9 +439,9 @@ export default function RiskIndicator({
   }, [metrics])
 
   const unacknowledgedAlerts = alerts.filter(alert => !alert.acknowledged)
-  const riskLevel = riskScore.overall >= 80 ? 'low' :
-                   riskScore.overall >= 60 ? 'medium' :
-                   riskScore.overall >= 40 ? 'high' : 'critical'
+  const riskLevel = riskScore?.overall >= 80 ? 'low' :
+                   riskScore?.overall >= 60 ? 'medium' :
+                   riskScore?.overall >= 40 ? 'high' : 'critical'
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -457,6 +467,7 @@ export default function RiskIndicator({
             <button
               onClick={handleRefresh}
               disabled={isLoading}
+              aria-label="refresh"
               className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />

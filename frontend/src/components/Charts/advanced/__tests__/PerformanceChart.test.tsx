@@ -8,6 +8,8 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import PerformanceChart from '../PerformanceChart'
 import type { PerformanceChartProps } from '../types'
 
+// Import chart test setup
+
 // Test wrapper
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <div>{children}</div>
@@ -43,25 +45,25 @@ describe('PerformanceChart - Batch 1 Migration', () => {
   })
 
   it('displays strategy line', () => {
-    render(
+    const { container } = render(
       <TestWrapper>
         <PerformanceChart {...mockProps} />
       </TestWrapper>
     )
 
     // Should have area for strategy (showArea defaults to true)
-    const areas = document.querySelectorAll('.recharts-area')
+    const areas = container.querySelectorAll('.recharts-area')
     expect(areas.length).toBeGreaterThan(0)
   })
 
   it('displays tooltip on hover', () => {
-    render(
+    const { container } = render(
       <TestWrapper>
         <PerformanceChart {...mockProps} />
       </TestWrapper>
     )
 
-    const tooltip = document.querySelector('.recharts-tooltip-wrapper')
+    const tooltip = container.querySelector('.recharts-tooltip-wrapper')
     expect(tooltip).toBeInTheDocument()
   })
 
@@ -99,26 +101,26 @@ describe('PerformanceChart - Batch 1 Migration', () => {
   })
 
   it('displays axis labels', () => {
-    render(
+    const { container } = render(
       <TestWrapper>
         <PerformanceChart {...mockProps} />
       </TestWrapper>
     )
 
-    const xAxis = document.querySelector('.recharts-xAxis')
-    const yAxis = document.querySelector('.recharts-yAxis')
+    const xAxis = container.querySelector('.recharts-xAxis')
+    const yAxis = container.querySelector('.recharts-yAxis')
     expect(xAxis).toBeInTheDocument()
     expect(yAxis).toBeInTheDocument()
   })
 
   it('shows grid lines', () => {
-    render(
+    const { container } = render(
       <TestWrapper>
         <PerformanceChart {...mockProps} />
       </TestWrapper>
     )
 
-    const grid = document.querySelector('.recharts-cartesian-grid')
+    const grid = container.querySelector('.recharts-cartesian-grid')
     expect(grid).toBeInTheDocument()
   })
 
@@ -154,6 +156,9 @@ describe('PerformanceChart - Batch 1 Migration', () => {
     // Should show loading pulse
     const loading = document.querySelector('.animate-pulse')
     expect(loading).toBeInTheDocument()
+    // Should also show the Card component
+    const card = document.querySelector('.rounded-lg')
+    expect(card).toBeInTheDocument()
   })
 
   it('handles error state', () => {

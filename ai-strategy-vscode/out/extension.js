@@ -40,8 +40,15 @@ function activate(context) {
     console.log('AI Strategy Assistant is now active!');
     // Register command to create strategy notebook
     const createNotebookCmd = vscode.commands.registerCommand('aiStrategy.createNotebook', async () => {
-        const notebook = await vscode.workspace.openNotebookDocument(vscode.Uri.parse('untitled:/strategy.ipynb'));
-        await vscode.window.showNotebookDocument(notebook);
+        try {
+            // Create new notebook with empty content
+            const notebookData = new vscode.NotebookData([]);
+            const notebook = await vscode.workspace.openNotebookDocument('jupyter-notebook', notebookData);
+            await vscode.window.showNotebookDocument(notebook);
+        }
+        catch (error) {
+            vscode.window.showErrorMessage(`Failed to create notebook: ${error}`);
+        }
     });
     // Register command to open AI chat
     const openChatCmd = vscode.commands.registerCommand('aiStrategy.openChat', () => {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   ResponsiveContainer,
   LineChart,
@@ -330,10 +330,14 @@ export const SensitivityAnalysis: React.FC<SensitivityAnalysisProps> = ({
 
               <div className="flex items-center space-x-4">
                 <div>
-                  <label className={`block text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <label
+                    htmlFor="range-start"
+                    className={`block text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                  >
                     范围起始
                   </label>
                   <input
+                    id="range-start"
                     type="number"
                     value={parameterRange.min}
                     onChange={(e) => handleRangeChange('min', parseFloat(e.target.value))}
@@ -346,10 +350,14 @@ export const SensitivityAnalysis: React.FC<SensitivityAnalysisProps> = ({
                 </div>
 
                 <div>
-                  <label className={`block text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <label
+                    htmlFor="range-end"
+                    className={`block text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                  >
                     范围结束
                   </label>
                   <input
+                    id="range-end"
                     type="number"
                     value={parameterRange.max}
                     onChange={(e) => handleRangeChange('max', parseFloat(e.target.value))}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Mock framer-motion
@@ -58,7 +59,9 @@ describe('Mobile Components', () => {
         </TouchFeedback>
       );
       const button = screen.getByRole('button');
-      expect(button.parentElement).toHaveClass('cursor-default');
+      // TouchFeedback root is the parent of the relative z-10 container
+      const touchFeedbackRoot = button.parentElement?.parentElement;
+      expect(touchFeedbackRoot).toHaveClass('cursor-default');
     });
 
     it('should trigger onPress callback', async () => {
@@ -69,10 +72,8 @@ describe('Mobile Components', () => {
         </TouchFeedback>
       );
 
-      fireEvent.click(screen.getByRole('button'));
-      await waitFor(() => {
-        expect(onPress).toHaveBeenCalled();
-      });
+      await userEvent.click(screen.getByRole('button'));
+      expect(onPress).toHaveBeenCalled();
     });
 
     it('should trigger onTap callback', async () => {
@@ -83,10 +84,8 @@ describe('Mobile Components', () => {
         </TouchFeedback>
       );
 
-      fireEvent.click(screen.getByRole('button'));
-      await waitFor(() => {
-        expect(onTap).toHaveBeenCalled();
-      });
+      await userEvent.click(screen.getByRole('button'));
+      expect(onTap).toHaveBeenCalled();
     });
   });
 
@@ -108,10 +107,8 @@ describe('Mobile Components', () => {
         </Touchable>
       );
 
-      fireEvent.click(screen.getByRole('button'));
-      await waitFor(() => {
-        expect(onPress).toHaveBeenCalled();
-      });
+      await userEvent.click(screen.getByRole('button'));
+      expect(onPress).toHaveBeenCalled();
     });
 
     it('should handle disabled state', () => {
@@ -121,7 +118,9 @@ describe('Mobile Components', () => {
         </Touchable>
       );
       const button = screen.getByRole('button');
-      expect(button.parentElement).toHaveClass('cursor-default');
+      // Touchable (TouchFeedback) root is the parent of the relative z-10 container
+      const touchableRoot = button.parentElement?.parentElement;
+      expect(touchableRoot).toHaveClass('cursor-default');
     });
   });
 

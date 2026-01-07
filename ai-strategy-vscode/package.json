@@ -3,6 +3,13 @@
   "displayName": "AI Strategy Assistant",
   "description": "Create quantitative trading strategies with GLM 4.7 AI",
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Penguin8n/codex-ai-strategy-tool.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Penguin8n/codex-ai-strategy-tool/issues"
+  },
   "engines": {"vscode": "^1.85.0"},
   "categories": ["Machine Learning", "Notebooks"],
   "activationEvents": [

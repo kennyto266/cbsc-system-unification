@@ -1,8 +1,22 @@
 // RTK Query API for Backtest operations
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
+// Helper to get env vars safely in both Jest and Vite
+const getEnvVar = (key: string, defaultValue: string): string => {
+  if (typeof process !== 'undefined' && process.env?.[key]) {
+    return process.env[key];
+  }
+  try {
+    const metaEnv = (0, eval)('typeof import.meta !== "undefined" ? import.meta.env : undefined');
+    if (metaEnv?.[key]) return metaEnv[key];
+  } catch {
+    // Fall through
+  }
+  return defaultValue;
+};
+
 // Base URL configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = getEnvVar('VITE_API_BASE_URL', '/api');
 
 // Types for backtest operations
 export interface BacktestConfig {

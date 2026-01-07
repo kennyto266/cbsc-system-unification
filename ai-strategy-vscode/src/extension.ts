@@ -7,10 +7,17 @@ export function activate(context: vscode.ExtensionContext) {
   const createNotebookCmd = vscode.commands.registerCommand(
     'aiStrategy.createNotebook',
     async () => {
-      const notebook = await vscode.workspace.openNotebookDocument(
-        vscode.Uri.parse('untitled:/strategy.ipynb')
-      );
-      await vscode.window.showNotebookDocument(notebook);
+      try {
+        // Create new notebook with empty content
+        const notebookData = new vscode.NotebookData([]);
+        const notebook = await vscode.workspace.openNotebookDocument(
+          'jupyter-notebook',
+          notebookData
+        );
+        await vscode.window.showNotebookDocument(notebook);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to create notebook: ${error}`);
+      }
     }
   );
 

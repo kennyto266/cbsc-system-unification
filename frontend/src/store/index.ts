@@ -9,6 +9,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { authSlice } from './slices/authSlice';
 import { strategySlice } from './slices/strategySlice';
 import { dashboardSlice } from './slices/dashboardSlice';
+import { uiSlice } from './slices/uiSlice';
 import economicStrategySlice from './slices/economicStrategySlice';
 import economicDataSlice from './slices/economicDataSlice';
 
@@ -31,6 +32,7 @@ const rootReducer = combineReducers({
   auth: authSlice.reducer,
   strategy: strategySlice.reducer,
   dashboard: dashboardSlice.reducer,
+  ui: uiSlice.reducer,
   economicStrategy: economicStrategySlice,
   economicData: economicDataSlice,
 
@@ -71,9 +73,12 @@ export const store = configureStore({
     if (typeof process !== 'undefined' && process.env) {
       return process.env.NODE_ENV !== 'production'
     }
-    // Vite browser environment with import.meta
-    if (typeof import.meta !== 'undefined' && import.meta.env) {
-      return import.meta.env.DEV
+    // Vite browser environment with import.meta (use eval to avoid compile-time parsing)
+    try {
+      const metaEnv = (0, eval)('typeof import.meta !== "undefined" ? import.meta.env : undefined');
+      if (metaEnv) return metaEnv.DEV;
+    } catch {
+      // Fall through to default
     }
     // Default to true for development
     return true

@@ -10,6 +10,20 @@ import {
 import type { RootState } from '@/store';
 import { tokenActions } from '@/store/slices/authSlice';
 
+// Helper to get env vars safely in both Jest and Vite
+const getEnvVar = (key: string, defaultValue: string): string => {
+  if (typeof process !== 'undefined' && process.env?.[key]) {
+    return process.env[key];
+  }
+  try {
+    const metaEnv = (0, eval)('typeof import.meta !== "undefined" ? import.meta.env : undefined');
+    if (metaEnv?.[key]) return metaEnv[key];
+  } catch {
+    // Fall through
+  }
+  return defaultValue;
+};
+
 /**
  * Base query configuration with automatic token refresh
  * Handles 401 responses by attempting to refresh the token
@@ -91,6 +105,6 @@ export const baseQueryWithReauth = ({
  * Simple base query without re-auth for public endpoints
  */
 export const baseQuery = fetchBaseQuery({
-  baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:3004',
+  baseUrl: getEnvVar('VITE_API_URL', 'http://localhost:3004'),
   credentials: 'include',
 });

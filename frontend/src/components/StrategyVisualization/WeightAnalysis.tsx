@@ -287,7 +287,10 @@ export const WeightAnalysis: React.FC<WeightAnalysisProps> = ({
             {Object.entries(weights).map(([key, value]) => (
               <div key={key}>
                 <div className="flex items-center justify-between mb-2">
-                  <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <label
+                    htmlFor={`weight-${key}`}
+                    className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                  >
                     {getStrategyName(key)}权重
                   </label>
                   <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -296,6 +299,7 @@ export const WeightAnalysis: React.FC<WeightAnalysisProps> = ({
                 </div>
 
                 <input
+                  id={`weight-${key}`}
                   type="range"
                   min="0"
                   max="1"

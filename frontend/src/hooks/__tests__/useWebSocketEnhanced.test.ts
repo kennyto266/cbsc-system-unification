@@ -136,16 +136,35 @@ describe('useWebSocket', () => {
     mockWebSocketService.connect.mockRejectedValue(error);
 
     const options: UseWebSocketOptions = {
-      autoConnect: true,
+      autoConnect: false,  // Don't auto-connect - auto-connect only logs errors
       onError: jest.fn(),
     };
 
     const { result } = renderHook(() => useWebSocket(undefined, options));
 
-    await waitFor(() => {
-      expect(result.current.error).toBe(error);
-      expect(options.onError).toHaveBeenCalledWith(error);
+    // Call connect directly - this sets error state
+    await act(async () => {
+      try {
+        await result.current.connect();
+      } catch (err) {
+        // Expected to throw
+      }
     });
+
+    // Error state should be set by connect function
+    expect(result.current.error).toBe(error);
+
+    // Get the error handler and trigger it to call onError callback
+    const errorHandler = mockWebSocketService.addEventListener.mock.calls.find(
+      ([event]) => event === 'onError'
+    )![1];
+
+    act(() => {
+      errorHandler(error);
+    });
+
+    // Now onError callback should be called
+    expect(options.onError).toHaveBeenCalledWith(error);
   });
 
   it('should call disconnect function', () => {
@@ -198,31 +217,23 @@ describe('useWebSocket', () => {
   });
 
   it('should track and clean up subscriptions on unmount', () => {
-    const { unmount } = renderHook(() => useWebSocket());
     const callback1 = jest.fn();
     const callback2 = jest.fn();
 
-    // Get subscription tracking
-    let unsubscribe1: (() => void) | undefined;
-    let unsubscribe2: (() => void) | undefined;
-
-    act(() => {
-      unsubscribe1 = mockWebSocketService.subscribe(
-        ChannelType.STRATEGY_UPDATES,
-        callback1
-      );
-      unsubscribe2 = mockWebSocketService.subscribe(
-        ChannelType.MARKET_DATA,
-        callback2
-      );
-    });
-
-    // Mock subscription return values
+    // Mock subscription return values BEFORE calling subscribe
     const mockUnsubscribe1 = jest.fn();
     const mockUnsubscribe2 = jest.fn();
     mockWebSocketService.subscribe
       .mockReturnValueOnce(mockUnsubscribe1)
       .mockReturnValueOnce(mockUnsubscribe2);
+
+    const { unmount, result } = renderHook(() => useWebSocket());
+
+    // Use hook's subscribe function to ensure tracking
+    act(() => {
+      result.current.subscribe(ChannelType.STRATEGY_UPDATES, callback1);
+      result.current.subscribe(ChannelType.MARKET_DATA, callback2);
+    });
 
     unmount();
 

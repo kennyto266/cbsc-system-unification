@@ -1,8 +1,21 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios'
 import { message } from 'antd'
 
-// API configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3004/api'
+// API configuration - works in both Jest and Vite
+const getApiBaseUrl = (): string => {
+  if (typeof process !== 'undefined' && process.env?.VITE_API_BASE_URL) {
+    return process.env.VITE_API_BASE_URL;
+  }
+  try {
+    const metaEnv = (0, eval)('typeof import.meta !== "undefined" ? import.meta.env : undefined');
+    if (metaEnv?.VITE_API_BASE_URL) return metaEnv.VITE_API_BASE_URL;
+  } catch {
+    // Fall through to default
+  }
+  return 'http://localhost:3004/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Create axios instance
 const api: AxiosInstance = axios.create({

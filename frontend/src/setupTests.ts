@@ -3,9 +3,6 @@
  * 测试环境配置文件
  */
 
-// Import jest-dom for custom matchers
-import '@testing-library/jest-dom'
-
 // @ts-ignore
 import { TextEncoder, TextDecoder } from 'util'
 
@@ -94,3 +91,106 @@ export {}
 // Mock HTMLCanvasElement for jsPDF
 HTMLCanvasElement.prototype.getContext = jest.fn() as any
 HTMLCanvasElement.prototype.toDataURL = jest.fn() as any
+
+// ===== CHART MOCKS =====
+// Mock Recharts components
+jest.mock('recharts', () => {
+  const React = require('react')
+  const OriginalRecharts = jest.requireActual('recharts')
+
+  const createMockComponent = (displayName: string, className: string) => {
+    const MockComponent = React.forwardRef<any, any>(
+      ({ children, data, className: customClassName, style, ...props }: any, ref) => {
+        return (
+          <div
+            data-testid={`recharts-${displayName.toLowerCase()}`}
+            className={`${className} ${customClassName || ''}`.trim()}
+            style={style}
+            ref={ref}
+            {...props}
+          >
+            {children}
+          </div>
+        )
+      }
+    )
+    MockComponent.displayName = displayName
+    return MockComponent
+  }
+
+  return {
+    ...OriginalRecharts,
+    ResponsiveContainer: createMockComponent('ResponsiveContainer', 'recharts-responsive-container'),
+    ComposedChart: createMockComponent('ComposedChart', 'recharts-composed-chart'),
+    AreaChart: createMockComponent('AreaChart', 'recharts-area-chart'),
+    LineChart: createMockComponent('LineChart', 'recharts-line-chart'),
+    BarChart: createMockComponent('BarChart', 'recharts-bar-chart'),
+    ScatterChart: createMockComponent('ScatterChart', 'recharts-scatter-chart'),
+    PieChart: createMockComponent('PieChart', 'recharts-pie-chart'),
+    RadarChart: createMockComponent('RadarChart', 'recharts-radar-chart'),
+    Area: createMockComponent('Area', 'recharts-area'),
+    Line: createMockComponent('Line', 'recharts-line'),
+    Bar: createMockComponent('Bar', 'recharts-bar'),
+    Scatter: createMockComponent('Scatter', 'recharts-scatter'),
+    Pie: createMockComponent('Pie', 'recharts-pie'),
+    Radar: createMockComponent('Radar', 'recharts-radar'),
+    Cell: createMockComponent('Cell', 'recharts-cell'),
+    XAxis: createMockComponent('XAxis', 'recharts-xAxis'),
+    YAxis: createMockComponent('YAxis', 'recharts-yAxis'),
+    ZAxis: createMockComponent('ZAxis', 'recharts-zAxis'),
+    CartesianGrid: createMockComponent('CartesianGrid', 'recharts-cartesian-grid'),
+    Tooltip: createMockComponent('Tooltip', 'recharts-tooltip-wrapper'),
+    Legend: createMockComponent('Legend', 'recharts-legend'),
+    ReferenceLine: createMockComponent('ReferenceLine', 'recharts-reference-line'),
+    ReferenceArea: createMockComponent('ReferenceArea', 'recharts-reference-area'),
+    ReferenceDot: createMockComponent('ReferenceDot', 'recharts-reference-dot'),
+  }
+})
+
+// Mock Plotly.js
+jest.mock('react-plotly.js', () => {
+  const React = require('react')
+  return React.forwardRef<any, any>((props, ref) => (
+    <div
+      data-testid="mock-plotly-chart"
+      ref={ref}
+      style={{ width: props.width || '100%', height: props.height || '100%' }}
+      className="plotly-chart"
+    >
+      <div data-testid="plotly-data">{JSON.stringify(props.data)}</div>
+      <div data-testid="plotly-layout">{JSON.stringify(props.layout)}</div>
+      <div data-testid="plotly-config">{JSON.stringify(props.config)}</div>
+    </div>
+  ))
+})
+
+// Mock Chart.js
+jest.mock('react-chartjs-2', () => {
+  const React = require('react')
+  return {
+    Line: React.forwardRef<any, any>((props: any, ref) => (
+      <div data-testid="mock-line-chart" ref={ref} className="chartjs-line">
+        <div data-testid="chart-data">{JSON.stringify(props.data)}</div>
+        <div data-testid="chart-options">{JSON.stringify(props.options)}</div>
+      </div>
+    )),
+    Bar: React.forwardRef<any, any>((props: any, ref) => (
+      <div data-testid="mock-bar-chart" ref={ref} className="chartjs-bar">
+        <div data-testid="chart-data">{JSON.stringify(props.data)}</div>
+        <div data-testid="chart-options">{JSON.stringify(props.options)}</div>
+      </div>
+    )),
+    Doughnut: React.forwardRef<any, any>((props: any, ref) => (
+      <div data-testid="mock-doughnut-chart" ref={ref} className="chartjs-doughnut">
+        <div data-testid="chart-data">{JSON.stringify(props.data)}</div>
+        <div data-testid="chart-options">{JSON.stringify(props.options)}</div>
+      </div>
+    )),
+    Pie: React.forwardRef<any, any>((props: any, ref) => (
+      <div data-testid="mock-pie-chart" ref={ref} className="chartjs-pie">
+        <div data-testid="chart-data">{JSON.stringify(props.data)}</div>
+        <div data-testid="chart-options">{JSON.stringify(props.options)}</div>
+      </div>
+    )),
+  }
+})

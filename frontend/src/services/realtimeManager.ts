@@ -39,7 +39,30 @@ interface RealtimeCallbacks {
 export class RealtimeManager {
   private config: RealtimeConfig;
   private callbacks: RealtimeCallbacks = {};
-  private wsService = getWebSocketService();
+  private _wsService: any = null; // Lazy initialization
+
+  // Getter for wsService to allow lazy initialization
+  private get wsService(): any {
+    if (!this._wsService) {
+      try {
+        this._wsService = getWebSocketService();
+      } catch (error) {
+        console.warn('[RealtimeManager] WebSocket service not available:', error);
+        // Return a minimal no-op mock if service is not available
+        this._wsService = {
+          connect: () => Promise.resolve(),
+          disconnect: () => {},
+          send: () => {},
+          on: () => {},
+          off: () => {},
+          subscribeToStrategy: () => {},
+          subscribeToPerformance: () => {},
+          subscribeToSignals: () => {}
+        };
+      }
+    }
+    return this._wsService;
+  }
 
   // Timer management
   private updateTimer: NodeJS.Timeout | null = null;
@@ -368,6 +391,9 @@ export class RealtimeManager {
         this.callbacks.onPerformanceUpdate?.(performance);
 
         this.lastDataHash = newDataHash;
+
+        // Increment update count when data is actually updated
+        this.updateCount++;
       }
 
       this.lastSyncTime = new Date();
