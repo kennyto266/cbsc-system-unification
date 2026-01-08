@@ -16,9 +16,9 @@ from clickhouse_driver import Client
 
 # Import configuration
 try:
-    from etl_config import CH_CONFIG
+    from etl_config import get_clickhouse_client
 except ImportError:
-    print("❌ Failed to import etl_config.py")
+    print("[ERROR] Failed to import from etl_config.py")
     print("Ensure clickhouse-driver is installed")
     sys.exit(1)
 
@@ -227,23 +227,26 @@ def import_to_clickhouse(client: Client, table: str, data: List[Dict]):
     # Get column names from first record
     columns = list(data[0].keys())
 
-    # Prepare data for insertion
+    # Prepare data for insertion - keep datetime as datetime
     insert_data = []
     for record in data:
         row = []
         for col in columns:
             value = record[col]
-            if isinstance(value, datetime):
-                row.append(value.strftime('%Y-%m-%d %H:%M:%S'))
+            if value is None:
+                row.append(0)  # Replace None with 0
             else:
                 row.append(value)
         insert_data.append(tuple(row))
 
-    # Insert data
-    query = f"INSERT INTO {table} ({', '.join(columns)}) VALUES"
-    client.execute(query, insert_data)
-
-    print(f"  ✅ Imported {len(insert_data)} records to {table}")
+    # Insert data (use analytics database prefix)
+    query = f"INSERT INTO analytics.{table} ({', '.join(columns)}) VALUES"
+    try:
+        client.execute(query, insert_data)
+        print(f"  [OK] Imported {len(insert_data)} records to {table}")
+    except Exception as e:
+        print(f"  [ERROR] Failed to import: {e}")
+        raise
 
 
 def main():
@@ -253,20 +256,20 @@ def main():
     print("="*60)
 
     # Connect to ClickHouse
-    print("\n🔌 Connecting to ClickHouse...")
+    print("\n[@] Connecting to ClickHouse...")
     try:
-        client = Client(**CH_CONFIG)
+        client = get_clickhouse_client()
         client.execute('SELECT 1')
-        print("✅ Connected successfully")
+        print("[OK] Connected successfully")
     except Exception as e:
-        print(f"❌ Failed to connect: {e}")
+        print(f"[ERROR] Failed to connect: {e}")
         print("\nTroubleshooting:")
         print("1. Ensure ClickHouse is running")
         print("2. Run: python scripts/init_clickhouse.py")
         sys.exit(1)
 
     # Import data
-    print("\n📊 Importing sample data...")
+    print("\n[*] Importing sample data...")
 
     try:
         # Import backtests
@@ -290,17 +293,17 @@ def main():
         import_to_clickhouse(client, 'trades', trades)
 
         print("\n" + "="*60)
-        print("✅ Sample data import completed!")
+        print("[OK] Sample data import completed!")
         print("="*60)
 
         # Show summary
-        print("\n📋 Summary:")
+        print("\n[] Summary:")
         for table in ['strategy_backtests', 'strategy_performance', 'market_data', 'trades']:
             result = client.execute(f"SELECT COUNT(*) FROM analytics.{table}")
             print(f"  • {table}: {result[0][0]:,} rows")
 
     except Exception as e:
-        print(f"\n❌ Import failed: {e}")
+        print(f"\n[ERROR] Import failed: {e}")
         sys.exit(1)
 
 

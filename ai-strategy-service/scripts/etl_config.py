@@ -18,13 +18,24 @@ PG_CONFIG = {
 }
 
 # ClickHouse Configuration (Target)
+# Note: Port 9000 is native protocol, 8123 is HTTP
 CH_CONFIG = {
     'host': os.getenv('CLICKHOUSE_HOST', 'localhost'),
-    'port': int(os.getenv('CLICKHOUSE_PORT', 8123)),
+    'port': 9000,  # Native ClickHouse protocol
     'database': 'analytics',
     'user': os.getenv('CLICKHOUSE_USER', 'default'),
-    'password': os.getenv('CLICKHOUSE_PASSWORD', '')
+    'password': os.getenv('CLICKHOUSE_PASSWORD', ''),
+    'connect_timeout': 30,
+    'send_receive_timeout': 300
 }
+
+# Function to get client without database (for initial connection)
+def get_clickhouse_client():
+    """Get ClickHouse client without database specified"""
+    from clickhouse_driver import Client
+    config = CH_CONFIG.copy()
+    config.pop('database', None)
+    return Client(**config)
 
 # ETL Sync Settings
 SYNC_INTERVAL_SECONDS = 300  # 5 minutes

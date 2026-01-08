@@ -23,7 +23,7 @@ try:
         RETRY_DELAY_SECONDS, LOG_TABLE
     )
 except ImportError:
-    print("❌ Failed to import etl_config.py")
+    print("[ERROR] Failed to import etl_config.py")
     print("Ensure you're running this script from the scripts/ directory")
     sys.exit(1)
 
@@ -48,26 +48,26 @@ class ETLSync:
         try:
             # Connect to PostgreSQL
             self.pg_conn = psycopg2.connect(**PG_CONFIG)
-            logger.info("✅ Connected to PostgreSQL")
+            logger.info("[OK] Connected to PostgreSQL")
 
             # Connect to ClickHouse
             self.ch_client = Client(**CH_CONFIG)
             self.ch_client.execute('SELECT 1')
-            logger.info("✅ Connected to ClickHouse")
+            logger.info("[OK] Connected to ClickHouse")
 
             return True
         except Exception as e:
-            logger.error(f"❌ Connection failed: {e}")
+            logger.error(f"[ERROR] Connection failed: {e}")
             return False
 
     def disconnect(self):
         """Close database connections"""
         if self.pg_conn:
             self.pg_conn.close()
-            logger.info("✅ Disconnected from PostgreSQL")
+            logger.info("[OK] Disconnected from PostgreSQL")
         if self.ch_client:
             self.ch_client.disconnect()
-            logger.info("✅ Disconnected from ClickHouse")
+            logger.info("[OK] Disconnected from ClickHouse")
 
     def get_last_sync_time(self, table_name: str) -> datetime:
         """Get the last successful sync timestamp from ETL logs"""
@@ -240,7 +240,7 @@ class ETLSync:
                 records_processed=inserted,
                 duration=duration
             )
-            logger.info(f"✅ Synced {inserted} records in {duration:.2f}s")
+            logger.info(f"[OK] Synced {inserted} records in {duration:.2f}s")
             return True
         else:
             self.log_sync_operation(
@@ -252,7 +252,7 @@ class ETLSync:
                 error_message="Failed to insert records",
                 duration=duration
             )
-            logger.error(f"❌ Failed to sync {table_name}")
+            logger.error(f"[ERROR] Failed to sync {table_name}")
             return False
 
     def run_sync(self) -> bool:
@@ -291,10 +291,10 @@ class ETLSync:
         try:
             while True:
                 self.run_sync()
-                logger.info(f"\n⏳ Waiting {SYNC_INTERVAL_SECONDS}s until next sync...")
+                logger.info(f"\n[~] Waiting {SYNC_INTERVAL_SECONDS}s until next sync...")
                 time.sleep(SYNC_INTERVAL_SECONDS)
         except KeyboardInterrupt:
-            logger.info("\n👋 ETL sync stopped by user")
+            logger.info("\n[] ETL sync stopped by user")
 
 
 def main():

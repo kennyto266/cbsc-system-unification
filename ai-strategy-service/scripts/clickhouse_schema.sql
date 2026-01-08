@@ -101,10 +101,10 @@ SETTINGS index_granularity = 8192;
 -- Top performing strategies by Sharpe ratio
 CREATE MATERIALIZED VIEW IF NOT EXISTS top_strategies_mv
 ENGINE = ReplacingMergeTree()
-ORDER BY (strategy_id, backtest_date)
+ORDER BY (strategy_id, latest_backtest)
 AS SELECT
     strategy_id,
-    argMax(backtest_date, backtest_date) as latest_backtest,
+    max(backtest_date) as latest_backtest,
     AVG(sharpe_ratio) as avg_sharpe,
     AVG(total_return) as avg_return,
     COUNT(*) as test_count
@@ -115,7 +115,7 @@ GROUP BY strategy_id;
 -- Daily performance summary
 CREATE MATERIALIZED VIEW IF NOT EXISTS daily_performance_summary_mv
 ENGINE = SummingMergeTree()
-ORDER BY (toDate(backtest_date), strategy_id)
+ORDER BY (date, strategy_id)
 AS SELECT
     toDate(backtest_date) as date,
     strategy_id,
