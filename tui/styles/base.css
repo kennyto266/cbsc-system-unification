@@ -12,8 +12,62 @@ Footer {
     background: #2d2d2d;
 }
 
-#welcome {
-    content-align: center middle;
+/* 主菜單樣式 */
+MainMenuScreen {
+    align: center middle;
+}
+
+#title {
+    content-align: center;
     text-style: bold;
     color: #4caf50;
+    text-size: 24;
+    margin: 2;
+}
+
+#spacer {
+    height: 2;
+}
+
+.menu_item {
+    width: 40;
+    margin: 1;
+}
+
+/* 按鈕樣式 */
+Button {
+    background: #3d3d3d;
+    color: #ffffff;
+}
+
+Button:hover {
+    background: #4d4d4d;
+}
+
+Button.-active {
+    background: #4caf50;
+}
+
+/* 表格樣式 */
+DataTable {
+    background: #2d2d2d;
+}
+
+DataTable > .datatable--cursor {
+    background: #4caf50;
+}
+
+/* 進度條樣式 */
+ProgressBar {
+    width: 30;
+}
+
+ProgressBar.-complete {
+    background: #4caf50;
+}
+
+/* 日誌查看器 */
+LogViewer {
+    background: #0d0d0d;
+    height: 1fr;
 }
