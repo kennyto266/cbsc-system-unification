@@ -12,13 +12,13 @@ Footer {
     background: #2d2d2d;
 }
 
-/* 主菜單樣式 */
+/* Main menu styles */
 MainMenuScreen {
     align: center middle;
 }
 
 #title {
-    content-align: center;
+    text-align: center;
     text-style: bold;
     color: #4caf50;
     margin: 2;
@@ -33,7 +33,7 @@ MainMenuScreen {
     margin: 1;
 }
 
-/* 按鈕樣式 */
+/* Button styles */
 Button {
     background: #3d3d3d;
     color: #ffffff;
