@@ -1,7 +1,7 @@
 # tui/screens/database.py
 from textual.screen import Screen
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Button, Header, Footer, Input, TabbedContent, Tab, Pane
+from textual.widgets import Button, Header, Footer, Input, TabbedContent, Tab
 from api.client import CBSCAPIClient
 from widgets.table_browser import TableBrowser
 
