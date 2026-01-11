@@ -9,11 +9,20 @@
 - 多数据源管理和切换
 """
 
-from .base_adapter import BaseDataAdapter, DataAdapterConfig
-from .raw_data_adapter import RawDataAdapter
+from .base_adapter_simplified import (
+    BaseDataAdapter, 
+    DataAdapterConfig,
+    RealMarketData,
+    DataValidationResult,
+    DataSourceType,
+    DataQuality
+)
 
 __all__ = [
     'BaseDataAdapter',
-    'DataAdapterConfig', 
-    'RawDataAdapter'
+    'DataAdapterConfig',
+    'RealMarketData',
+    'DataValidationResult',
+    'DataSourceType',
+    'DataQuality'
 ]

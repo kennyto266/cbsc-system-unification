@@ -1,23 +1,168 @@
 # CBSC Unified Dashboard
 
-现代化量化交易策略管理平台，整合CBSC监控系统、策略管理界面和数据分析工具。
+现代化企业级量化交易策略管理平台前端基础架构和组件库。
 
-## 🚀 项目特性
+## 🚀 特性
+
+- **现代化技术栈**: React 18 + TypeScript + Vite
+- **企业级设计系统**: 基于 Tailwind CSS 的设计规范
+- **完整组件库**: 30+ 可复用UI组件，支持主题定制
+- **状态管理**: Redux Toolkit + RTK Query
+- **类型安全**: 严格的TypeScript配置
+- **可访问性**: WCAG 2.1 AA标准支持
+- **响应式设计**: 移动端优先的设计理念
+- **性能优化**: 代码分割、懒加载、构建优化
+- **开发体验**: Storybook文档、热重载、类型提示
 
 ### 核心功能
 - **策略管理**: 完整的策略CRUD操作、执行监控、参数优化
 - **实时监控**: WebSocket实时数据推送、系统状态监控、市场行情跟踪
 - **数据分析**: 交互式图表、性能分析、风险评估、报告生成
 - **用户管理**: 认证授权、权限控制、个人资料管理
-- **响应式设计**: 完美支持桌面端和移动端
 
-### 技术亮点
-- **React 18 + TypeScript**: 最新的前端技术栈，类型安全
-- **Redux Toolkit + RTK Query**: 现代化状态管理和数据获取
-- **Ant Design + Tailwind CSS**: 企业级UI组件和原子化CSS
-- **Chart.js + Plotly.js**: 丰富的数据可视化图表
-- **WebSocket**: 实时数据推送和连接管理
-- **PWA支持**: 离线可用、安装到桌面
+## 📋 技术栈
+
+### 核心框架
+- **React 18** - 用户界面库
+- **TypeScript 5.2** - 类型安全的JavaScript
+- **Vite 5.0** - 现代化构建工具
+
+### 样式和UI
+- **Tailwind CSS 3.3** - 原子化CSS框架
+- **Headless UI** - 无样式组件库
+- **class-variance-authority** - 组件变体管理
+- **Framer Motion** - 动画库
+- **Ant Design 5** - 企业级UI组件库
+
+### 状态管理
+- **Redux Toolkit** - 状态管理
+- **RTK Query** - 数据获取和缓存
+- **React Hook Form** - 表单状态管理
+
+### 图表可视化
+- **Chart.js** - 轻量级图表库
+- **Plotly.js** - 科学计算图表
+- **Recharts** - React图表组件
+
+### 开发工具
+- **Storybook 7.6** - 组件文档和测试
+- **ESLint + Prettier** - 代码规范
+- **Jest + React Testing Library** - 单元测试
+- **TypeScript strict mode** - 严格类型检查
+
+## 🛠️ 安装和启动
+
+### 环境要求
+- Node.js >= 16.0.0
+- npm >= 8.0.0
+
+### 安装依赖
+```bash
+npm install
+```
+
+### 开发环境
+```bash
+# 启动开发服务器
+npm run dev
+
+# 启动 Storybook
+npm run storybook
+```
+
+### 构建和部署
+```bash
+# 构建生产版本
+npm run build
+
+# 预览构建结果
+npm run preview
+
+# 构建 Storybook
+npm run build-storybook
+```
+
+## 🎨 设计系统
+
+### 颜色系统
+基于HSL的语义化颜色系统，支持明暗主题切换：
+
+```css
+/* 主色调 */
+primary-50: hsl(211, 98%, 97%)
+primary-500: hsl(211, 98%, 52%)
+primary-900: hsl(211, 100%, 20%)
+
+/* 语义化颜色 */
+success-500: hsl(142, 71%, 45%)
+warning-500: hsl(38, 92%, 50%)
+error-500: hsl(0, 84%, 60%)
+```
+
+### 字体系统
+- **无衬线字体**: 系统字体栈，确保最佳性能
+- **等宽字体**: 用于代码显示
+- **衬线字体**: 用于正式文档
+
+### 间距系统
+基于4px的8点网格系统：
+```css
+/* 基础间距单位 */
+--spacing-1: 0.25rem  (4px)
+--spacing-2: 0.5rem   (8px)
+--spacing-3: 0.75rem  (12px)
+--spacing-4: 1rem     (16px)
+```
+
+### 响应式断点
+```css
+xs: 475px
+sm: 640px
+md: 768px
+lg: 1024px
+xl: 1280px
+2xl: 1536px
+3xl: 1600px
+```
+
+## 🧩 组件库
+
+### 基础组件
+- **Button** - 按钮组件，支持多种变体和状态
+- **Input** - 输入框组件，支持验证和图标
+- **Card** - 卡片容器组件
+- **Badge** - 徽章组件
+- **Modal** - 弹窗组件
+
+### 布局组件
+- **Container** - 响应式容器
+- **Grid** - 网格布局系统
+- **Header** - 页面头部导航
+
+### 数据组件
+- **Table** - 数据表格组件
+- **Form** - 表单组件系统
+
+### 使用示例
+
+```tsx
+import { Button, Card, Input, Form } from '@/components'
+
+function MyComponent() {
+  return (
+    <Card className="p-6">
+      <Form>
+        <FormField label="用户名" required>
+          <Input placeholder="请输入用户名" />
+        </FormField>
+        <Button variant="primary" type="submit">
+          提交
+        </Button>
+      </Form>
+    </Card>
+  )
+}
+```
 
 ## 🏗️ 项目架构
 

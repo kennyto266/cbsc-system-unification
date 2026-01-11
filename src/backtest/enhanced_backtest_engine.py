@@ -1,553 +1,744 @@
 """
-增強型回測引擎 - 真實歷史數據回測
+Enhanced Backtest Engine with Integrated Risk Management
+========================================================
 
-支持多種策略、真實交易成本、滑點和市場衝擊
+An enhanced version of the CBSC backtest engine that integrates advanced risk management
+capabilities including real-time monitoring, dynamic adjustments, and comprehensive analysis.
+
+Author: CBSC Quant Team
+Version: 2.0.0
 """
 
-import asyncio
-import logging
-from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional, Tuple, Union
-import pandas as pd
 import numpy as np
-from decimal import Decimal
+import pandas as pd
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Tuple, Any, Callable
+from dataclasses import dataclass, field
 from enum import Enum
-from pydantic import BaseModel, Field
+import logging
+import asyncio
+import time
+from concurrent.futures import ThreadPoolExecutor
+
+# Import risk management modules
 try:
-import matplotlib.pyplot as plt
-import seaborn as sns
-PLOTTING_AVAILABLE = True
-except ImportError:    plt = None
-sns = None
-PLOTTING_AVAILABLE = False
+    from .enhanced_risk_analyzer import EnhancedRiskAnalyzer, RiskMetrics
+    from .real_time_risk_monitor import RealTimeRiskMonitor, RiskThreshold, RiskLevel, AdjustmentType
+    from .dynamic_risk_adjuster import DynamicRiskAdjustmentSystem, PositionScalingAdjuster, VolatilityTargetingAdjuster
+except ImportError:
+    # Fallback for running as script
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    try:
+        from enhanced_risk_analyzer import EnhancedRiskAnalyzer, RiskMetrics
+        from real_time_risk_monitor import RealTimeRiskMonitor, RiskThreshold, RiskLevel, AdjustmentType
+        from dynamic_risk_adjuster import DynamicRiskAdjustmentSystem, PositionScalingAdjuster, VolatilityTargetingAdjuster
+    except ImportError:
+        EnhancedRiskAnalyzer = None
+        RiskMetrics = None
+        RealTimeRiskMonitor = None
+        RiskThreshold = None
+        RiskLevel = None
+        AdjustmentType = None
+        DynamicRiskAdjustmentSystem = None
+        PositionScalingAdjuster = None
+        VolatilityTargetingAdjuster = None
 
-from .base_backtest import BaseBacktestEngine, BacktestConfig, BacktestResult
-from ..risk_management.risk_calculator import RiskCalculator, RiskMetrics
-from ..data_adapters.data_service import DataService
-
-class TransactionCostBaseModel:
-"""交易成本模型"""
-commission_per_share: float = Field0.005, description="每股佣金"
-commission_per_trade: float = Field1.0, description="每筆交易固定佣金"
-bid_ask_spread: float = Field0.001, description="買賣價差"
-market_impact: float = Field0.0005, description="市場衝擊"
-slippage: float = Field0.0002, description="滑點"
-
-class BacktestMetricsBaseModel:
-"""回測指標"""
-
-total_return: float = Field..., description="總收益率"
-annualized_return: float = Field..., description="年化收益率"
-volatility: float = Field..., description="年化波動率"
-sharpe_ratio: float = Field..., description="夏普比率"
-sortino_ratio: float = Field..., description="索提諾比率"
-calmar_ratio: float = Field..., description="卡爾瑪比率"
-
-max_drawdown: float = Field..., description="最大回撤"
-max_drawdown_duration: int = Field..., description="最大回撤持續天數"
-var_95: float = Field..., description="95% VaR"
-var_99: float = Field..., description="99% VaR"
-expected_shortfall_95: float = Field..., description="95% 期望損失"
-
-total_trades: int = Field..., description="總交易次數"
-winning_trades: int = Field..., description="盈利交易次數"
-losing_trades: int = Field..., description="虧損交易次數"
-win_rate: float = Field..., description="勝率"
-avg_win: float = Field..., description="平均盈利"
-avg_loss: float = Field..., description="平均虧損"
-profit_factor: float = Field..., description="盈利因子"
-
-total_commission: float = Field..., description="總佣金"
-total_slippage: float = Field..., description="總滑點成本"
-total_market_impact: float = Field..., description="總市場衝擊成本"
-net_return: float = Field..., description="淨收益率"
-
-information_ratio: float = Field..., description="信息比率"
-tracking_error: float = Field..., description="跟踪誤差"
-beta: float = Field..., description="貝塔係數"
-alpha: float = Field..., description="阿爾法"
-
-start_date: datetime = Field..., description="開始日期"
-end_date: datetime = Field..., description="結束日期"
-trading_days: int = Field..., description="交易日數"
-initial_capital: float = Field..., description="初始資本"
-
-class TradeBaseModel:
-"""交易記錄"""
-symbol: str = Field..., description="交易標的"
-side: str = Field..., description="交易方向"
-quantity: float = Field..., description="交易數量"
-price: float = Field..., description="交易價格"
-timestamp: datetime = Field..., description="交易時間"
-commission: float = Field..., description="佣金"
-slippage: float = Field..., description="滑點"
-market_impact: float = Field..., description="市場衝擊"
-total_cost: float = Field..., description="總成本"
-pnl: Optional[float] = FieldNone, description="損益"
-
-class EnhancedBacktestEngineBaseBacktestEngine:
-"""增強型回測引擎"""
-
-def __init__self, config: BacktestConfig:
-super().__init__config
-self.logger = logging.getLogger"hk_quant_system.enhanced_backtest"
-
-self.risk_calculator = RiskCalculator()
-self.data_service = DataService()
-
-self.transaction_cost = TransactionCost(**config.config.get'transaction_cost', {})
-
-self.current_positions: Dict[str, float] = {}
-self.trades: List[Trade] = []
-self.portfolio_values: List[float] = []
-self.daily_returns: List[float] = []
-self.benchmark_returns: List[float] = []
-
-async def initializeself -> bool:
-"""初始化回測引擎"""
+# Import new advanced modules
 try:
-self.logger.info"Initializing enhanced backtest engine..."
+    from .vectorized_backtest_engine import VectorizedBacktestEngine, VectorizedBacktestMode, PortfolioConfig
+    from .transaction_cost_model import TransactionCostModel, create_default_cost_config
+    from .advanced_monte_carlo import AdvancedMonteCarlo, AdvancedMCConfig, create_stress_scenarios
+    from .portfolio_optimizer import PortfolioOptimizer, create_optimization_config
+    from .performance_attribution_analyzer import PerformanceAttributionAnalyzer, create_attribution_config
+    from .parallel_processor_new import ParallelProcessor, create_parallel_config
+    from .visualization_reports import BacktestVisualizer, ReportGenerator
+    from .parameter_optimizer import ParameterOptimizer, create_optimization_config
+except ImportError:
+    logger.warning("Some advanced modules not available. Enhanced features may be limited.")
 
-if not await self.data_service.initialize():
-self.logger.error"Failed to initialize data service"
-return False
-
-await self._load_historical_data()
-
-self.logger.info"Enhanced backtest engine initialized successfully"
-return True
-
-except Exception as e:
-self.logger.exceptionf"Failed to initialize enhanced backtest engine: {e}"
-return False
-
-async def _load_historical_dataself -> None:
-"""加載歷史數據"""
-try:
-self.logger.info"Loading historical data..."
-
-# 獲取所有標的的歷史數據
-self.historical_data = {}
-
-for symbol in self.config.symbols:
-self.logger.infof"Loading data for {symbol}..."
-
-market_data = await self.data_service.get_market_data(
-symbol=symbol,
-start_date=self.config.start_date,
-end_date=self.config.end_date
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-
-if market_data:
-# 轉換為DataFrame
-df_data = []
-for data_point in market_data:
-df_data.append({
-'timestamp': data_point.timestamp,
-'open': floatdata_point.open_price,
-'high': floatdata_point.high_price,
-'low': floatdata_point.low_price,
-'close': floatdata_point.close_price,
-'volume': data_point.volume
-})
-
-df = pd.DataFramedf_data
-df.set_index'timestamp', inplace=True
-df.sort_indexinplace=True
-
-self.historical_data[symbol] = df
-self.logger.info(f"Loaded {lendf} data points for {symbol}")
-else:
-self.logger.warningf"No data found for {symbol}"
-
-if self.config.benchmark:    benchmark_data = await self.data_service.get_market_data(
-symbol=self.config.benchmark,
-start_date=self.config.start_date,
-end_date=self.config.end_date
-)
-
-if benchmark_data:    df_data = []
-for data_point in benchmark_data:
-df_data.append({
-'timestamp': data_point.timestamp,
-'close': floatdata_point.close_price
-})
-
-df = pd.DataFramedf_data
-df.set_index'timestamp', inplace=True
-df.sort_indexinplace=True
-
-self.benchmark_data = df
-self.logger.info(f"Loaded {lendf} benchmark data points")
-else:
-self.logger.warningf"No benchmark data found for {self.config.benchmark}"
-
-self.logger.info"Historical data loading completed"
-
-except Exception as e:
-self.logger.errorf"Error loading historical data: {e}"
-raise
-
-async def run_backtestself, strategy_func -> BacktestResult:
-"""運行回測"""
-try:
-self.logger.info"Starting enhanced backtest..."
-
-self._reset_backtest_state()
-
-all_dates = set()
-for symbol_data in self.historical_data.values():
-all_dates.updatesymbol_data.index.date
-
-trading_dates = sorted(listall_dates)
-self.logger.info(f"Running backtest for {lentrading_dates} trading days")
-
-for i, current_date in enumeratetrading_dates:
-await self._process_trading_daycurrent_date, strategy_func
-
-portfolio_value = await self._calculate_portfolio_valuecurrent_date
-self.portfolio_values.appendportfolio_value
-
-if i > 0:    daily_return = (portfolio_value - self.portfolio_values[-2]) / self.portfolio_values[-2]
-self.daily_returns.appenddaily_return
-
-if hasattrself, 'benchmark_data':    benchmark_return = await self._calculate_benchmark_return(current_date)
-self.benchmark_returns.appendbenchmark_return
-
-if i % 50 == 0:
-self.logger.info(f"Processed {i}/{lentrading_dates} trading days")
-
-result = await self._calculate_backtest_results()
-
-self.logger.info"Enhanced backtest completed successfully"
-return result
-
-except Exception as e:
-self.logger.exceptionf"Error running backtest: {e}"
-raise
-
-async def _process_trading_dayself, current_date: datetime.date, strategy_func -> None:
-"""處理單個交易日"""
-try:
-# 獲取當前市場數據
-current_data = {}
-for symbol, data in self.historical_data.items():
-if current_date in data.index.date:    current_data[symbol] = data.loc[data.index.date == current_date].iloc[0]
-
-if not current_data:
-return
-
-signals = await strategy_funccurrent_data, self.current_positions
-
-for signal in signals:
-await self._execute_tradesignal, current_date
-
-await self._update_positions()
-
-except Exception as e:
-self.logger.errorf"Error processing trading day {current_date}: {e}"
-
-async def _execute_tradeself, signal: Dict[str, Any], trade_date: datetime.date -> None:
-"""執行交易"""
-try:    symbol = signal.get('symbol')
-side = signal.get'side', 'buy'
-quantity = signal.get'quantity', 0
-
-if not symbol or quantity <= 0:
-return
-
-if symbol in self.historical_data:    symbol_data = self.historical_data[symbol]
-if trade_date in symbol_data.index.date:    price_data = symbol_data.loc[symbol_data.index.date == trade_date].iloc[0]
-
-# 根據交易方向選擇價格
-if side == 'buy':    price = price_data['close'] * (1 + self.transaction_cost.bid_ask_spread / 2)
-else:    price = price_data['close'] * (1 - self.transaction_cost.bid_ask_spread / 2)
-
-commission = self.transaction_cost.commission_per_trade + \
-quantity * self.transaction_cost.commission_per_share
-
-slippage_cost = quantity * price * self.transaction_cost.slippage
-
-market_impact_cost = quantity * price * self.transaction_cost.market_impact
-
-total_cost = commission + slippage_cost + market_impact_cost
-
-trade = Trade(
-symbol=symbol,
-side=side,
-quantity=quantity,
-price=price,
-timestamp=datetime.combine(trade_date, datetime.min.time()),
-commission=commission,
-slippage=slippage_cost,
-market_impact=market_impact_cost,
-total_cost=total_cost
-)
-
-self.trades.appendtrade
-
-if side == 'buy':    self.current_positions[symbol] = self.current_positions.get(symbol, 0) + quantity
-else:    self.current_positions[symbol] = self.current_positions.get(symbol, 0) - quantity
-
-self.logger.debugf"Executed trade: {symbol} {side} {quantity} @ {price:.2f}"
-
-except Exception as e:
-self.logger.errorf"Error executing trade: {e}"
-
-async def _update_positionsself -> None:
-"""更新持倉"""
-
-self.current_positions = {k: v for k, v in self.current_positions.items() if absv > 1e-6}
-
-async def _calculate_portfolio_valueself, current_date: datetime.date -> float:
-"""計算組合價值"""
-try:    total_value = self.config.initial_capital
-
-for symbol, quantity in self.current_positions.items():
-if symbol in self.historical_data:    symbol_data = self.historical_data[symbol]
-if current_date in symbol_data.index.date:    price_data = symbol_data.loc[symbol_data.index.date == current_date].iloc[0]
-position_value = quantity * price_data['close']
-total_value += position_value
-
-return total_value
-
-except Exception as e:
-self.logger.errorf"Error calculating portfolio value: {e}"
-return self.config.initial_capital
-
-async def _calculate_benchmark_returnself, current_date: datetime.date -> float:
-"""計算基準收益率"""
-try:
-if not hasattrself, 'benchmark_data':
-return 0.0
-
-if current_date in self.benchmark_data.index.date:    current_price = self.benchmark_data.loc[self.benchmark_data.index.date == current_date]['close'].iloc[0]
-
-if self.benchmark_returns:
-# 計算相對於前一天的收益率
-prev_date = self.benchmark_data.index.date[self.benchmark_data.index.date < current_date][-1]
-prev_price = self.benchmark_data.loc[self.benchmark_data.index.date == prev_date]['close'].iloc[0]
-return current_price - prev_price / prev_price
-else:
-# 第一天，計算相對於初始價格的收益率
-initial_price = self.benchmark_data.iloc[0]['close']
-return current_price - initial_price / initial_price
-
-return 0.0
-
-except Exception as e:
-self.logger.errorf"Error calculating benchmark return: {e}"
-return 0.0
-
-async def _calculate_backtest_resultsself -> BacktestResult:
-"""計算回測結果"""
-try:
-if not self.portfolio_values or not self.daily_returns:
-raise ValueError"No portfolio data available for results calculation"
-
-initial_value = self.portfolio_values[0]
-final_value = self.portfolio_values[-1]
-total_return = final_value - initial_value / initial_value
-
-trading_days = lenself.daily_returns
-years = trading_days / 252
-annualized_return = 1 + total_return ** 1 / years - 1 if years > 0 else 0
-
-returns_series = pd.Seriesself.daily_returns
-risk_metrics = await self.risk_calculator.calculate_portfolio_riskreturns_series
-
-winning_trades = [t for t in self.trades if t.pnl and t.pnl > 0]
-losing_trades = [t for t in self.trades if t.pnl and t.pnl < 0]
-
-total_trades = lenself.trades
-winning_count = lenwinning_trades
-losing_count = lenlosing_trades
-win_rate = winning_count / total_trades if total_trades > 0 else 0
-
-avg_win = np.mean[t.pnl for t in winning_trades] if winning_trades else 0
-avg_loss = np.mean[t.pnl for t in losing_trades] if losing_trades else 0
-profit_factor = absavg_win / avg_loss if avg_loss != 0 else 0
-
-total_commission = sumt.commission for t in self.trades
-total_slippage = sumt.slippage for t in self.trades
-total_market_impact = sumt.market_impact for t in self.trades
-
-information_ratio = 0.0
-tracking_error = 0.0
-beta = 0.0
-alpha = 0.0
-
-if lenself.benchmark_returns == lenself.daily_returns:    benchmark_series = pd.Series(self.benchmark_returns)
-active_returns = returns_series - benchmark_series
-
-tracking_error = active_returns.std() * np.sqrt252
-information_ratio = active_returns.mean() * 252 / tracking_error if tracking_error > 0 else 0
-
-covariance = np.covreturns_series, benchmark_series[0, 1]
-benchmark_variance = np.varbenchmark_series
-beta = covariance / benchmark_variance if benchmark_variance > 0 else 0
-
-alpha = annualized_return - (0.02 + beta * (benchmark_series.mean() * 252 - 0.02))
-
-backtest_metrics = BacktestMetrics(
-total_return=total_return,
-annualized_return=annualized_return,
-volatility=risk_metrics.volatility,
-sharpe_ratio=risk_metrics.sharpe_ratio,
-sortino_ratio=risk_metrics.sortino_ratio,
-calmar_ratio=risk_metrics.calmar_ratio,
-max_drawdown=risk_metrics.max_drawdown,
-max_drawdown_duration=0, # 需要額外計算
-var_95=risk_metrics.var_95,
-var_99=risk_metrics.var_99,
-expected_shortfall_95=risk_metrics.expected_shortfall_95,
-total_trades=total_trades,
-winning_trades=winning_count,
-losing_trades=losing_count,
-win_rate=win_rate,
-avg_win=avg_win,
-avg_loss=avg_loss,
-profit_factor=profit_factor,
-total_commission=total_commission,
-total_slippage=total_slippage,
-total_market_impact=total_market_impact,
-net_return=total_return - total_commission + total_slippage + total_market_impact / initial_value,
-information_ratio=information_ratio,
-tracking_error=tracking_error,
-beta=beta,
-alpha=alpha,
-start_date=self.config.start_date,
-end_date=self.config.end_date,
-trading_days=trading_days,
-initial_capital=initial_value
-)
-
-result = BacktestResult(
-strategy_name=self.config.strategy_name,
-start_date=self.config.start_date,
-end_date=self.config.end_date,
-initial_capital=self.config.initial_capital,
-final_capital=final_value,
-total_return=total_return,
-annualized_return=annualized_return,
-sharpe_ratio=risk_metrics.sharpe_ratio,
-max_drawdown=risk_metrics.max_drawdown,
-metrics=backtest_metrics.dict(),
-trades=[trade.dict() for trade in self.trades],
-portfolio_values=self.portfolio_values,
-daily_returns=self.daily_returns
-)
-
-return result
-
-except Exception as e:
-self.logger.errorf"Error calculating backtest results: {e}"
-raise
-
-def _reset_backtest_stateself -> None:
-"""重置回測狀態"""
-self.current_positions.clear()
-self.trades.clear()
-self.portfolio_values.clear()
-self.daily_returns.clear()
-self.benchmark_returns.clear()
-
-async def generate_performance_reportself, result: BacktestResult -> Dict[str, Any]:
-"""生成績效報告"""
-try:    report = {
-"summary": {
-"strategy_name": result.strategy_name,
-"period": f"{result.start_date} to {result.end_date}",
-"initial_capital": result.initial_capital,
-"final_capital": result.final_capital,
-"total_return": f"{result.total_return:.2%}",
-"annualized_return": f"{result.annualized_return:.2%}",
-"sharpe_ratio": f"{result.sharpe_ratio:.3f}",
-"max_drawdown": f"{result.max_drawdown:.2%}"
-},
-"risk_metrics": {
-"volatility": f"{result.metrics['volatility']:.2%}",
-"var_95": f"{result.metrics['var_95']:.2%}",
-"var_99": f"{result.metrics['var_99']:.2%}",
-"expected_shortfall_95": f"{result.metrics['expected_shortfall_95']:.2%}"
-},
-"trading_metrics": {
-"total_trades": result.metrics['total_trades'],
-"win_rate": f"{result.metrics['win_rate']:.2%}",
-"profit_factor": f"{result.metrics['profit_factor']:.3f}",
-"avg_win": f"{result.metrics['avg_win']:.2f}",
-"avg_loss": f"{result.metrics['avg_loss']:.2f}"
-},
-"cost_analysis": {
-"total_commission": f"{result.metrics['total_commission']:.2f}",
-"total_slippage": f"{result.metrics['total_slippage']:.2f}",
-"total_market_impact": f"{result.metrics['total_market_impact']:.2f}",
-"net_return": f"{result.metrics['net_return']:.2%}"
-},
-"benchmark_comparison": {
-"information_ratio": f"{result.metrics['information_ratio']:.3f}",
-"tracking_error": f"{result.metrics['tracking_error']:.2%}",
-"beta": f"{result.metrics['beta']:.3f}",
-"alpha": f"{result.metrics['alpha']:.2%}"
-}
-}
-
-return report
-
-except Exception as e:
-self.logger.errorf"Error generating performance report: {e}"
-return {}
-
-async def plot_performanceself, result: BacktestResult, save_path: Optional[str] = None -> None:
-"""繪製績效圖表"""
-try:    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
-fig.suptitlef'Backtest Results: {result.strategy_name}', fontsize=16
-
-axes[0, 0].plotresult.portfolio_values
-axes[0, 0].set_title'Portfolio Value'
-axes[0, 0].set_xlabel'Trading Days'
-axes[0, 0].set_ylabel'Value'
-axes[0, 0].gridTrue
-
-axes[0, 1].histresult.daily_returns, bins=50, alpha=0.7
-axes[0, 1].set_title'Daily Returns Distribution'
-axes[0, 1].set_xlabel'Daily Return'
-axes[0, 1].set_ylabel'Frequency'
-axes[0, 1].gridTrue
-
-cumulative_returns = np.cumprod(1 + np.arrayresult.daily_returns) - 1
-axes[1, 0].plotcumulative_returns
-axes[1, 0].set_title'Cumulative Returns'
-axes[1, 0].set_xlabel'Trading Days'
-axes[1, 0].set_ylabel'Cumulative Return'
-axes[1, 0].gridTrue
-
-portfolio_values = np.arrayresult.portfolio_values
-running_max = np.maximum.accumulateportfolio_values
-drawdowns = portfolio_values - running_max / running_max
-axes[1, 1].fill_between(range(lendrawdowns), drawdowns, 0, alpha=0.7, color='red')
-axes[1, 1].set_title'Drawdown'
-axes[1, 1].set_xlabel'Trading Days'
-axes[1, 1].set_ylabel'Drawdown'
-axes[1, 1].gridTrue
-
-plt.tight_layout()
-
-if save_path:    plt.savefig(save_path, dpi=300, bbox_inches='tight')
-self.logger.infof"Performance plot saved to {save_path}"
-else:
-plt.show()
-
-except Exception as e:
-self.logger.errorf"Error plotting performance: {e}"
-
-async def cleanupself -> None:
-"""清理資源"""
-try:
-if hasattrself.data_service, 'cleanup':
-await self.data_service.cleanup()
-
-self.logger.info"Enhanced backtest engine cleanup completed"
-
-except Exception as e:
-self.logger.errorf"Error during cleanup: {e}"
+logger = logging.getLogger(__name__)
+
+class BacktestMode(Enum):
+    """Backtest execution modes"""
+    STANDARD = "standard"
+    RISK_MANAGED = "risk_managed"
+    STRESS_TEST = "stress_test"
+    MONTE_CARLO = "monte_carlo"
+
+@dataclass
+class BacktestConfig:
+    """Configuration for enhanced backtest"""
+    # Basic parameters
+    start_date: datetime
+    end_date: datetime
+    initial_capital: float = 1000000.0
+    commission_rate: float = 0.001
+    slippage_rate: float = 0.0005
+
+    # Risk management parameters
+    enable_risk_management: bool = True
+    var_limit: float = 0.02  # 2% daily VaR limit
+    max_drawdown_limit: float = 0.15  # 15% max drawdown
+    leverage_limit: float = 2.0
+    position_size_limit: float = 0.3  # Max 30% in single position
+
+    # Dynamic adjustment parameters
+    enable_dynamic_adjustments: bool = True
+    volatility_targeting: bool = True
+    target_volatility: float = 0.15  # 15% annualized
+    rebalance_frequency: str = "weekly"  # daily, weekly, monthly
+
+    # Monitoring parameters
+    enable_real_time_monitoring: bool = True
+    monitoring_frequency: int = 3600  # seconds
+
+    # Advanced features
+    enable_stress_testing: bool = True
+    enable_regime_detection: bool = True
+    enable_correlation_analysis: bool = True
+
+@dataclass
+class Position:
+    """Position representation"""
+    symbol: str
+    quantity: float
+    entry_price: float
+    current_price: float
+    entry_date: datetime
+
+    @property
+    def market_value(self) -> float:
+        return self.quantity * self.current_price
+
+    @property
+    def unrealized_pnl(self) -> float:
+        return self.quantity * (self.current_price - self.entry_price)
+
+    @property
+    def return_pct(self) -> float:
+        return (self.current_price - self.entry_price) / self.entry_price if self.entry_price > 0 else 0
+
+@dataclass
+class Trade:
+    """Trade execution record"""
+    timestamp: datetime
+    symbol: str
+    side: str  # 'buy' or 'sell'
+    quantity: float
+    price: float
+    commission: float
+    slippage: float
+
+@dataclass
+class BacktestResult:
+    """Comprehensive backtest results"""
+    # Basic metrics
+    total_return: float
+    annualized_return: float
+    volatility: float
+    sharpe_ratio: float
+    max_drawdown: float
+    calmar_ratio: float
+
+    # Risk metrics
+    var_95: float
+    var_99: float
+    expected_shortfall_95: float
+    expected_shortfall_99: float
+
+    # Trade statistics
+    total_trades: int
+    win_rate: float
+    avg_win: float
+    avg_loss: float
+    profit_factor: float
+
+    # Advanced metrics
+    information_ratio: Optional[float] = None
+    sortino_ratio: Optional[float] = None
+    tail_ratio: Optional[float] = None
+
+    # Risk analysis
+    risk_metrics: Optional[RiskMetrics] = None
+    stress_test_results: Optional[Dict] = None
+
+    # Time series data
+    equity_curve: Optional[pd.Series] = None
+    returns: Optional[pd.Series] = None
+    positions: Optional[List[Position]] = None
+    trades: Optional[List[Trade]] = None
+
+class EnhancedBacktestEngine:
+    """
+    Enhanced backtest engine with integrated risk management
+    """
+
+    def __init__(self, config: BacktestConfig):
+        self.config = config
+        self.risk_analyzer = EnhancedRiskAnalyzer()
+        self.dynamic_adjuster = DynamicRiskAdjustmentSystem()
+
+        # Initialize components based on configuration
+        self.risk_monitor = None
+        if config.enable_real_time_monitoring:
+            self._setup_risk_monitor()
+
+        # State variables
+        self.current_capital = config.initial_capital
+        self.positions: Dict[str, Position] = {}
+        self.trades: List[Trade] = []
+        self.equity_curve: List[Tuple[datetime, float]] = []
+        self.returns_history: List[float] = []
+
+        # Performance tracking
+        self.high_water_mark = config.initial_capital
+        self.current_drawdown = 0.0
+
+        # Risk management state
+        self.last_rebalance_date = None
+        self.current_volatility_estimate = 0.0
+
+        logger.info(f"Enhanced backtest engine initialized with {config.start_date} to {config.end_date}")
+
+    def _setup_risk_monitor(self):
+        """Setup real-time risk monitor"""
+        # Define risk thresholds
+        thresholds = {
+            "var_95": RiskThreshold("var_95", RiskLevel.MEDIUM, self.config.var_limit, " VaR 95% limit"),
+            "max_drawdown": RiskThreshold("max_drawdown", RiskLevel.HIGH, self.config.max_drawdown_limit, "Max drawdown limit"),
+            "leverage": RiskThreshold("leverage", RiskLevel.MEDIUM, self.config.leverage_limit, "Leverage limit"),
+            "position_concentration": RiskThreshold("position_concentration", RiskLevel.LOW,
+                                                   self.config.position_size_limit, "Position size limit")
+        }
+
+        self.risk_monitor = RealTimeRiskMonitor(
+            strategy_id="backtest_engine",
+            thresholds=thresholds,
+            update_frequency=self.config.monitoring_frequency,
+            auto_adjust=self.config.enable_dynamic_adjustments
+        )
+
+        # Add adjustment rules
+        if self.config.enable_dynamic_adjustments:
+            self._setup_adjustment_rules()
+
+    def _setup_adjustment_rules(self):
+        """Setup dynamic adjustment rules"""
+        if self.config.volatility_targeting:
+            # Volatility targeting rule
+            vt_adjuster = VolatilityTargetingAdjuster(target_volatility=self.config.target_volatility)
+            self.dynamic_adjuster.add_adjuster(vt_adjuster)
+
+        # Position scaling rule
+        ps_adjuster = PositionScalingAdjuster(
+            scaling_factor=0.5,
+            max_position_size=self.config.position_size_limit
+        )
+        self.dynamic_adjuster.add_adjuster(ps_adjuster)
+
+    def run_backtest(self,
+                    strategy: Callable,
+                    data: pd.DataFrame,
+                    benchmark_data: Optional[pd.DataFrame] = None,
+                    mode: BacktestMode = BacktestMode.RISK_MANAGED) -> BacktestResult:
+        """
+        Run enhanced backtest with integrated risk management
+
+        Args:
+            strategy: Strategy function that returns target positions
+            data: Market data with OHLCV
+            benchmark_data: Benchmark data for comparison
+            mode: Backtest execution mode
+
+        Returns:
+            BacktestResult: Comprehensive backtest results
+        """
+        logger.info(f"Starting backtest in {mode.value} mode")
+
+        try:
+            if mode == BacktestMode.STANDARD:
+                return self._run_standard_backtest(strategy, data, benchmark_data)
+            elif mode == BacktestMode.RISK_MANAGED:
+                return self._run_risk_managed_backtest(strategy, data, benchmark_data)
+            elif mode == BacktestMode.STRESS_TEST:
+                return self._run_stress_test_backtest(strategy, data, benchmark_data)
+            elif mode == BacktestMode.MONTE_CARLO:
+                return self._run_monte_carlo_backtest(strategy, data, benchmark_data)
+            else:
+                raise ValueError(f"Unsupported backtest mode: {mode}")
+
+        except Exception as e:
+            logger.error(f"Backtest failed: {e}")
+            raise
+
+    def _run_risk_managed_backtest(self,
+                                  strategy: Callable,
+                                  data: pd.DataFrame,
+                                  benchmark_data: Optional[pd.DataFrame] = None) -> BacktestResult:
+        """Run backtest with integrated risk management"""
+
+        # Start risk monitoring
+        if self.risk_monitor:
+            asyncio.create_task(self.risk_monitor.start_monitoring())
+
+        # Process data day by day
+        for date, row in data.iterrows():
+            # Update current prices for all positions
+            self._update_position_prices(date, row)
+
+            # Calculate current portfolio state
+            current_portfolio_value = self._calculate_portfolio_value()
+            current_positions = {symbol: pos.quantity for symbol, pos in self.positions.items()}
+
+            # Get strategy signals
+            target_positions = strategy(date, row, self._get_portfolio_state())
+
+            # Apply risk management
+            if self.config.enable_risk_management:
+                target_positions = self._apply_risk_management(target_positions, date, row)
+
+            # Execute trades
+            self._execute_trades(target_positions, date, row, current_portfolio_value)
+
+            # Update equity curve
+            portfolio_value = self._calculate_portfolio_value()
+            self.equity_curve.append((date, portfolio_value))
+
+            # Calculate daily return
+            if len(self.equity_curve) > 1:
+                daily_return = (portfolio_value - self.equity_curve[-2][1]) / self.equity_curve[-2][1]
+                self.returns_history.append(daily_return)
+
+            # Update high water mark and drawdown
+            if portfolio_value > self.high_water_mark:
+                self.high_water_mark = portfolio_value
+                self.current_drawdown = 0.0
+            else:
+                self.current_drawdown = (self.high_water_mark - portfolio_value) / self.high_water_mark
+
+            # Dynamic rebalancing
+            if self._should_rebalance(date):
+                target_positions = self._apply_dynamic_adjustments(date, row)
+                self._execute_trades(target_positions, date, row, portfolio_value)
+
+            # Real-time monitoring update
+            if self.risk_monitor and len(self.returns_history) > 0:
+                self.risk_monitor.update_risk_metrics(
+                    portfolio_values=[portfolio_value],
+                    positions=current_positions,
+                    returns=[self.returns_history[-1]]
+                )
+
+        # Stop monitoring
+        if self.risk_monitor:
+            self.risk_monitor.stop_monitoring()
+
+        # Generate comprehensive results
+        return self._generate_results(benchmark_data)
+
+    def _apply_risk_management(self,
+                             target_positions: Dict[str, float],
+                             date: datetime,
+                             market_data: pd.Series) -> Dict[str, float]:
+        """Apply risk management rules to target positions"""
+
+        # Calculate portfolio metrics
+        total_exposure = sum(abs(pos) for pos in target_positions.values())
+        current_portfolio_value = self._calculate_portfolio_value()
+
+        # Apply position size limits
+        for symbol, target_size in target_positions.items():
+            max_size = self.config.position_size_limit * current_portfolio_value / market_data.get(symbol, 1)
+            target_positions[symbol] = min(abs(target_size), max_size) * (1 if target_size >= 0 else -1)
+
+        # Apply leverage limits
+        if total_exposure > self.config.leverage_limit * current_portfolio_value:
+            scaling_factor = (self.config.leverage_limit * current_portfolio_value) / total_exposure
+            for symbol in target_positions:
+                target_positions[symbol] *= scaling_factor
+
+        # Check drawdown limits
+        if self.current_drawdown > self.config.max_drawdown_limit:
+            # Reduce positions proportionally
+            reduction_factor = 1 - self.current_drawdown
+            for symbol in target_positions:
+                target_positions[symbol] *= reduction_factor
+            logger.warning(f"Drawdown limit exceeded. Reducing positions by factor {reduction_factor:.2f}")
+
+        return target_positions
+
+    def _apply_dynamic_adjustments(self,
+                                 date: datetime,
+                                 market_data: pd.Series) -> Dict[str, float]:
+        """Apply dynamic adjustments based on current market conditions"""
+
+        if not self.config.enable_dynamic_adjustments or len(self.returns_history) < 30:
+            return {symbol: pos.quantity for symbol, pos in self.positions.items()}
+
+        current_positions = {symbol: pos.quantity for symbol, pos in self.positions.items()}
+        recent_returns = np.array(self.returns_history[-30:])  # Last 30 days
+
+        # Evaluate adjustments
+        adjustments = self.dynamic_adjuster.evaluate_and_adjust(
+            current_positions=current_positions,
+            returns=recent_returns,
+            portfolio_values=[self._calculate_portfolio_value()],
+            risk_budget=self.config.var_limit,
+            target_leverage=1.0
+        )
+
+        # Apply adjustments
+        adjusted_positions = current_positions.copy()
+        for adj in adjustments:
+            adjusted_positions[adj.asset] = adj.suggested_size
+
+        return adjusted_positions
+
+    def _should_rebalance(self, date: datetime) -> bool:
+        """Check if rebalancing should occur"""
+        if not self.last_rebalance_date:
+            self.last_rebalance_date = date
+            return True
+
+        if self.config.rebalance_frequency == "daily":
+            return date.date() > self.last_rebalance_date.date()
+        elif self.config.rebalance_frequency == "weekly":
+            return (date - self.last_rebalance_date).days >= 7
+        elif self.config.rebalance_frequency == "monthly":
+            return (date - self.last_rebalance_date).days >= 30
+
+        return False
+
+    def _execute_trades(self,
+                       target_positions: Dict[str, float],
+                       date: datetime,
+                       market_data: pd.Series,
+                       portfolio_value: float):
+        """Execute trades to reach target positions"""
+
+        for symbol, target_quantity in target_positions.items():
+            current_quantity = self.positions.get(symbol, Position(symbol, 0, 0, 0, date)).quantity
+
+            if abs(target_quantity - current_quantity) > 0.01:  # Minimum trade size
+                trade_quantity = target_quantity - current_quantity
+                price = market_data.get(symbol, 1)
+
+                # Calculate commission and slippage
+                trade_value = abs(trade_quantity * price)
+                commission = trade_value * self.config.commission_rate
+                slippage = trade_value * self.config.slippage_rate
+
+                # Execute trade
+                if trade_quantity > 0:  # Buy
+                    self.current_capital -= (trade_quantity * price + commission + slippage)
+                else:  # Sell
+                    self.current_capital += (abs(trade_quantity) * price - commission - slippage)
+
+                # Record trade
+                trade = Trade(
+                    timestamp=date,
+                    symbol=symbol,
+                    side="buy" if trade_quantity > 0 else "sell",
+                    quantity=trade_quantity,
+                    price=price,
+                    commission=commission,
+                    slippage=slippage
+                )
+                self.trades.append(trade)
+
+                # Update position
+                if symbol not in self.positions:
+                    self.positions[symbol] = Position(symbol, 0, price, price, date)
+
+                if abs(target_quantity) < 0.01:  # Close position
+                    del self.positions[symbol]
+                else:
+                    self.positions[symbol].quantity = target_quantity
+
+    def _update_position_prices(self, date: datetime, market_data: pd.Series):
+        """Update current prices for all positions"""
+        for symbol, position in self.positions.items():
+            if symbol in market_data:
+                position.current_price = market_data[symbol]
+
+    def _calculate_portfolio_value(self) -> float:
+        """Calculate total portfolio value"""
+        position_value = sum(pos.market_value for pos in self.positions.values())
+        return self.current_capital + position_value
+
+    def _get_portfolio_state(self) -> Dict[str, Any]:
+        """Get current portfolio state for strategy"""
+        return {
+            "capital": self.current_capital,
+            "positions": {symbol: pos.quantity for symbol, pos in self.positions.items()},
+            "portfolio_value": self._calculate_portfolio_value(),
+            "drawdown": self.current_drawdown,
+            "returns": self.returns_history[-10:] if self.returns_history else []
+        }
+
+    def _generate_results(self, benchmark_data: Optional[pd.DataFrame] = None) -> BacktestResult:
+        """Generate comprehensive backtest results"""
+
+        # Create time series
+        equity_series = pd.Series(
+            [value for date, value in self.equity_curve],
+            index=[date for date, value in self.equity_curve]
+        )
+
+        returns_series = pd.Series(self.returns_history)
+
+        # Basic metrics
+        total_return = (equity_series.iloc[-1] - self.config.initial_capital) / self.config.initial_capital
+        n_days = len(equity_series)
+        annualized_return = (1 + total_return) ** (252 / n_days) - 1 if n_days > 0 else 0
+
+        volatility = returns_series.std() * np.sqrt(252) if len(returns_series) > 0 else 0
+        sharpe_ratio = annualized_return / volatility if volatility > 0 else 0
+
+        # Drawdown calculation
+        rolling_max = equity_series.expanding().max()
+        drawdown = (equity_series - rolling_max) / rolling_max
+        max_drawdown = drawdown.min()
+        calmar_ratio = annualized_return / abs(max_drawdown) if max_drawdown != 0 else 0
+
+        # Trade statistics
+        if self.trades:
+            profits = [t.quantity * (t.price - self.positions.get(t.symbol, Position(t.symbol, 0, t.price, t.price, t.timestamp)).entry_price)
+                      for t in self.trades if t.side == "sell"]
+            wins = [p for p in profits if p > 0]
+            losses = [p for p in profits if p < 0]
+
+            win_rate = len(wins) / len(profits) if profits else 0
+            avg_win = np.mean(wins) if wins else 0
+            avg_loss = np.mean(losses) if losses else 0
+            profit_factor = abs(sum(wins) / sum(losses)) if losses else float('inf')
+        else:
+            win_rate = avg_win = avg_loss = profit_factor = 0
+
+        # Risk analysis
+        risk_metrics = None
+        var_95 = var_99 = expected_shortfall_95 = expected_shortfall_99 = 0
+
+        if len(returns_series) > 30:
+            risk_metrics = self.risk_analyzer.calculate_comprehensive_risk_metrics(
+                returns=returns_series.values,
+                portfolio_values=equity_series.values,
+                positions={symbol: pos.quantity for symbol, pos in self.positions.items()},
+                benchmark_returns=benchmark_data['returns'].values if benchmark_data is not None else None
+            )
+
+            var_95 = risk_metrics.var.confidence_levels.get(0.95, 0)
+            var_99 = risk_metrics.var.confidence_levels.get(0.99, 0)
+            expected_shortfall_95 = risk_metrics.expected_shortfall.confidence_levels.get(0.95, 0)
+            expected_shortfall_99 = risk_metrics.expected_shortfall.confidence_levels.get(0.99, 0)
+
+        # Advanced ratios
+        sortino_ratio = annualized_return / (returns_series[returns_series < 0].std() * np.sqrt(252)) if len(returns_series[returns_series < 0]) > 0 else 0
+        tail_ratio = np.percentile(returns_series, 95) / abs(np.percentile(returns_series, 5)) if len(returns_series) > 0 else 0
+
+        # Information ratio (if benchmark provided)
+        information_ratio = None
+        if benchmark_data is not None and len(returns_series) == len(benchmark_data):
+            excess_returns = returns_series - benchmark_data['returns']
+            information_ratio = excess_returns.mean() / excess_returns.std() if excess_returns.std() > 0 else 0
+
+        return BacktestResult(
+            total_return=total_return,
+            annualized_return=annualized_return,
+            volatility=volatility,
+            sharpe_ratio=sharpe_ratio,
+            max_drawdown=max_drawdown,
+            calmar_ratio=calmar_ratio,
+            var_95=var_95,
+            var_99=var_99,
+            expected_shortfall_95=expected_shortfall_95,
+            expected_shortfall_99=expected_shortfall_99,
+            total_trades=len(self.trades),
+            win_rate=win_rate,
+            avg_win=avg_win,
+            avg_loss=avg_loss,
+            profit_factor=profit_factor,
+            information_ratio=information_ratio,
+            sortino_ratio=sortino_ratio,
+            tail_ratio=tail_ratio,
+            risk_metrics=risk_metrics,
+            equity_curve=equity_series,
+            returns=returns_series,
+            positions=list(self.positions.values()),
+            trades=self.trades
+        )
+
+    def _run_standard_backtest(self,
+                             strategy: Callable,
+                             data: pd.DataFrame,
+                             benchmark_data: Optional[pd.DataFrame] = None) -> BacktestResult:
+        """Run standard backtest without risk management"""
+
+        # Temporarily disable risk management
+        original_config = self.config.enable_risk_management
+        self.config.enable_risk_management = False
+
+        result = self._run_risk_managed_backtest(strategy, data, benchmark_data)
+
+        # Restore original config
+        self.config.enable_risk_management = original_config
+
+        return result
+
+    def _run_stress_test_backtest(self,
+                                strategy: Callable,
+                                data: pd.DataFrame,
+                                benchmark_data: Optional[pd.DataFrame] = None) -> BacktestResult:
+        """Run backtest with stress scenarios"""
+
+        # Define stress periods
+        stress_periods = {
+            "2008_crisis": ("2008-09-01", "2009-03-31"),
+            "covid_crash": ("2020-02-20", "2020-04-30"),
+            "dot_com_bubble": ("2000-03-10", "2002-10-09")
+        }
+
+        results = {}
+
+        for scenario, (start_date, end_date) in stress_periods.items():
+            # Filter data for stress period
+            stress_data = data.loc[start_date:end_date]
+
+            if len(stress_data) > 0:
+                logger.info(f"Running stress test for scenario: {scenario}")
+
+                # Reset engine state
+                self.__init__(self.config)
+
+                # Run backtest for stress period
+                scenario_result = self._run_risk_managed_backtest(strategy, stress_data, benchmark_data)
+                results[scenario] = scenario_result
+
+        # Combine results (use full period results as base)
+        base_result = self._run_risk_managed_backtest(strategy, data, benchmark_data)
+        base_result.stress_test_results = results
+
+        return base_result
+
+    def _run_monte_carlo_backtest(self,
+                                strategy: Callable,
+                                data: pd.DataFrame,
+                                benchmark_data: Optional[pd.DataFrame] = None,
+                                n_simulations: int = 1000) -> BacktestResult:
+        """Run Monte Carlo simulation"""
+
+        logger.info(f"Running Monte Carlo simulation with {n_simulations} iterations")
+
+        # Get returns from original data
+        returns = data.pct_change().dropna()
+
+        simulation_results = []
+
+        for i in range(n_simulations):
+            # Generate random path
+            simulated_returns = returns.sample(n=len(returns), replace=True).reset_index(drop=True)
+            simulated_data = data.iloc[0:1]  # Keep first row
+
+            for ret in simulated_returns.iloc[:, 0]:  # Use first column
+                new_row = simulated_data.iloc[-1] * (1 + ret)
+                simulated_data = pd.concat([simulated_data, new_row.to_frame().T], ignore_index=True)
+
+            # Reset engine state
+            self.__init__(self.config)
+
+            # Run backtest on simulated data
+            result = self._run_risk_managed_backtest(strategy, simulated_data, benchmark_data)
+            simulation_results.append(result.total_return)
+
+        # Calculate statistics
+        simulation_results = np.array(simulation_results)
+
+        # Update base result with Monte Carlo statistics
+        base_result = self._run_risk_managed_backtest(strategy, data, benchmark_data)
+
+        # Add Monte Carlo metrics to result
+        base_result.monte_carlo_mean = np.mean(simulation_results)
+        base_result.monte_carlo_std = np.std(simulation_results)
+        base_result.monte_carlo_var_95 = np.percentile(simulation_results, 5)
+        base_result.monte_carlo_var_99 = np.percentile(simulation_results, 1)
+
+        return base_result
+
+# Example usage and test functions
+def example_strategy(date: datetime, market_data: pd.Series, portfolio_state: Dict[str, Any]) -> Dict[str, float]:
+    """
+    Example simple moving average crossover strategy
+    """
+    # This is a placeholder - in reality, you'd have access to historical data
+    # for calculating moving averages and other indicators
+
+    # Simple buy and hold for AAPL
+    if "AAPL" in market_data:
+        current_price = market_data["AAPL"]
+        target_value = portfolio_state["portfolio_value"] * 0.6  # 60% allocation
+        return {"AAPL": target_value / current_price}
+
+    return {}
+
+def run_example_backtest():
+    """Run example backtest with enhanced risk management"""
+
+    # Create sample data
+    dates = pd.date_range(start="2023-01-01", end="2023-12-31", freq="D")
+    np.random.seed(42)
+
+    # Simulate AAPL price data
+    aapl_prices = 150 * np.cumprod(1 + np.random.normal(0.0005, 0.02, len(dates)))
+
+    data = pd.DataFrame({
+        "AAPL": aapl_prices
+    }, index=dates)
+
+    # Create configuration
+    config = BacktestConfig(
+        start_date=dates[0],
+        end_date=dates[-1],
+        initial_capital=1000000,
+        enable_risk_management=True,
+        enable_dynamic_adjustments=True,
+        var_limit=0.02,
+        max_drawdown_limit=0.15
+    )
+
+    # Create engine
+    engine = EnhancedBacktestEngine(config)
+
+    # Run backtest
+    result = engine.run_backtest(
+        strategy=example_strategy,
+        data=data,
+        mode=BacktestMode.RISK_MANAGED
+    )
+
+    # Print results
+    print(f"Total Return: {result.total_return:.2%}")
+    print(f"Sharpe Ratio: {result.sharpe_ratio:.2f}")
+    print(f"Max Drawdown: {result.max_drawdown:.2%}")
+    print(f"VaR 95%: {result.var_95:.2%}")
+    print(f"Total Trades: {result.total_trades}")
+    print(f"Win Rate: {result.win_rate:.2%}")
+
+    if result.risk_metrics:
+        print(f"Calmar Ratio: {result.risk_metrics.calmar_ratio:.2f}")
+        print(f"Sortino Ratio: {result.risk_metrics.sortino_ratio:.2f}")
+
+    return result
+
+if __name__ == "__main__":
+    # Run example backtest
+    result = run_example_backtest()
+
+    print("\nEnhanced Backtest Complete!")
+    print("=" * 50)

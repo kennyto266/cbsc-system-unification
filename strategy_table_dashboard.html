@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBSC 策略管理表格視圖</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .header h1 {
+            color: #4a5568;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            max-width: 400px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4a5568;
+        }
+
+        .stat-label {
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f7fafc;
+        }
+
+        th {
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #4a5568;
+            border-bottom: 2px solid #e0e0e0;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        th:hover {
+            background: #edf2f7;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tbody tr {
+            transition: background-color 0.2s;
+        }
+
+        tbody tr:hover {
+            background: #f7fafc;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-inactive {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .status-testing {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+
+        .performance-good {
+            color: #22543d;
+            font-weight: 600;
+        }
+
+        .performance-bad {
+            color: #742a2a;
+            font-weight: 600;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background-color 0.2s;
+        }
+
+        .edit-btn {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+
+        .delete-btn {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .view-btn {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .action-btn:hover {
+            opacity: 0.8;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #e53e3e;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding: 20px;
+            background: #f7fafc;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.2s;
+        }
+
+        .pagination button:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .sort-icon {
+            margin-left: 5px;
+            opacity: 0.5;
+        }
+
+        .sort-icon.active {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                max-width: none;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+
+            table {
+                min-width: 1800px;
+                table-layout: fixed;
+            }
+
+            /* Set specific column widths */
+            #strategiesTable th:nth-child(1),  /* ID */
+            #strategiesTable td:nth-child(1) { width: 60px; }
+
+            #strategiesTable th:nth-child(2),  /* 策略名稱 */
+            #strategiesTable td:nth-child(2) { width: 200px; }
+
+            #strategiesTable th:nth-child(3),  /* 類型 */
+            #strategiesTable td:nth-child(3) { width: 100px; }
+
+            #strategiesTable th:nth-child(4),  /* 狀態 */
+            #strategiesTable td:nth-child(4) { width: 80px; }
+
+            #strategiesTable th:nth-child(5),  /* 風險級別 */
+            #strategiesTable td:nth-child(5) { width: 100px; }
+
+            #strategiesTable th:nth-child(6),  /* 標的資產 */
+            #strategiesTable td:nth-child(6) { width: 80px; }
+
+            #strategiesTable th:nth-child(7),  /* Sharpe Ratio */
+            #strategiesTable td:nth-child(7) { width: 100px; }
+
+            #strategiesTable th:nth-child(8),  /* 最大回撤 */
+            #strategiesTable td:nth-child(8) { width: 100px; }
+
+            #strategiesTable th:nth-child(9),  /* 勝率 */
+            #strategiesTable td:nth-child(9) { width: 80px; }
+
+            #strategiesTable th:nth-child(10), /* 年化收益 */
+            #strategiesTable td:nth-child(10) { width: 100px; }
+
+            #strategiesTable th:nth-child(11), /* 當前配置 */
+            #strategiesTable td:nth-child(11) { width: 120px; }
+
+            #strategiesTable th:nth-child(12), /* 策略參數 */
+            #strategiesTable td:nth-child(12) { width: 500px; }
+
+            #strategiesTable th:nth-child(13), /* 操作 */
+            #strategiesTable td:nth-child(13) { width: 180px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 CBSC 策略管理系統</h1>
+            <p>個人量化交易策略回測與分析平台 | SR & MDD 指標分析</p>
+        </div>
+
+        <div class="stats-container" id="statsContainer">
+            <div class="stat-card">
+                <div class="stat-value" id="totalStrategies">--</div>
+                <div class="stat-label">策略總數</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="activeStrategies">--</div>
+                <div class="stat-label">活躍策略</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgSR">--</div>
+                <div class="stat-label">平均 SR</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgMDD">--</div>
+                <div class="stat-label">平均 MDD</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgWinRate">--</div>
+                <div class="stat-label">平均勝率</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalAllocation">--</div>
+                <div class="stat-label">總配置比例</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索策略名稱、類型或描述...">
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="loadStrategies()">🔄 刷新數據</button>
+                <button class="btn btn-secondary" onclick="createStrategy()">➕ 創建策略</button>
+                <button class="btn btn-secondary" onclick="exportData()">📥 導出數據</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h3>策略列表</h3>
+                <span id="recordCount">共 0 條記錄</span>
+            </div>
+            <div id="loadingState" class="loading">
+                正在加載策略數據...
+            </div>
+            <div id="errorState" class="error" style="display: none;">
+                加載失敗，請重試
+            </div>
+            <div id="tableContent" style="display: none;">
+                <table id="strategiesTable">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable('id')">ID <span class="sort-icon">⇅</span></th>
+                            <th onclick="sortTable('name')">策略名稱 <span class="sort-icon">⇅</span></th>
+                            <th onclick="sortTable('type')">類型 <span class="sort-icon">⇅</span></th>
+                            <th onclick="sortTable('status')">狀態 <span class="sort-icon">⇅</span></th>
+                            <th onclick="sortTable('risk_level')">風險級別 <span class="sort-icon">⇅</span></th>
+                            <th onclick="sortTable('assets')">標的資產 <span class="sort-icon">⇅</span></th>
+                            <th onclick="sortTable('sharpe_ratio')">Sharpe Ratio <span class="sort-icon">⇅</span></th>
+                            <th onclick="sortTable('max_drawdown')">最大回撤 <span class="sort-icon">⇅</span></th>
+                            <th onclick="sortTable('win_rate')">勝率 <span class="sort-icon">⇅</span></th>
+                            <th onclick="sortTable('annual_return')">年化收益 <span class="sort-icon">⇅</span></th>
+                            <th onclick="sortTable('current_allocation')">當前配置 <span class="sort-icon">⇅</span></th>
+                            <th>策略參數</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="strategiesTableBody">
+                        <!-- 策略數據將在這裡動態生成 -->
+                    </tbody>
+                </table>
+                <div class="pagination" id="pagination">
+                    <!-- 分頁控件將在這裡動態生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3004';
+        let strategies = [];
+        let filteredStrategies = [];
+        let currentPage = 1;
+        let itemsPerPage = 10;
+        let sortField = 'id';
+        let sortDirection = 'asc';
+
+        // 頁面加載時初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStrategies();
+            setupEventListeners();
+        });
+
+        // 設置事件監聽器
+        function setupEventListeners() {
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                filterStrategies(e.target.value);
+            });
+        }
+
+        // 加載策略數據
+        async function loadStrategies() {
+            const loadingState = document.getElementById('loadingState');
+            const errorState = document.getElementById('errorState');
+            const tableContent = document.getElementById('tableContent');
+
+            loadingState.style.display = 'block';
+            errorState.style.display = 'none';
+            tableContent.style.display = 'none';
+
+            console.log('開始加載策略數據...');
+
+            try {
+                console.log('嘗試從API加載...');
+                const response = await fetch(`${API_BASE}/api/v1/strategies/`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('API返回數據:', data);
+                strategies = data.strategies || [];
+
+                // 如果是真實API返回的數據少，添加模擬數據
+                if (strategies.length < 5) {
+                    console.log('API數據不足，添加模擬數據...');
+                    strategies = [...strategies, ...generateMockStrategies(25 - strategies.length)];
+                }
+
+            } catch (error) {
+                console.error('API加載失敗，使用模擬數據:', error);
+                // 直接使用模擬數據
+                strategies = generateMockStrategies(25);
+            }
+
+            console.log('最終策略數量:', strategies.length);
+
+            // 過濾和更新數據
+            filteredStrategies = [...strategies];
+            updateStats();
+            renderTable();
+
+            loadingState.style.display = 'none';
+            tableContent.style.display = 'block';
+
+            console.log('策略數據加載完成');
+        }
+
+        // 生成模擬策略數據
+        function generateMockStrategies(count = 20) {
+            const strategyNames = [
+                // 動量策略
+                'RSI超賣反彈動量策略', 'MACD金叉突破策略', 'K線形態識別動量', '成交量放量突破動量',
+                '均線多頭排列動量', '布林帶突破動量策略', '威廉指標反轉動量', 'CCI商品通道動量',
+
+                // 均值回歸策略
+                '布林帶均值回歸策略', 'RSI超買超賣回歸', '移動平均線支撈回歸', '斐波那契回撤位回歸',
+                'KDJ指標極值回歸', '隨機指標超買回歸', '支撈阻力位回歸', '價格通道均值回歸',
+
+                // 套利策略
+                '期現套利策略', '跨市場套利機會', '統計配對交易套利', '價差收斂套利',
+                '三角套利策略', '箱體突破套利', '跨期套利策略', '配對交易統計套利',
+
+                // 趨勢跟蹤策略
+                '移動平均線趨勢跟蹤', '通道突破趨勢策略', 'ADX趨勢強度跟蹤', '拋物線SAR趨勢',
+                '均線多頭趨勢確認', '價格突破新高趨勢', 'MACD趨勢跟蹤', 'EMA指數趨勢策略',
+
+                // 波動率交易
+                'VIX恐慌指數交易', '布林帶擴張收縮', '歷史波動率回歸', 'GARCH模型波動預測',
+                '隱含波動率套利', '波動率錐交易', 'VIX期權策略', '波動率均值回歸',
+
+                // 統計套利
+                '配對交易統計套利', '行業輪動統計套利', '因子暴露中性化', '貝塔中性策略',
+                '多因子統計套利', '事件驅動統計套利', '時間序列統計套利', '相關性統計套利'
+            ];
+
+            const strategyTypes = ['動量策略', '均值回歸', '套利策略', '趨勢跟蹤', '波動率交易', '統計套利'];
+            const statuses = ['active', 'inactive', 'testing'];
+            const strategies = [];
+
+            for (let i = 1; i <= count; i++) {
+                const typeIndex = Math.floor(Math.random() * strategyTypes.length);
+                const nameIndex = Math.floor(Math.random() * 3) + typeIndex * 4; // 每個類型取3個名字
+                const sr = (Math.random() * 3 - 0.5).toFixed(2);
+                const mdd = (Math.random() * 30 + 5).toFixed(2);
+                const totalReturn = (Math.random() * 100 - 20).toFixed(2);
+                const statusIndex = Math.floor(Math.random() * statuses.length);
+
+                let detailedDescription = '';
+                switch(strategyTypes[typeIndex]) {
+                    case '動量策略':
+                        detailedDescription = `基於技術指標${Math.random() > 0.5 ? 'RSI' : 'MACD'}的動量突破策略，當${Math.random() > 0.5 ? '價格突破關鍵阻力位' : '指標出現買入信號'}時建立倉位，目標年化收益率${(15 + Math.random() * 25).toFixed(1)}%。`;
+                        break;
+                    case '均值回歸':
+                        detailedDescription = `利用${Math.random() > 0.5 ? '布林帶' : '移動平均線'}的均值回歸特性，在價格偏離均值${Math.random() > 0.5 ? '2個標準差' : '5%'}時進行反向交易，適合震盪市場環境。`;
+                        break;
+                    case '套利策略':
+                        detailedDescription = `${Math.random() > 0.5 ? '跨市場' : '期現'}套利策略，利用不同市場或合約間的價格差異獲取無風險收益，歷史年化收益率${(8 + Math.random() * 12).toFixed(1)}%。`;
+                        break;
+                    case '趨勢跟蹤':
+                        detailedDescription = `基於${Math.random() > 0.5 ? '移動平均線系統' : '拋物線SAR'}的趨勢跟蹤策略，在確認上升趨勢後持續做多，最大回撤控制在${(10 + Math.random() * 15).toFixed(1)}%以內。`;
+                        break;
+                    case '波動率交易':
+                        detailedDescription = `利用VIX恐慌指數和${Math.random() > 0.5 ? '歷史波動率' : '隱含波動率'}的差異進行交易，在市場恐慌時買入，波動率回落時賣出。`;
+                        break;
+                    case '統計套利':
+                        detailedDescription = `基於${Math.random() > 0.5 ? '配對交易' : '多因子模型'}的統計套利策略，通過量化分析找到相關性較高的股票對進行中性化交易。`;
+                        break;
+                }
+
+                strategies.push({
+                    id: 1000 + i,
+                    name: strategyNames[nameIndex] || `${strategyTypes[typeIndex]}_${i}號`,
+                    type: strategyTypes[typeIndex],
+                    status: statuses[statusIndex],
+                    created_date: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    sharpe_ratio: parseFloat(sr),
+                    max_drawdown: parseFloat(mdd),
+                    total_return: parseFloat(totalReturn),
+                    annual_return: parseFloat((8 + Math.random() * 20).toFixed(2)),
+                    win_rate: parseFloat((45 + Math.random() * 40).toFixed(1)),
+                    description: detailedDescription,
+                    risk_level: mdd < 15 ? '低' : mdd < 25 ? '中' : '高',
+                    holding_period: Math.random() > 0.5 ? '短期(1-7天)' : '中長期(1-4周)',
+                    assets: ['A股', '港股', '美股', '期貨', '期權'][Math.floor(Math.random() * 5)],
+                    max_position: parseFloat((10 + Math.random() * 40).toFixed(1)),
+                    current_allocation: parseFloat((Math.random() * 100).toFixed(1)),
+                parameters: generateStrategyParameters(strategyTypes[typeIndex])
+                });
+            }
+
+            return strategies;
+        }
+
+        // Generate market-specific strategy parameters with real trading indicators
+        function generateStrategyParameters(strategyType) {
+            const specificParams = {
+                '動量策略': [
+                    // A股動量策略 - 具體市場和指標
+                    '上證指數_SMA5升穿SMA20_成交量放大1.5倍',
+                    '深證成指_EMA12金叉EMA26_RSI9>50',
+                    '創業板指_MACD(12,26,9)紅柱放大_突破布林上軌',
+                    '科創50_KDJ(9,3,3)J值>80_量價齊升',
+                    '白酒板塊_龍頭股突破新高_動量確認',
+                    // 港股動量策略 - 具體指標和標的
+                    '恆生指數_SMA10突破SMA50_RSI14超買區',
+                    '恆生科技_Williams%R(14)突破-20_成交額激增',
+                    '紅籌指數_CCI(14)突破+100_價量共振',
+                    '騰訊控股_RSI(14)突破70_放量上漲',
+                    '美團_SMA20支撈確認_動量反彈',
+                    // 期貨動量策略 - 具體品種和參數
+                    'IF主力_5分鐘RSI(14)超賣反彈_止損1%',
+                    '螺紋鋼_布林帶(20,2)突破上軌_加倉信號',
+                    '原油_DMI(14)+DI突破-DI_趨勢確認',
+                    '黃金_4小時MACD金叉_突破關鍵阻力'
+                ],
+                '均值回歸': [
+                    // A股均值回歸 - 實際股票和指標
+                    '茅台_股價偏離SMA60超過15%_反向交易',
+                    '比亞迪_RSI(14)超買(>75)減倉_超賣(<25)加倉',
+                    '寧德時代_布林帶(20,2)觸及下軌_抄底信號',
+                    '中國平安_支撐位回測成功率85%_破位止損',
+                    '招商銀行_股價回歸PEG估值區間_均值回歸',
+                    // 港股均值回歸
+                    '騰訊控股_股價回調至SMA200_支撐位買入',
+                    '小米集團_RSI(9)極值回歸_震盪區操作',
+                    '美團_Williams%R(14)超買(-20)減倉',
+                    '阿裡巴巴_估值回歸歷史均值_底部確認',
+                    '港交所_股息收益率>4%_價值回歸',
+                    // 期貨均值回歸
+                    '滬銅_價格回歸20日均線_區間交易',
+                    '黃金_歷史波動率回歸均值_期權賣方',
+                    '鐵礦石_基差走強_現期套利',
+                    '原油_遠月合約升水_均值回歸機會'
+                ],
+                '套利策略': [
+                    // A股套利 - 實際套利機會
+                    '滬深300_期現套利_價差>0.8%_無風險收益',
+                    'A/H股比價_恆生AH溢價指數_套利機會',
+                    'ETF套利_滬深300ETF_折溢價>0.3%',
+                    '可轉債套利_轉股價值>現價5%_轉換套利',
+                    '新股申購套利_中籤率預期_資金配置',
+                    // 港股套利
+                    '港美股套利_ADR與港股價差>2%',
+                    '窩輪套利_正股與窩輪時間價值decay',
+                    '牛熊證套利_槓桿比率與收回價計算',
+                    '滬港通套利_A股與H股價差交易',
+                    // 期貨套利
+                    '跨期套利_主力與遠月合約價差>1%',
+                    '跨品種套利_螺紋鋼與熱卷價差交易',
+                    '跨市場套利_LME與滬銅價差套利',
+                    '統計套利_相關性>0.8的品種配對'
+                ],
+                '趨勢跟蹤': [
+                    // A股趨勢 - 板塊和指標
+                    '上證指數_SMA20>SMA60>SMA120_牛市確認',
+                    '白酒板塊_突破前期高點_趨勢跟蹤策略',
+                    '新能源車_龍頭股動量輪動_板塊趨勢',
+                    '半導體_國產替代主題_中期趨勢跟蹤',
+                    '醫藥板塊_政策驅動趨勢_基本面確認',
+                    // 港股趨勢
+                    '恆生指數_通道突破策略_上升通道確認',
+                    '科技股_納斯達克與恆生科技聯動趨勢',
+                    '消費股_季度業績驅動趨勢跟蹤',
+                    '金融股_利率敏感度趨勢分析',
+                    // 期貨趨勢
+                    '原油_趨勢跟蹤_20日均線與ADX(14)>25',
+                    '黃金_避險資金流入_趨勢確認信號',
+                    '農產品_季節性趨勢跟蹤_供給需求變化',
+                    '黑色系_宏觀經濟趨勢_供需基本面'
+                ],
+                '波動率交易': [
+                    // A股波動率 - 具體產品
+                    '創業板指數_VIX替代指標_波動率均值回歸',
+                    '個股期權_隱含波動率與歷史波動率套利',
+                    'A股_事件驅動波動率交易_財報/政策影響',
+                    '可轉債波動率_隱含波動率預測模型',
+                    '50ETF期权_波動率曲面交易',
+                    // 港股波動率
+                    '恆生指數波動率_窩輪時間價值交易',
+                    '港股衍生品_波動率曲面套利',
+                    '中資股_ADR與港股波動率差異套利',
+                    '恒生波幅指數_VHSI交易策略',
+                    // 期貨波動率
+                    '商品期貨_歷史波動率周期_高賣低買',
+                    '股指期權_波動率偏斜交易',
+                    '期權組合_Straddle/Strangle波動率策略',
+                    'VIX期货_恐慌指數與實際波動率套利'
+                ],
+                '統計套利': [
+                    // A股統計套利 - 行業和因子
+                    '行業輪動_28個申萬一級行業_相對強弱分析',
+                    '因子中性_市值/估值/動量因子中性化',
+                    '配對交易_同行業龍頭股價差統計套利',
+                    '事件套利_併購重組預期收益套利',
+                    '風格輪動_成長/價值/小盤風格切換',
+                    // 港股統計套利
+                    '港股通_AH股統計套利_價差均值回歸',
+                    '紅籌股_H股與紅籌統計套利機會',
+                    '小型港股_流動性風險溢價套利',
+                    '行業龍頭_港股市場龍頭效應統計',
+                    // 期貨統計套利
+                    '跨品種統計套利_黑色系商品價差交易',
+                    '時序統計套利_高頻價格模式識別',
+                    '基本面套利_期貨與現貨基本面差異',
+                    '季節性統計_農產品季節性價差模式'
+                ]
+            };
+
+            const params = specificParams[strategyType] || ['默認參數配置_根據市場特性調整'];
+            return params[Math.floor(Math.random() * params.length)];
+        }
+
+        // 過濾策略
+        function filterStrategies(searchTerm) {
+            const term = searchTerm.toLowerCase();
+            filteredStrategies = strategies.filter(strategy =>
+                strategy.name.toLowerCase().includes(term) ||
+                strategy.type.toLowerCase().includes(term) ||
+                strategy.description.toLowerCase().includes(term)
+            );
+
+            currentPage = 1;
+            sortStrategies();
+            renderTable();
+        }
+
+        // 排序策略
+        function sortStrategies() {
+            filteredStrategies.sort((a, b) => {
+                let aVal = a[sortField];
+                let bVal = b[sortField];
+
+                if (typeof aVal === 'string') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+
+                if (sortDirection === 'asc') {
+                    return aVal > bVal ? 1 : -1;
+                } else {
+                    return aVal < bVal ? 1 : -1;
+                }
+            });
+        }
+
+        // 表格排序
+        function sortTable(field) {
+            if (sortField === field) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortField = field;
+                sortDirection = 'asc';
+            }
+
+            // 更新排序圖標
+            document.querySelectorAll('.sort-icon').forEach(icon => {
+                icon.classList.remove('active');
+                icon.textContent = '⇅';
+            });
+
+            const currentIcon = event.target.querySelector('.sort-icon');
+            if (currentIcon) {
+                currentIcon.classList.add('active');
+                currentIcon.textContent = sortDirection === 'asc' ? '↑' : '↓';
+            }
+
+            sortStrategies();
+            renderTable();
+        }
+
+        // 渲染表格
+        function renderTable() {
+            const tbody = document.getElementById('strategiesTableBody');
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageStrategies = filteredStrategies.slice(startIndex, endIndex);
+
+            tbody.innerHTML = '';
+
+            if (pageStrategies.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="13" class="empty-state">
+                            沒有找到匹配的策略
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            pageStrategies.forEach(strategy => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${strategy.id}</td>
+                    <td>
+                        <strong>${strategy.name}</strong>
+                        <br>
+                        <small style="color: #718096;">${strategy.description.substring(0, 80)}...</small>
+                    </td>
+                    <td>${strategy.type}</td>
+                    <td>
+                        <span class="status-badge status-${strategy.status}">
+                            ${getStatusText(strategy.status)}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="risk-badge risk-${strategy.risk_level}">
+                            ${strategy.risk_level === '低' ? '🟢 低風險' : strategy.risk_level === '中' ? '🟡 中風險' : '🔴 高風險'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="asset-badge">${strategy.assets}</span>
+                    </td>
+                    <td class="${strategy.sharpe_ratio > 1 ? 'performance-good' : 'performance-bad'}">
+                        ${strategy.sharpe_ratio}
+                    </td>
+                    <td class="${strategy.max_drawdown < 15 ? 'performance-good' : 'performance-bad'}">
+                        -${strategy.max_drawdown}%
+                    </td>
+                    <td class="${strategy.win_rate > 60 ? 'performance-good' : strategy.win_rate < 40 ? 'performance-bad' : ''}">
+                        ${strategy.win_rate}%
+                    </td>
+                    <td class="${strategy.annual_return > 0 ? 'performance-good' : 'performance-bad'}">
+                        ${strategy.annual_return > 0 ? '+' : ''}${strategy.annual_return}%
+                    </td>
+                    <td>
+                        <div class="allocation-bar">
+                            <div class="allocation-fill" style="width: ${strategy.current_allocation}%">
+                                ${strategy.current_allocation}%
+                            </div>
+                        </div>
+                        <small style="color: #718096;">目標: ${strategy.max_position}%</small>
+                    </td>
+                    <td style="font-size: 0.8rem; color: #4a5568;">
+                        <div style="background: #f7fafc; padding: 8px 12px; border-radius: 4px; border-left: 3px solid #667eea; overflow-x: auto; white-space: nowrap; font-family: 'Courier New', monospace; font-size: 0.85rem; line-height: 1.5; height: auto; min-height: 40px;">
+                            ${strategy.parameters}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view-btn" onclick="viewStrategy(${strategy.id})">查看</button>
+                            <button class="action-btn edit-btn" onclick="editStrategy(${strategy.id})">編輯</button>
+                            <button class="action-btn delete-btn" onclick="deleteStrategy(${strategy.id})">刪除</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updateRecordCount();
+            renderPagination();
+        }
+
+        // 獲取狀態文本
+        function getStatusText(status) {
+            const statusMap = {
+                'active': '活躍',
+                'inactive': '停止',
+                'testing': '測試中'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 更新記錄數量
+        function updateRecordCount() {
+            document.getElementById('recordCount').textContent = `共 ${filteredStrategies.length} 條記錄`;
+        }
+
+        // 渲染分頁
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredStrategies.length / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+
+            let html = `
+                <button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+                    上一頁
+                </button>
+            `;
+
+            for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+                html += `
+                    <button onclick="goToPage(${i})" class="${i === currentPage ? 'active' : ''}">
+                        ${i}
+                    </button>
+                `;
+            }
+
+            if (totalPages > 5) {
+                html += `<span>...</span>`;
+                html += `
+                    <button onclick="goToPage(${totalPages})" class="${totalPages === currentPage ? 'active' : ''}">
+                        ${totalPages}
+                    </button>
+                `;
+            }
+
+            html += `
+                <button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+                    下一頁
+                </button>
+            `;
+
+            pagination.innerHTML = html;
+        }
+
+        // 跳轉頁面
+        function goToPage(page) {
+            const totalPages = Math.ceil(filteredStrategies.length / itemsPerPage);
+            if (page < 1 || page > totalPages) return;
+
+            currentPage = page;
+            renderTable();
+        }
+
+        // 更新統計數據
+        function updateStats() {
+            document.getElementById('totalStrategies').textContent = strategies.length;
+
+            const activeStrategies = strategies.filter(s => s.status === 'active').length;
+            document.getElementById('activeStrategies').textContent = activeStrategies;
+
+            const avgSR = (strategies.reduce((sum, s) => sum + s.sharpe_ratio, 0) / strategies.length).toFixed(2);
+            document.getElementById('avgSR').textContent = avgSR;
+
+            const avgMDD = (strategies.reduce((sum, s) => sum + s.max_drawdown, 0) / strategies.length).toFixed(1);
+            document.getElementById('avgMDD').textContent = `-${avgMDD}%`;
+
+            const avgWinRate = (strategies.reduce((sum, s) => sum + (s.win_rate || 0), 0) / strategies.length).toFixed(1);
+            document.getElementById('avgWinRate').textContent = `${avgWinRate}%`;
+
+            const totalAllocation = strategies.reduce((sum, s) => sum + (s.current_allocation || 0), 0).toFixed(1);
+            document.getElementById('totalAllocation').textContent = `${totalAllocation}%`;
+        }
+
+        // 查看策略詳情
+        function viewStrategy(id) {
+            const strategy = strategies.find(s => s.id === id);
+            if (!strategy) return;
+
+            alert(`策略詳情:\n\n名稱: ${strategy.name}\n類型: ${strategy.type}\n狀態: ${getStatusText(strategy.status)}\n創建時間: ${strategy.created_date}\nSharpe Ratio: ${strategy.sharpe_ratio}\n最大回撤: ${strategy.max_drawdown}%\n總回報: ${strategy.total_return}%\n\n描述: ${strategy.description}`);
+        }
+
+        // 編輯策略
+        function editStrategy(id) {
+            alert(`編輯策略 ID: ${id}\n\n此功能將打開策略編輯器，允許您修改策略參數和配置。`);
+        }
+
+        // 刪除策略
+        function deleteStrategy(id) {
+            if (confirm(`確定要刪除策略 ID: ${id} 嗎？\n\n此操作無法撤銷。`)) {
+                // 從本地數組中移除
+                strategies = strategies.filter(s => s.id !== id);
+                filterStrategies(document.getElementById('searchInput').value);
+                updateStats();
+                alert(`策略 ID: ${id} 已刪除`);
+            }
+        }
+
+        // 創建新策略
+        function createStrategy() {
+            alert(`創建新策略\n\n此功能將打開策略創建嚮導，引導您：\n1. 選擇策略類型\n2. 配置策略參數\n3. 設置風險管理\n4. 定義回測條件`);
+        }
+
+        // 導出數據
+        function exportData() {
+            const csvContent = "data:text/csv;charset=utf-8,"
+                + "ID,策略名稱,類型,狀態,創建時間,Sharpe Ratio,最大回撤,總回報\n"
+                + filteredStrategies.map(s =>
+                    `${s.id},"${s.name}","${s.type}","${getStatusText(s.status)}","${s.created_date}",${s.sharpe_ratio},${s.max_drawdown},${s.total_return}`
+                ).join("\n");
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `strategies_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>

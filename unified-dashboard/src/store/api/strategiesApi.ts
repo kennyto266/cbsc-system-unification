@@ -1,230 +1,395 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import type {
-  Strategy,
-  StrategyListResponse,
-  StrategyDetailResponse,
+import { createApi } from '@reduxjs/toolkit/query/react'
+import { baseApi } from './baseApi'
+import {
   CreateStrategyRequest,
   UpdateStrategyRequest,
-  StrategyExecutionRequest,
-  StrategyExecutionResult,
-  StrategyOptimizationRequest,
-  StrategyOptimizationResult,
-  CBSCStrategyTemplate,
-  BatchStrategyOperation,
-  StrategySignal,
-  PaginatedResponse
-} from '@types/index'
-import type { RootState } from '../index'
+  StrategyPerformanceResponse,
+  BacktestRequest,
+  BacktestResponse,
+  StrategyExecutionResponse,
+  StartStrategyRequest,
+  StopStrategyRequest,
+  ManualOrderRequest,
+  OrderResponse,
+  PaginatedResponse,
+  PaginationParams,
+} from '../../types/api'
+import { Strategy, StrategyType, StrategyStatus, RiskLevel } from '../../types'
 
-// Base query with authentication
-const baseQuery = fetchBaseQuery({
-  baseUrl: '/api/strategies',
-  prepareHeaders: (headers, { getState }) => {
-    const token = (getState() as RootState).auth.token
-    if (token) {
-      headers.set('authorization', `Bearer ${token}`)
-    }
-    headers.set('content-type', 'application/json')
-    return headers
-  },
-})
-
-export const strategiesApi = createApi({
-  reducerPath: 'strategiesApi',
-  baseQuery,
-  tagTypes: ['Strategy', 'StrategyExecution', 'StrategySignal', 'StrategyTemplate'],
+// Strategies API slice
+export const strategiesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Strategy CRUD operations
-    getStrategies: builder.query<StrategyListResponse, {
-      page?: number;
-      pageSize?: number;
-      strategyType?: string;
-      status?: string;
-      isActive?: boolean;
+    getStrategies: builder.query<PaginatedResponse<Strategy>, PaginationParams & {
+      status?: StrategyStatus | 'all'
+      type?: StrategyType | 'all'
+      riskLevel?: RiskLevel | 'all'
+      search?: string
     }>({
-      query: ({
-        page = 1,
-        pageSize = 20,
-        strategyType,
-        status,
-        isActive,
-      }) => ({
-        url: '/',
-        params: {
-          page,
-          page_size: pageSize,
-          strategy_type: strategyType,
-          status,
-          is_active: isActive,
-        },
+      query: (params) => ({
+        url: '/strategies',
+        params,
       }),
-      providesTags: ['Strategy'],
+      providesTags: ['StrategyList'],
     }),
 
-    getStrategy: builder.query<StrategyDetailResponse, string>({
-      query: (strategyId) => `/${strategyId}`,
+    getStrategy: builder.query<Strategy, string>({
+      query: (id) => `/strategies/${id}`,
       providesTags: (result, error, id) => [{ type: 'Strategy', id }],
     }),
 
     createStrategy: builder.mutation<Strategy, CreateStrategyRequest>({
       query: (strategy) => ({
-        url: '/',
+        url: '/strategies',
         method: 'POST',
         body: strategy,
       }),
-      invalidatesTags: ['Strategy'],
+      invalidatesTags: ['StrategyList'],
     }),
 
-    updateStrategy: builder.mutation<Strategy, {
-      strategyId: string;
-      updates: UpdateStrategyRequest;
-    }>({
-      query: ({ strategyId, updates }) => ({
-        url: `/${strategyId}`,
+    updateStrategy: builder.mutation<Strategy, { id: string; updates: UpdateStrategyRequest }>({
+      query: ({ id, updates }) => ({
+        url: `/strategies/${id}`,
         method: 'PUT',
         body: updates,
       }),
-      invalidatesTags: (result, error, { strategyId }) => [
-        { type: 'Strategy', id: strategyId },
-        'Strategy',
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Strategy', id },
+        'StrategyList',
+        'StrategyPerformance',
+      ],
+    }),
+
+    patchStrategy: builder.mutation<Strategy, { id: string; updates: Partial<UpdateStrategyRequest> }>({
+      query: ({ id, updates }) => ({
+        url: `/strategies/${id}`,
+        method: 'PATCH',
+        body: updates,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Strategy', id },
+        'StrategyList',
       ],
     }),
 
     deleteStrategy: builder.mutation<void, string>({
-      query: (strategyId) => ({
-        url: `/${strategyId}`,
+      query: (id) => ({
+        url: `/strategies/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['Strategy'],
+      invalidatesTags: ['StrategyList'],
+    }),
+
+    // Strategy performance
+    getStrategyPerformance: builder.query<StrategyPerformanceResponse, {
+      id: string
+      period: string
+    }>({
+      query: ({ id, period }) => ({
+        url: `/strategies/${id}/performance`,
+        params: { period },
+      }),
+      providesTags: (result, error, { id }) => [{ type: 'StrategyPerformance', id }],
+    }),
+
+    getStrategyMetrics: builder.query({
+      query: (id: string) => `/strategies/${id}/metrics`,
+      providesTags: (result, error, id) => [{ type: 'StrategyPerformance', id }],
     }),
 
     // Strategy execution
-    executeStrategy: builder.mutation<StrategyExecutionResult, {
-      strategyId: string;
-      request?: StrategyExecutionRequest;
-    }>({
-      query: ({ strategyId, request }) => ({
-        url: `/${strategyId}/execute`,
+    startStrategy: builder.mutation<StrategyExecutionResponse, StartStrategyRequest>({
+      query: ({ strategyId, mode, allocation }) => ({
+        url: `/strategies/${strategyId}/start`,
         method: 'POST',
-        body: request,
+        body: { mode, allocation },
       }),
-      invalidatesTags: ['StrategyExecution'],
-    }),
-
-    getExecutionResult: builder.query<StrategyExecutionResult, {
-      strategyId: string;
-      executionId: string;
-    }>({
-      query: ({ strategyId, executionId }) => `/${strategyId}/executions/${executionId}`,
-      providesTags: (result, error, { executionId }) => [
-        { type: 'StrategyExecution', id: executionId },
+      invalidatesTags: (result, error, { strategyId }) => [
+        { type: 'Strategy', id: strategyId },
+        'StrategyExecution',
       ],
     }),
 
-    stopStrategyExecution: builder.mutation<any, {
-      strategyId: string;
-      executionId?: string;
-    }>({
-      query: ({ strategyId, executionId }) => ({
-        url: `/${strategyId}/stop`,
+    stopStrategy: builder.mutation<StrategyExecutionResponse, StopStrategyRequest>({
+      query: ({ strategyId, reason }) => ({
+        url: `/strategies/${strategyId}/stop`,
         method: 'POST',
-        params: executionId ? { execution_id: executionId } : {},
+        body: { reason },
+      }),
+      invalidatesTags: (result, error, { strategyId }) => [
+        { type: 'Strategy', id: strategyId },
+        'StrategyExecution',
+      ],
+    }),
+
+    pauseStrategy: builder.mutation<StrategyExecutionResponse, { id: string }>({
+      query: (id) => ({
+        url: `/strategies/${id}/pause`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Strategy', id },
+        'StrategyExecution',
+      ],
+    }),
+
+    resumeStrategy: builder.mutation<StrategyExecutionResponse, { id: string }>({
+      query: (id) => ({
+        url: `/strategies/${id}/resume`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Strategy', id },
+        'StrategyExecution',
+      ],
+    }),
+
+    getExecutionStatus: builder.query<StrategyExecutionResponse, string>({
+      query: (id) => `/strategies/${id}/execution/status`,
+      providesTags: (result, error, id) => [{ type: 'StrategyExecution', id }],
+    }),
+
+    // Backtesting
+    runBacktest: builder.mutation<BacktestResponse, BacktestRequest>({
+      query: (request) => ({
+        url: '/strategies/backtest',
+        method: 'POST',
+        body: request,
+      }),
+      invalidatesTags: ['Backtest'],
+    }),
+
+    getBacktestResult: builder.query<BacktestResponse, string>({
+      query: (id) => `/strategies/backtest/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Backtest', id }],
+    }),
+
+    getBacktestList: builder.query<PaginatedResponse<BacktestResponse>, PaginationParams>({
+      query: (params) => ({
+        url: '/strategies/backtest',
+        params,
+      }),
+      providesTags: ['Backtest'],
+    }),
+
+    deleteBacktest: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/strategies/backtest/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Backtest'],
+    }),
+
+    // Manual trading
+    placeManualOrder: builder.mutation<OrderResponse, ManualOrderRequest>({
+      query: (order) => ({
+        url: '/strategies/manual/order',
+        method: 'POST',
+        body: order,
       }),
       invalidatesTags: ['StrategyExecution'],
     }),
 
-    // Strategy signals
-    getStrategySignals: builder.query<{ signals: StrategySignal[] }, {
-      strategyId: string;
-      limit?: number;
-      startTime?: string;
-      endTime?: string;
-      signalType?: string;
-    }>({
-      query: ({
-        strategyId,
-        limit = 100,
-        startTime,
-        endTime,
-        signalType,
-      }) => ({
-        url: `/${strategyId}/signals`,
-        params: {
-          limit,
-          start_time: startTime,
-          end_time: endTime,
-          signal_type: signalType,
-        },
+    cancelOrder: builder.mutation<void, { orderId: string }>({
+      query: ({ orderId }) => ({
+        url: `/strategies/orders/${orderId}/cancel`,
+        method: 'POST',
       }),
-      providesTags: ['StrategySignal'],
+      invalidatesTags: ['StrategyExecution'],
     }),
 
-    // Batch operations
-    batchOperation: builder.mutation<any, BatchStrategyOperation>({
-      query: (operation) => ({
-        url: '/batch',
-        method: 'POST',
-        body: operation,
+    getOrders: builder.query<PaginatedResponse<OrderResponse>, PaginationParams & {
+      strategyId?: string
+      symbol?: string
+      status?: string
+    }>({
+      query: (params) => ({
+        url: '/strategies/orders',
+        params,
       }),
-      invalidatesTags: ['Strategy'],
+      providesTags: ['StrategyExecution'],
+    }),
+
+    getOrder: builder.query<OrderResponse, string>({
+      query: (id) => `/strategies/orders/${id}`,
+      providesTags: ['StrategyExecution'],
+    }),
+
+    // Positions
+    getPositions: builder.query<PaginatedResponse<any>, PaginationParams & {
+      strategyId?: string
+      symbol?: string
+    }>({
+      query: (params) => ({
+        url: '/strategies/positions',
+        params,
+      }),
+      providesTags: ['StrategyExecution'],
+    }),
+
+    closePosition: builder.mutation<void, { positionId: string }>({
+      query: ({ positionId }) => ({
+        url: `/strategies/positions/${positionId}/close`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['StrategyExecution'],
     }),
 
     // Strategy templates
-    getStrategyTemplates: builder.query<CBSCStrategyTemplate[], {
-      category?: string;
+    getStrategyTemplates: builder.query<PaginatedResponse<Strategy>, PaginationParams & {
+      type?: StrategyType
     }>({
-      query: ({ category }) => ({
-        url: '/templates',
-        params: { category },
+      query: (params) => ({
+        url: '/strategies/templates',
+        params,
       }),
-      providesTags: ['StrategyTemplate'],
+      providesTags: ['StrategyList'],
     }),
 
-    getStrategyTemplate: builder.query<CBSCStrategyTemplate, string>({
-      query: (templateId) => `/templates/${templateId}`,
-      providesTags: (result, error, id) => [{ type: 'StrategyTemplate', id }],
-    }),
-
-    // Parameter optimization
-    optimizeStrategyParameters: builder.mutation<StrategyOptimizationResult, {
-      strategyId: string;
-      request: StrategyOptimizationRequest;
-    }>({
-      query: ({ strategyId, request }) => ({
-        url: `/${strategyId}/optimize`,
+    createFromTemplate: builder.mutation<Strategy, { templateId: string; name: string }>({
+      query: ({ templateId, name }) => ({
+        url: `/strategies/templates/${templateId}/create`,
         method: 'POST',
-        body: request,
+        body: { name },
       }),
-      invalidatesTags: ['Strategy'],
+      invalidatesTags: ['StrategyList'],
+    }),
+
+    // Strategy optimization
+    optimizeStrategy: builder.mutation<any, {
+      strategyId: string
+      parameters: string[]
+      objective: string
+      constraints?: any
+    }>({
+      query: ({ strategyId, parameters, objective, constraints }) => ({
+        url: `/strategies/${strategyId}/optimize`,
+        method: 'POST',
+        body: { parameters, objective, constraints },
+      }),
+      invalidatesTags: (result, error, { strategyId }) => [
+        { type: 'Strategy', id: strategyId },
+      ],
+    }),
+
+    getOptimizationResults: builder.query<any, string>({
+      query: (jobId) => `/strategies/optimization/${jobId}`,
+      providesTags: ['Backtest'],
+    }),
+
+    // Risk management
+    getRiskMetrics: builder.query<any, string>({
+      query: (id) => `/strategies/${id}/risk`,
+      providesTags: (result, error, id) => [{ type: 'StrategyPerformance', id }],
+    }),
+
+    updateRiskSettings: builder.mutation<any, {
+      strategyId: string
+      settings: any
+    }>({
+      query: ({ strategyId, settings }) => ({
+        url: `/strategies/${strategyId}/risk`,
+        method: 'PUT',
+        body: settings,
+      }),
+      invalidatesTags: (result, error, { strategyId }) => [
+        { type: 'Strategy', id: strategyId },
+      ],
+    }),
+
+    // Strategy logs
+    getExecutionLogs: builder.query<PaginatedResponse<any>, {
+      strategyId: string
+      level?: string
+      startTime?: string
+      endTime?: string
+      page?: number
+      pageSize?: number
+    }>({
+      query: (params) => ({
+        url: `/strategies/${params.strategyId}/logs`,
+        params,
+      }),
+      providesTags: ['Log'],
+    }),
+
+    // Strategy comparison
+    compareStrategies: builder.query<any, {
+      strategies: string[]
+      period: string
+      metrics: string[]
+    }>({
+      query: ({ strategies, period, metrics }) => ({
+        url: '/strategies/compare',
+        method: 'POST',
+        body: { strategies, period, metrics },
+      }),
+      providesTags: ['StrategyPerformance'],
+    }),
+    executeStrategy: builder.mutation<any, {
+      strategyId: string;
+      params?: any;
+    }>({
+      query: ({ strategyId, params }) => ({
+        url: `/strategies/${strategyId}/execute`,
+        method: 'POST',
+        body: params || {},
+      }),
+      invalidatesTags: (result, error, { strategyId }) => [
+        { type: 'Strategy', id: strategyId },
+        'StrategyExecution',
+      ],
+    }),
+    batchOperation: builder.mutation<any, {
+      strategyIds: string[];
+      operation: 'start' | 'stop' | 'pause' | 'resume' | 'delete';
+      params?: any;
+    }>({
+      query: ({ strategyIds, operation, params }) => ({
+        url: '/strategies/batch',
+        method: 'POST',
+        body: { strategyIds, operation, params },
+      }),
+      invalidatesTags: ['StrategyList', 'StrategyExecution'],
     }),
   }),
 })
 
+// Export hooks
 export const {
-  // Strategy CRUD
   useGetStrategiesQuery,
   useGetStrategyQuery,
   useCreateStrategyMutation,
   useUpdateStrategyMutation,
+  usePatchStrategyMutation,
   useDeleteStrategyMutation,
-
-  // Strategy execution
+  useGetStrategyPerformanceQuery,
+  useGetStrategyMetricsQuery,
+  useStartStrategyMutation,
+  useStopStrategyMutation,
+  usePauseStrategyMutation,
+  useResumeStrategyMutation,
+  useGetExecutionStatusQuery,
+  useRunBacktestMutation,
+  useGetBacktestResultQuery,
+  useGetBacktestListQuery,
+  useDeleteBacktestMutation,
+  usePlaceManualOrderMutation,
+  useCancelOrderMutation,
+  useGetOrdersQuery,
   useExecuteStrategyMutation,
-  useGetExecutionResultQuery,
-  useStopStrategyExecutionMutation,
-
-  // Strategy signals
-  useGetStrategySignalsQuery,
-
-  // Batch operations
   useBatchOperationMutation,
-
-  // Strategy templates
+  useGetOrderQuery,
+  useGetPositionsQuery,
+  useClosePositionMutation,
   useGetStrategyTemplatesQuery,
-  useGetStrategyTemplateQuery,
-
-  // Parameter optimization
-  useOptimizeStrategyParametersMutation,
+  useCreateFromTemplateMutation,
+  useOptimizeStrategyMutation,
+  useGetOptimizationResultsQuery,
+  useGetRiskMetricsQuery,
+  useUpdateRiskSettingsMutation,
+  useGetExecutionLogsQuery,
+  useCompareStrategiesQuery,
 } = strategiesApi
 
 export default strategiesApi

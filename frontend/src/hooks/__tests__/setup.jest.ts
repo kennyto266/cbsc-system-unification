@@ -1,0 +1,223 @@
+/**
+ * Jest setup for hooks tests
+ *
+ * This file contains common setup for hook tests including
+ * global mocks and test utilities for Jest environment.
+ */
+
+// Mock ResizeObserver
+global.ResizeObserver = jest.fn().mockImplementation((callback) => {
+  return {
+    observe: jest.fn(),
+    unobserve: jest.fn(),
+    disconnect: jest.fn(),
+  };
+});
+
+// Mock IntersectionObserver
+global.IntersectionObserver = jest.fn().mockImplementation((callback) => {
+  return {
+    observe: jest.fn(),
+    unobserve: jest.fn(),
+    disconnect: jest.fn(),
+  };
+});
+
+// Mock window.matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(), // deprecated
+    removeListener: jest.fn(), // deprecated
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+});
+
+// Mock scrollTo
+window.scrollTo = jest.fn();
+
+// Mock getComputedStyle
+window.getComputedStyle = jest.fn(() => ({
+  getPropertyValue: jest.fn(() => ''),
+}));
+
+// Mock URL.createObjectURL and revokeObjectURL
+Object.defineProperty(URL, 'createObjectURL', {
+  writable: true,
+  value: jest.fn(() => 'mocked-url'),
+});
+
+Object.defineProperty(URL, 'revokeObjectURL', {
+  writable: true,
+  value: jest.fn(),
+});
+
+// Mock HTMLElement methods
+HTMLElement.prototype.scrollIntoView = jest.fn();
+HTMLElement.prototype.click = jest.fn();
+
+// Mock Canvas API
+HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
+  fillRect: jest.fn(),
+  clearRect: jest.fn(),
+  getImageData: jest.fn(() => ({ data: new Array(4) })),
+  putImageData: jest.fn(),
+  createImageData: jest.fn(() => ({ data: new Array(4) })),
+  setTransform: jest.fn(),
+  drawImage: jest.fn(),
+  save: jest.fn(),
+  fillText: jest.fn(),
+  restore: jest.fn(),
+  beginPath: jest.fn(),
+  moveTo: jest.fn(),
+  lineTo: jest.fn(),
+  closePath: jest.fn(),
+  stroke: jest.fn(),
+  translate: jest.fn(),
+  scale: jest.fn(),
+  rotate: jest.fn(),
+  arc: jest.fn(),
+  fill: jest.fn(),
+  measureText: jest.fn(() => ({ width: 0 })),
+  transform: jest.fn(),
+  rect: jest.fn(),
+  clip: jest.fn(),
+  fillStyle: '',
+  font: '',
+  globalAlpha: 1,
+  lineDash: [],
+  lineDashOffset: 0,
+  lineJoin: '',
+  lineCap: '',
+  lineWidth: 1,
+  miterLimit: 1,
+  shadowBlur: 0,
+  shadowColor: '',
+  shadowOffsetX: 0,
+  shadowOffsetY: 0,
+  strokeStyle: '',
+  textAlign: '',
+  textBaseline: '',
+}));
+
+HTMLCanvasElement.prototype.toDataURL = jest.fn(() => 'data:image/png;base64,mock');
+
+HTMLCanvasElement.prototype.toBlob = jest.fn((callback) => {
+  callback(new Blob(['mock-image'], { type: 'image/png' }));
+});
+
+// Mock WebSocket
+global.WebSocket = jest.fn().mockImplementation(() => ({
+  close: jest.fn(),
+  send: jest.fn(),
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+  readyState: 1,
+  CONNECTING: 0,
+  OPEN: 1,
+  CLOSING: 2,
+  CLOSED: 3,
+}));
+
+// Mock fetch
+global.fetch = jest.fn();
+
+// Mock Request and Response
+global.Request = jest.fn();
+global.Response = jest.fn();
+
+// Mock btoa and atob
+global.btoa = jest.fn((str: string) => Buffer.from(str).toString('base64'));
+global.atob = jest.fn((str: string) => Buffer.from(str, 'base64').toString());
+
+// Mock Image
+global.Image = jest.fn().mockImplementation(() => ({
+  onload: null,
+  onerror: null,
+  src: '',
+  width: 0,
+  height: 0,
+  complete: true,
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+})) as any;
+
+// Mock performance APIs
+Object.defineProperty(window, 'requestAnimationFrame', {
+  writable: true,
+  value: jest.fn((cb) => setTimeout(cb, 0)),
+});
+
+Object.defineProperty(window, 'cancelAnimationFrame', {
+  writable: true,
+  value: jest.fn((id: number) => clearTimeout(id)),
+});
+
+Object.defineProperty(window, 'performance', {
+  writable: true,
+  value: {
+    now: jest.fn(() => Date.now()),
+    mark: jest.fn(),
+    measure: jest.fn(),
+    getEntriesByName: jest.fn(() => []),
+    getEntriesByType: jest.fn(() => []),
+  },
+});
+
+// Common test utilities
+export const createMockRef = <T = any>(initialValue: T | null = null) => ({
+  current: initialValue,
+});
+
+export const createMockElement = (tagName: string, properties: Record<string, any> = {}) => {
+  const element = document.createElement(tagName);
+  Object.entries(properties).forEach(([key, value]) => {
+    (element as any)[key] = value;
+  });
+  return element;
+};
+
+export const createMockCanvas = (width = 800, height = 600) => {
+  const canvas = document.createElement('canvas');
+  Object.defineProperty(canvas, 'width', { value: width });
+  Object.defineProperty(canvas, 'height', { value: height });
+  return canvas;
+};
+
+export const createMockSVG = (width = 800, height = 600) => {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', width.toString());
+  svg.setAttribute('height', height.toString());
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  return svg;
+};
+
+export const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+export const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0));
+
+// Export common mock data
+export const mockChartData = [
+  { timestamp: 1, value: 100, label: 'Test1' },
+  { timestamp: 2, value: 200, label: 'Test2' },
+  { timestamp: 3, value: 150, label: 'Test3' },
+];
+
+export const mockWebSocketMessage = {
+  id: 'test-id',
+  type: 'DATA',
+  channel: 'STRATEGY_UPDATES',
+  data: { value: 123, timestamp: Date.now() },
+  timestamp: Date.now(),
+};
+
+export const mockToastData = {
+  type: 'success' as const,
+  message: 'Test message',
+  duration: 3000,
+};

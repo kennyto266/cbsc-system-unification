@@ -7,7 +7,7 @@ from typing import List, Dict, Any
 from datetime import datetime
 import pandas as pd
 import numpy as np
-from backend.services.analysis_service import TechnicalAnalysisService
+from services.analysis_service import TechnicalAnalysisService
 
 router = APIRouter()
 

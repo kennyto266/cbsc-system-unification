@@ -1,0 +1,24 @@
+# Namespace definitions for CBSC System
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cbsc-system
+  labels:
+    name: cbsc-system
+    environment: production
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cbsc-staging
+  labels:
+    name: cbsc-staging
+    environment: staging
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cbsc-dev
+  labels:
+    name: cbsc-dev
+    environment: development

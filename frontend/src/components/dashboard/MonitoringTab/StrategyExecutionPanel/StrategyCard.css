@@ -1,0 +1,151 @@
+/**
+ * StrategyCard Styles
+ */
+
+.strategy-card {
+  cursor: grab;
+}
+
+.strategy-card:active {
+  cursor: grabbing;
+}
+
+.strategy-card-inner {
+  height: 100%;
+  transition: all 0.2s ease;
+}
+
+.strategy-card-inner:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.strategy-card-inner.running {
+  border-left: 3px solid #10b981;
+}
+
+.strategy-card-inner.paused {
+  border-left: 3px solid #f59e0b;
+}
+
+.strategy-card-inner.stopped,
+.strategy-card-inner.error {
+  border-left: 3px solid #ef4444;
+}
+
+/* Header */
+.strategy-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.strategy-card-title h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.dark .strategy-card-title h3 {
+  color: #f9fafb;
+}
+
+.strategy-card-menu {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.strategy-card-menu:hover {
+  color: #111827;
+}
+
+.dark .strategy-card-menu {
+  color: #9ca3af;
+}
+
+.dark .strategy-card-menu:hover {
+  color: #f9fafb;
+}
+
+/* P&L */
+.strategy-card-pnl {
+  margin-bottom: 12px;
+}
+
+.pnl-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.pnl-value.positive {
+  color: #10b981;
+}
+
+.pnl-value.negative {
+  color: #ef4444;
+}
+
+.pnl-percent {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+/* Metrics */
+.strategy-card-metrics {
+  display: flex;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.dark .strategy-card-metrics {
+  border-top-color: #374151;
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.dark .metric-label {
+  color: #9ca3af;
+}
+
+.metric-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.dark .metric-value {
+  color: #f9fafb;
+}
+
+/* Activity */
+.strategy-card-activity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.dark .strategy-card-activity {
+  color: #9ca3af;
+}

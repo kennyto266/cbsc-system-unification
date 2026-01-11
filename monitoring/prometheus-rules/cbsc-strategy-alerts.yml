@@ -1,0 +1,299 @@
+# Prometheus Alert Rules for CBSC Strategy Management System v2
+# Comprehensive alerting for API, performance, and business metrics
+
+groups:
+- name: cbsc-strategy-api.rules
+  rules:
+  # API Health Alerts
+  - alert: APIDown
+    expr: up{job="cbsc-strategy-api-v2"} == 0
+    for: 1m
+    labels:
+      severity: critical
+      service: cbsc-strategy-api
+    annotations:
+      summary: "CBSC Strategy API is down"
+      description: "CBSC Strategy API has been down for more than 1 minute"
+
+  - alert: APIHighErrorRate
+    expr: |
+      (
+        sum(rate(http_requests_total{service="cbsc-strategy-api-v2",status=~"5.."}[5m])) /
+        sum(rate(http_requests_total{service="cbsc-strategy-api-v2"}[5m]))
+      ) > 0.05
+    for: 5m
+    labels:
+      severity: warning
+      service: cbsc-strategy-api
+    annotations:
+      summary: "High error rate on CBSC Strategy API"
+      description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+
+  - alert: APICriticalErrorRate
+    expr: |
+      (
+        sum(rate(http_requests_total{service="cbsc-strategy-api-v2",status=~"5.."}[1m])) /
+        sum(rate(http_requests_total{service="cbsc-strategy-api-v2"}[1m]))
+      ) > 0.15
+    for: 1m
+    labels:
+      severity: critical
+      service: cbsc-strategy-api
+    annotations:
+      summary: "Critical error rate on CBSC Strategy API"
+      description: "Error rate is {{ $value | humanizePercentage }} for the last 1 minute"
+
+  # Performance Alerts
+  - alert: APIHighLatency
+    expr: |
+      histogram_quantile(0.95,
+        rate(http_request_duration_seconds_bucket{service="cbsc-strategy-api-v2"}[5m])
+      ) > 0.5
+    for: 5m
+    labels:
+      severity: warning
+      service: cbsc-strategy-api
+    annotations:
+      summary: "High latency on CBSC Strategy API"
+      description: "95th percentile latency is {{ $value }}s"
+
+  - alert: APICriticalLatency
+    expr: |
+      histogram_quantile(0.99,
+        rate(http_request_duration_seconds_bucket{service="cbsc-strategy-api-v2"}[5m])
+      ) > 2.0
+    for: 2m
+    labels:
+      severity: critical
+      service: cbsc-strategy-api
+    annotations:
+      summary: "Critical latency on CBSC Strategy API"
+      description: "99th percentile latency is {{ $value }}s"
+
+  # Rate Limiting Alerts
+  - alert: APIRateLimitExceeded
+    expr: |
+      rate(http_requests_total{service="cbsc-strategy-api-v2",status="429"}[5m]) > 10
+    for: 5m
+    labels:
+      severity: warning
+      service: cbsc-strategy-api
+    annotations:
+      summary: "Rate limit exceeded"
+      description: "Rate limit is being exceeded at {{ $value }} requests/sec"
+
+  # WebSocket Alerts
+  - alert: WebSocketConnectionsLow
+    expr: websocket_connections_current{service="cbsc-strategy-api-v2"} < 10
+    for: 10m
+    labels:
+      severity: info
+      service: cbsc-strategy-api
+    annotations:
+      summary: "Low WebSocket connections"
+      description: "Only {{ $value }} WebSocket connections active"
+
+  - alert: WebSocketConnectionFailures
+    expr: |
+      rate(websocket_connection_failures_total{service="cbsc-strategy-api-v2"}[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+      service: cbsc-strategy-api
+    annotations:
+      summary: "WebSocket connection failures"
+      description: "WebSocket connection failure rate is {{ $value }}/sec"
+
+- name: cbsc-strategy-business.rules
+  rules:
+  # Strategy Performance Alerts
+  - alert: StrategyExecutionFailure
+    expr: |
+      (
+        sum(rate(strategy_executions_failed_total{service="cbsc-strategy-api-v2"}[5m])) /
+        sum(rate(strategy_executions_total{service="cbsc-strategy-api-v2"}[5m]))
+      ) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+      service: cbsc-strategy-business
+    annotations:
+      summary: "High strategy execution failure rate"
+      description: "{{ $value | humanizePercentage }} of strategy executions are failing"
+
+  - alert: ActiveStrategiesLow
+    expr: active_strategies_count{service="cbsc-strategy-api-v2"} < 50
+    for: 15m
+    labels:
+      severity: info
+      service: cbsc-strategy-business
+    annotations:
+      summary: "Low number of active strategies"
+      description: "Only {{ $value }} strategies are currently active"
+
+  - alert: StrategyPerformanceDegradation
+    expr: |
+      (
+        avg(strategy_performance_score{service="cbsc-strategy-api-v2"}) < 0.7
+      )
+    for: 10m
+    labels:
+      severity: warning
+      service: cbsc-strategy-business
+    annotations:
+      summary: "Strategy performance degradation"
+      description: "Average strategy performance score is {{ $value }}"
+
+  # Volume Alerts
+  - alert: LowAPITraffic
+    expr: |
+      (
+        sum(rate(http_requests_total{service="cbsc-strategy-api-v2"}[10m])) < 1
+      )
+    for: 15m
+    labels:
+      severity: info
+      service: cbsc-strategy-business
+    annotations:
+      summary: "Low API traffic"
+      description: "API traffic is {{ $value }} requests/sec (abnormally low)"
+
+- name: cbsc-strategy-infrastructure.rules
+  rules:
+  # Database Alerts
+  - alert: DatabaseDown
+    expr: up{job="cbsc-postgres"} == 0
+    for: 1m
+    labels:
+      severity: critical
+      service: cbsc-strategy-infra
+    annotations:
+      summary: "PostgreSQL database is down"
+      description: "PostgreSQL database has been down for more than 1 minute"
+
+  - alert: DatabaseSlowQueries
+    expr: |
+      histogram_quantile(0.95,
+        rate(pg_stat_statements_mean_time_seconds_bucket{service="cbsc-strategy-api-v2"}[5m])
+      ) > 1.0
+    for: 5m
+    labels:
+      severity: warning
+      service: cbsc-strategy-infra
+    annotations:
+      summary: "Slow database queries"
+      description: "95th percentile query time is {{ $value }}s"
+
+  - alert: DatabaseConnectionsHigh
+    expr: pg_stat_activity_count{service="cbsc-strategy-api-v2"} > 80
+    for: 10m
+    labels:
+      severity: warning
+      service: cbsc-strategy-infra
+    annotations:
+      summary: "High database connections"
+      description: "{{ $value }} database connections (threshold: 80)"
+
+  # Redis Alerts
+  - alert: RedisDown
+    expr: up{job="cbsc-redis"} == 0
+    for: 1m
+    labels:
+      severity: critical
+      service: cbsc-strategy-infra
+    annotations:
+      summary: "Redis is down"
+      description: "Redis has been down for more than 1 minute"
+
+  - alert: RedisMemoryHigh
+    expr: redis_memory_used_bytes{service="cbsc-strategy-api-v2"} / redis_memory_max_bytes > 0.9
+    for: 5m
+    labels:
+      severity: warning
+      service: cbsc-strategy-infra
+    annotations:
+      summary: "Redis memory usage high"
+      description: "Redis memory usage is {{ $value | humanizePercentage }}"
+
+  # Infrastructure Alerts
+  - alert: HighCPUUsage
+    expr: |
+      100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+    for: 5m
+    labels:
+      severity: warning
+      service: cbsc-strategy-infra
+    annotations:
+      summary: "High CPU usage"
+      description: "CPU usage is {{ $value }}% on instance {{ $labels.instance }}"
+
+  - alert: HighMemoryUsage
+    expr: |
+      (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+    for: 5m
+    labels:
+      severity: warning
+      service: cbsc-strategy-infra
+    annotations:
+      summary: "High memory usage"
+      description: "Memory usage is {{ $value }}% on instance {{ $labels.instance }}"
+
+  - alert: DiskSpaceLow
+    expr: |
+      (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+    for: 5m
+    labels:
+      severity: critical
+      service: cbsc-strategy-infra
+    annotations:
+      summary: "Low disk space"
+      description: "Disk space is {{ $value }}% on mount {{ $labels.mountpoint }}"
+
+- name: cbsc-strategy-canary.rules
+  rules:
+  # Canary Deployment Alerts
+  - alert: CanaryDeploymentError
+    expr: |
+      (
+        rate(http_requests_total{service="cbsc-strategy-api-canary",status=~"5.."}[5m]) /
+        rate(http_requests_total{service="cbsc-strategy-api-canary"}[5m])
+      ) > 0.05
+    for: 5m
+    labels:
+      severity: critical
+      service: cbsc-strategy-canary
+    annotations:
+      summary: "Canary deployment errors"
+      description: "Canary has {{ $value | humanizePercentage }} error rate"
+
+  - alert: CanaryVsStableErrorRate
+    expr: |
+      (
+        rate(http_requests_total{service="cbsc-strategy-api-canary",status=~"5.."}[5m]) /
+        rate(http_requests_total{service="cbsc-strategy-api-canary"}[5m])
+      ) / (
+        rate(http_requests_total{service="cbsc-strategy-api-v2",status=~"5.."}[5m]) /
+        rate(http_requests_total{service="cbsc-strategy-api-v2"}[5m])
+      ) > 2
+    for: 10m
+    labels:
+      severity: critical
+      service: cbsc-strategy-canary
+    annotations:
+      summary: "Canary error rate much higher than stable"
+      description: "Canary has {{ $value | humanizePercentage }} more errors than stable"
+
+  - alert: CanaryVsStableLatency
+    expr: |
+      histogram_quantile(0.95,
+        rate(http_request_duration_seconds_bucket{service="cbsc-strategy-api-canary"}[5m])
+      ) / histogram_quantile(0.95,
+        rate(http_request_duration_seconds_bucket{service="cbsc-strategy-api-v2"}[5m])
+      ) > 1.5
+    for: 10m
+    labels:
+      severity: warning
+      service: cbsc-strategy-canary
+    annotations:
+      summary: "Canary latency higher than stable"
+      description: "Canary has {{ $value | humanizePercentage }} higher latency"

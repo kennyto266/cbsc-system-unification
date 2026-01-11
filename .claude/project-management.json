@@ -1,0 +1,246 @@
+{
+  "project": {
+    "name": "CBSC系統整合",
+    "description": "CBSC量化交易策略管理系統整合項目",
+    "start_date": "2025-12-01",
+    "current_phase": "Phase 2",
+    "status": "in_progress",
+    "owner": "開發團隊",
+    "stakeholders": [
+      "產品經理",
+      "技術架構師",
+      "前端開發團隊",
+      "后端開發團隊",
+      "測試團隊",
+      "運維團隊"
+    ]
+  },
+  "phases": {
+    "Phase 1": {
+      "name": "基礎分析與規劃",
+      "duration": "2週",
+      "status": "completed",
+      "start_date": "2025-12-01",
+      "end_date": "2025-12-14",
+      "completion_percentage": 100
+    },
+    "Phase 2": {
+      "name": "前端系統統一",
+      "duration": "2週",
+      "status": "completed",
+      "start_date": "2025-12-15",
+      "end_date": "2025-12-15",
+      "completion_percentage": 100,
+      "tasks": {
+        "設計系統定義": {
+          "status": "completed",
+          "start_date": "2025-12-15",
+          "completion_date": "2025-12-15",
+          "deliverables": [
+            "design-tokens.css",
+            "設計系統文檔"
+          ]
+        },
+        "核心組件開發": {
+          "status": "completed",
+          "start_date": "2025-12-15",
+          "completion_date": "2025-12-15",
+          "deliverables": [
+            "Button.tsx",
+            "Input.tsx",
+            "Select.tsx",
+            "組件索引文件"
+          ]
+        },
+        "數據遷移方案設計": {
+          "status": "completed",
+          "start_date": "2025-12-15",
+          "completion_date": "2025-12-15",
+          "deliverables": [
+            "data-migration-plan.md",
+            "migrationService.ts",
+            "storageService.ts"
+          ]
+        },
+        "路由系統重構": {
+          "status": "completed",
+          "start_date": "2025-12-15",
+          "completion_date": "2025-12-15",
+          "deliverables": [
+            "router配置",
+            "RouteGuard組件",
+            "認證Hook"
+          ]
+        },
+        "狀態管理統一": {
+          "status": "completed",
+          "start_date": "2025-12-15",
+          "completion_date": "2025-12-15",
+          "deliverables": [
+            "Redux Store配置",
+            "authSlice.ts",
+            "uiSlice.ts"
+          ]
+        }
+      }
+    },
+    "Phase 3": {
+      "name": "后端服務整合",
+      "duration": "4週",
+      "status": "pending",
+      "start_date": "2026-01-13",
+      "end_date": "2026-02-09",
+      "tasks": {
+        "API網關重構": {
+          "status": "pending",
+          "priority": "high",
+          "estimated_effort": "5人天",
+          "dependencies": []
+        },
+        "微服務拆分": {
+          "status": "pending",
+          "priority": "high",
+          "estimated_effort": "10人天",
+          "dependencies": ["API網關重構"]
+        },
+        "數據層統一": {
+          "status": "pending",
+          "priority": "medium",
+          "estimated_effort": "8人天",
+          "dependencies": ["微服務拆分"]
+        }
+      }
+    },
+    "Phase 4": {
+      "name": "測試與優化",
+      "duration": "2週",
+      "status": "pending",
+      "start_date": "2026-02-10",
+      "end_date": "2026-02-23",
+      "tasks": {
+        "端到端測試": {
+          "status": "pending",
+          "priority": "high",
+          "estimated_effort": "5人天"
+        },
+        "性能優化": {
+          "status": "pending",
+          "priority": "medium",
+          "estimated_effort": "3人天"
+        },
+        "安全加固": {
+          "status": "pending",
+          "priority": "high",
+          "estimated_effort": "4人天"
+        }
+      }
+    }
+  },
+  "metrics": {
+    "overall_progress": 50,
+    "current_sprint": 2,
+    "total_sprints": 4,
+    "defect_count": 0,
+    "test_coverage": 0,
+    "performance_baseline": {
+      "api_response_time": "500ms",
+      "page_load_time": "2s",
+      "database_query_time": "100ms"
+    },
+    "code_quality": {
+      "maintainability_index": 75,
+      "technical_debt_ratio": 15
+    }
+  },
+  "risks": [
+    {
+      "id": "risk_001",
+      "title": "技術債務積累",
+      "impact": "high",
+      "probability": "medium",
+      "mitigation": "在Phase 2完成償還債務識別",
+      "status": "mitigated"
+    },
+    {
+      "id": "risk_002",
+      "title": "數據遷移風險",
+      "impact": "high",
+      "probability": "medium",
+      "mitigation": "實施雙寫機制和備份策略",
+      "status": "mitigated"
+    },
+    {
+      "id": "risk_003",
+      "title": "后端服務兼容性",
+      "impact": "high",
+      "probability": "medium",
+      "mitigation": "詳細的兼容性測試計劃",
+      "status": "open"
+    }
+  ],
+  "dependencies": {
+    "external": [
+      "React 18+",
+      "TypeScript 5+",
+      "Node.js 20+",
+      "PostgreSQL 14+",
+      "Redis 6+"
+    ],
+    "internal": [
+      "現有策略管理系統",
+      "數據庫備份",
+      "API文檔"
+    ]
+  },
+  "deliverables": {
+    "Phase 1": [
+      "系統架構分析報告",
+      "技術債務評估報告",
+      "整合方案設計文檔"
+    ],
+    "Phase 2": [
+      "設計系統 v1.0",
+      "組件庫 v1.0",
+      "前端基礎架 v1.0"
+    ],
+    "Phase 3": [
+      "API網關 v1.0",
+      "微服務架構 v1.0",
+      "數據訪問層 v1.0"
+    ],
+    "Phase 4": [
+      "整合測試報告",
+      "性能優化報告",
+      "安全評估報告"
+    ]
+  },
+  "milestones": {
+    "MVP功能驗證": {
+      "date": "2026-01-31",
+      "criteria": [
+        "核心交易策略功能完整",
+        "用戶界面統一",
+        "數據完整性驗證"
+      ]
+    },
+    "系統上線": {
+      "date": "2026-03-31",
+      "criteria": [
+        "所有功能模組完成",
+        "性能指標達標",
+        "安全審核通過"
+      ]
+    }
+  },
+  "communications": {
+    "last_update": "2025-12-15",
+    "stakeholder_updates": [
+      {
+        "date": "2025-12-15",
+        "type": "Phase完成報告",
+        "audience": "全體團隊",
+        "summary": "Phase 2 前端系統統一已完成100%"
+      }
+    ]
+  }
+}

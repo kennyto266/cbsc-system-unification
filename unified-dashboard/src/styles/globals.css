@@ -2,16 +2,47 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
-/* CSS Variables for theming */
+/* Square-UI CSS Variables for theming */
 :root {
-  /* Colors */
-  --primary-color: #1890ff;
-  --primary-color-hover: #40a9ff;
-  --primary-color-active: #096dd9;
-  --success-color: #52c41a;
-  --warning-color: #faad14;
-  --error-color: #f5222d;
-  --info-color: #1890ff;
+  /* Square-UI Color System */
+  --square-primary-50: #f0f9ff;
+  --square-primary-100: #e0f2fe;
+  --square-primary-200: #bae6fd;
+  --square-primary-300: #7dd3fc;
+  --square-primary-400: #38bdf8;
+  --square-primary-500: #3b82f6;
+  --square-primary-600: #2563eb;
+  --square-primary-700: #1d4ed8;
+  --square-primary-800: #1e40af;
+  --square-primary-900: #1e3a8a;
+
+  /* CBSC Brand Colors */
+  --cbsc-cyan: #06b6d4;
+  --cbsc-blue: #3b82f6;
+  --cbsc-purple: #7c3aed;
+  --cbsc-indigo: #4f46e5;
+
+  /* Semantic Colors */
+  --success-50: #f0fdf4;
+  --success-100: #dcfce7;
+  --success-500: #22c55e;
+  --success-600: #16a34a;
+  --success-700: #15803d;
+  --warning-50: #fffbeb;
+  --warning-100: #fef3c7;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  --warning-700: #b45309;
+  --error-50: #fef2f2;
+  --error-100: #fee2e2;
+  --error-500: #ef4444;
+  --error-600: #dc2626;
+  --error-700: #b91c1c;
+  --info-50: #eff6ff;
+  --info-100: #dbeafe;
+  --info-500: #3b82f6;
+  --info-600: #2563eb;
+  --info-700: #1d4ed8;
 
   /* Background colors */
   --bg-primary: #ffffff;
