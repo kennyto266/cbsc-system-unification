@@ -6,9 +6,15 @@ Comprehensive tests for all control widgets and functionality.
 
 import pytest
 import asyncio
+import sys
+import os
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
+# Fix import path to avoid httpx dependency in main SDK
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Direct imports from controls subpackage
 from cbsc_strategy_sdk.controls.widgets import ControlWidgets
 from cbsc_strategy_sdk.controls.validator import (
     ParameterValidator,
