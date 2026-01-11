@@ -4,7 +4,7 @@ status: backlog
 created: 2026-01-11T13:25:10Z
 progress: 0%
 prd: .claude/prds/data-science-strategy-workflow.md
-github: [Will be updated when synced to GitHub]
+github: https://github.com/kennyto266/cbsc-system-unification/issues/82
 ---
 
 # Epic: Data Science Stock Strategy Development Workflow
@@ -184,21 +184,21 @@ POST /v1/messages                 # Analyze results
 
 ## Tasks Created
 
-- [ ] 001.md - StrategyWorkspace core class (parallel: true)
-- [ ] 002.md - ClaudeCodeAssistant with templates (parallel: true)
-- [ ] 003.md - Visualization module (parallel: true)
-- [ ] 004.md - BacktestAdapter for CBSC (depends_on: [001])
-- [ ] 005.md - RealTimeDataStream WebSocket (depends_on: [001, 003])
-- [ ] 006.md - Dash dashboard with live updates (depends_on: [001, 003])
-- [ ] 007.md - Interactive controls with auto-refresh (depends_on: [001, 003])
-- [ ] 008.md - Documentation and example notebooks (depends_on: [001, 002, 003, 004, 005, 006, 007])
-- [ ] 009.md - Installation script and package config (depends_on: [001, 002, 003, 004, 005, 006, 007])
-- [ ] 010.md - Test, optimize, and prepare release (depends_on: [001, 002, 003, 004, 005, 006, 007])
+- [ ] #83 - StrategyWorkspace core class (parallel: true)
+- [ ] #84 - ClaudeCodeAssistant with templates (parallel: true)
+- [ ] #85 - Visualization module (parallel: true)
+- [ ] #89 - BacktestAdapter for CBSC (depends_on: [83])
+- [ ] #90 - RealTimeDataStream WebSocket (depends_on: [83, 85])
+- [ ] #91 - Dash dashboard with live updates (depends_on: [83, 85])
+- [ ] #92 - Interactive controls with auto-refresh (depends_on: [83, 85])
+- [ ] #86 - Documentation and example notebooks (depends_on: [83, 84, 85, 89, 90, 91, 92])
+- [ ] #87 - Installation script and package config (depends_on: [83, 84, 85, 89, 90, 91, 92])
+- [ ] #88 - Test, optimize, and prepare release (depends_on: [83, 84, 85, 89, 90, 91, 92])
 
-**Total tasks:** 10
-**Parallel tasks (can run simultaneously):** 7
-**Sequential tasks (have dependencies):** 3
-**Estimated total effort:** 184-252 hours (23-31 person-days)
+Total tasks: 10
+Parallel tasks: 3 (can be worked on simultaneously)
+Sequential tasks: 7 (have dependencies)
+Estimated total effort: 184-252 hours
 
 ## Dependencies
 

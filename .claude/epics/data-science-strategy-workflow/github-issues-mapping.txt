@@ -1,0 +1,7 @@
+# Task to GitHub Issue Mapping for Epic: data-science-strategy-workflow
+# Parent Epic: #82
+# Created: 2026-01-11
+
+001.md: https://github.com/kennyto266/cbsc-system-unification/issues/83
+002.md: https://github.com/kennyto266/cbsc-system-unification/issues/84
+003.md: https://github.com/kennyto266/cbsc-system-unification/issues/85
