@@ -1,0 +1,124 @@
+# CBSC Strategy Workflow - Data Science Development Environment
+# Docker Compose configuration for Jupyter Lab and data science tools
+
+version: "3.8"
+
+services:
+  # Main Jupyter Lab development environment
+  jupyter:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: cbsc-jupyter-dev
+    image: cbsc-strategy-dev:latest
+    restart: unless-stopped
+
+    # Ports
+    ports:
+      - "8888:8888"  # Jupyter Lab
+
+    # Environment variables
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - PYTHONPATH=/workspace
+      - TZ=Asia/Hong_Kong
+
+    # Volume mounts for development
+    volumes:
+      # Mount workspace
+      - ../:/workspace:rw
+      # Jupyter data (persisted)
+      - jupyter-data:/home/cbsc/.jupyter
+      - jupyter-runtime:/home/cbsc/.local/share/jupyter/runtime
+
+    # Networks
+    networks:
+      - cbsc-network
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 8G
+        reservations:
+          cpus: "2.0"
+          memory: 4G
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/api"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Optional: PostgreSQL database for data persistence
+  postgres:
+    image: postgres:15-alpine
+    container_name: cbsc-postgres-dev
+    restart: unless-stopped
+
+    environment:
+      - POSTGRES_DB=cbsc_strategy
+      - POSTGRES_USER=cbsc_user
+      - POSTGRES_PASSWORD=cbsc_pass
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --locale=en_US.UTF-8
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+    networks:
+      - cbsc-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cbsc_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: cbsc-redis-dev
+    restart: unless-stopped
+
+    command: redis-server --appendonly yes --requirepass redis_pass
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - redis-data:/data
+
+    networks:
+      - cbsc-network
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# Named volumes for data persistence
+volumes:
+  jupyter-data:
+    name: cbsc-jupyter-data
+  jupyter-runtime:
+    name: cbsc-jupyter-runtime
+  postgres-data:
+    name: cbsc-postgres-data
+  redis-data:
+    name: cbsc-redis-data
+
+# Network configuration
+networks:
+  cbsc-network:
+    name: cbsc-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
