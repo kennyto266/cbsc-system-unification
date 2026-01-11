@@ -34,10 +34,10 @@ Example:
     ...     )
     ...     result.plot_equity_curve()
 
-Version: 0.1.0
+Version: 1.0.0
 """
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 __author__ = "CBSC Development Team"
 __all__ = [
     # Version
