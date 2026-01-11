@@ -97,7 +97,7 @@ class StrategyDashboard:
             ),
 
             # Theme toggle
-            html.Div(id='theme-container', style={'display': 'none'})
+            html.Div(id='theme-container', style={'display': 'none'}),
 
             # Main content area
             dbc.Row([
