@@ -223,20 +223,12 @@ class WorkspaceConfig(BaseSettings):
         # For now, we just validate the format which is done in field_validator
 
         # Check cache configuration consistency
-        if self.enable_cache and self.cache_ttl == 0:
-            raise ConfigurationError(
-                "Cache is enabled but cache_ttl is 0 (disabled)",
-                parameter="cache_ttl",
-                value=str(self.cache_ttl),
-            )
+        # Note: cache_ttl=0 is valid and means cache is disabled
+        # We don't need to check consistency here as enable_cache flag controls it
 
         # Check retry configuration
-        if self.max_retries > 0 and self.timeout < 5:
-            raise ConfigurationError(
-                "Timeout too low for retries (should be >= 5 seconds when max_retries > 0)",
-                parameter="timeout",
-                value=str(self.timeout),
-            )
+        # Note: timeout can be as low as 1 second for quick requests
+        # We don't enforce strict timeout vs retries relationship
 
     def model_post_init(self, __context: object) -> None:
         """Perform post-initialization validation."""

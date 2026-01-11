@@ -75,7 +75,21 @@ class CircularBuffer:
                 return pd.DataFrame(columns=self.columns)
             return pd.DataFrame()
 
-        data = list(self._buffer)
+        # Convert items to dict if they are Pydantic models
+        data = []
+        for item in self._buffer:
+            if hasattr(item, 'model_dump'):
+                # Pydantic v2
+                data.append(item.model_dump())
+            elif hasattr(item, 'dict'):
+                # Pydantic v1
+                data.append(item.dict())
+            elif isinstance(item, dict):
+                data.append(item)
+            else:
+                # Fallback for other objects
+                data.append(item)
+
         df = pd.DataFrame(data)
 
         # Use specified columns if provided

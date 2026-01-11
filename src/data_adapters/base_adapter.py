@@ -13,16 +13,16 @@ from enum import Enum
 from pydantic import BaseModel, Field, validator, model_validator
 import pandas as pd
 
-class DataSourceTypestr, Enum:
-"""数据源类型枚举"""
+class DataSourceType(str, Enum):
+    """Data source type enum"""
 RAW_DATA = "raw_data"
 YAHOO_FINANCE = "yahoo_finance"
 ALPHA_VANTAGE = "alpha_vantage"
 HTTP_API = "http_api"
 CUSTOM = "custom"
 
-class DataQualitystr, Enum:
-"""数据质量等级"""
+class DataQuality(str, Enum):
+    """Data quality level"""
 EXCELLENT = "excellent"
 GOOD = "good"
 FAIR = "fair"
