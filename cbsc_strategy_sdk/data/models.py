@@ -1,11 +1,12 @@
 """Data models for market data.
 
-Defines Pydantic models for OHLCV bars and symbol information.
+Defines Pydantic models for OHLCV bars, symbol information, and real-time tick data.
 """
 
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 
+import pandas as pd
 from pydantic import BaseModel, Field
 
 
@@ -56,3 +57,68 @@ class SymbolInfo(BaseModel):
     def __str__(self) -> str:
         """String representation of symbol."""
         return f"{self.symbol} ({self.name}) - {self.exchange}"
+
+
+class TickData(BaseModel):
+    """Real-time market data tick.
+
+    Represents a single update in market price for a symbol,
+    typically received from WebSocket streaming.
+
+    Attributes:
+        symbol: Trading symbol (e.g., 'AAPL', '0700.HK')
+        timestamp: Tick timestamp
+        price: Last traded price
+        volume: Trade volume
+        bid: Current bid price (optional)
+        ask: Current ask price (optional)
+        bid_size: Bid size/quantity (optional)
+        ask_size: Ask size/quantity (optional)
+    """
+
+    symbol: str = Field(..., min_length=1, description="Trading symbol")
+    timestamp: datetime = Field(..., description="Tick timestamp")
+    price: float = Field(..., gt=0, description="Last traded price")
+    volume: int = Field(..., ge=0, description="Trade volume")
+    bid: Optional[float] = Field(None, gt=0, description="Current bid price")
+    ask: Optional[float] = Field(None, gt=0, description="Current ask price")
+    bid_size: Optional[int] = Field(None, ge=0, description="Bid size")
+    ask_size: Optional[int] = Field(None, ge=0, description="Ask size")
+
+    def to_dict(self) -> dict:
+        """Convert tick to dictionary.
+
+        Returns:
+            Dictionary representation of tick data
+        """
+        return {
+            "symbol": self.symbol,
+            "timestamp": self.timestamp,
+            "price": self.price,
+            "volume": self.volume,
+            "bid": self.bid,
+            "ask": self.ask,
+            "bid_size": self.bid_size,
+            "ask_size": self.ask_size,
+        }
+
+    def to_series(self) -> pd.Series:
+        """Convert tick to pandas Series.
+
+        Returns:
+            pandas Series with tick data
+        """
+        return pd.Series({
+            "symbol": self.symbol,
+            "timestamp": self.timestamp,
+            "price": self.price,
+            "volume": self.volume,
+            "bid": self.bid,
+            "ask": self.ask,
+            "bid_size": self.bid_size,
+            "ask_size": self.ask_size,
+        })
+
+    def __str__(self) -> str:
+        """String representation of tick."""
+        return f"{self.symbol} @ {self.price} ({self.timestamp.strftime('%H:%M:%S')})"

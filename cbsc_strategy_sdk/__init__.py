@@ -58,6 +58,24 @@ __all__ = [
     "BacktestProgress",
     "ParameterOptimizer",
     "OptimizationResult",
+    # Controls Module
+    "StrategyControlPanel",
+    "ControlWidgets",
+    "SymbolSelector",
+    "DateRangePicker",
+    "ParameterValidator",
+    "ValidationResult",
+    "AutoRefreshManager",
+    "PresetManager",
+    "TabbedControls",
+    # Dashboard Module
+    "StrategyDashboard",
+    "create_dashboard",
+    "DashboardLayout",
+    "ChartBuilders",
+    "MetricsDisplay",
+    "LiveUpdateComponent",
+    "ThemeManager",
 ]
 
 # Import exceptions for public API
@@ -83,6 +101,48 @@ from .backtest import (
     ParameterOptimizer,
 )
 
+# Import controls module classes (with error handling for missing dependencies)
+try:
+    from .controls import (
+        StrategyControlPanel,
+        ControlWidgets,
+        SymbolSelector,
+        DateRangePicker,
+        ParameterValidator,
+        ValidationResult,
+        AutoRefreshManager,
+        PresetManager,
+        TabbedControls,
+    )
+    _controls_available = True
+except ImportError:
+    _controls_available = False
+    # Create dummy classes for type hints
+    StrategyControlPanel = None  # type: ignore
+    ControlWidgets = None  # type: ignore
+    SymbolSelector = None  # type: ignore
+    DateRangePicker = None  # type: ignore
+    ParameterValidator = None  # type: ignore
+    ValidationResult = None  # type: ignore
+    AutoRefreshManager = None  # type: ignore
+    PresetManager = None  # type: ignore
+    TabbedControls = None  # type: ignore
+
+# Import dashboard module classes
+try:
+    from .dashboard import (
+        StrategyDashboard,
+        create_dashboard,
+        DashboardLayout,
+        ChartBuilders,
+        MetricsDisplay,
+        LiveUpdateComponent,
+        ThemeManager,
+    )
+    DASHBOARD_AVAILABLE = True
+except ImportError:
+    DASHBOARD_AVAILABLE = False
+
 __all__.extend([
     "StrategyWorkspace",
     "BacktestAdapter",
@@ -91,6 +151,30 @@ __all__.extend([
     "ParameterOptimizer",
     "OptimizationResult",
 ])
+
+if _controls_available:
+    __all__.extend([
+        "StrategyControlPanel",
+        "ControlWidgets",
+        "SymbolSelector",
+        "DateRangePicker",
+        "ParameterValidator",
+        "ValidationResult",
+        "AutoRefreshManager",
+        "PresetManager",
+        "TabbedControls",
+    ])
+
+if DASHBOARD_AVAILABLE:
+    __all__.extend([
+        "StrategyDashboard",
+        "create_dashboard",
+        "DashboardLayout",
+        "ChartBuilders",
+        "MetricsDisplay",
+        "LiveUpdateComponent",
+        "ThemeManager",
+    ])
 
 
 def get_version() -> str:
