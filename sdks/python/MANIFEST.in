@@ -1,0 +1,6 @@
+include README.md
+include LICENSE
+include pyproject.toml
+recursive-include cbsc_trading_api *.py
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]

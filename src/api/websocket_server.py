@@ -337,3 +337,96 @@ websocket_manager = WebSocketManager()
 # 獲取WebSocket管理器實例
 def get_websocket_manager() -> WebSocketManager:
     return websocket_manager
+
+# FastAPI WebSocket路由
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+import uuid
+
+websocket_router = APIRouter(prefix="/ws", tags=["websocket"])
+
+@websocket_router.websocket("/personal-strategies/{token}")
+async def websocket_personal_strategies(websocket: WebSocket, token: str):
+    """個人策略實時數據WebSocket連接"""
+    client_id = str(uuid.uuid4())
+
+    try:
+        # 驗證token（這裡簡化處理，實際應用中需要JWT驗證）
+        if not token or len(token) < 10:
+            await websocket.close(code=4001, reason="Invalid token")
+            return
+
+        # 建立連接
+        connected = await websocket_manager.connect(websocket, client_id)
+        if not connected:
+            await websocket.close(code=4000, reason="Connection failed")
+            return
+
+        # 訂閱個人策略相關頻道
+        await websocket_manager.subscribe(client_id, 'strategy_updates')
+        await websocket_manager.subscribe(client_id, 'performance_updates')
+        await websocket_manager.subscribe(client_id, 'signals_updates')
+        await websocket_manager.subscribe(client_id, 'system_health')
+
+        # 處理客戶端消息
+        while True:
+            try:
+                data = await websocket.receive_text()
+                message = json.loads(data)
+                await websocket_manager.handle_message(client_id, message)
+
+            except WebSocketDisconnect:
+                break
+            except json.JSONDecodeError:
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Invalid JSON format",
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+            except Exception as e:
+                logger.error(f"Error handling message from {client_id}: {e}")
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Internal server error",
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+    except WebSocketDisconnect:
+        logger.info(f"Client {client_id} disconnected")
+    except Exception as e:
+        logger.error(f"WebSocket error for client {client_id}: {e}")
+    finally:
+        # 清理連接
+        await websocket_manager.disconnect(client_id)
+
+@websocket_router.websocket("/strategies")
+async def websocket_strategies(websocket: WebSocket):
+    """通用策略數據WebSocket連接"""
+    client_id = str(uuid.uuid4())
+
+    try:
+        # 建立連接
+        connected = await websocket_manager.connect(websocket, client_id)
+        if not connected:
+            await websocket.close(code=4000, reason="Connection failed")
+            return
+
+        # 處理客戶端消息
+        while True:
+            try:
+                data = await websocket.receive_text()
+                message = json.loads(data)
+                await websocket_manager.handle_message(client_id, message)
+
+            except WebSocketDisconnect:
+                break
+            except Exception as e:
+                logger.error(f"Error handling message from {client_id}: {e}")
+                break
+
+    except WebSocketDisconnect:
+        logger.info(f"Client {client_id} disconnected")
+    except Exception as e:
+        logger.error(f"WebSocket error for client {client_id}: {e}")
+    finally:
+        # 清理連接
+        await websocket_manager.disconnect(client_id)

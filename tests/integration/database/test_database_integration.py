@@ -1,550 +1,562 @@
-#!/usr / bin / env python3
-"""
-數據庫集成測試
-Database Integration Tests
+"""Integration tests for database operations."""
 
-測試數據庫操作、事務處理和數據一致性
-"""
-
-import asyncio
-import sqlite3
-import sys
-import tempfile
-import time
-from pathlib import Path
-
-import aiosqlite
 import pytest
+import asyncio
+from datetime import datetime, timedelta
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
-# Add backend to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "backend"))
+# Import models
+from src.models.strategy import Strategy
+from src.models.user import User
+from src.models.portfolio import Portfolio
+from src.models.trade import Trade
+from src.database import Base, get_db
 
-from services.data_service import DataService
 
-from tests.factories.stock_data_factory import StockInfoFactory, StockMarketDataFactory
+# Test database configuration
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test_integration.db"
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={
+        "check_same_thread": False,
+    },
+    poolclass=StaticPool,
+)
+
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-@pytest.mark.integration
-@pytest.mark.database
-class TestDatabaseOperations:
-    """數據庫操作集成測試"""
+@pytest.fixture(scope="function")
+def db_session():
+    """Create test database session."""
+    Base.metadata.create_all(bind=engine)
+    session = TestingSessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+        Base.metadata.drop_all(bind=engine)
 
-    @pytest.fixture
-    def temp_db(self):
-        """創建臨時數據庫"""
-        with tempfile.NamedTemporaryFile(suffix=".db", delete = False) as f:
-            db_path = f.name
 
-        yield db_path
+@pytest.fixture(scope="function")
+def test_user(db_session):
+    """Create test user."""
+    from src.core.security import get_password_hash
+    
+    user = User(
+        username="testuser",
+        email="test@example.com",
+        hashed_password=get_password_hash("password123"),
+        is_active=True,
+        is_superuser=False
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
 
-        # 清理
-        Path(db_path).unlink(missing_ok = True)
 
-    @pytest.fixture
-    def data_service(self, temp_db):
-        """創建數據服務實例"""
-        return DataService(temp_db)
+@pytest.fixture(scope="function")
+def sample_strategy(db_session, test_user):
+    """Create sample strategy."""
+    strategy = Strategy(
+        name="Test Strategy",
+        description="A test strategy for database integration",
+        user_id=test_user.id,
+        parameters={
+            "symbols": ["AAPL", "GOOGL"],
+            "timeframe": "1d",
+            "risk_level": 0.02
+        },
+        status="active",
+        performance_metrics={
+            "total_return": 0.15,
+            "sharpe_ratio": 1.5,
+            "max_drawdown": -0.08
+        }
+    )
+    db_session.add(strategy)
+    db_session.commit()
+    db_session.refresh(strategy)
+    return strategy
 
-    def test_database_schema_creation(self, data_service):
-        """測試數據庫模式創建"""
-        conn = data_service.get_db_connection()
-        cursor = conn.cursor()
 
-        # 檢查表是否存在
-        cursor.execute(
-            """
-            SELECT name FROM sqlite_master
-            WHERE type='table' AND name IN ('market_data', 'stocks')
-        """
-        )
-        tables = cursor.fetchall()
-
-        assert len(tables) >= 1, "至少應該有一個表"
-
-        conn.close()
-
-    def test_market_data_crud_operations(self, data_service):
-        """測試市場數據CRUD操作"""
-        # 測試數據
-        test_data = [
+@pytest.fixture(scope="function")
+def sample_portfolio(db_session, test_user):
+    """Create sample portfolio."""
+    portfolio = Portfolio(
+        name="Test Portfolio",
+        user_id=test_user.id,
+        total_value=100000.0,
+        cash_balance=50000.0,
+        positions=[
             {
-                "timestamp": "2024 - 01 - 01T00:00:00Z",
-                "open": 100.0,
-                "high": 105.0,
-                "low": 95.0,
-                "close": 102.0,
-                "volume": 1000000,
+                "symbol": "AAPL",
+                "quantity": 100,
+                "avg_cost": 150.0,
+                "current_price": 155.0,
+                "market_value": 15500.0,
+                "unrealized_pnl": 500.0
             },
             {
-                "timestamp": "2024 - 01 - 02T00:00:00Z",
-                "open": 102.0,
-                "high": 107.0,
-                "low": 97.0,
-                "close": 104.0,
-                "volume": 1200000,
+                "symbol": "GOOGL",
+                "quantity": 10,
+                "avg_cost": 2800.0,
+                "current_price": 2850.0,
+                "market_value": 28500.0,
+                "unrealized_pnl": 500.0
+            }
+        ]
+    )
+    db_session.add(portfolio)
+    db_session.commit()
+    db_session.refresh(portfolio)
+    return portfolio
+
+
+@pytest.fixture(scope="function")
+def sample_trades(db_session, test_user, sample_strategy, sample_portfolio):
+    """Create sample trades."""
+    trades = []
+    
+    # Create some sample trades
+    trade_data = [
+        {
+            "symbol": "AAPL",
+            "type": "buy",
+            "quantity": 100,
+            "price": 150.0,
+            "timestamp": datetime.utcnow() - timedelta(days=1)
+        },
+        {
+            "symbol": "GOOGL",
+            "type": "buy",
+            "quantity": 10,
+            "price": 2800.0,
+            "timestamp": datetime.utcnow() - timedelta(days=2)
+        },
+        {
+            "symbol": "AAPL",
+            "type": "sell",
+            "quantity": 50,
+            "price": 155.0,
+            "timestamp": datetime.utcnow() - timedelta(hours=12)
+        }
+    ]
+    
+    for trade_info in trade_data:
+        trade = Trade(
+            user_id=test_user.id,
+            strategy_id=sample_strategy.id,
+            portfolio_id=sample_portfolio.id,
+            symbol=trade_info["symbol"],
+            type=trade_info["type"],
+            quantity=trade_info["quantity"],
+            price=trade_info["price"],
+            timestamp=trade_info["timestamp"]
+        )
+        db_session.add(trade)
+        trades.append(trade)
+    
+    db_session.commit()
+    
+    for trade in trades:
+        db_session.refresh(trade)
+    
+    return trades
+
+
+@pytest.mark.integration
+class TestDatabaseIntegration:
+    """Test database integration."""
+
+    def test_user_crud_operations(self, db_session):
+        """Test user CRUD operations."""
+        # Create user
+        from src.core.security import get_password_hash
+        
+        user = User(
+            username="newuser",
+            email="newuser@example.com",
+            hashed_password=get_password_hash("newpassword"),
+            is_active=True
+        )
+        db_session.add(user)
+        db_session.commit()
+        
+        # Read user
+        retrieved_user = db_session.query(User).filter(User.username == "newuser").first()
+        assert retrieved_user is not None
+        assert retrieved_user.email == "newuser@example.com"
+        
+        # Update user
+        retrieved_user.is_active = False
+        db_session.commit()
+        
+        updated_user = db_session.query(User).filter(User.username == "newuser").first()
+        assert updated_user.is_active is False
+        
+        # Delete user
+        db_session.delete(updated_user)
+        db_session.commit()
+        
+        deleted_user = db_session.query(User).filter(User.username == "newuser").first()
+        assert deleted_user is None
+
+    def test_strategy_crud_operations(self, db_session, test_user):
+        """Test strategy CRUD operations."""
+        # Create strategy
+        strategy = Strategy(
+            name="CRUD Test Strategy",
+            description="Testing CRUD operations",
+            user_id=test_user.id,
+            parameters={"symbols": ["MSFT"], "timeframe": "1h"},
+            status="inactive"
+        )
+        db_session.add(strategy)
+        db_session.commit()
+        
+        # Read strategy
+        retrieved = db_session.query(Strategy).filter(Strategy.name == "CRUD Test Strategy").first()
+        assert retrieved is not None
+        assert retrieved.status == "inactive"
+        
+        # Update strategy
+        retrieved.status = "active"
+        retrieved.performance_metrics = {"total_return": 0.10}
+        db_session.commit()
+        
+        updated = db_session.query(Strategy).filter(Strategy.name == "CRUD Test Strategy").first()
+        assert updated.status == "active"
+        assert updated.performance_metrics["total_return"] == 0.10
+        
+        # Delete strategy
+        db_session.delete(updated)
+        db_session.commit()
+        
+        deleted = db_session.query(Strategy).filter(Strategy.name == "CRUD Test Strategy").first()
+        assert deleted is None
+
+    def test_portfolio_crud_operations(self, db_session, test_user):
+        """Test portfolio CRUD operations."""
+        # Create portfolio
+        portfolio = Portfolio(
+            name="CRUD Test Portfolio",
+            user_id=test_user.id,
+            total_value=200000.0,
+            cash_balance=100000.0
+        )
+        db_session.add(portfolio)
+        db_session.commit()
+        
+        # Read portfolio
+        retrieved = db_session.query(Portfolio).filter(Portfolio.name == "CRUD Test Portfolio").first()
+        assert retrieved is not None
+        assert retrieved.total_value == 200000.0
+        
+        # Update portfolio
+        retrieved.total_value = 210000.0
+        retrieved.positions = [
+            {
+                "symbol": "TSLA",
+                "quantity": 50,
+                "avg_cost": 800.0,
+                "current_price": 850.0,
+                "market_value": 42500.0,
+                "unrealized_pnl": 2500.0
+            }
+        ]
+        db_session.commit()
+        
+        updated = db_session.query(Portfolio).filter(Portfolio.name == "CRUD Test Portfolio").first()
+        assert updated.total_value == 210000.0
+        assert len(updated.positions) == 1
+        assert updated.positions[0]["symbol"] == "TSLA"
+        
+        # Delete portfolio
+        db_session.delete(updated)
+        db_session.commit()
+        
+        deleted = db_session.query(Portfolio).filter(Portfolio.name == "CRUD Test Portfolio").first()
+        assert deleted is None
+
+    def test_trade_crud_operations(self, db_session, test_user, sample_strategy, sample_portfolio):
+        """Test trade CRUD operations."""
+        # Create trade
+        trade = Trade(
+            user_id=test_user.id,
+            strategy_id=sample_strategy.id,
+            portfolio_id=sample_portfolio.id,
+            symbol="AMZN",
+            type="buy",
+            quantity=20,
+            price=3200.0,
+            timestamp=datetime.utcnow()
+        )
+        db_session.add(trade)
+        db_session.commit()
+        
+        # Read trade
+        retrieved = db_session.query(Trade).filter(Trade.symbol == "AMZN").first()
+        assert retrieved is not None
+        assert retrieved.type == "buy"
+        assert retrieved.quantity == 20
+        
+        # Update trade (typically trades are immutable, but we can test for status updates)
+        retrieved.status = "executed"
+        db_session.commit()
+        
+        updated = db_session.query(Trade).filter(Trade.symbol == "AMZN").first()
+        assert updated.status == "executed"
+        
+        # Delete trade (soft delete by status)
+        updated.status = "cancelled"
+        db_session.commit()
+        
+        cancelled = db_session.query(Trade).filter(Trade.symbol == "AMZN").first()
+        assert cancelled.status == "cancelled"
+
+    def test_relationship_operations(self, db_session, test_user, sample_strategy):
+        """Test database relationship operations."""
+        # Create multiple strategies for the user
+        strategies = []
+        for i in range(3):
+            strategy = Strategy(
+                name=f"Strategy {i}",
+                description=f"Strategy number {i}",
+                user_id=test_user.id,
+                parameters={"symbols": ["AAPL"], "timeframe": "1d"},
+                status="active"
+            )
+            db_session.add(strategy)
+            strategies.append(strategy)
+        
+        db_session.commit()
+        
+        # Test one-to-many relationship
+        user_strategies = db_session.query(Strategy).filter(Strategy.user_id == test_user.id).all()
+        assert len(user_strategies) >= 4  # 3 new + 1 from fixture
+        
+        # Test cascade delete
+        db_session.delete(test_user)
+        db_session.commit()
+        
+        orphaned_strategies = db_session.query(Strategy).filter(
+            Strategy.user_id == test_user.id
+        ).all()
+        assert len(orphaned_strategies) == 0
+
+    def test_transaction_rollback(self, db_session, test_user):
+        """Test transaction rollback on error."""
+        # Create initial strategy
+        strategy = Strategy(
+            name="Initial Strategy",
+            description="Should survive rollback",
+            user_id=test_user.id,
+            parameters={"symbols": ["AAPL"]},
+            status="active"
+        )
+        db_session.add(strategy)
+        db_session.commit()
+        
+        # Start a new transaction that will fail
+        try:
+            # Create another strategy
+            strategy2 = Strategy(
+                name="Will be rolled back",
+                description="This should not persist",
+                user_id=test_user.id,
+                parameters={"symbols": ["GOOGL"]},
+                status="active"
+            )
+            db_session.add(strategy2)
+            
+            # Simulate an error
+            raise ValueError("Simulated error")
+            
+        except ValueError:
+            db_session.rollback()
+        
+        # Check that only the initial strategy exists
+        strategies = db_session.query(Strategy).filter(Strategy.user_id == test_user.id).all()
+        assert len(strategies) == 1
+        assert strategies[0].name == "Initial Strategy"
+
+    def test_query_performance(self, db_session, test_user):
+        """Test query performance with indexes."""
+        import time
+        
+        # Create many strategies
+        strategies = []
+        for i in range(1000):
+            strategy = Strategy(
+                name=f"Performance Test {i}",
+                description=f"Strategy {i} for performance testing",
+                user_id=test_user.id,
+                parameters={"symbols": ["AAPL"]},
+                status="active" if i % 2 == 0 else "inactive"
+            )
+            strategies.append(strategy)
+        
+        db_session.add_all(strategies)
+        db_session.commit()
+        
+        # Test query performance
+        start_time = time.time()
+        
+        # Query with filter
+        active_strategies = db_session.query(Strategy).filter(
+            Strategy.user_id == test_user.id,
+            Strategy.status == "active"
+        ).all()
+        
+        query_time = time.time() - start_time
+        
+        # Assertions
+        assert len(active_strategies) == 500
+        assert query_time < 0.1, f"Query took too long: {query_time} seconds"
+
+    def test_json_field_operations(self, db_session, test_user):
+        """Test JSON field operations."""
+        strategy = Strategy(
+            name="JSON Test Strategy",
+            user_id=test_user.id,
+            parameters={
+                "symbols": ["AAPL", "GOOGL", "MSFT"],
+                "timeframe": "1d",
+                "risk_level": 0.02,
+                "nested": {
+                    "level1": {
+                        "level2": "deep value"
+                    }
+                }
             },
-        ]
-
-        # Create - 創建數據
-        result = data_service.save_market_data("TEST.HK", test_data)
-        assert result is True
-
-        # Read - 讀取數據
-        retrieved_data = data_service.get_market_data("TEST.HK")
-        assert len(retrieved_data) == len(test_data)
-
-        # 驗證數據完整性
-        for i, item in enumerate(retrieved_data):
-            assert item["open"] == test_data[i]["open"]
-            assert item["close"] == test_data[i]["close"]
-            assert item["volume"] == test_data[i]["volume"]
-
-        # Update - 更新數據（通過重新保存實現）
-        updated_data = test_data.copy()
-        updated_data[0]["close"] = 103.0  # 修改收盤價
-
-        result = data_service.save_market_data("TEST.HK", updated_data)
-        assert result is True
-
-        # 驗證更新
-        updated_retrieved = data_service.get_market_data("TEST.HK")
-        assert updated_retrieved[0]["close"] == 103.0
-
-    def test_stock_info_crud_operations(self, data_service):
-        """測試股票信息CRUD操作"""
-        # 測試股票信息
-        stock_info = {
-            "symbol": "INFO.HK",
-            "name": "Info Test Company",
-            "sector": "Technology",
-            "industry": "Software",
-            "market_cap": 1000000000,
-            "pe_ratio": 25.5,
-            "dividend_yield": 0.02,
-            "currency": "HKD",
-            "exchange": "HKEX",
-        }
-
-        # Create
-        result = data_service.save_stock_info(stock_info)
-        assert result is True
-
-        # Read
-        retrieved_info = data_service.get_stock_info("INFO.HK")
-        assert retrieved_info is not None
-        assert retrieved_info["name"] == "Info Test Company"
-        assert retrieved_info["sector"] == "Technology"
-
-        # Update
-        updated_info = stock_info.copy()
-        updated_info["pe_ratio"] = 30.0
-        data_service.save_stock_info(updated_info)
-
-        # 驗證更新
-        final_info = data_service.get_stock_info("INFO.HK")
-        assert final_info["pe_ratio"] == 30.0
-
-    def test_transaction_rollback(self, data_service):
-        """測試事務回滾"""
-        conn = data_service.get_db_connection()
-        cursor = conn.cursor()
-
-        try:
-            # 開始事務
-            cursor.execute("BEGIN TRANSACTION")
-
-            # 插入一些數據
-            cursor.execute(
-                """
-                INSERT INTO stocks
-                (symbol, name, sector, industry, market_cap, pe_ratio, dividend_yield, currency, exchange)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    "TRANSACTION_TEST.HK",
-                    "Transaction Test",
-                    "Technology",
-                    "Software",
-                    1000000,
-                    25.0,
-                    0.01,
-                    "HKD",
-                    "HKEX",
-                ),
-            )
-
-            # 模擬錯誤
-            raise ValueError("模擬錯誤")
-
-        except ValueError:
-            # 回滾事務
-            cursor.execute("ROLLBACK")
-
-        # 驗證數據未插入
-        cursor.execute("SELECT * FROM stocks WHERE symbol = 'TRANSACTION_TEST.HK'")
-        result = cursor.fetchone()
-        assert result is None
-
-        conn.close()
-
-    def test_data_consistency(self, data_service):
-        """測試數據一致性"""
-        # 插入市場數據
-        market_data = [
-            {
-                "timestamp": "2024 - 01 - 01T00:00:00Z",
-                "open": 100.0,
-                "high": 105.0,
-                "low": 95.0,
-                "close": 102.0,
-                "volume": 1000000,
-            }
-        ]
-
-        data_service.save_market_data("CONSISTENCY.HK", market_data)
-
-        # 插入股票信息
-        stock_info = {
-            "symbol": "CONSISTENCY.HK",
-            "name": "Consistency Test",
-            "sector": "Finance",
-            "industry": "Banking",
-            "market_cap": 500000000,
-            "pe_ratio": 15.0,
-            "dividend_yield": 0.03,
-            "currency": "HKD",
-            "exchange": "HKEX",
-        }
-
-        data_service.save_stock_info(stock_info)
-
-        # 驗證關聯數據一致性
-        saved_market_data = data_service.get_market_data("CONSISTENCY.HK")
-        saved_stock_info = data_service.get_stock_info("CONSISTENCY.HK")
-
-        assert len(saved_market_data) == 1
-        assert saved_stock_info["symbol"] == "CONSISTENCY.HK"
-        assert saved_stock_info["name"] == "Consistency Test"
-
-
-@pytest.mark.integration
-@pytest.mark.database
-class TestAsyncDatabaseOperations:
-    """異步數據庫操作測試"""
-
-    @pytest.fixture
-    async def async_temp_db(self):
-        """創建異步臨時數據庫"""
-        with tempfile.NamedTemporaryFile(suffix=".db", delete = False) as f:
-            db_path = f.name
-
-        yield db_path
-
-        Path(db_path).unlink(missing_ok = True)
-
-    @pytest_asyncio.fixture
-    async def async_db_connection(self, async_temp_db):
-        """創建異步數據庫連接"""
-        async with aiosqlite.connect(async_temp_db) as conn:
-            # 創建表結構
-            await conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS test_data (
-                    id INTEGER PRIMARY KEY,
-                    symbol TEXT,
-                    timestamp TEXT,
-                    value REAL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """
-            )
-            await conn.commit()
-
-            yield conn
-
-    @pytest.mark.asyncio
-    async def test_async_insert_and_query(self, async_db_connection):
-        """測試異步插入和查詢"""
-        # 插入測試數據
-        test_data = [
-            ("ASYNC_1", "2024 - 01 - 01", 100.0),
-            ("ASYNC_2", "2024 - 01 - 02", 102.0),
-            ("ASYNC_3", "2024 - 01 - 03", 98.0),
-        ]
-
-        for symbol, timestamp, value in test_data:
-            await async_db_connection.execute(
-                "INSERT INTO test_data (symbol, timestamp, value) VALUES (?, ?, ?)",
-                (symbol, timestamp, value),
-            )
-
-        await async_db_connection.commit()
-
-        # 查詢數據
-        cursor = await async_db_connection.execute(
-            "SELECT * FROM test_data ORDER BY symbol"
-        )
-        results = await cursor.fetchall()
-
-        assert len(results) == 3
-        assert results[0][1] == "ASYNC_1"
-        assert results[0][3] == 100.0
-
-    @pytest.mark.asyncio
-    async def test_async_transaction(self, async_db_connection):
-        """測試異步事務"""
-        try:
-            await async_db_connection.execute("BEGIN")
-
-            # 插入數據
-            await async_db_connection.execute(
-                "INSERT INTO test_data (symbol, timestamp, value) VALUES (?, ?, ?)",
-                ("TX_TEST", "2024 - 01 - 01", 100.0),
-            )
-
-            # 模擬錯誤並回滾
-            raise ValueError("模擬錯誤")
-
-        except ValueError:
-            await async_db_connection.rollback()
-
-        # 驗證回滾成功
-        cursor = await async_db_connection.execute(
-            "SELECT * FROM test_data WHERE symbol = 'TX_TEST'"
-        )
-        result = await cursor.fetchone()
-        assert result is None
-
-    @pytest.mark.asyncio
-    async def test_concurrent_operations(self, async_db_connection):
-        """測試併發操作"""
-
-        async def insert_batch(batch_id: int, count: int):
-            for i in range(count):
-                symbol = f"CONCURRENT_{batch_id}_{i}"
-                await async_db_connection.execute(
-                    "INSERT INTO test_data (symbol, timestamp, value) VALUES (?, ?, ?)",
-                    (symbol, "2024 - 01 - 01", float(i + batch_id * 100)),
-                )
-            await async_db_connection.commit()
-
-        # 創建多個併發插入任務
-        tasks = [insert_batch(1, 10), insert_batch(2, 10), insert_batch(3, 10)]
-
-        # 執行併發任務
-        await asyncio.gather(*tasks)
-
-        # 驗證所有數據已插入
-        cursor = await async_db_connection.execute(
-            "SELECT COUNT(*) FROM test_data WHERE symbol LIKE 'CONCURRENT_%'"
-        )
-        count = (await cursor.fetchone())[0]
-        assert count == 30
-
-
-@pytest.mark.integration
-@pytest.mark.database
-class TestDatabasePerformance:
-    """數據庫性能測試"""
-
-    @pytest.fixture
-    def temp_db(self):
-        with tempfile.NamedTemporaryFile(suffix=".db", delete = False) as f:
-            db_path = f.name
-        yield db_path
-        Path(db_path).unlink(missing_ok = True)
-
-    @pytest.fixture
-    def data_service(self, temp_db):
-        return DataService(temp_db)
-
-    def test_bulk_insert_performance(self, data_service, performance_benchmark_data):
-        """測試批量插入性能"""
-        # 生成大量測試數據
-        factory = StockMarketDataFactory()
-        large_dataset = factory.create_batch(1000)
-
-        # 測試批量插入性能
-        start_time = time.time()
-
-        # 轉換為保存格式
-        save_data = []
-        for item in large_dataset:
-            save_data.append(
-                {
-                    "timestamp": item.timestamp.isoformat(),
-                    "open": item.open_price,
-                    "high": item.high_price,
-                    "low": item.low_price,
-                    "close": item.close_price,
-                    "volume": item.volume,
+            performance_metrics={
+                "total_return": 0.15,
+                "metrics_by_year": {
+                    "2022": 0.10,
+                    "2023": 0.05
                 }
-            )
-
-        result = data_service.save_market_data("BULK_TEST.HK", save_data)
-
-        end_time = time.time()
-        insert_time = end_time - start_time
-
-        assert result is True
-        assert insert_time < 5.0, f"批量插入過慢: {insert_time:.2f}秒"
-
-        # 驗證數據完整性
-        retrieved_data = data_service.get_market_data("BULK_TEST.HK")
-        assert len(retrieved_data) == 1000
-
-    def test_query_performance(self, data_service):
-        """測試查詢性能"""
-        # 插入測試數據
-        factory = StockMarketDataFactory()
-        test_data = []
-
-        for i in range(500):
-            item = factory()
-            test_data.append(
-                {
-                    "timestamp": item.timestamp.isoformat(),
-                    "open": item.open_price,
-                    "high": item.high_price,
-                    "low": item.low_price,
-                    "close": item.close_price,
-                    "volume": item.volume,
-                }
-            )
-
-        data_service.save_market_data("QUERY_TEST.HK", test_data)
-
-        # 測試查詢性能
-        start_time = time.time()
-        results = data_service.get_market_data("QUERY_TEST.HK")
-        end_time = time.time()
-
-        query_time = end_time - start_time
-
-        assert len(results) == 500
-        assert query_time < 1.0, f"查詢過慢: {query_time:.2f}秒"
-
-    def test_index_performance_impact(self, temp_db):
-        """測試索引對性能的影響"""
-        conn = sqlite3.connect(temp_db)
-        cursor = conn.cursor()
-
-        # 創建測試表
-        cursor.execute(
-            """
-            CREATE TABLE performance_test (
-                id INTEGER PRIMARY KEY,
-                symbol TEXT,
-                timestamp TEXT,
-                value REAL,
-                data TEXT
-            )
-        """
+            }
         )
+        db_session.add(strategy)
+        db_session.commit()
+        
+        # Query nested JSON values
+        retrieved = db_session.query(Strategy).filter(
+            Strategy.parameters["nested"]["level1"]["level2"].astext == "deep value"
+        ).first()
+        
+        assert retrieved is not None
+        assert retrieved.parameters["symbols"] == ["AAPL", "GOOGL", "MSFT"]
+        
+        # Update JSON field
+        retrieved.parameters["new_field"] = "new value"
+        db_session.commit()
+        
+        updated = db_session.query(Strategy).filter(
+            Strategy.parameters["new_field"].astext == "new value"
+        ).first()
+        
+        assert updated is not None
+        assert updated.parameters["new_field"] == "new value"
 
-        # 插入大量數據
-        large_dataset = []
-        for i in range(10000):
-            large_dataset.append(
-                (
-                    f"PERF_{i % 100}",  # 100個不同的股票
-                    f"2024 - 01-{(i % 30) + 1:02d}",
-                    float(i % 1000),
-                    f"data_{i}",
+    def test_concurrent_operations(self, db_session, test_user):
+        """Test concurrent database operations."""
+        import threading
+        import time
+        
+        results = []
+        errors = []
+        
+        def create_strategy(index):
+            try:
+                # Use separate session for each thread
+                session = TestingSessionLocal()
+                strategy = Strategy(
+                    name=f"Concurrent Strategy {index}",
+                    description=f"Created in thread {index}",
+                    user_id=test_user.id,
+                    parameters={"symbols": ["AAPL"]},
+                    status="active"
                 )
-            )
+                session.add(strategy)
+                session.commit()
+                results.append(index)
+                session.close()
+            except Exception as e:
+                errors.append((index, e))
+        
+        # Create strategies concurrently
+        threads = []
+        for i in range(10):
+            thread = threading.Thread(target=create_strategy, args=(i,))
+            threads.append(thread)
+            thread.start()
+        
+        # Wait for all threads to complete
+        for thread in threads:
+            thread.join()
+        
+        # Verify results
+        assert len(errors) == 0, f"Errors occurred: {errors}"
+        assert len(results) == 10, f"Expected 10 results, got {len(results)}"
+        
+        # Verify all strategies were created
+        strategies = db_session.query(Strategy).filter(
+            Strategy.name.like("Concurrent Strategy%")
+        ).all()
+        assert len(strategies) == 10
 
-        cursor.executemany(
-            "INSERT INTO performance_test (symbol, timestamp, value, data) VALUES (?, ?, ?, ?)",
-            large_dataset,
+    def test_database_constraints(self, db_session, test_user):
+        """Test database constraints."""
+        # Create a strategy
+        strategy1 = Strategy(
+            name="Unique Name",
+            user_id=test_user.id,
+            parameters={"symbols": ["AAPL"]},
+            status="active"
         )
-        conn.commit()
+        db_session.add(strategy1)
+        db_session.commit()
+        
+        # Try to create another with the same name for the same user
+        strategy2 = Strategy(
+            name="Unique Name",  # Same name
+            user_id=test_user.id,  # Same user
+            parameters={"symbols": ["GOOGL"]},
+            status="active"
+        )
+        
+        db_session.add(strategy2)
+        
+        # This should raise an integrity error due to unique constraint
+        with pytest.raises(Exception):  # Could be IntegrityError or similar
+            db_session.commit()
+        
+        db_session.rollback()
 
-        # 測試無索引查詢性能
-        start_time = time.time()
-        cursor.execute("SELECT * FROM performance_test WHERE symbol = 'PERF_50'")
-        results_no_index = cursor.fetchall()
-        time_no_index = time.time() - start_time
-
-        # 創建索引
-        cursor.execute("CREATE INDEX idx_symbol ON performance_test(symbol)")
-        conn.commit()
-
-        # 測試有索引查詢性能
-        start_time = time.time()
-        cursor.execute("SELECT * FROM performance_test WHERE symbol = 'PERF_50'")
-        results_with_index = cursor.fetchall()
-        time_with_index = time.time() - start_time
-
-        # 驗證結果一致性和性能提升
-        assert len(results_no_index) == len(results_with_index)
-        assert time_with_index <= time_no_index, "索引應該提升查詢性能"
-
-        conn.close()
-
-
-@pytest.mark.integration
-@pytest.mark.database
-class TestDataIntegrity:
-    """數據完整性測試"""
-
-    @pytest.fixture
-    def data_service(self, temp_dir):
-        db_path = temp_dir / "integrity_test.db"
-        return DataService(str(db_path))
-
-    def test_foreign_key_constraints(self, data_service):
-        """測試外鍵約束（如果存在）"""
-        # 這個測試取決於數據庫模式是否定義了外鍵約束
-        pass  # 當前簡單模式可能沒有外鍵約束
-
-    def test_data_validation(self, data_service):
-        """測試數據驗證"""
-        # 測試無效數據處理
-        invalid_data = [
-            {
-                "timestamp": "invalid - date",
-                "open": -100.0,  # 負價格
-                "high": 50.0,  # 最高價低於開盤價
-                "low": 150.0,  # 最低價高於開盤價
-                "close": 100.0,
-                "volume": -1000,  # 負成交量
-            }
-        ]
-
-        # 數據服務應該處理無效數據
-        # 這取決於實現 - 可能拒絕或修正
-        result = data_service.save_market_data("INVALID.HK", invalid_data)
-
-        # 驗證結果 - 取決於實現策略
-        assert isinstance(result, bool)
-
-    def test_duplicate_data_handling(self, data_service):
-        """測試重複數據處理"""
-        # 創建測試數據
-        test_data = [
-            {
-                "timestamp": "2024 - 01 - 01T00:00:00Z",
-                "open": 100.0,
-                "high": 105.0,
-                "low": 95.0,
-                "close": 102.0,
-                "volume": 1000000,
-            }
-        ]
-
-        # 第一次插入
-        result1 = data_service.save_market_data("DUPLICATE.HK", test_data)
-        assert result1 is True
-
-        # 第二次插入相同數據（取決於實現，可能更新或忽略）
-        result2 = data_service.save_market_data("DUPLICATE.HK", test_data)
-        assert isinstance(result2, bool)
-
-        # 驗證最終狀態
-        final_data = data_service.get_market_data("DUPLICATE.HK")
-        assert len(final_data) >= 1
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    def test_database_connection_pooling(self):
+        """Test database connection pooling."""
+        from sqlalchemy import text
+        
+        # Create multiple concurrent connections
+        connections = []
+        for _ in range(10):
+            conn = engine.connect()
+            connections.append(conn)
+        
+        # Execute queries on all connections
+        for conn in connections:
+            result = conn.execute(text("SELECT 1"))
+            assert result.fetchone()[0] == 1
+        
+        # Close all connections
+        for conn in connections:
+            conn.close()
+        
+        # Verify pool is working
+        assert engine.pool.size() >= 10

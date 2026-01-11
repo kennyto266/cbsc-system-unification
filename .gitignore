@@ -3,6 +3,10 @@
 .env.local
 .env.production
 
+# MCP configuration (may contain sensitive tokens)
+.mcp.json
+*.mcp.json
+
 # Python
 __pycache__/
 *.py[cod]
@@ -63,3 +67,9 @@ htmlcov/
 
 # Node.js (if any)
 node_modules/
+
+# Auto Claude data directory
+.auto-claude/
+
+# Git worktrees
+.worktrees/

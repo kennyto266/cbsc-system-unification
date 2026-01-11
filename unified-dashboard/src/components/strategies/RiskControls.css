@@ -1,0 +1,385 @@
+/* Risk Controls Styles */
+.risk-controls {
+  padding: 16px;
+}
+
+.risk-section {
+  margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.risk-section .ant-card-head {
+  background-color: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.risk-section .ant-card-head-title {
+  font-weight: 600;
+  color: #262626;
+}
+
+.risk-section .ant-card-body {
+  padding: 20px;
+}
+
+/* Risk level preset cards */
+.risk-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.risk-preset-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  background-color: #fff;
+}
+
+.risk-preset-card:hover {
+  border-color: #1890ff;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.risk-preset-card.active {
+  border-color: #1890ff;
+  background-color: #f6ffed;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+}
+
+.risk-preset-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.risk-preset-content .ant-tag {
+  align-self: center;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 4px 12px;
+}
+
+.risk-preset-content p {
+  margin: 0;
+  color: #595959;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.risk-preset-content small {
+  color: #8c8c8c;
+  font-size: 12px;
+}
+
+/* Risk field styling */
+.risk-field {
+  margin-bottom: 16px;
+}
+
+.risk-field .ant-form-item-label > label {
+  font-weight: 500;
+  color: #262626;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.risk-field .ant-form-item-explain {
+  font-size: 12px;
+}
+
+/* Risk impact indicators */
+.risk-impact-tag {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.risk-impact-tag.high {
+  background-color: #fff2f0;
+  color: #ff4d4f;
+  border: 1px solid #ffb3b3;
+}
+
+.risk-impact-tag.medium {
+  background-color: #fff7e6;
+  color: #fa8c16;
+  border: 1px solid #ffd591;
+}
+
+.risk-impact-tag.low {
+  background-color: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+/* Position Management */
+.position-management {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.position-management .ant-form-item {
+  margin-bottom: 16px;
+}
+
+/* VaR Settings */
+.var-settings {
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.var-settings .ant-form-item-label > label {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+/* Stress Testing */
+.stress-testing {
+  background-color: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.stress-testing .ant-form-item-label > label {
+  color: #fa8c16;
+  font-weight: 600;
+}
+
+/* Custom Risk Rules */
+.custom-risk-rules {
+  border: 1px dashed #d9d9d9;
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #fafafa;
+}
+
+.custom-rule-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 12px;
+  background-color: #fff;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+}
+
+.custom-rule-item:last-child {
+  margin-bottom: 0;
+}
+
+.add-custom-rule {
+  margin-top: 12px;
+  width: 100%;
+  height: 40px;
+  border-style: dashed;
+  background-color: transparent;
+  color: #1890ff;
+}
+
+.add-custom-rule:hover {
+  color: #40a9ff;
+  background-color: #f0f8ff;
+  border-color: #40a9ff;
+}
+
+/* Risk Alerts */
+.risk-alerts {
+  background-color: #fff0f6;
+  border: 1px solid #ffb3d8;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.risk-alerts .ant-form-item-label > label {
+  color: #eb2f96;
+  font-weight: 600;
+}
+
+/* Slider customizations */
+.risk-slider .ant-slider-track {
+  background: linear-gradient(to right, #52c41a, #fa8c16, #ff4d4f);
+}
+
+.risk-slider .ant-slider-handle {
+  border-color: #1890ff;
+}
+
+/* Progress bars for risk metrics */
+.risk-progress .ant-progress-bg {
+  background: linear-gradient(to right, #52c41a, #fa8c16, #ff4d4f);
+}
+
+.risk-progress.high .ant-progress-bg {
+  background-color: #ff4d4f;
+}
+
+.risk-progress.medium .ant-progress-bg {
+  background-color: #fa8c16;
+}
+
+.risk-progress.low .ant-progress-bg {
+  background-color: #52c41a;
+}
+
+/* Validation states */
+.risk-field.ant-form-item-has-error {
+  margin-bottom: 8px;
+}
+
+.risk-field.ant-form-item-has-warning {
+  margin-bottom: 8px;
+}
+
+.risk-field.ant-form-item-has-success {
+  margin-bottom: 8px;
+}
+
+/* Helper text */
+.risk-helper {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.risk-helper strong {
+  color: #595959;
+}
+
+/* Warning sections */
+.risk-warning {
+  padding: 12px;
+  background-color: #fff2f0;
+  border: 1px solid #ffb3b3;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.risk-warning .ant-alert-icon {
+  color: #ff4d4f;
+}
+
+/* Info sections */
+.risk-info {
+  padding: 12px;
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.risk-info .ant-alert-icon {
+  color: #1890ff;
+}
+
+/* Advanced mode toggle */
+.advanced-risk-toggle {
+  margin: 16px 0;
+  padding: 12px;
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.advanced-risk-toggle .ant-switch {
+  margin-left: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .risk-controls {
+    padding: 12px;
+  }
+
+  .risk-section .ant-card-body {
+    padding: 16px;
+  }
+
+  .risk-preset-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .custom-rule-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .advanced-risk-toggle {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+}
+
+/* Animation for risk sections */
+.risk-section {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Risk calculation preview */
+.risk-calculation-preview {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+}
+
+.risk-calculation-preview h4 {
+  margin-bottom: 12px;
+  color: #262626;
+  font-weight: 600;
+}
+
+.risk-calculation-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.risk-calculation-item:last-child {
+  border-bottom: none;
+}
+
+.risk-calculation-label {
+  font-size: 13px;
+  color: #595959;
+}
+
+.risk-calculation-value {
+  font-weight: 600;
+  color: #262626;
+}

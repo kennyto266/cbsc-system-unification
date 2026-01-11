@@ -1,0 +1,132 @@
+{
+  "test_environment": {
+    "name": "CBSC User Testing Environment",
+    "version": "1.0.0",
+    "mode": "staging",
+    "data_source": "mock"
+  },
+  "endpoints": {
+    "api_base": "http://localhost:3004",
+    "websocket": "ws://localhost:3004/ws",
+    "dashboard": "http://localhost:3003",
+    "square_ui": "http://localhost:3000"
+  },
+  "test_scenarios": {
+    "load_test": {
+      "enabled": true,
+      "concurrent_users": 100,
+      "duration_minutes": 30,
+      "ramp_up_time": 10
+    },
+    "stress_test": {
+      "enabled": true,
+      "max_concurrent_users": 500,
+      "duration_minutes": 5,
+      "data_update_interval_ms": 100
+    },
+    "endurance_test": {
+      "enabled": true,
+      "duration_hours": 8,
+      "monitoring_interval_minutes": 5
+    }
+  },
+  "performance_thresholds": {
+    "page_load_time_ms": 3000,
+    "api_response_time_ms": 500,
+    "websocket_latency_ms": 100,
+    "chart_render_time_ms": 1000,
+    "memory_usage_mb": 512,
+    "cpu_usage_percent": 70
+  },
+  "test_data": {
+    "sample_size": 1000,
+    "update_frequency_ms": 5000,
+    "indicators": ["RSI", "MACD", "BOLL", "KDJ", "MA", "VOL"],
+    "timeframes": ["1m", "5m", "15m", "30m", "1h", "1d"]
+  },
+  "browsers": {
+    "chrome": {
+      "enabled": true,
+      "version": "90+",
+      "headless": false,
+      "window_size": {"width": 1920, "height": 1080}
+    },
+    "firefox": {
+      "enabled": true,
+      "version": "88+",
+      "headless": false,
+      "window_size": {"width": 1920, "height": 1080}
+    },
+    "safari": {
+      "enabled": true,
+      "version": "14+",
+      "headless": false
+    },
+    "edge": {
+      "enabled": true,
+      "version": "90+",
+      "headless": false
+    }
+  },
+  "devices": [
+    {
+      "name": "Desktop",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      "viewport": {"width": 1920, "height": 1080},
+      "device_scale_factor": 1,
+      "is_mobile": false
+    },
+    {
+      "name": "Laptop",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      "viewport": {"width": 1366, "height": 768},
+      "device_scale_factor": 1,
+      "is_mobile": false
+    },
+    {
+      "name": "Tablet",
+      "user_agent": "Mozilla/5.0 (iPad; CPU OS 14_0 like Mac OS X) AppleWebKit/605.1.15",
+      "viewport": {"width": 768, "height": 1024},
+      "device_scale_factor": 2,
+      "is_mobile": true
+    },
+    {
+      "name": "Mobile",
+      "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15",
+      "viewport": {"width": 375, "height": 667},
+      "device_scale_factor": 2,
+      "is_mobile": true
+    }
+  ],
+  "monitoring": {
+    "enabled": true,
+    "metrics": {
+      "performance": true,
+      "errors": true,
+      "network": true,
+      "resources": true,
+      "user_actions": true
+    },
+    "alerts": {
+      "error_rate_threshold": 5,
+      "response_time_threshold_ms": 2000,
+      "memory_threshold_mb": 1024,
+      "cpu_threshold_percent": 90
+    }
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "outputs": ["console", "file"],
+    "file_path": "./test_results/logs/",
+    "max_file_size_mb": 100,
+    "backup_count": 5
+  },
+  "reports": {
+    "output_dir": "./test_results/reports/",
+    "formats": ["html", "json", "csv"],
+    "include_screenshots": true,
+    "include_videos": false,
+    "include_network_logs": true
+  }
+}

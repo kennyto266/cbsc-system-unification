@@ -5,7 +5,6 @@
       "Bash(.claude/scripts/test-and-log.sh:*)",
       "Bash(bash .claude/scripts/pm/*)",
       "Bash(.claude/scripts/pm/*)",
-
       "Bash(cat:*)",
       "Bash(cat:*)",
       "Bash(composer:*)",
@@ -42,5 +41,9 @@
       "WebFetch(domain:github.com)",
       "WebSearch"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "supabase"
+  ],
+  "enableAllProjectMcpServers": true
 }

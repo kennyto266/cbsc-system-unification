@@ -1,0 +1,2 @@
+uid=1_0 RootWebArea url="http://localhost:8888/"
+  uid=1_1 StaticText "Internal Server Error"

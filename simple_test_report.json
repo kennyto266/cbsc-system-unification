@@ -1,0 +1,20 @@
+{
+  "test_suite": "CBSC Multiprocessing Simple Tests",
+  "timestamp": "2025-12-13T10:17:18.957967",
+  "duration_seconds": 0.972415,
+  "test_results": {
+    "Basic Functionality": false,
+    "Performance Scaling": false,
+    "Memory Usage": false,
+    "Data Sharing": false,
+    "Error Handling": false,
+    "Performance Benchmark": false
+  },
+  "summary": {
+    "total_tests": 6,
+    "passed_tests": 0,
+    "failed_tests": 6,
+    "success_rate": 0.0,
+    "overall_success": false
+  }
+}

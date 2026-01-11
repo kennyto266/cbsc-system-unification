@@ -1,0 +1,240 @@
+# Alertmanager Configuration for CBSC System
+global:
+  # SMTP configuration for email alerts
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alerts@cbsc.com'
+  smtp_auth_username: 'alerts@cbsc.com'
+  smtp_auth_password: 'your_smtp_password'
+
+  # Slack configuration
+  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+
+  # Default templates
+  templates:
+    - '/etc/alertmanager/templates/*.tmpl'
+
+# Inhibit rules to prevent alert spam
+inhibit_rules:
+  # Inhibit info alerts if warning is active
+  - source_match:
+      severity: 'warning'
+    target_match:
+      severity: 'info'
+    equal: ['alertname', 'instance']
+
+  # Inhibit warning alerts if critical is active
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+
+  # Inhibit node alerts if entire cluster is down
+  - source_match:
+      alertname: 'ClusterDown'
+    target_match_re:
+      alertname: '(NodeDown|PodNotReady)'
+    equal: ['cluster']
+
+# Route configuration
+route:
+  # Default receiver
+  receiver: 'default-receiver'
+
+  # Group settings
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+
+  # Routes for different severities
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: 'critical'
+      receiver: 'critical-alerts'
+      group_wait: 5s
+      repeat_interval: 5m
+      routes:
+        # Trading system critical alerts
+        - match:
+            service: 'trading-system'
+          receiver: 'trading-critical'
+          group_wait: 0s
+          repeat_interval: 1m
+        # Database critical alerts
+        - match:
+            service: 'postgres|redis'
+          receiver: 'database-critical'
+          group_wait: 0s
+          repeat_interval: 2m
+
+    # Warning alerts
+    - match:
+        severity: 'warning'
+      receiver: 'warning-alerts'
+      group_wait: 30s
+      repeat_interval: 2h
+
+    # Info alerts
+    - match:
+        severity: 'info'
+      receiver: 'info-alerts'
+      group_wait: 60s
+      repeat_interval: 24h
+
+    # Mute maintenance alerts
+    - match:
+        alertname: 'NodeMaintenance'
+      receiver: 'null'
+
+# Receivers configuration
+receivers:
+  # Default receiver
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'team@cbsc.com'
+        subject: '[CBSC ALERT] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+    slack_configs:
+      - channel: '#alerts'
+        title: 'CBSC Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Labels:* {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+
+  # Critical alerts receiver
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'oncall@cbsc.com'
+        subject: '[CRITICAL] CBSC System Alert'
+        body: |
+          CRITICAL ALERT DETECTED
+
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Severity: {{ .Labels.severity }}
+          Service: {{ .Labels.service | default "N/A" }}
+          Instance: {{ .Labels.instance | default "N/A" }}
+
+          Runbook: {{ .Annotations.runbook_url | default "N/A" }}
+
+          This is a critical alert requiring immediate attention!
+          {{ end }}
+    slack_configs:
+      - channel: '#critical-alerts'
+        title: '🚨 CRITICAL ALERT - CBSC System'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Runbook:* {{ .Annotations.runbook_url | default "No runbook available" }}
+          {{ end }}
+        send_resolved: true
+    webhook_configs:
+      - url: 'http://alertmanager-webhook:5000/critical'
+        send_resolved: true
+
+  # Trading system critical alerts
+  - name: 'trading-critical'
+    email_configs:
+      - to: 'trading-team@cbsc.com,management@cbsc.com'
+        subject: '[URGENT] Trading System Critical Alert'
+        body: |
+          TRADING SYSTEM CRITICAL ALERT
+
+          Immediate action required!
+
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Impact: Trading operations may be affected
+          {{ end }}
+    slack_configs:
+      - channel: '#trading-alerts'
+        title: '🚨 URGENT - Trading System Alert'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+    webhook_configs:
+      - url: 'http://trading-bot:8080/emergency-stop'
+        send_resolved: false
+
+  # Database critical alerts
+  - name: 'database-critical'
+    email_configs:
+      - to: 'dba-team@cbsc.com'
+        subject: '[CRITICAL] Database Alert'
+        body: |
+          DATABASE CRITICAL ALERT
+
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+    slack_configs:
+      - channel: '#database-alerts'
+        title: '🚨 Database Critical Alert'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+
+  # Warning alerts receiver
+  - name: 'warning-alerts'
+    email_configs:
+      - to: 'team@cbsc.com'
+        subject: '[WARNING] CBSC System Alert'
+        body: |
+          Warning alert from CBSC system:
+
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+    slack_configs:
+      - channel: '#warnings'
+        title: '⚠️ Warning - CBSC System'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+
+  # Info alerts receiver
+  - name: 'info-alerts'
+    slack_configs:
+      - channel: '#info'
+        title: 'ℹ️ Info - CBSC System'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+
+  # Null receiver for muted alerts
+  - name: 'null'
+
+# Time intervals for muting alerts during maintenance
+time_intervals:
+  - name: 'maintenance-window'
+    time_intervals:
+      - times:
+          - start_time: '02:00'
+            end_time: '04:00'
+        weekdays: ['sunday']
+
+# Mute time intervals
+mute_time_intervals: []

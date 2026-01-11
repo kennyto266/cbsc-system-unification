@@ -1,0 +1,24 @@
+=== Java Runtime Setup Report ===
+Generated at: 2025-12-22 11:08:51
+
+OpenAPI Generator CLI: ✓ Installed
+  Version: 2.25.2
+
+Java Runtime: ⚠ Verification limited
+  Java may be installed but not accessible through this script
+  Please verify manually by running: java -version
+
+OpenAPI Generator: ✓ Functional
+
+=== Manual Setup Required ===
+If Java is not installed, please follow these steps:
+1. Install Java 17 or higher:
+   - Windows: Download from https://adoptium.net/
+   - macOS: brew install openjdk@17
+   - Ubuntu/Debian: sudo apt install openjdk-17-jdk
+2. Verify installation: java -version
+3. The OpenAPI Generator CLI is already installed via npm
+
+=== Next Steps ===
+Once Java is set up, you can generate SDKs with:
+openapi-generator-cli generate -i http://localhost:3004/openapi.json -g python -o sdks/python

@@ -1,0 +1,247 @@
+/* Grid System Styles */
+
+.grid-system {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+  background: transparent;
+}
+
+.grid-item {
+  position: absolute;
+  transition: all 0.2s ease;
+  will-change: transform;
+}
+
+.grid-item.dragging {
+  opacity: 0.8;
+  z-index: 1000;
+  transition: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.grid-item.resizing {
+  opacity: 0.9;
+  z-index: 999;
+}
+
+.widget-container {
+  width: 100%;
+  height: 100%;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.widget-container:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.widget-header {
+  cursor: default;
+  user-select: none;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.widget-drag-handle {
+  cursor: move;
+}
+
+.widget-drag-handle:active {
+  cursor: grabbing;
+}
+
+.widget-content {
+  padding: 12px;
+  height: calc(100% - 48px);
+  overflow: auto;
+}
+
+.widget-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.widget-container:hover .widget-controls {
+  opacity: 1;
+}
+
+.widget-control-button {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.widget-control-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.resize-handle {
+  position: absolute;
+  background: transparent;
+  z-index: 1;
+}
+
+.resize-handle-se {
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  cursor: se-resize;
+}
+
+.resize-handle-se::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 0 5px 5px;
+  border-color: transparent transparent #bfbfbf transparent;
+}
+
+.grid-placeholder {
+  position: absolute;
+  background: #1890ff;
+  opacity: 0.3;
+  border: 2px dashed #1890ff;
+  border-radius: 4px;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.grid-drop-zone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.grid-drop-zone.active {
+  background: rgba(24, 144, 255, 0.05);
+  border: 2px dashed #1890ff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .grid-system {
+    padding: 8px;
+  }
+
+  .widget-content {
+    padding: 8px;
+  }
+
+  .widget-controls {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-item {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    transform: none !important;
+    margin-bottom: 8px;
+  }
+
+  .widget-container {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .resize-handle {
+    display: none;
+  }
+}
+
+/* Loading states */
+.widget-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #fafafa;
+}
+
+.widget-loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #f0f0f0;
+  border-top-color: #1890ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error states */
+.widget-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+  text-align: center;
+  color: #ff4d4f;
+}
+
+.widget-error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.widget-error-message {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.widget-error-description {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+/* Empty states */
+.widget-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+  color: #8c8c8c;
+}
+
+.widget-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.widget-empty-text {
+  font-size: 14px;
+}

@@ -1,0 +1,50 @@
+uid=11_0 RootWebArea "CBSC Unified Dashboard" url="http://localhost:3001/"
+  uid=11_1 StaticText "[plugin:vite:import-analysis] "
+  uid=11_2 StaticText "Failed to resolve import "@components/dashboard/RecentSignals" from "src/pages/dashboard/DashboardPage.tsx". Does the file exist?"
+  uid=11_3 StaticText "C:"
+  uid=11_4 StaticText "/Users/Penguin8n/CODEX--/unified-dashboard/src/pages/dashboard/DashboardPage.tsx:40:26"
+  uid=11_5 StaticText "44 |  import StrategyPerformanceChart from "@components/charts/StrategyPerformanceChart";
+45 |  import MarketOverview from "@components/dashboard/MarketOverview";
+46 |  import RecentSignals from "@components/dashboard/RecentSignals";
+   |                             ^
+47 |  import SystemHealth from "@components/dashboard/SystemHealth";
+48 |  import QuickActions from "@components/dashboard/QuickActions";"
+  uid=11_6 StaticText "    at TransformPluginContext._formatError (file:"
+  uid=11_7 StaticText "///C:/Users/Penguin8n/CODEX--/unified-dashboard/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41"
+  uid=11_8 StaticText ")
+    at TransformPluginContext.error (file:"
+  uid=11_9 StaticText "///C:/Users/Penguin8n/CODEX--/unified-dashboard/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16"
+  uid=11_10 StaticText ")
+    at normalizeUrl (file:"
+  uid=11_11 StaticText "///C:/Users/Penguin8n/CODEX--/unified-dashboard/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23"
+  uid=11_12 StaticText ")
+    at process.processTicksAndRejections (node:internal"
+  uid=11_13 StaticText "/process/task_queues:105:5"
+  uid=11_14 StaticText ")
+    at async file:"
+  uid=11_15 StaticText "///C:/Users/Penguin8n/CODEX--/unified-dashboard/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39"
+  uid=11_16 StaticText "
+    at async Promise.all (index 13)
+    at async TransformPluginContext.transform (file:"
+  uid=11_17 StaticText "///C:/Users/Penguin8n/CODEX--/unified-dashboard/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7"
+  uid=11_18 StaticText ")
+    at async PluginContainer.transform (file:"
+  uid=11_19 StaticText "///C:/Users/Penguin8n/CODEX--/unified-dashboard/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18"
+  uid=11_20 StaticText ")
+    at async loadAndTransform (file:"
+  uid=11_21 StaticText "///C:/Users/Penguin8n/CODEX--/unified-dashboard/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27"
+  uid=11_22 StaticText ")
+    at async viteTransformMiddleware (file:"
+  uid=11_23 StaticText "///C:/Users/Penguin8n/CODEX--/unified-dashboard/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:62106:24"
+  uid=11_24 StaticText "Click outside, press "
+  uid=11_25 StaticText "Esc"
+  uid=11_26 StaticText " key, or fix the code to dismiss."
+  uid=11_27 LineBreak "
+"
+  uid=11_28 StaticText "You can also disable this overlay by setting "
+  uid=11_29 StaticText "server.hmr.overlay"
+  uid=11_30 StaticText " to "
+  uid=11_31 StaticText "false"
+  uid=11_32 StaticText " in "
+  uid=11_33 StaticText "vite.config.ts"
+  uid=11_34 StaticText "."

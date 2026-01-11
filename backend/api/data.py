@@ -7,7 +7,7 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 import yfinance as yf
 import pandas as pd
-from backend.services.data_service import DataService
+from services.data_service import DataService
 
 router = APIRouter()
 
