@@ -36,18 +36,18 @@ try:
     assert tm.current_theme == "dark"
     colors = tm.get_colors()
     assert 'primary' in colors
-    print("   ✓ ThemeManager initialization")
-    print("   ✓ Color palette available")
+    print("   [OK] ThemeManager initialization")
+    print("   [OK] Color palette available")
 
     tm.toggle_theme()
     assert tm.current_theme == "light"
-    print("   ✓ Theme toggling works")
+    print("   [OK] Theme toggling works")
 
     tm.set_theme("dark")
     assert tm.current_theme == "dark"
-    print("   ✓ Theme setting works")
+    print("   [OK] Theme setting works")
 except Exception as e:
-    print(f"   ✗ ThemeManager failed: {e}")
+    print(f"   [FAIL] ThemeManager failed: {e}")
 
 # Test 2: CircularBuffer
 print("\n2. Testing CircularBuffer...")
