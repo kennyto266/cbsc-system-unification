@@ -5,7 +5,7 @@ This module defines the exception hierarchy used throughout the SDK
 for consistent error handling and user-friendly error messages.
 """
 
-from typing import Optional
+from typing import Any, Optional
 
 
 class StrategyWorkspaceError(Exception):
