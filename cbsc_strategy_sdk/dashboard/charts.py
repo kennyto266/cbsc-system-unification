@@ -42,6 +42,27 @@ class ChartBuilders:
 
         self.theme = theme_manager or ThemeManager()
 
+    def _apply_theme(self, fig: go.Figure, **kwargs) -> None:
+        """
+        Apply theme styling to figure.
+
+        Args:
+            fig: Plotly Figure to style
+            **kwargs: Additional layout parameters
+        """
+        template = self.theme.get_plotly_template()
+        layout = template['layout']
+
+        # Build layout parameters
+        layout_params = {
+            'paper_bgcolor': layout.get('paper_bgcolor', '#1e1e1e'),
+            'plot_bgcolor': layout.get('plot_bgcolor', '#1e1e1e'),
+            'font': layout.get('font', {}),
+            **kwargs
+        }
+
+        fig.update_layout(**layout_params)
+
     def candlestick_chart(
         self,
         df: pd.DataFrame,
@@ -112,10 +133,9 @@ class ChartBuilders:
                 row=2, col=1
             )
 
-        # Apply theme template
-        template = self.theme.get_plotly_template()
-        fig.update_layout(
-            template=template['layout'],
+        # Apply theme
+        self._apply_theme(
+            fig,
             title=dict(text=title, x=0.5, xanchor='center'),
             height=height,
             xaxis_rangeslider_visible=False,
@@ -172,10 +192,9 @@ class ChartBuilders:
                 )
             )
 
-        # Apply theme template
-        template = self.theme.get_plotly_template()
-        fig.update_layout(
-            template=template['layout'],
+        # Apply theme
+        self._apply_theme(
+            fig,
             title=dict(text=title, x=0.5, xanchor='center'),
             height=height,
             hovermode='x unified',
@@ -221,13 +240,10 @@ class ChartBuilders:
         )
 
         # Apply theme
-        fig.update_layout(
-            template=template['layout'] if (template := self.theme.get_plotly_template()) else {},
+        self._apply_theme(
+            fig,
             title=dict(text=title, x=0.5, xanchor='center'),
             height=height,
-            paper_bgcolor=colors['background'],
-            plot_bgcolor=colors['background'],
-            font=dict(color=colors['text']),
         )
 
         return fig
@@ -283,10 +299,9 @@ class ChartBuilders:
                 )
             )
 
-        # Apply theme template
-        template = self.theme.get_plotly_template()
-        fig.update_layout(
-            template=template['layout'],
+        # Apply theme
+        self._apply_theme(
+            fig,
             title=dict(text=title, x=0.5, xanchor='center'),
             height=height,
             xaxis_title="Date",
@@ -336,10 +351,9 @@ class ChartBuilders:
             )
         )
 
-        # Apply theme template
-        template = self.theme.get_plotly_template()
-        fig.update_layout(
-            template=template['layout'],
+        # Apply theme
+        self._apply_theme(
+            fig,
             title=dict(text=title, x=0.5, xanchor='center'),
             height=height,
             xaxis_title="Date",
@@ -391,10 +405,9 @@ class ChartBuilders:
             annotation_text=f"Mean: {mean_return:.2%}",
         )
 
-        # Apply theme template
-        template = self.theme.get_plotly_template()
-        fig.update_layout(
-            template=template['layout'],
+        # Apply theme
+        self._apply_theme(
+            fig,
             title=dict(text=title, x=0.5, xanchor='center'),
             height=height,
             xaxis_title="Return",
@@ -447,10 +460,9 @@ class ChartBuilders:
                 )
             )
 
-        # Apply theme template
-        template = self.theme.get_plotly_template()
-        fig.update_layout(
-            template=template['layout'],
+        # Apply theme
+        self._apply_theme(
+            fig,
             title=dict(text=title, x=0.5, xanchor='center'),
             height=height,
             xaxis_title="Date",
