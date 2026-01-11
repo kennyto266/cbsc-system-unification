@@ -57,7 +57,7 @@ class RealMarketData(BaseModel):
     quality_score: float = Field(..., ge=0.0, le=1.0, description="数据质量评分")
     last_updated: datetime = Field(default_factory=datetime.now, description="最后更新时间")
 
-  @validator('high_price')
+    @validator('high_price')
     def validate_high_price(cls, v, values):
         """验证最高价"""
         if 'low_price' in values and v < values['low_price']:
@@ -105,13 +105,13 @@ class BaseDataAdapter(ABC):
         self._cache: Dict[str, Any] = {}
         self._last_update: Optional[datetime] = None
 
-@abstractmethod
+    @abstractmethod
     async def connect(self) -> bool:
         """
         连接到数据源
 
         Returns:
-        bool: 连接是否成功
+            bool: 连接是否成功
         """
         pass
 
@@ -121,141 +121,148 @@ class BaseDataAdapter(ABC):
         断开数据源连接
 
         Returns:
-        bool: 断开是否成功
+            bool: 断开是否成功
         """
         pass
 
-@abstractmethod
-async def get_market_data(
-self, 
-symbol: str, 
-start_date: Optional[date] = None,
-end_date: Optional[date] = None
-) -> List[RealMarketData]:
-"""
-获取市场数据
+    @abstractmethod
+    async def get_market_data(
+        self,
+        symbol: str,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None
+    ) -> List[RealMarketData]:
+        """
+        获取市场数据
 
-Args:
-symbol: 股票代码
-start_date: 开始日期
-end_date: 结束日期
+        Args:
+            symbol: 股票代码
+            start_date: 开始日期
+            end_date: 结束日期
 
-Returns:
-List[RealMarketData]: 市场数据列表
-"""
-pass
+        Returns:
+            List[RealMarketData]: 市场数据列表
+        """
+        pass
 
-@abstractmethod
-async def validate_dataself, data: List[RealMarketData] -> DataValidationResult:
-"""
-验证数据质量
+    @abstractmethod
+    async def validate_data(self, data: List[RealMarketData]) -> DataValidationResult:
+        """
+        验证数据质量
 
-Args:
-data: 待验证的数据列表
+        Args:
+            data: 待验证的数据列表
 
-Returns:
-DataValidationResult: 验证结果
-"""
-pass
+        Returns:
+            DataValidationResult: 验证结果
+        """
+        pass
 
-@abstractmethod
-async def transform_data(
-self, 
-raw_data: Any
-) -> List[RealMarketData]:
-"""
-转换原始数据为标准格式
+    @abstractmethod
+    async def transform_data(
+        self,
+        raw_data: Any
+    ) -> List[RealMarketData]:
+        """
+        转换原始数据为标准格式
 
-Args:
-raw_data: 原始数据
+        Args:
+            raw_data: 原始数据
 
-Returns:
-List[RealMarketData]: 转换后的标准数据
-"""
-pass
+        Returns:
+            List[RealMarketData]: 转换后的标准数据
+        """
+        pass
 
-def get_cache_key(self, symbol: str, start_date: Optional[date] = None, end_date: Optional[date] = None) -> str:
+    def get_cache_key(self, symbol: str, start_date: Optional[date] = None, end_date: Optional[date] = None) -> str:
         """生成缓存键"""
         date_range = f"{start_date or 'all'}_{end_date or 'all'}"
         return f"{self.config.source_type}:{symbol}:{date_range}"
 
-def is_cache_validself, cache_key: str -> bool:
-"""检查缓存是否有效"""
-if not self.config.cache_enabled:
-return False
+    def is_cache_valid(self, cache_key: str) -> bool:
+        """检查缓存是否有效"""
+        if not self.config.cache_enabled:
+            return False
 
-if cache_key not in self._cache:
-return False
+        if cache_key not in self._cache:
+            return False
 
-cache_time = self._cache.getf"{cache_key}_timestamp"
-if not cache_time:
-return False
+        cache_time = self._cache.get(f"{cache_key}_timestamp")
+        if not cache_time:
+            return False
 
-age = (datetime.now() - cache_time).total_seconds()
-return age < self.config.cache_ttl
+        age = (datetime.now() - cache_time).total_seconds()
+        return age < self.config.cache_ttl
 
-def set_cacheself, cache_key: str, data: Any -> None:
-"""设置缓存"""
-if self.config.cache_enabled:    self._cache[cache_key] = data
-self._cache[f"{cache_key}_timestamp"] = datetime.now()
+    def set_cache(self, cache_key: str, data: Any) -> None:
+        """设置缓存"""
+        if self.config.cache_enabled:
+            self._cache[cache_key] = data
+        self._cache[f"{cache_key}_timestamp"] = datetime.now()
 
-def get_cacheself, cache_key: str -> Optional[Any]:
-"""获取缓存"""
-if self.is_cache_validcache_key:
-return self._cache.getcache_key
-return None
+    def get_cache(self, cache_key: str) -> Optional[Any]:
+        """获取缓存"""
+        if self.is_cache_valid(cache_key):
+            return self._cache.get(cache_key)
+        return None
 
-def clear_cacheself -> None:
-"""清空缓存"""
-self._cache.clear()
+    def clear_cache(self) -> None:
+        """清空缓存"""
+        self._cache.clear()
 
-async def health_checkself -> Dict[str, Any]:
-"""健康检查"""
-try:    connected = await self.connect()
-return {
-"status": "healthy" if connected else "unhealthy",
-"source_type": self.config.source_type,
-"last_update": self._last_update,
-"cache_size": lenself._cache,
-"config": self.config.dict()
-}
-except Exception as e:
-self.logger.errorf"Health check failed: {e}"
-return {
-"status": "error",
-"error": stre,
-"source_type": self.config.source_type
-}
+    async def health_check(self) -> Dict[str, Any]:
+        """健康检查"""
+        try:
+            connected = await self.connect()
+            return {
+                "status": "healthy" if connected else "unhealthy",
+                "source_type": self.config.source_type,
+                "last_update": self._last_update,
+                "cache_size": len(self._cache),
+                "config": self.config.dict()
+            }
+        except Exception as e:
+            self.logger.error(f"Health check failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "source_type": self.config.source_type
+            }
 
-def calculate_quality_scoreself, data: List[RealMarketData] -> float:
-"""计算数据质量评分"""
-if not data:
-return 0.0
+    def calculate_quality_score(self, data: List[RealMarketData]) -> float:
+        """计算数据质量评分"""
+        if not data:
+            return 0.0
 
-total_score = 0.0
-for item in data:    item_score = 1.0
+        total_score = 0.0
+        for item in data:
+            item_score = 1.0
 
-if not all[item.open_price, item.high_price, item.low_price, item.close_price]:    item_score -= 0.3
+            if not all([item.open_price, item.high_price, item.low_price, item.close_price]):
+                item_score -= 0.3
 
-if item.high_price < item.low_price:    item_score -= 0.5
+            if item.high_price < item.low_price:
+                item_score -= 0.5
 
-if item.volume <= 0:    item_score -= 0.2
+            if item.volume <= 0:
+                item_score -= 0.2
 
-if item.timestamp > datetime.now():    item_score -= 0.3
+            if item.timestamp > datetime.now():
+                item_score -= 0.3
 
-total_score += max0.0, item_score
+            total_score += max(0.0, item_score)
 
-return total_score / lendata
+        return total_score / len(data)
 
-def get_quality_levelself, score: float -> DataQuality:
-"""根据评分获取质量等级"""
-if score >= 0.9:
-return DataQuality.EXCELLENT
-elif score >= 0.8:
-return DataQuality.GOOD
-elif score >= 0.6:
-return DataQuality.FAIR
-elif score >= 0.4:
-return DataQuality.POOR
-else:
-return DataQuality.UNKNOWN
+    def get_quality_level(self, score: float) -> DataQuality:
+        """根据评分获取质量等级"""
+        if score >= 0.9:
+            return DataQuality.EXCELLENT
+        elif score >= 0.8:
+            return DataQuality.GOOD
+        elif score >= 0.6:
+            return DataQuality.FAIR
+        elif score >= 0.4:
+            return DataQuality.POOR
+        else:
+            return DataQuality.UNKNOWN

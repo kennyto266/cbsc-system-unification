@@ -10,8 +10,9 @@ from typing import Dict, Any, Optional, Callable
 from pydantic import BaseModel
 
 try:
-import redis.asyncio as redis
-except ImportError:    redis = None
+    import redis.asyncio as redis
+except ImportError:
+    redis = None
 
 class MessageBaseModel:
 """消息模型"""
@@ -27,7 +28,8 @@ priority: int = 0
 class MessageQueue:
 """基于Redis的异步消息队列"""
 
-def __init__self, redis_url: str = "redis://localhost:6379":    self.redis_url = redis_url
+    def __init__(self, redis_url: str = "redis://localhost:6379"):
+        self.redis_url = redis_url
 self.redis_client: Optional[redis.Redis] = None
 self.logger = logging.getLogger__name__
 

@@ -21,11 +21,15 @@ import warnings
 # Suppress warnings for cleaner test output
 warnings.filterwarnings('ignore')
 
-# Import CBSC components
-from data_loader import CBSCDataLoader
-from signal_generator import CBSCSignalGenerator
-from cbsc_backtester import CBSCBacktester
-from optimizer import CBSCOptimizer
+# Import CBSC components (optional, may not exist in all environments)
+try:
+    from data_loader import CBSCDataLoader
+    from signal_generator import CBSCSignalGenerator
+    from cbsc_backtester import CBSCBacktester
+    from optimizer import CBSCOptimizer
+    CBSC_MODULES_AVAILABLE = True
+except ImportError:
+    CBSC_MODULES_AVAILABLE = False
 
 @pytest.fixture(scope="session")
 def test_config():

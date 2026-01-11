@@ -1,0 +1,571 @@
+# CBSC Strategy Workflow Indicator Registry
+# Defines all available technical indicators with their parameters and metadata
+
+# ============================================================================
+# Trend Indicators
+# ============================================================================
+trend:
+  sma:
+    name: "Simple Moving Average"
+    category: "trend"
+    description: "Simple moving average over specified period"
+    function: "talib.SMA"
+    parameters:
+      period:
+        type: int
+        default: 20
+        range: [2, 500]
+        description: "Number of periods"
+    outputs:
+      - "sma"
+    plotting:
+      color: "blue"
+      linewidth: 2
+      overlay: true
+
+  ema:
+    name: "Exponential Moving Average"
+    category: "trend"
+    description: "Exponential moving average with weighting factor"
+    function: "talib.EMA"
+    parameters:
+      period:
+        type: int
+        default: 20
+        range: [2, 500]
+        description: "Number of periods"
+    outputs:
+      - "ema"
+    plotting:
+      color: "orange"
+      linewidth: 2
+      overlay: true
+
+  wma:
+    name: "Weighted Moving Average"
+    category: "trend"
+    description: "Linearly weighted moving average"
+    function: "talib.WMA"
+    parameters:
+      period:
+        type: int
+        default: 20
+        range: [2, 500]
+    outputs:
+      - "wma"
+    plotting:
+      color: "purple"
+      linewidth: 2
+      overlay: true
+
+  dema:
+    name: "Double Exponential Moving Average"
+    category: "trend"
+    description: "Double exponential moving average"
+    function: "talib.DEMA"
+    parameters:
+      period:
+        type: int
+        default: 20
+        range: [2, 500]
+    outputs:
+      - "dema"
+    plotting:
+      color: "cyan"
+      linewidth: 2
+      overlay: true
+
+  tema:
+    name: "Triple Exponential Moving Average"
+    category: "trend"
+    description: "Triple exponential moving average"
+    function: "talib.TEMA"
+    parameters:
+      period:
+        type: int
+        default: 20
+        range: [2, 500]
+    outputs:
+      - "tema"
+    plotting:
+      color: "magenta"
+      linewidth: 2
+      overlay: true
+
+  kama:
+    name: "Kaufman Adaptive Moving Average"
+    category: "trend"
+    description: "Adaptive moving average developed by Perry Kaufman"
+    function: "talib.KAMA"
+    parameters:
+      period:
+        type: int
+        default: 30
+        range: [2, 500]
+    outputs:
+      - "kama"
+    plotting:
+      color: "brown"
+      linewidth: 2
+      overlay: true
+
+  macd:
+    name: "Moving Average Convergence Divergence"
+    category: "trend"
+    description: "Trend-following momentum indicator"
+    function: "talib.MACD"
+    parameters:
+      fastperiod:
+        type: int
+        default: 12
+        range: [2, 500]
+      slowperiod:
+        type: int
+        default: 26
+        range: [2, 500]
+      signalperiod:
+        type: int
+        default: 9
+        range: [2, 500]
+    outputs:
+      - "macd"
+      - "macdsignal"
+      - "macdhist"
+    plotting:
+      colors: ["blue", "orange", "gray"]
+      linewidth: 2
+      overlay: false
+
+# ============================================================================
+# Momentum Indicators
+# ============================================================================
+momentum:
+  rsi:
+    name: "Relative Strength Index"
+    category: "momentum"
+    description: "Measures speed and change of price movements"
+    function: "talib.RSI"
+    parameters:
+      period:
+        type: int
+        default: 14
+        range: [2, 500]
+      matype:
+        type: int
+        default: 0
+        range: [0, 8]
+        description: "MA type: 0=SMA, 1=EMA, 2=WMA, 3=DEMA, 4=TEMA, 5=TRIMA, 6=KAMA, 7=MAMA, 8=T3"
+    outputs:
+      - "rsi"
+    plotting:
+      color: "purple"
+      linewidth: 2
+      overlay: false
+      levels:
+        - value: 70
+          color: "red"
+          style: "--"
+        - value: 30
+          color: "green"
+          style: "--"
+
+  stoch:
+    name: "Stochastic Oscillator"
+    category: "momentum"
+    description: "Momentum indicator comparing closing price to price range"
+    function: "talib.STOCH"
+    parameters:
+      fastk_period:
+        type: int
+        default: 5
+        range: [1, 300]
+      slowk_period:
+        type: int
+        default: 3
+        range: [1, 300]
+      slowk_matype:
+        type: int
+        default: 0
+        range: [0, 8]
+      slowd_period:
+        type: int
+        default: 3
+        range: [1, 300]
+      slowd_matype:
+        type: int
+        default: 0
+        range: [0, 8]
+    outputs:
+      - "slowk"
+      - "slowd"
+    plotting:
+      colors: ["blue", "orange"]
+      linewidth: 2
+      overlay: false
+
+  cci:
+    name: "Commodity Channel Index"
+    category: "momentum"
+    description: "Measures deviation from typical price"
+    function: "talib.CCI"
+    parameters:
+      period:
+        type: int
+        default: 20
+        range: [2, 500]
+    outputs:
+      - "cci"
+    plotting:
+      color: "blue"
+      linewidth: 2
+      overlay: false
+      levels:
+        - value: 100
+          color: "red"
+          style: "--"
+        - value: -100
+          color: "green"
+          style: "--"
+
+  willr:
+    name: "Williams %R"
+    category: "momentum"
+    description: "Momentum indicator measuring overbought/oversold levels"
+    function: "talib.WILLR"
+    parameters:
+      period:
+        type: int
+        default: 14
+        range: [2, 500]
+    outputs:
+      - "willr"
+    plotting:
+      color: "purple"
+      linewidth: 2
+      overlay: false
+      levels:
+        - value: -20
+          color: "red"
+          style: "--"
+        - value: -80
+          color: "green"
+          style: "--"
+
+  momentum:
+    name: "Momentum"
+    category: "momentum"
+    description: "Rate of change indicator"
+    function: "talib.MOM"
+    parameters:
+      period:
+        type: int
+        default: 10
+        range: [1, 500]
+    outputs:
+      - "mom"
+    plotting:
+      color: "blue"
+      linewidth: 2
+      overlay: false
+
+  roc:
+    name: "Rate of Change"
+    category: "momentum"
+    description: "Percentage price change over period"
+    function: "talib.ROC"
+    parameters:
+      period:
+        type: int
+        default: 10
+        range: [1, 500]
+    outputs:
+      - "roc"
+    plotting:
+      color: "green"
+      linewidth: 2
+      overlay: false
+
+# ============================================================================
+# Volatility Indicators
+# ============================================================================
+volatility:
+  atr:
+    name: "Average True Range"
+    category: "volatility"
+    description: "Measures market volatility"
+    function: "talib.ATR"
+    parameters:
+      period:
+        type: int
+        default: 14
+        range: [1, 500]
+    outputs:
+      - "atr"
+    plotting:
+      color: "blue"
+      linewidth: 2
+      overlay: true
+
+  natr:
+    name: "Normalized Average True Range"
+    category: "volatility"
+    description: "ATR normalized by close price"
+    function: "talib.NATR"
+    parameters:
+      period:
+        type: int
+        default: 14
+        range: [1, 500]
+    outputs:
+      - "natr"
+    plotting:
+      color: "purple"
+      linewidth: 2
+      overlay: false
+
+  stddev:
+    name: "Standard Deviation"
+    category: "volatility"
+    description: "Rolling standard deviation"
+    function: "cbsc_strategy.indicators.stddev"
+    parameters:
+      period:
+        type: int
+        default: 20
+        range: [2, 500]
+      nbdev:
+        type: float
+        default: 1.0
+        range: [0.1, 10.0]
+    outputs:
+      - "stddev"
+    plotting:
+      color: "red"
+      linewidth: 2
+      overlay: true
+
+  bollinger:
+    name: "Bollinger Bands"
+    category: "volatility"
+    description: "Volatility bands placed above/below moving average"
+    function: "talib.BBANDS"
+    parameters:
+      period:
+        type: int
+        default: 20
+        range: [2, 500]
+      nbdevup:
+        type: float
+        default: 2.0
+        range: [0.1, 10.0]
+      nbdevdn:
+        type: float
+        default: 2.0
+        range: [0.1, 10.0]
+      matype:
+        type: int
+        default: 0
+        range: [0, 8]
+    outputs:
+      - "upperband"
+      - "middleband"
+      - "lowerband"
+    plotting:
+      colors: ["red", "blue", "green"]
+      linewidth: 2
+      overlay: true
+      fill:
+        enabled: true
+        color: "rgba(0, 0, 255, 0.1)"
+
+# ============================================================================
+# Volume Indicators
+# ============================================================================
+volume:
+  ad:
+    name: "Accumulation/Distribution Line"
+    category: "volume"
+    description: "Measures money flow in/out of security"
+    function: "talib.AD"
+    parameters: {}
+    outputs:
+      - "ad"
+    plotting:
+      color: "blue"
+      linewidth: 2
+      overlay: false
+
+  obv:
+    name: "On-Balance Volume"
+    category: "volume"
+    description: "Cumulative volume indicator"
+    function: "talib.OBV"
+    parameters: {}
+    outputs:
+      - "obv"
+    plotting:
+      color: "purple"
+      linewidth: 2
+      overlay: false
+
+  adosc:
+    name: "Accumulation/Distribution Oscillator"
+    category: "volume"
+    description: "Oscillator version of AD line"
+    function: "talib.ADOSC"
+    parameters:
+      fastperiod:
+        type: int
+        default: 3
+        range: [1, 500]
+      slowperiod:
+        type: int
+        default: 10
+        range: [1, 500]
+    outputs:
+      - "adosc"
+    plotting:
+      color: "orange"
+      linewidth: 2
+      overlay: false
+
+  vwap:
+    name: "Volume Weighted Average Price"
+    category: "volume"
+    description: "Average price weighted by volume"
+    function: "cbsc_strategy.indicators.vwap"
+    parameters:
+      anchor:
+        type: str
+        default: "day"
+        options: ["minute", "hour", "day", "week", "month"]
+    outputs:
+      - "vwap"
+    plotting:
+      color: "green"
+      linewidth: 2
+      overlay: true
+
+# ============================================================================
+# Cycle Indicators
+# ============================================================================
+cycle:
+  dcc:
+    name: "Donchian Channels"
+    category: "cycle"
+    description: "Channels based on high/low over period"
+    function: "cbsc_strategy.indicators.donchian"
+    parameters:
+      period:
+        type: int
+        default: 20
+        range: [2, 500]
+    outputs:
+      - "upper"
+      - "lower"
+      - "middle"
+    plotting:
+      colors: ["red", "green", "blue"]
+      linewidth: 2
+      overlay: true
+
+# ============================================================================
+# Pattern Recognition Indicators
+# ============================================================================
+pattern:
+  cdlhammer:
+    name: "Hammer Candlestick"
+    category: "pattern"
+    description: "Hammer candlestick pattern recognition"
+    function: "talib.CDLHAMMER"
+    parameters: {}
+    outputs:
+      - "pattern"
+    plotting:
+      marker: "^"
+      color: "green"
+      size: 100
+      overlay: true
+
+  cdldoji:
+    name: "Doji Candlestick"
+    category: "pattern"
+    description: "Doji candlestick pattern recognition"
+    function: "talib.CDLDOJI"
+    parameters: {}
+    outputs:
+      - "pattern"
+    plotting:
+      marker: "x"
+      color: "purple"
+      size: 100
+      overlay: true
+
+  cdlengulfing:
+    name: "Engulfing Pattern"
+    category: "pattern"
+    description: "Bullish/bearish engulfing pattern recognition"
+    function: "talib.CDLENGULFING"
+    parameters: {}
+    outputs:
+      - "pattern"
+    plotting:
+      markers: ["^", "v"]
+      colors: ["green", "red"]
+      size: 100
+      overlay: true
+
+# ============================================================================
+# Statistical Indicators
+# ============================================================================
+statistical:
+  beta:
+    name: "Beta"
+    category: "statistical"
+    description: "Beta coefficient relative to benchmark"
+    function: "cbsc_strategy.indicators.beta"
+    parameters:
+      benchmark_period:
+        type: int
+        default: 252
+        range: [10, 1000]
+    outputs:
+      - "beta"
+    plotting:
+      color: "blue"
+      linewidth: 2
+      overlay: false
+
+  correlation:
+    name: "Correlation"
+    category: "statistical"
+    description: "Rolling correlation with benchmark"
+    function: "cbsc_strategy.indicators.rolling_correlation"
+    parameters:
+      period:
+        type: int
+        default: 30
+        range: [2, 500]
+    outputs:
+      - "corr"
+    plotting:
+      color: "purple"
+      linewidth: 2
+      overlay: false
+
+# ============================================================================
+# Custom Indicators (User-defined)
+# ============================================================================
+custom:
+  # Add custom indicators here
+  # Example:
+  # my_indicator:
+  #   name: "My Custom Indicator"
+  #   category: "custom"
+  #   function: "my_module.my_indicator"
+  #   parameters:
+  #     period:
+  #       type: int
+  #       default: 20
+  #   outputs:
+  #     - "value"
