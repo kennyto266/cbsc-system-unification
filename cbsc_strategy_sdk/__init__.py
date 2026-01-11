@@ -42,6 +42,8 @@ __all__ = [
     # Configuration
     "WorkspaceConfig",
     "create_config",
+    # Main Workspace
+    "StrategyWorkspace",
 ]
 
 # Import exceptions for public API
@@ -55,12 +57,11 @@ from .exceptions import (
 # Import configuration classes
 from .config import WorkspaceConfig, create_config
 
-# Note: StrategyWorkspace will be imported in Stream B
-# This avoids circular imports and keeps streams independent
-# from .workspace import StrategyWorkspace  # Added in Stream B
+# Import main workspace class (added in Stream C)
+from .workspace import StrategyWorkspace
 
 __all__.extend([
-    # "StrategyWorkspace",  # Will be added in Stream B
+    "StrategyWorkspace",
 ])
 
 
