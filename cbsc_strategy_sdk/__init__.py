@@ -12,19 +12,27 @@ Main Features:
     - Jupyter notebook integration
 
 Example:
-    >>> from cbsc_strategy_sdk import StrategyWorkspace, WorkspaceConfig
+    >>> from cbsc_strategy_sdk import StrategyWorkspace, BacktestAdapter
+    >>> from datetime import date
     >>>
     >>> # Create workspace with default configuration
     >>> workspace = StrategyWorkspace()
     >>>
-    >>> # Or with custom configuration
-    >>> config = WorkspaceConfig(api_base="https://api.example.com")
-    >>> workspace = StrategyWorkspace(config=config)
-    >>>
-    >>> # Use as context manager for automatic cleanup
-    >>> with StrategyWorkspace() as ws:
-    ...     data = ws.get_historical_data("AAPL", start_date, end_date)
+    >>> # Fetch historical data
+    >>> async with workspace as ws:
+    ...     data = ws.get_historical_data("AAPL", date(2024, 1, 1), date(2024, 12, 31))
     ...     print(data.head())
+    >>>
+    >>> # Run backtest
+    >>> async with BacktestAdapter() as adapter:
+    ...     result = await adapter.run_backtest(
+    ...         strategy_code="my_strategy",
+    ...         symbols=["AAPL"],
+    ...         start_date=date(2024, 1, 1),
+    ...         end_date=date(2024, 12, 31),
+    ...         parameters={"rsi_period": 14}
+    ...     )
+    ...     result.plot_equity_curve()
 
 Version: 0.1.0
 """
@@ -44,6 +52,12 @@ __all__ = [
     "create_config",
     # Main Workspace
     "StrategyWorkspace",
+    # Backtest Module
+    "BacktestAdapter",
+    "BacktestResult",
+    "BacktestProgress",
+    "ParameterOptimizer",
+    "OptimizationResult",
 ]
 
 # Import exceptions for public API
@@ -57,11 +71,25 @@ from .exceptions import (
 # Import configuration classes
 from .config import WorkspaceConfig, create_config
 
-# Import main workspace class (added in Stream C)
+# Import main workspace class
 from .workspace import StrategyWorkspace
+
+# Import backtest module classes
+from .backtest import (
+    BacktestAdapter,
+    BacktestProgress,
+    BacktestResult,
+    OptimizationResult,
+    ParameterOptimizer,
+)
 
 __all__.extend([
     "StrategyWorkspace",
+    "BacktestAdapter",
+    "BacktestResult",
+    "BacktestProgress",
+    "ParameterOptimizer",
+    "OptimizationResult",
 ])
 
 
