@@ -121,7 +121,7 @@ class ChaosInjector:
 
             def cpu_burn():
                 while time.time() < end_time:
-                    _ = i * i * i for i in range(1000)
+                    _ = [i * i * i for i in range(1000)]
 
             # Start multiple CPU burn threads
             for i in range(multiprocessing.cpu_count()):

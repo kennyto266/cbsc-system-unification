@@ -1,108 +1,13 @@
-# CBSC Strategy Management System - Development Dependencies
-# CBSC 策略管理系统 - 开发环境依赖
-# Created: 2025-01-04
-# Version: 1.0.0
-#
-# Development tools for coding, debugging, and testing
-# Install with: pip install -r requirements-dev.txt
-#
-# Note: This file includes requirements.txt as a base
-# Use: pip install -r requirements.txt -r requirements-dev.txt
+# Test dependencies for CBSC Strategy SDK
 
-# ===== Code Quality & Formatting =====
-black==23.12.0
-isort==5.13.2
-flake8==6.1.0
-pylint==3.0.3
-mypy==1.7.1
-autopep8==2.0.4
+# Testing framework
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
 
-# ===== Testing Framework =====
-pytest==7.4.3
-pytest-asyncio==0.21.1
-pytest-cov==4.1.0
-pytest-xdist==3.5.0
-pytest-mock==3.12.0
-pytest-timeout==2.2.0
-pytest-html==3.2.0
-coverage==7.3.2
+# HTTP mocking
+respx>=0.20.0
 
-# ===== Interactive Development =====
-jupyter==1.0.0
-ipython==8.18.1
-ipywidgets==8.1.1
-jupyterlab==4.0.9
-notebook==7.0.6
-
-# ===== Debugging & Profiling =====
-ipdb==0.13.13
-pudb==2023.1
-py-spy==0.3.14
-line-profiler==4.1.1
-memory-profiler==0.61.0
-
-# ===== Documentation =====
-sphinx==7.2.6
-sphinx-rtd-theme==2.0.0
-sphinx-autodoc-typehints==1.25.2
-mkdocs==1.5.3
-mkdocs-material==9.5.3
-
-# ===== Type Stubs =====
-types-requests==2.31.0.10
-types-PyYAML==6.0.12.12
-types-redis==4.6.0.11
-
-# ===== Pre-commit Hooks =====
-pre-commit==3.6.0
-commitizen==3.12.0
-
-# ===== API Development =====
-# For testing FastAPI endpoints
-httpx==0.25.2
-websockets==12.0
-
-# ===== Database Development =====
-# For database migrations and testing
-alembic==1.12.1
-sqlalchemy==2.0.23
-
-# ===== Performance Testing =====
-locust==2.18.3
-pytest-benchmark==4.0.0
-memory-profiler==0.61.0
-
-# ===== Security Scanning =====
-bandit==1.7.5
-safety==2.3.5
-pip-audit==2.6.2
-
-# ===== Dependency Management =====
-pip-tools==7.3.0
-pipdeptree==2.13.0
-pur==7.1.0
-
-# ===== Build Tools =====
-build==1.0.3
-twine==4.0.2
-setuptools==69.0.3
-wheel==0.42.0
-
-# ===== Watchers & Reloaders =====
-watchdog==3.0.0
-hupper==1.10.3
-
-# ===== Git Integration =====
-gitpython==3.1.40
-gitlint==0.19.1
-
-# ===== IDE Integration =====
-python-language-server==0.36.2
-pyls-isort==0.2.2
-pyls-black==0.4.8
-
-# ===== Misc Utilities =====
-rich==13.7.0
-typer==0.9.0
-click==8.1.7
-python-dotenv==1.0.0
+# Code quality
+ruff>=0.1.0
+mypy>=1.7.0

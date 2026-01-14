@@ -1,0 +1,353 @@
+# CBSC Strategy Workflow Configuration Template
+# Copy this file to config/config.yaml and customize for your environment
+
+# ============================================================================
+# Data Source Configuration
+# ============================================================================
+data:
+  # Default data source: yfinance, akshare, polygon, alpha_vantage, custom
+  default_source: "yfinance"
+
+  # Cache configuration
+  cache:
+    enabled: true
+    directory: "./data/cache"
+    max_age_days: 7
+    max_size_mb: 1000
+
+  # Data directories
+  directories:
+    raw: "./data/raw"
+    processed: "./data/processed"
+    exports: "./data/exports"
+
+  # API configurations (use environment variables for API keys)
+  api:
+    yfinance:
+      timeout: 30
+      retry_attempts: 3
+      rate_limit: 100  # requests per minute
+
+    akshare:
+      timeout: 30
+      retry_attempts: 3
+
+    polygon:
+      base_url: "https://api.polygon.io"
+      timeout: 30
+
+    alpha_vantage:
+      base_url: "https://www.alphavantage.co/query"
+      timeout: 30
+
+# ============================================================================
+# Market Configuration
+# ============================================================================
+market:
+  # Default market: HK, US, CN
+  default_market: "HK"
+
+  # Trading calendar
+  calendar:
+    market: "HKEX"  # HKEX, NYSE, NASDAQ, SSE
+    timezone: "Asia/Hong_Kong"
+
+  # Trading hours
+  trading_hours:
+    market_open: "09:30"
+    market_close: "16:00"
+    lunch_break:
+      enabled: true
+      start: "12:00"
+      end: "13:00"
+
+  # Supported markets
+  markets:
+    HK:
+      name: "Hong Kong"
+      currency: "HKD"
+      timezone: "Asia/Hong_Kong"
+      calendar: "HKEX"
+
+    US:
+      name: "United States"
+      currency: "USD"
+      timezone: "America/New_York"
+      calendar: "NYSE"
+
+    CN:
+      name: "China"
+      currency: "CNY"
+      timezone: "Asia/Shanghai"
+      calendar: "SSE"
+
+# ============================================================================
+# Backtest Configuration
+# ============================================================================
+backtest:
+  # Initial capital
+  initial_capital: 100000
+
+  # Commission and slippage
+  commission:
+    type: "percent"  # percent, fixed, tiered
+    value: 0.103  # HK commission rate (~0.103%)
+
+  slippage:
+    enabled: true
+    percent: 0.0001  # 0.01%
+
+  # Position sizing
+  position_sizing:
+    method: "equal_weight"  # equal_weight, fixed_amount, risk_parity, kelly
+    max_position_pct: 0.2  # 20% max per position
+    min_position_pct: 0.01  # 1% min per position
+
+  # Risk management
+  risk:
+    max_drawdown_pct: 0.2  # 20% max drawdown
+    stop_loss_pct: 0.05  # 5% stop loss
+    take_profit_pct: 0.15  # 15% take profit
+    max_positions: 10  # Maximum concurrent positions
+
+  # Execution settings
+  execution:
+    order_type: "market"  # market, limit, stop
+    execute_on_open: false
+    execute_on_close: true
+    delay: 0  # Execution delay in days
+
+# ============================================================================
+# Indicators Configuration
+# ============================================================================
+indicators:
+  # Indicator registry file
+  registry: "./config/indicators.yaml"
+
+  # Default parameters for common indicators
+  defaults:
+    sma:
+      short: 5
+      medium: 20
+      long: 50
+
+    ema:
+      short: 12
+      long: 26
+
+    macd:
+      fast: 12
+      slow: 26
+      signal: 9
+
+    rsi:
+      period: 14
+      overbought: 70
+      oversold: 30
+
+    bollinger:
+      period: 20
+      std_dev: 2
+
+    atr:
+      period: 14
+
+  # Indicator calculation settings
+  calculation:
+    use_cache: true
+    parallel: true
+    max_workers: 4
+
+# ============================================================================
+# Strategy Configuration
+# ============================================================================
+strategy:
+  # Strategy registry directory
+  directory: "./strategies"
+
+  # Default strategy parameters
+  defaults:
+    rebalance_freq: "1D"  # 1D, 1W, 1M
+    lookback_period: 252  # 1 year of trading days
+    warmup_period: 50  # Minimum bars for indicator calculation
+
+  # Validation settings
+  validation:
+    enabled: true
+    strict: false
+    checks:
+      - data_quality
+      - parameter_ranges
+      - performance_benchmark
+
+# ============================================================================
+# Optimization Configuration
+# ============================================================================
+optimization:
+  # Optimization method: grid, random, bayesian, genetic
+  method: "grid"
+
+  # Search space
+  search_space:
+    max_iterations: 100
+    cv_folds: 5
+
+  # Objectives
+  objectives:
+    primary: "sharpe_ratio"  # sharpe_ratio, sortino_ratio, total_return
+    secondary: "max_drawdown"
+    minimize_secondary: true
+
+  # Constraints
+  constraints:
+    min_trades: 10
+    max_trades: 1000
+    min_win_rate: 0.3
+
+  # Parallel execution
+  parallel:
+    enabled: true
+    max_workers: 4
+    backend: "process"  # process, thread
+
+# ============================================================================
+# Logging Configuration
+# ============================================================================
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"
+
+  # Log file settings
+  file:
+    enabled: true
+    path: "./logs/cbsc.log"
+    max_size_mb: 100
+    backup_count: 5
+    rotation: "daily"  # daily, weekly, size
+
+  # Console logging
+  console:
+    enabled: true
+    format: "detailed"  # simple, detailed, json
+
+  # Component-specific log levels
+  components:
+    data: "INFO"
+    backtest: "INFO"
+    indicators: "WARNING"
+    strategy: "INFO"
+    optimization: "INFO"
+
+# ============================================================================
+# Jupyter Configuration
+# ============================================================================
+jupyter:
+  # Notebook directory
+  notebook_dir: "./notebooks"
+
+  # Server settings
+  server:
+    port: 8888
+    ip: "127.0.0.1"
+    open_browser: true
+
+  # Extensions
+  extensions:
+    - "jupyterlab"
+    - "ipywidgets"
+    - "plotly"
+
+# ============================================================================
+# Performance Configuration
+# ============================================================================
+performance:
+  # Memory management
+  memory:
+    chunk_size: 10000  # Rows per chunk
+    max_memory_mb: 4096
+
+  # Parallel processing
+  parallel:
+    enabled: true
+    max_workers: null  # null = auto-detect (CPU count)
+
+  # Data optimization
+  data:
+    use_parquet: true
+    compression: "snappy"  # snappy, gzip, brotli
+    index_types: "datetime"  # Optimize datetime indexing
+
+# ============================================================================
+# Reporting Configuration
+# ============================================================================
+reporting:
+  # Output directory
+  output_dir: "./results"
+
+  # Report formats
+  formats:
+    - html
+    - pdf
+    - json
+    - csv
+
+  # Template directory
+  template_dir: "./templates/reports"
+
+  # Charts
+  charts:
+    format: "png"  # png, svg, pdf
+    dpi: 150
+    style: "plotly_white"  # plotly_white, seaborn, default
+
+  # Email reports (optional)
+  email:
+    enabled: false
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    from_address: "noreply@cbsc.com"
+    # Use environment variables for credentials:
+    # SMTP_USERNAME and SMTP_PASSWORD
+
+# ============================================================================
+# Security Configuration
+# ============================================================================
+security:
+  # API key storage
+  api_keys:
+    storage: "env"  # env, file, keyring
+    key_file: "./config/api_keys.yaml"
+
+  # Data encryption
+  encryption:
+    enabled: false
+    algorithm: "AES256"
+
+  # Access control
+  access:
+    allowed_ips: []  # Empty = all IPs allowed
+    rate_limit:
+      enabled: false
+      requests_per_minute: 60
+
+# ============================================================================
+# Advanced Configuration
+# ============================================================================
+advanced:
+  # Experimental features
+  experimental:
+    gpu_acceleration: false
+    ml_predictions: false
+    real_time_streaming: false
+
+  # Debug mode
+  debug:
+    enabled: false
+    profiling: false
+    verbose_traceback: false
+
+  # Developer mode
+  developer:
+    auto_reload: true
+    test_data: false
+    mock_api: false
