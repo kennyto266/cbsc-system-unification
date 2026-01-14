@@ -81,3 +81,9 @@ node_modules/
 
 # Git worktrees
 .worktrees/
+
+# Large files and binaries
+*.exe
+PROJECT_ARCHITECTURE_ANALYSIS.md
+CBSC_COMPLETE_ARCHITECTURE.md
+*.md.tmp
