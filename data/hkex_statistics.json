@@ -1,0 +1,166 @@
+{
+  "generated_at": "2026-06-19T22:45:05.521261",
+  "source": "data/hkex_may_jun.xlsx",
+  "market_summary": {
+    "period": "2026-05-04 至 2026-06-18",
+    "trading_days": 33,
+    "turnover": {
+      "mean_billion": 301.94,
+      "median_billion": 304.74,
+      "std_billion": 58.01,
+      "min_billion": 122.23,
+      "max_billion": 462.07,
+      "max_date": "2026-05-29",
+      "min_date": "2026-05-05"
+    },
+    "deals": {
+      "mean_million": 4.56,
+      "max_million": 5.57
+    },
+    "breadth": {
+      "bull_days": 9,
+      "bear_days": 24,
+      "avg_ad_ratio": 0.855,
+      "best_breadth_date": "2026-05-07",
+      "best_breadth_ratio": 1.934
+    }
+  },
+  "indices": {
+    "HSI": {
+      "name": "恆生指數",
+      "days": 20,
+      "start": 25898.61,
+      "end": 23924.81,
+      "return_pct": -7.62,
+      "volatility_annual": 18.62,
+      "correlation_with_volume": null
+    },
+    "HSCEI": {
+      "name": "企業指數",
+      "days": 22,
+      "start": 8730.49,
+      "end": 7976.04,
+      "return_pct": -8.64,
+      "volatility_annual": 18.09,
+      "correlation_with_volume": null
+    }
+  },
+  "top_dollars": {
+    "category": "成交金額",
+    "total_records": 330,
+    "unique_stocks": 30,
+    "most_frequent": [
+      {
+        "code": 700,
+        "name_cn": "騰訊控股",
+        "appearances": 33
+      },
+      {
+        "code": 9988,
+        "name_cn": "阿里巴巴－Ｗ",
+        "appearances": 33
+      },
+      {
+        "code": 2828,
+        "name_cn": "ETF        �琤秅什磪禶~",
+        "appearances": 33
+      },
+      {
+        "code": 2800,
+        "name_cn": "FUND     盈富基金",
+        "appearances": 33
+      },
+      {
+        "code": 981,
+        "name_cn": "中芯國際",
+        "appearances": 32
+      }
+    ],
+    "highest_avg_turnover": [
+      {
+        "code": 2800,
+        "name_cn": "FUND     盈富基金",
+        "turnover_hkd": 19.42
+      },
+      {
+        "code": 700,
+        "name_cn": "騰訊控股",
+        "turnover_hkd": 14.99
+      },
+      {
+        "code": 981,
+        "name_cn": "中芯國際",
+        "turnover_hkd": 11.36
+      },
+      {
+        "code": 9988,
+        "name_cn": "阿里巴巴－Ｗ",
+        "turnover_hkd": 11.31
+      },
+      {
+        "code": 3033,
+        "name_cn": "HS TECH     南方�琤肮鴔煄@",
+        "turnover_hkd": 10.95
+      }
+    ]
+  },
+  "top_shares": {
+    "category": "成交股數",
+    "total_records": 330,
+    "unique_stocks": 312,
+    "most_frequent": [
+      {
+        "code": 56001,
+        "name_cn": "RP2903T  �瓻�摩通九三熊Ｔ",
+        "appearances": 2
+      },
+      {
+        "code": 65068,
+        "name_cn": "RC2809I  �瓻�摩通八九牛Ｉ",
+        "appearances": 2
+      },
+      {
+        "code": 60233,
+        "name_cn": "RP29027  �瓻�摩通九二熊７",
+        "appearances": 2
+      },
+      {
+        "code": 62082,
+        "name_cn": "RP28104  �瓻�瑞銀八十熊４",
+        "appearances": 2
+      },
+      {
+        "code": 54520,
+        "name_cn": "RC2810I  �瓻�摩通八十牛Ｉ",
+        "appearances": 2
+      }
+    ],
+    "highest_avg_turnover": [
+      {
+        "code": 54293,
+        "name_cn": "RC2809G  �瓻�法興八九牛Ｇ",
+        "turnover_hkd": 1.06
+      },
+      {
+        "code": 55140,
+        "name_cn": "RC2812Z  �瓻�摩通八乙牛Ｚ",
+        "turnover_hkd": 1.02
+      },
+      {
+        "code": 54558,
+        "name_cn": "RC2809J  �瓻�法興八九牛Ｊ",
+        "turnover_hkd": 0.95
+      },
+      {
+        "code": 69529,
+        "name_cn": "RC2809Q  �瓻�法興八九牛Ｑ",
+        "turnover_hkd": 0.93
+      },
+      {
+        "code": 65920,
+        "name_cn": "RP2810G  �瓻�摩通八十熊Ｇ",
+        "turnover_hkd": 0.87
+      }
+    ]
+  }
+}
