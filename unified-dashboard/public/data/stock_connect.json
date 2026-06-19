@@ -1,5 +1,203 @@
 [
   {
+    "date": "2026-05-19",
+    "southbound_total_mil": 117988.67,
+    "southbound_buy_mil": 59627.15,
+    "southbound_sell_mil": 58361.52,
+    "southbound_net_mil": 1265.630000000001,
+    "sh_southbound_mil": 79564.16,
+    "sz_southbound_mil": 38424.51
+  },
+  {
+    "date": "2026-05-20",
+    "southbound_total_mil": 115608.1,
+    "southbound_buy_mil": 60658.100000000006,
+    "southbound_sell_mil": 54950.0,
+    "southbound_net_mil": 5708.100000000002,
+    "sh_southbound_mil": 76829.36,
+    "sz_southbound_mil": 38778.74
+  },
+  {
+    "date": "2026-05-21",
+    "southbound_total_mil": 135308.81,
+    "southbound_buy_mil": 64601.91,
+    "southbound_sell_mil": 70706.9,
+    "southbound_net_mil": -6104.989999999994,
+    "sh_southbound_mil": 88679.61,
+    "sz_southbound_mil": 46629.2
+  },
+  {
+    "date": "2026-05-22",
+    "southbound_total_mil": 121299.39,
+    "southbound_buy_mil": 57402.87,
+    "southbound_sell_mil": 63896.52,
+    "southbound_net_mil": -6493.649999999994,
+    "sh_southbound_mil": 77348.22,
+    "sz_southbound_mil": 43951.17
+  },
+  {
+    "date": "2026-05-25",
+    "southbound_total_mil": 0.0,
+    "southbound_buy_mil": 0.0,
+    "southbound_sell_mil": 0.0,
+    "southbound_net_mil": 0.0,
+    "sh_southbound_mil": 0.0,
+    "sz_southbound_mil": 0.0
+  },
+  {
+    "date": "2026-05-26",
+    "southbound_total_mil": 157439.41999999998,
+    "southbound_buy_mil": 78235.88,
+    "southbound_sell_mil": 79203.54000000001,
+    "southbound_net_mil": -967.66,
+    "sh_southbound_mil": 99126.12,
+    "sz_southbound_mil": 58313.3
+  },
+  {
+    "date": "2026-05-27",
+    "southbound_total_mil": 135434.88,
+    "southbound_buy_mil": 63858.72,
+    "southbound_sell_mil": 71576.16,
+    "southbound_net_mil": -7717.440000000002,
+    "sh_southbound_mil": 84231.91,
+    "sz_southbound_mil": 51202.97
+  },
+  {
+    "date": "2026-05-28",
+    "southbound_total_mil": 149865.48,
+    "southbound_buy_mil": 78737.12,
+    "southbound_sell_mil": 71128.36,
+    "southbound_net_mil": 7608.760000000006,
+    "sh_southbound_mil": 95131.1,
+    "sz_southbound_mil": 54734.38
+  },
+  {
+    "date": "2026-05-29",
+    "southbound_total_mil": 155994.86,
+    "southbound_buy_mil": 78939.46,
+    "southbound_sell_mil": 77055.4,
+    "southbound_net_mil": 1884.060000000005,
+    "sh_southbound_mil": 97749.18,
+    "sz_southbound_mil": 58245.68
+  },
+  {
+    "date": "2026-06-01",
+    "southbound_total_mil": 132858.89,
+    "southbound_buy_mil": 68758.1,
+    "southbound_sell_mil": 64100.79,
+    "southbound_net_mil": 4657.309999999998,
+    "sh_southbound_mil": 80517.21,
+    "sz_southbound_mil": 52341.68
+  },
+  {
+    "date": "2026-06-02",
+    "southbound_total_mil": 151843.4,
+    "southbound_buy_mil": 77033.3,
+    "southbound_sell_mil": 74810.1,
+    "southbound_net_mil": 2223.2000000000007,
+    "sh_southbound_mil": 96855.06,
+    "sz_southbound_mil": 54988.34
+  },
+  {
+    "date": "2026-06-03",
+    "southbound_total_mil": 145529.47,
+    "southbound_buy_mil": 82105.72,
+    "southbound_sell_mil": 63423.75,
+    "southbound_net_mil": 18681.97,
+    "sh_southbound_mil": 93399.28,
+    "sz_southbound_mil": 52130.19
+  },
+  {
+    "date": "2026-06-04",
+    "southbound_total_mil": 108553.33,
+    "southbound_buy_mil": 54119.2,
+    "southbound_sell_mil": 54434.130000000005,
+    "southbound_net_mil": -314.9300000000003,
+    "sh_southbound_mil": 68752.08,
+    "sz_southbound_mil": 39801.25
+  },
+  {
+    "date": "2026-06-05",
+    "southbound_total_mil": 126143.44999999998,
+    "southbound_buy_mil": 61858.51,
+    "southbound_sell_mil": 64284.94,
+    "southbound_net_mil": -2426.430000000004,
+    "sh_southbound_mil": 76938.43,
+    "sz_southbound_mil": 49205.02
+  },
+  {
+    "date": "2026-06-08",
+    "southbound_total_mil": 123417.62,
+    "southbound_buy_mil": 67367.76,
+    "southbound_sell_mil": 56049.86,
+    "southbound_net_mil": 11317.899999999998,
+    "sh_southbound_mil": 74724.83,
+    "sz_southbound_mil": 48692.79
+  },
+  {
+    "date": "2026-06-09",
+    "southbound_total_mil": 129719.89,
+    "southbound_buy_mil": 60553.04000000001,
+    "southbound_sell_mil": 69166.85,
+    "southbound_net_mil": -8613.809999999998,
+    "sh_southbound_mil": 79209.2,
+    "sz_southbound_mil": 50510.69
+  },
+  {
+    "date": "2026-06-10",
+    "southbound_total_mil": 125074.72,
+    "southbound_buy_mil": 66659.02,
+    "southbound_sell_mil": 58415.7,
+    "southbound_net_mil": 8243.320000000003,
+    "sh_southbound_mil": 78040.91,
+    "sz_southbound_mil": 47033.81
+  },
+  {
+    "date": "2026-06-11",
+    "southbound_total_mil": 105957.97,
+    "southbound_buy_mil": 51601.83,
+    "southbound_sell_mil": 54356.14,
+    "southbound_net_mil": -2754.3099999999977,
+    "sh_southbound_mil": 64760.46,
+    "sz_southbound_mil": 41197.51
+  },
+  {
+    "date": "2026-06-12",
+    "southbound_total_mil": 124424.78,
+    "southbound_buy_mil": 60241.240000000005,
+    "southbound_sell_mil": 64183.54,
+    "southbound_net_mil": -3942.2999999999993,
+    "sh_southbound_mil": 65547.42,
+    "sz_southbound_mil": 58877.36
+  },
+  {
+    "date": "2026-06-15",
+    "southbound_total_mil": 117349.26,
+    "southbound_buy_mil": 59729.61,
+    "southbound_sell_mil": 57619.65,
+    "southbound_net_mil": 2109.959999999999,
+    "sh_southbound_mil": 69536.29,
+    "sz_southbound_mil": 47812.97
+  },
+  {
+    "date": "2026-06-16",
+    "southbound_total_mil": 110736.96,
+    "southbound_buy_mil": 57099.990000000005,
+    "southbound_sell_mil": 53636.97,
+    "southbound_net_mil": 3463.020000000004,
+    "sh_southbound_mil": 68683.57,
+    "sz_southbound_mil": 42053.39
+  },
+  {
+    "date": "2026-06-17",
+    "southbound_total_mil": 117669.88999999998,
+    "southbound_buy_mil": 57224.130000000005,
+    "southbound_sell_mil": 60445.76,
+    "southbound_net_mil": -3221.6299999999937,
+    "sh_southbound_mil": 72070.68,
+    "sz_southbound_mil": 45599.21
+  },
+  {
     "date": "2026-06-18",
     "southbound_total_mil": 144893.0,
     "southbound_buy_mil": 69051.0,

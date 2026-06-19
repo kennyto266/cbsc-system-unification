@@ -19,7 +19,7 @@ import json
 import os
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -209,11 +209,148 @@ def save_to_csv(result: dict, output: str = "data/stock_connect.csv"):
     print(f"✅ 已保存到 {output} ({len(df)} 條記錄)")
 
 
+def fetch_historical_daily(date_str: str) -> dict | None:
+    """
+    抓取歷史日期的南北水數據。
+    URL: https://www.hkex.com.hk/chi/csm/DailyStat/data_tab_daily_{YYYYMMDD}c.js
+
+    只在交易日有數據，週末/假期返回 404。
+    """
+    url = f"https://www.hkex.com.hk/chi/csm/DailyStat/data_tab_daily_{date_str}c.js"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=15)
+        if r.status_code == 404:
+            return None  # 假期/週末
+        r.raise_for_status()
+    except requests.RequestException:
+        return None
+
+    # 解析 JS JSON
+    text = r.text.strip()
+    start = text.find("[")
+    end = text.rfind("]")
+    if start < 0 or end < 0:
+        return None
+    try:
+        data = json.loads(text[start : end + 1])
+    except json.JSONDecodeError:
+        return None
+
+    # 數據有 4 個 market: SSE/SZSE Northbound/Southbound
+    # Southbound 的前 3 行 = [總成交, 買入, 賣出] (HKD Mil)
+    def extract_southbound(market_name):
+        for entry in data:
+            if market_name in entry.get("market", ""):
+                content = entry.get("content", [])
+                if content:
+                    rows = content[0].get("table", {}).get("tr", [])
+                    vals = []
+                    for row in rows[:3]:  # 前3行
+                        cells = row.get("td", [])
+                        if cells:
+                            text_val = cells[0].get("#text", "") if isinstance(cells[0], dict) else str(cells[0])
+                            num = re.search(r"[\d,]+\.?\d*", text_val.replace(",", ""))
+                            vals.append(float(num.group().replace(",", "")) if num else None)
+                    if len(vals) >= 3:
+                        return {"total_mil": vals[0], "buy_mil": vals[1], "sell_mil": vals[2]}
+        return None
+
+    sh = extract_southbound("SSE Southbound")
+    sz = extract_southbound("SZSE Southbound")
+
+    if not sh and not sz:
+        return None
+
+    date_iso = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+    sh = sh or {}
+    sz = sz or {}
+    sh_t = sh.get("total_mil") or 0
+    sh_b = sh.get("buy_mil") or 0
+    sh_s = sh.get("sell_mil") or 0
+    sz_t = sz.get("total_mil") or 0
+    sz_b = sz.get("buy_mil") or 0
+    sz_s = sz.get("sell_mil") or 0
+
+    return {
+        "date": date_iso,
+        "southbound_total_mil": sh_t + sz_t,
+        "southbound_buy_mil": sh_b + sz_b,
+        "southbound_sell_mil": sh_s + sz_s,
+        "southbound_net_mil": sh_b - sh_s + sz_b - sz_s,
+        "sh_southbound_mil": sh_t,
+        "sz_southbound_mil": sz_t,
+    }
+
+
+def crawl_historical(start: str, end: str, output: str = "data/stock_connect.csv", delay: float = 0.3):
+    """歷史回填：逐日抓取，自動跳過假期/週末（404=無數據）"""
+    start_dt = datetime.strptime(start, "%Y%m%d")
+    end_dt = datetime.strptime(end, "%Y%m%d")
+
+    existing_dates = set()
+    if os.path.exists(output):
+        old = pd.read_csv(output)
+        existing_dates = set(old["date"].tolist())
+
+    records = []
+    skipped = 0
+    holidays = 0
+    current = start_dt
+
+    print(f"歷史回填 {start} 至 {end}")
+    while current <= end_dt:
+        date_str = current.strftime("%Y%m%d")
+        date_iso = current.strftime("%Y-%m-%d")
+
+        # 跳過週末
+        if current.weekday() >= 5:
+            current += timedelta(days=1)
+            continue
+
+        # 跳過已有
+        if date_iso in existing_dates:
+            skipped += 1
+            current += timedelta(days=1)
+            continue
+
+        rec = fetch_historical_daily(date_str)
+        if rec:
+            records.append(rec)
+            print(f"  {date_iso} ✓ 淨買入={rec['southbound_net_mil']:+,.0f}M")
+        else:
+            holidays += 1
+
+        current += timedelta(days=1)
+        time.sleep(delay)
+
+    # 合併
+    new_df = pd.DataFrame(records)
+    if os.path.exists(output):
+        old_df = pd.read_csv(output)
+        combined = pd.concat([old_df, new_df], ignore_index=True) if not new_df.empty else old_df
+    else:
+        combined = new_df
+
+    if not combined.empty:
+        combined = combined.sort_values("date").drop_duplicates(subset=["date"])
+        os.makedirs(os.path.dirname(output) or ".", exist_ok=True)
+        combined.to_csv(output, index=False, encoding="utf-8-sig")
+        print(f"\n✅ {len(combined)} 條記錄 (新+{len(records)}, 跳過{skipped}, 假期{holidays})")
+        print(f"   輸出: {output}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="滬港通/深港通 資金流向爬蟲")
     parser.add_argument("--output", type=str, default="data/stock_connect.csv")
     parser.add_argument("--json", action="store_true", help="輸出完整 JSON")
+    parser.add_argument("--start", type=str, help="歷史回填起始日期 yyyymmdd")
+    parser.add_argument("--end", type=str, help="歷史回填結束日期 yyyymmdd")
     args = parser.parse_args()
+
+    # 歷史回填模式
+    if args.start and args.end:
+        crawl_historical(args.start, args.end, args.output)
+        return
 
     print("抓取 HKEX Stock Connect 數據...")
     result = crawl_stock_connect()
