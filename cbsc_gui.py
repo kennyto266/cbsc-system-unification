@@ -133,6 +133,12 @@ class HkexTab(QWidget):
         self.plot_turnover.showGrid(x=True, y=True)
         layout.addWidget(self.plot_turnover)
 
+        # 升跌比走勢圖
+        self.plot_ad = pg.PlotWidget(title="升跌比走勢（>1=升市多, <1=跌市多）")
+        self.plot_ad.setLabel("left", "升/跌比")
+        self.plot_ad.showGrid(x=True, y=True)
+        layout.addWidget(self.plot_ad)
+
         # 數據表格
         self.table = QTableWidget()
         self.table.setColumnCount(6)
@@ -196,6 +202,24 @@ class HkexTab(QWidget):
             self.plot_turnover.clear()
             for xi, yi in zip(x2, y2):
                 self.plot_turnover.addItem(pg.BarGraphItem(x=[xi], height=[yi], width=0.6, brush="#1890ff"))
+
+        # 升跌比走勢圖
+        adv_col = "advanced_stocks" if "advanced_stocks" in df.columns else "advanced"
+        dec_col = "declined_stocks" if "declined_stocks" in df.columns else "declined"
+        if adv_col in df.columns and dec_col in df.columns:
+            adv = pd.to_numeric(df[adv_col], errors="coerce")
+            dec = pd.to_numeric(df[dec_col], errors="coerce")
+            ratio = (adv / dec.replace(0, np.nan)).dropna()
+            if not ratio.empty:
+                self.plot_ad.clear()
+                self.plot_ad.addItem(pg.InfiniteLine(pos=1, angle=0, pen=pg.mkPen(color="#666", width=1, style=Qt.PenStyle.DashLine)))
+                x3 = list(range(len(ratio)))
+                y3 = ratio.values
+                for i in range(1, len(y3)):
+                    c = "#52c41a" if y3[i] >= 1 else "#f5222d"
+                    self.plot_ad.plot([i-1, i], [y3[i-1], y3[i]], pen=pg.mkPen(color=c, width=2))
+                self.plot_ad.plot(x3, list(y3), pen=None, symbol="o", symbolSize=5,
+                                  symbolBrush=["#52c41a" if v >= 1 else "#f5222d" for v in y3])
 
         # 表格（最近 14 天）
         recent = df.tail(14).iloc[::-1]
@@ -275,6 +299,18 @@ class StockConnectTab(QWidget):
         self.plot.showGrid(x=True, y=True)
         layout.addWidget(self.plot)
 
+        # 累計淨流入圖
+        self.plot_cumulative = pg.PlotWidget(title="累計淨流入（正=累計流入, 負=累計流出）")
+        self.plot_cumulative.setLabel("left", "累計 百萬 HKD")
+        self.plot_cumulative.showGrid(x=True, y=True)
+        layout.addWidget(self.plot_cumulative)
+
+        # 滬深對比圖
+        self.plot_sh_sz = pg.PlotWidget(title="滬港通 vs 深港通 成交對比")
+        self.plot_sh_sz.setLabel("left", "百萬 HKD")
+        self.plot_sh_sz.showGrid(x=True, y=True)
+        layout.addWidget(self.plot_sh_sz)
+
         # 表格
         self.table = QTableWidget()
         self.table.setColumnCount(6)
@@ -326,6 +362,26 @@ class StockConnectTab(QWidget):
             ticks = [[(i, d[5:]) for i, d in enumerate(valid["date"].values)]]
             self.plot.getAxis("bottom").setTicks(ticks)
 
+        # 累計淨流入圖
+        if not valid.empty:
+            cumsum = valid["southbound_net_mil"].cumsum().values
+            self.plot_cumulative.clear()
+            self.plot_cumulative.plot(list(range(len(cumsum))), list(cumsum),
+                                      pen=pg.mkPen(color="#1890ff", width=2))
+            self.plot_cumulative.addItem(pg.InfiniteLine(pos=0, angle=0, pen=pg.mkPen(color="#666", width=1, style=Qt.PenStyle.DashLine)))
+            ticks2 = [[(i, d[5:]) for i, d in enumerate(valid["date"].values)]]
+            self.plot_cumulative.getAxis("bottom").setTicks(ticks2)
+
+        # 滬深對比圖
+        sh_vals = pd.to_numeric(valid.get("sh_southbound_mil"), errors="coerce").fillna(0).values
+        sz_vals = pd.to_numeric(valid.get("sz_southbound_mil"), errors="coerce").fillna(0).values
+        if len(sh_vals) > 0:
+            self.plot_sh_sz.clear()
+            self.plot_sh_sz.plot(list(range(len(sh_vals))), list(sh_vals),
+                                 pen=pg.mkPen(color="#1890ff", width=2), name="滬港通")
+            self.plot_sh_sz.plot(list(range(len(sz_vals))), list(sz_vals),
+                                 pen=pg.mkPen(color="#fa8c16", width=2), name="深港通")
+
         # 表格
         recent = df.iloc[::-1]
         self.table.setRowCount(len(recent))
@@ -368,27 +424,30 @@ class BacktestTab(QWidget):
         layout.addWidget(stats)
 
         # Sharpe 對比圖
-        self.plot = pg.PlotWidget(title="各股票 Sharpe Ratio 對比")
+        self.plot = pg.PlotWidget(title="Top 10 策略組合 Sharpe Ratio（扣除交易成本後）")
         self.plot.setLabel("left", "Sharpe")
-        self.plot.setLabel("bottom", "股票")
+        self.plot.setLabel("bottom", "股票+策略")
         self.plot.showGrid(x=True, y=True)
         layout.addWidget(self.plot)
 
-        # 回報率圖
-        self.plot_ret = pg.PlotWidget(title="各股票回報率 (%)")
-        self.plot_ret.setLabel("left", "%")
-        self.plot_ret.showGrid(x=True, y=True)
-        layout.addWidget(self.plot_ret)
+        # 最大回撤對比圖
+        self.plot_dd = pg.PlotWidget(title="Top 10 最大回撤對比（越小越好）")
+        self.plot_dd.setLabel("left", "回撤 %")
+        self.plot_dd.showGrid(x=True, y=True)
+        layout.addWidget(self.plot_dd)
 
-        # 表格
+        # 表格（含策略 + walk-forward 欄位）
         self.table = QTableWidget()
-        self.table.setColumnCount(6)
-        self.table.setHorizontalHeaderLabels(["股票", "Sharpe", "回報率", "最大回撤", "交易數", "勝率"])
+        self.table.setColumnCount(9)
+        self.table.setHorizontalHeaderLabels(["股票", "策略", "Sharpe", "年回報", "回撤", "Calmar", "勝率", "成本", "顯著"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         layout.addWidget(self.table)
 
     def load_data(self):
-        csv_path = DATA_DIR / "backtest_results.csv"
+        # 優先使用 backtest_pro_results.csv（含成本 + walk-forward）
+        pro_path = DATA_DIR / "backtest_pro_results.csv"
+        old_path = DATA_DIR / "backtest_results.csv"
+        csv_path = pro_path if pro_path.exists() else old_path
         if not csv_path.exists():
             return
         df = pd.read_csv(csv_path)
@@ -397,43 +456,60 @@ class BacktestTab(QWidget):
         if df.empty:
             return
 
-        df = df.sort_values("sharpe", ascending=False)
-        self.lbl_count.setText(f"股票數: {len(df)}")
+        # 取每隻股票最佳策略（pro 版有多策略）
+        if "strategy" in df.columns:
+            df = df.sort_values("sharpe", ascending=False).drop_duplicates(subset=["symbol"], keep="first")
+
+        df = df.sort_values("sharpe", ascending=False).head(20)
+        self.lbl_count.setText(f"策略數: {len(df)}")
         self.lbl_best.setText(f"最佳 Sharpe: {df['sharpe'].max():.3f}")
-        self.lbl_avg.setText(f"平均回報: {df['return'].mean()*100:.1f}%")
+        avg_ret = df["return_annual"].mean() if "return_annual" in df.columns else df["return"].mean()
+        self.lbl_avg.setText(f"平均年回報: {avg_ret*100:.1f}%")
+        self.lbl_avg.setText(f"平均年回報: {avg_ret*100:.1f}%")
+
+        # 取 top 10 做圖表
+        top = df.head(10)
+        labels = [f"{r['symbol'][:4]}\n{r.get('strategy','')[:6]}" for _, r in top.iterrows()]
+        x = list(range(len(top)))
 
         # Sharpe 圖
-        x = range(len(df))
-        y = df["sharpe"].values
         self.plot.clear()
-        for xi, yi in zip(x, y):
+        for xi, (_, row) in zip(x, top.iterrows()):
+            yi = row["sharpe"]
             c = "#52c41a" if yi >= 0.5 else "#faad14" if yi >= 0 else "#f5222d"
             self.plot.addItem(pg.BarGraphItem(x=[xi], height=[yi], width=0.6, brush=c))
-        ticks = [[(i, s) for i, s in enumerate(df["symbol"].values)]]
-        self.plot.getAxis("bottom").setTicks(ticks)
+        self.plot.getAxis("bottom").setTicks([[(i, labels[i]) for i in range(len(labels))]])
 
-        # 回報率圖
-        y2 = (df["return"].values * 100)
-        self.plot_ret.clear()
-        for xi, yi in zip(x, y2):
-            c = "#52c41a" if yi >= 0 else "#f5222d"
-            self.plot_ret.addItem(pg.BarGraphItem(x=[xi], height=[yi], width=0.6, brush=c))
-        self.plot_ret.getAxis("bottom").setTicks(ticks)
+        # 最大回撤圖
+        self.plot_dd.clear()
+        for xi, (_, row) in zip(x, top.iterrows()):
+            yi = row.get("max_dd", 0) * 100
+            self.plot_dd.addItem(pg.BarGraphItem(x=[xi], height=[yi], width=0.6, brush="#f5222d"))
+        self.plot_dd.getAxis("bottom").setTicks([[(i, labels[i]) for i in range(len(labels))]])
 
         # 表格
         self.table.setRowCount(len(df))
         for i, (_, row) in enumerate(df.iterrows()):
             self.table.setItem(i, 0, QTableWidgetItem(str(row.get("symbol", ""))))
+            self.table.setItem(i, 1, QTableWidgetItem(str(row.get("strategy", ""))))
             sh = row.get("sharpe", 0)
             item = QTableWidgetItem(f"{sh:.3f}")
             item.setForeground(QColor("#3f8600" if sh >= 0.5 else "#faad14" if sh >= 0 else "#cf1322"))
-            self.table.setItem(i, 1, item)
-            ret = row.get("return", 0)
+            self.table.setItem(i, 2, item)
+            ret = row.get("return_annual", row.get("return", 0))
             item2 = QTableWidgetItem(f"{ret*100:+.1f}%")
             item2.setForeground(QColor("#3f8600" if ret >= 0 else "#cf1322"))
-            self.table.setItem(i, 2, item2)
-            self.table.setItem(i, 3, QTableWidgetItem(f"{row.get('max_dd',0)*100:.1f}%"))
-            self.table.setItem(i, 4, QTableWidgetItem(str(int(row.get("trades", 0)))))
+            self.table.setItem(i, 3, item2)
+            self.table.setItem(i, 4, QTableWidgetItem(f"{row.get('max_dd',0)*100:.1f}%"))
+            calmar = row.get("calmar", 0)
+            self.table.setItem(i, 5, QTableWidgetItem(f"{calmar:.2f}" if calmar else "-"))
+            self.table.setItem(i, 6, QTableWidgetItem(f"{row.get('win_rate',0)*100:.0f}%"))
+            cost = row.get("cost_total", 0)
+            self.table.setItem(i, 7, QTableWidgetItem(f"{cost:.3f}" if cost else "-"))
+            sig = row.get("significant", False)
+            sig_item = QTableWidgetItem("✓" if sig else "—")
+            sig_item.setForeground(QColor("#3f8600" if sig else "#999"))
+            self.table.setItem(i, 8, sig_item)
             self.table.setItem(i, 5, QTableWidgetItem(f"{row.get('win_rate',0)*100:.0f}%"))
 
 
