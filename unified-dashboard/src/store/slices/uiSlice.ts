@@ -185,14 +185,8 @@ const initialState: UIState = {
   sidebarCollapsed: false,
   layoutDensity: 'default',
 
-  // Screen responsiveness
-  screenSize: 'desktop',
-
-  // Loading states
+  // Loading message (extra field beyond the loading object above)
   loadingMessage: undefined,
-
-  // Notifications
-  notifications: [],
 
   // Page meta
   breadcrumbs: [],
@@ -200,9 +194,6 @@ const initialState: UIState = {
   // Quick access
   recentPages: [],
   favoritePages: [],
-
-  // System status
-  systemStatus: 'online',
 
   // Modal states
   activeModals: [],
