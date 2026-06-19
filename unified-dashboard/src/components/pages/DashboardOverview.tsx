@@ -7,7 +7,7 @@ import {
   TrophyOutlined,
   RocketOutlined,
   AlertOutlined,
-  TrendingUpOutlined,
+  RiseOutlined,
   EyeOutlined,
   ReloadOutlined,
   ClockCircleOutlined,
@@ -206,7 +206,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             precision={2}
             suffix="%"
             trend={metrics.todayReturn * 100}
-            icon={<TrendingUpOutlined />}
+            icon={<RiseOutlined />}
             loading={strategiesLoading}
             trendDirection={metrics.todayReturn >= 0 ? 'up' : 'down'}
           />
@@ -308,7 +308,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
         <Col xs={24} lg={12}>
           <Card
-            title={<Space><TrendingUpOutlined />市场概览</Space>}
+            title={<Space><RiseOutlined />市场概览</Space>}
             extra={<Button size="small" type="link">实时行情</Button>}
           >
             <MarketOverviewChart

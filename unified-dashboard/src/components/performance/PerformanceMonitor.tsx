@@ -4,7 +4,7 @@ import {
   DashboardOutlined,
   ThunderboltOutlined,
   ClockCircleOutlined,
-  MemoryStickOutlined,
+  DatabaseOutlined,
   DeleteOutlined,
   SettingOutlined
 } from '@ant-design/icons'
@@ -268,7 +268,7 @@ const PerformanceMonitor = memo<PerformanceMonitorProps>(({
           <Statistic
             title="内存使用"
             value={metrics.memoryUsed}
-            prefix={<MemoryStickOutlined />}
+            prefix={<DatabaseOutlined />}
             suffix="%"
             valueStyle={{
               color: metrics.memoryUsed <= 80 ? '#52c41a' : metrics.memoryUsed <= 90 ? '#faad14' : '#ff4d4f'

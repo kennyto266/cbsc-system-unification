@@ -11,7 +11,7 @@ import {
 } from 'chart.js'
 import { Scatter } from 'react-chartjs-2'
 import { Card, Select, Space, Button, Switch } from 'antd'
-import { DownloadOutlined, ScatterChartOutlined } from '@ant-design/icons'
+import { DownloadOutlined, DotChartOutlined } from '@ant-design/icons'
 import { Strategy, StrategyType, RiskLevel } from '../../types'
 
 // 註冊Chart.js組件

@@ -36,7 +36,7 @@ import {
   BarChartOutlined,
   SettingOutlined,
   HistoryOutlined,
-  CompareOutlined,
+  SwapOutlined,
 } from '@ant-design/icons'
 import { motion } from 'framer-motion'
 import dayjs, { Dayjs } from 'dayjs'
@@ -387,7 +387,7 @@ const BacktestPanel: React.FC<BacktestPanelProps> = ({
                 <Button icon={<HistoryOutlined />}>
                   加載歷史回測
                 </Button>
-                <Button icon={<CompareOutlined />}>
+                <Button icon={<SwapOutlined />}>
                   策略比較
                 </Button>
               </Space>

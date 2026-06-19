@@ -1,8 +1,8 @@
 import React from 'react'
 import { Card, Statistic, Typography, Space } from 'antd'
 import {
-  TrendingUpOutlined,
-  TrendingDownOutlined,
+  RiseOutlined,
+  FallOutlined,
 } from '@ant-design/icons'
 
 const { Text } = Typography
@@ -36,9 +36,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
     if (trend === undefined) return null
 
     if (trendDirection === 'up' || trend > 0) {
-      return <TrendingUpOutlined style={{ color: '#3f8600' }} />
+      return <RiseOutlined style={{ color: '#3f8600' }} />
     }
-    return <TrendingDownOutlined style={{ color: '#cf1322' }} />
+    return <FallOutlined style={{ color: '#cf1322' }} />
   }
 
   const getTrendText = () => {

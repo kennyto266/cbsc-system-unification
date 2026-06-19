@@ -15,8 +15,8 @@ import {
   Badge,
 } from 'antd'
 import {
-  BuyOutlined,
-  SellOutlined,
+  ShoppingCartOutlined,
+  ShoppingOutlined,
   SwapOutlined,
   DollarOutlined,
   PercentageOutlined,
@@ -239,7 +239,7 @@ const TradingPanel: React.FC<TradingPanelProps> = ({
                     backgroundColor: orderSide === 'buy' ? orderSideColor : undefined,
                     borderColor: orderSideColor,
                   }}
-                  icon={<BuyOutlined />}
+                  icon={<ShoppingCartOutlined />}
                   onClick={() => setOrderSide('buy')}
                 >
                   Buy {pair.baseAsset}
@@ -251,7 +251,7 @@ const TradingPanel: React.FC<TradingPanelProps> = ({
                     backgroundColor: orderSide === 'sell' ? orderSideColor : undefined,
                     borderColor: orderSideColor,
                   }}
-                  icon={<SellOutlined />}
+                  icon={<ShoppingOutlined />}
                   onClick={() => setOrderSide('sell')}
                 >
                   Sell {pair.baseAsset}
@@ -402,7 +402,7 @@ const TradingPanel: React.FC<TradingPanelProps> = ({
                 fontSize: '16px',
                 fontWeight: 'bold',
               }}
-              icon={orderSide === 'buy' ? <BuyOutlined /> : <SellOutlined />}
+              icon={orderSide === 'buy' ? <ShoppingCartOutlined /> : <ShoppingOutlined />}
             >
               {orderSide === 'buy' ? 'Buy' : 'Sell'} {pair.baseAsset}
             </Button>

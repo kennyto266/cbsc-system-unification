@@ -9,7 +9,7 @@ import {
   FileTextOutlined,
   SettingOutlined,
   LineChartOutlined,
-  TrendingUpOutlined,
+  RiseOutlined,
   ClockCircleOutlined,
   StarOutlined,
   BookOutlined,
@@ -144,7 +144,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onCollapse }) => {
     },
     {
       key: '/cbsc',
-      icon: <TrendingUpOutlined />,
+      icon: <RiseOutlined />,
       label: 'CBSC牛熊证',
     },
     {

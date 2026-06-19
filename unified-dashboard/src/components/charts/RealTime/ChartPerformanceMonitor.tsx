@@ -4,7 +4,7 @@ import {
   DashboardOutlined,
   ThunderboltOutlined,
   ClockCircleOutlined,
-  MemoryStickOutlined,
+  DatabaseOutlined,
   SettingOutlined,
   ReloadOutlined
 } from '@ant-design/icons'
@@ -199,7 +199,7 @@ const ChartPerformanceMonitor: React.FC<ChartPerformanceMonitorProps> = ({
                 valueStyle={{
                   color: getPerformanceStatus(1000/metrics.memoryUsage, PERFORMANCE_THRESHOLDS.memoryUsage).color
                 }}
-                prefix={<MemoryStickOutlined />}
+                prefix={<DatabaseOutlined />}
               />
             </Col>
 

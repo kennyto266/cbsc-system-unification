@@ -67,7 +67,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     key: 'market-data',
     label: '市場數據',
-    icon: 'TradingViewOutlined',
+    icon: 'StockOutlined',
     path: '/market-data',
     children: [
       {
@@ -192,7 +192,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     key: 'cbsc',
     label: 'CBSC牛熊證',
-    icon: 'TrendingUpOutlined',
+    icon: 'RiseOutlined',
     path: '/cbsc',
     badge: { count: 2, color: 'primary' }
   },

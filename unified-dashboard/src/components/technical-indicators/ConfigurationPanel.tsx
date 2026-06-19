@@ -39,7 +39,7 @@ import {
   MoreOutlined,
   FullscreenOutlined,
   CompressOutlined,
-  ListOutlined,
+  UnorderedListOutlined,
   AppstoreOutlined
 } from '@ant-design/icons'
 import { DndProvider, useDrag, useDrop } from 'react-dnd'
@@ -481,7 +481,7 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 <Button
                   type={layoutMode === 'list' ? 'primary' : 'default'}
                   size="small"
-                  icon={<ListOutlined />}
+                  icon={<UnorderedListOutlined />}
                   onClick={() => setLayoutMode('list')}
                 >
                   列表视图

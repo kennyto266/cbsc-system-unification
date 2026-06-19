@@ -20,7 +20,7 @@ import {
 import {
   InfoCircleOutlined,
   ExclamationCircleOutlined,
-  ShieldOutlined,
+  SafetyCertificateOutlined,
   WarningOutlined,
   QuestionCircleOutlined,
 } from '@ant-design/icons'
@@ -341,7 +341,7 @@ const RiskControls: React.FC<RiskControlsProps> = ({
       <Alert
         message={
           <Space>
-            <ShieldOutlined />
+            <SafetyCertificateOutlined />
             風險級別: <Tag color={currentRiskConfig.color}>{riskLevel}</Tag>
           </Space>
         }

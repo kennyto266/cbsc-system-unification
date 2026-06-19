@@ -1,6 +1,6 @@
 import React from 'react'
 import { Card, Statistic, Typography, Space } from 'antd'
-import { TrendingUpOutlined, TrendingDownOutlined } from '@ant-design/icons'
+import { RiseOutlined, FallOutlined } from '@ant-design/icons'
 
 const { Text } = Typography
 
@@ -62,9 +62,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
         <div className="mt-2">
           <Space>
             {trend > 0 ? (
-              <TrendingUpOutlined style={{ color: '#ff4d4f' }} />
+              <RiseOutlined style={{ color: '#ff4d4f' }} />
             ) : (
-              <TrendingDownOutlined style={{ color: '#52c41a' }} />
+              <FallOutlined style={{ color: '#52c41a' }} />
             )}
             <Text
               type={trend > 0 ? 'danger' : 'success'}

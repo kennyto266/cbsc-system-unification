@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Row, Col, Card, Progress, Statistic, Typography, Space, Tag } from 'antd'
 import {
-  ServerOutlined,
+  CloudServerOutlined,
   DatabaseOutlined,
   CloudOutlined,
   WifiOutlined,
@@ -123,7 +123,7 @@ const SystemMetrics: React.FC<SystemMetricsProps> = ({
   }, [refreshInterval])
 
   const getMetricIcon = (name: string) => {
-    if (name.includes('CPU')) return <ServerOutlined />
+    if (name.includes('CPU')) return <CloudServerOutlined />
     if (name.includes('内存')) return <ThunderboltOutlined />
     if (name.includes('磁盘')) return <DatabaseOutlined />
     if (name.includes('网络')) return <WifiOutlined />

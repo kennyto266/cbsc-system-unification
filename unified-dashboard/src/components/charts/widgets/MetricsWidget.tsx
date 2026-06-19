@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react'
 import { Card, Statistic, Progress, Row, Col, Typography, Space, Tooltip } from 'antd'
 import {
-  TrendingUpOutlined,
-  TrendingDownOutlined,
+  RiseOutlined,
+  FallOutlined,
   InfoCircleOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,

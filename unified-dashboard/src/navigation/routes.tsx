@@ -384,7 +384,7 @@ export const menuConfig = [
   {
     key: '/cbsc',
     title: 'CBSC牛熊证',
-    icon: 'TrendingUpOutlined',
+    icon: 'RiseOutlined',
     permission: ['cbsc:view'],
   },
 ]
@@ -415,7 +415,7 @@ export const quickAccessConfig = [
   {
     key: 'cbsc-market',
     title: 'CBSC行情',
-    icon: 'TrendingUpOutlined',
+    icon: 'RiseOutlined',
     path: '/cbsc',
     permission: ['cbsc:view'],
   },

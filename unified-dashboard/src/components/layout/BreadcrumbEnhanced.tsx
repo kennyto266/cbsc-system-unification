@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { ChevronRightOutlined, HomeOutlined } from '@ant-design/icons'
+import { RightOutlined, HomeOutlined } from '@ant-design/icons'
 import { useAppSelector } from '../../hooks/redux'
 import type { BreadcrumbItem } from '../../types/layout'
 
@@ -13,7 +13,7 @@ interface BreadcrumbProps {
 
 const Breadcrumb: React.FC<BreadcrumbProps> = ({
   items: propItems,
-  separator = <ChevronRightOutlined className="text-gray-400 text-xs" />,
+  separator = <RightOutlined className="text-gray-400 text-xs" />,
   showHome = true,
   maxItems = 5
 }) => {

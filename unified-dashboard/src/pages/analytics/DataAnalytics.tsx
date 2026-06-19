@@ -4,7 +4,7 @@ import {
   BarChartOutlined,
   LineChartOutlined,
   PieChartOutlined,
-  TrendingUpOutlined,
+  RiseOutlined,
   DownloadOutlined,
   FilterOutlined,
   CalendarOutlined,
@@ -183,7 +183,7 @@ const DataAnalytics: React.FC = () => {
               precision={2}
               suffix="%"
               valueStyle={{ color: '#3f8600' }}
-              prefix={<TrendingUpOutlined />}
+              prefix={<RiseOutlined />}
             />
           </Card>
         </Col>

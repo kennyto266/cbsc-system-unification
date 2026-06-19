@@ -1,7 +1,7 @@
 import React from 'react'
 import { Card, Row, Col, Statistic, Progress, Typography, Space, Tooltip } from 'antd'
 import {
-  TrendingUpOutlined,
+  RiseOutlined,
   TrophyOutlined,
   PercentageOutlined,
   LineChartOutlined,
@@ -71,7 +71,7 @@ const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ metrics }) => {
             title="總收益率"
             value={metrics.totalReturn}
             suffix="%"
-            icon={<TrendingUpOutlined />}
+            icon={<RiseOutlined />}
             tooltip="投資期內的總收益率"
           />
         </Col>
@@ -89,7 +89,7 @@ const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ metrics }) => {
             title="最大回撤"
             value={metrics.maxDrawdown}
             suffix="%"
-            icon={<TrendingUpOutlined />}
+            icon={<RiseOutlined />}
             type="drawdown"
             tooltip="歷史上最大的資產價值下跌幅度"
           />

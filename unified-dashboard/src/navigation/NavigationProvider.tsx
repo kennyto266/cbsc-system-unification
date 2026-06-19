@@ -235,7 +235,7 @@ const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       {
         key: 'cbsc-market',
         title: 'CBSC行情',
-        icon: 'TrendingUpOutlined',
+        icon: 'RiseOutlined',
         path: '/cbsc',
         permission: ['cbsc:view'],
       },

@@ -13,7 +13,7 @@ import {
 } from 'antd'
 import {
   InfoCircleOutlined,
-  ShieldOutlined,
+  SafetyCertificateOutlined,
   WarningOutlined,
 } from '@ant-design/icons'
 
@@ -97,7 +97,7 @@ const RiskSettings: React.FC<RiskSettingsProps> = ({
       <Alert
         message={
           <div className="flex items-center space-x-2">
-            <ShieldOutlined />
+            <SafetyCertificateOutlined />
             <span>当前风险等级：</span>
             <span style={{ color: getRiskColor(riskLevel), fontWeight: 'bold' }}>
               {getRiskText(riskLevel)}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { Card, Input, Button, Space, Select, Alert, Spin } from 'antd'
-import { CodeOutlined, PlayOutlined, EditOutlined, SaveOutlined } from '@ant-design/icons'
+import { CodeOutlined, PlayCircleOutlined, EditOutlined, SaveOutlined } from '@ant-design/icons'
 
 const { TextArea } = Input
 const { Option } = Select
