@@ -1,0 +1,51 @@
+﻿sharpe,return_annual,max_dd,calmar,trades,win_rate,total_return,symbol,strategy,status
+0.015,0.003,-0.417,0.007,209.0,0.292,-0.058,9988.HK,volume_surge,ok
+0.0,0.0,0.0,0.0,0.0,0.0,0.0,9988.HK,breadth_trend,ok
+,,,,,,,9988.HK,southbound_follow,error: Invalid comparison between dtype=datetim
+,,,,,,,9988.HK,flow_momentum,error: Invalid comparison between dtype=datetim
+,,,,,,,9988.HK,smart_money,error: Invalid comparison between dtype=datetim
+0.361,0.09,-0.303,0.297,232.0,0.276,0.226,9618.HK,volume_surge,ok
+0.0,0.0,0.0,0.0,0.0,0.0,0.0,9618.HK,breadth_trend,ok
+,,,,,,,9618.HK,southbound_follow,error: Invalid comparison between dtype=datetim
+,,,,,,,9618.HK,flow_momentum,error: Invalid comparison between dtype=datetim
+,,,,,,,9618.HK,smart_money,error: Invalid comparison between dtype=datetim
+-0.483,-0.089,-0.444,-0.2,227.0,0.282,-0.302,2318.HK,volume_surge,ok
+0.0,0.0,0.0,0.0,0.0,0.0,0.0,2318.HK,breadth_trend,ok
+,,,,,,,2318.HK,southbound_follow,error: Invalid comparison between dtype=datetim
+,,,,,,,2318.HK,flow_momentum,error: Invalid comparison between dtype=datetim
+,,,,,,,2318.HK,smart_money,error: Invalid comparison between dtype=datetim
+0.011,0.002,-0.294,0.007,234.0,0.29,-0.056,1177.HK,volume_surge,ok
+0.0,0.0,0.0,0.0,0.0,0.0,0.0,1177.HK,breadth_trend,ok
+,,,,,,,1177.HK,southbound_follow,error: Invalid comparison between dtype=datetim
+,,,,,,,1177.HK,flow_momentum,error: Invalid comparison between dtype=datetim
+,,,,,,,1177.HK,smart_money,error: Invalid comparison between dtype=datetim
+-0.152,-0.023,-0.283,-0.082,182.0,0.312,-0.111,1299.HK,volume_surge,ok
+0.0,0.0,0.0,0.0,0.0,0.0,0.0,1299.HK,breadth_trend,ok
+,,,,,,,1299.HK,southbound_follow,error: Invalid comparison between dtype=datetim
+,,,,,,,1299.HK,flow_momentum,error: Invalid comparison between dtype=datetim
+,,,,,,,1299.HK,smart_money,error: Invalid comparison between dtype=datetim
+-0.397,-0.051,-0.344,-0.15,169.0,0.292,-0.185,0700.HK,volume_surge,ok
+0.0,0.0,0.0,0.0,0.0,0.0,0.0,0700.HK,breadth_trend,ok
+,,,,,,,0700.HK,southbound_follow,error: Invalid comparison between dtype=datetim
+,,,,,,,0700.HK,flow_momentum,error: Invalid comparison between dtype=datetim
+,,,,,,,0700.HK,smart_money,error: Invalid comparison between dtype=datetim
+-0.665,-0.136,-0.451,-0.3,224.0,0.314,-0.414,1810.HK,volume_surge,ok
+0.0,0.0,0.0,0.0,0.0,0.0,0.0,1810.HK,breadth_trend,ok
+,,,,,,,1810.HK,southbound_follow,error: Invalid comparison between dtype=datetim
+,,,,,,,1810.HK,flow_momentum,error: Invalid comparison between dtype=datetim
+,,,,,,,1810.HK,smart_money,error: Invalid comparison between dtype=datetim
+-0.574,-0.104,-0.471,-0.22,230.0,0.314,-0.336,0388.HK,volume_surge,ok
+0.0,0.0,0.0,0.0,0.0,0.0,0.0,0388.HK,breadth_trend,ok
+,,,,,,,0388.HK,southbound_follow,error: Invalid comparison between dtype=datetim
+,,,,,,,0388.HK,flow_momentum,error: Invalid comparison between dtype=datetim
+,,,,,,,0388.HK,smart_money,error: Invalid comparison between dtype=datetim
+0.28,0.087,-0.578,0.15,257.0,0.301,0.142,0992.HK,volume_surge,ok
+0.0,0.0,0.0,0.0,0.0,0.0,0.0,0992.HK,breadth_trend,ok
+,,,,,,,0992.HK,southbound_follow,error: Invalid comparison between dtype=datetim
+,,,,,,,0992.HK,flow_momentum,error: Invalid comparison between dtype=datetim
+,,,,,,,0992.HK,smart_money,error: Invalid comparison between dtype=datetim
+0.11,0.02,-0.356,0.057,209.0,0.286,0.012,9999.HK,volume_surge,ok
+0.0,0.0,0.0,0.0,0.0,0.0,0.0,9999.HK,breadth_trend,ok
+,,,,,,,9999.HK,southbound_follow,error: Invalid comparison between dtype=datetim
+,,,,,,,9999.HK,flow_momentum,error: Invalid comparison between dtype=datetim
+,,,,,,,9999.HK,smart_money,error: Invalid comparison between dtype=datetim
