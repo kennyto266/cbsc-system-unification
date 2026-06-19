@@ -26,6 +26,7 @@ import ReportsPage from './pages/reports/ReportsPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import ProfilePage from './pages/profile/ProfilePage'
 import IndicatorLibraryPage from './pages/technical-indicators/IndicatorLibraryPage'
+import MarketDataPage from './pages/market/MarketDataPage'
 import Showcase from './pages/Showcase'
 import NotFoundPage from './pages/error/NotFoundPage'
 import ResponsiveDashboardPage from './pages/dashboard/ResponsiveDashboardPage'
@@ -231,6 +232,9 @@ const App: React.FC = () => {
 
                     {/* Reports */}
                     <Route path="/reports" element={<ReportsPage />} />
+
+                    {/* Market Data Center (HKEX + Stock Connect + Backtest) */}
+                    <Route path="/market-data" element={<MarketDataPage />} />
                     <Route path="/reports/generate" element={<ReportsPage />} />
                     <Route path="/reports/history" element={<ReportsPage />} />
 
