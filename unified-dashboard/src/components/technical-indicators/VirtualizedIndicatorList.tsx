@@ -1,5 +1,5 @@
 import React, { memo, useMemo, useCallback, useState, useEffect } from 'react'
-import { FixedSizeList as List } from 'react-window'
+import { List } from 'react-window'
 import AutoSizer from 'react-virtualized-auto-sizer'
 import { Row, Col, Spin } from 'antd'
 import OptimizedIndicatorCard from './OptimizedIndicatorCard'

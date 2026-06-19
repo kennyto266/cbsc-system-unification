@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
-import { Layout, Layouts } from 'react-grid-layout'
+import type { Layout, Layouts } from 'react-grid-layout'
 import { toast } from 'react-hot-toast'
 
 // Grid configuration types

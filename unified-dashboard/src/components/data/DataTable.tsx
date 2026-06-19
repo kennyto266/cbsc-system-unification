@@ -20,7 +20,7 @@ import {
   TableInstance,
   ColumnInstance
 } from 'react-table'
-import { FixedSizeList as List } from 'react-window'
+import { List } from 'react-window'
 import { BaseChartProps } from '../components/charts/types/chart.types'
 import { ChevronUp, ChevronDown, ArrowDownUp, Download, Filter } from 'lucide-react'
 

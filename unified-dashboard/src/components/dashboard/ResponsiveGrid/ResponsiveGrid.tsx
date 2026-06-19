@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react'
-import { Responsive, WidthProvider, Layout } from 'react-grid-layout'
+import { Responsive } from 'react-grid-layout'
 import { useResponsiveGrid, GridWidget } from './ResponsiveGridProvider'
 import WidgetRenderer from './WidgetRenderer'
 import GridToolbar from './GridToolbar'
@@ -10,7 +10,8 @@ import { useResizeDetector } from '../../../hooks/useResizeDetector'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
 
-const ResponsiveGridLayout = WidthProvider(Responsive)
+// react-grid-layout v2: Responsive auto-detects width
+const ResponsiveGridLayout = Responsive
 
 interface ResponsiveGridProps {
   className?: string

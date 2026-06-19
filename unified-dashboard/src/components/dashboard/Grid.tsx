@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useEffect } from 'react'
-import { Responsive, WidthProvider, Layout } from 'react-grid-layout'
+import { Responsive } from 'react-grid-layout'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useGridLayout } from '../../hooks/dashboard/useGridLayout'
 import { GridItem } from '../../types/dashboard/grid'
@@ -8,7 +8,8 @@ import GridSettings from './GridSettings'
 import { useResizeObserver } from '../../hooks/useResizeObserver'
 import { getResponsiveGridConfig } from '../../utils/dashboard/responsiveUtils'
 
-const ResponsiveGridLayout = WidthProvider(Responsive)
+// react-grid-layout v2: Responsive auto-detects width, no WidthProvider needed
+const ResponsiveGridLayout = Responsive
 
 interface GridProps {
   widgets?: React.ComponentType<any>[]
