@@ -22,7 +22,7 @@ import {
 } from 'react-table'
 import { FixedSizeList as List } from 'react-window'
 import { BaseChartProps } from '../components/charts/types/chart.types'
-import { ChevronUp, ChevronDown, ArrowsUpDown, Download, Filter } from 'lucide-react'
+import { ChevronUp, ChevronDown, ArrowDownUp, Download, Filter } from 'lucide-react'
 
 // Table types
 export interface TableColumn {
@@ -485,7 +485,7 @@ export const DataTable = forwardRef<DataTableRef, DataTableProps>(({
                         ? column.isSortedDesc
                           ? <ChevronDown size={14} />
                           : <ChevronUp size={14} />
-                        : <ArrowsUpDown size={14} opacity={0.3} />
+                        : <ArrowDownUp size={14} opacity={0.3} />
                       }
                     </span>
                   )}

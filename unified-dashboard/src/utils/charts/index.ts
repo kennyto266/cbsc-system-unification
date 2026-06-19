@@ -74,3 +74,8 @@ export {
 // Types
 export type { ChartAnimationConfig } from './animations'
 export type { ChartColorTheme } from './colors'
+
+// Re-export chartUtils, ChartTheme, ChartExportOptions from components/charts
+// (many components import these from 'utils/charts' by convention)
+export { chartUtils, defaultChartTheme } from '../../components/charts'
+export type { ChartTheme, ChartExportOptions } from '../../components/charts'
