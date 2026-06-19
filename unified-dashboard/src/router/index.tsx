@@ -3,24 +3,28 @@ import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { Spin } from 'antd'
 import DashboardLayout from '../components/layout/DashboardLayout'
+import ComingSoon from '../components/common/ComingSoon'
 
 // Lazy load page components for better performance
 const DashboardPage = lazy(() => import('../pages/dashboard/DashboardPage'))
 const StrategiesPage = lazy(() => import('../pages/strategies/StrategiesPage'))
-const PersonalStrategiesPage = lazy(() => import('../pages/strategies/PersonalStrategiesPage'))
-const CBSCStrategiesPage = lazy(() => import('../pages/strategies/CBSCStrategiesPage'))
-const TechnicalIndicatorsPage = lazy(() => import('../pages/indicators/TechnicalIndicatorsPage'))
-const PortfolioPage = lazy(() => import('../pages/portfolio/PortfolioPage'))
-const MarketDataPage = lazy(() => import('../pages/market/MarketDataPage'))
-const RealTimeDataPage = lazy(() => import('../pages/market/RealTimeDataPage'))
-const MarketAnalysisPage = lazy(() => import('../pages/market/MarketAnalysisPage'))
-const CBSCDataPage = lazy(() => import('../pages/market/CBSCDataPage'))
-const HistoryPage = lazy(() => import('../pages/history/HistoryPage'))
-const ReportsPage = lazy(() => import('../pages/reports/ReportsPage'))
-const AlertsPage = lazy(() => import('../pages/alerts/AlertsPage'))
-const TeamPage = lazy(() => import('../pages/team/TeamPage'))
 const ProfilePage = lazy(() => import('../pages/profile/ProfilePage'))
 const SettingsPage = lazy(() => import('../pages/settings/SettingsPage'))
+
+// Pages that don't exist yet — use ComingSoon placeholder instead of
+// broken lazy imports (which cause "thenable.then is not a function")
+const PersonalStrategiesPage = () => <ComingSoon title="個人策略管理" />
+const CBSCStrategiesPage = () => <ComingSoon title="CBSC 策略" />
+const TechnicalIndicatorsPage = () => <ComingSoon title="技術指標" />
+const PortfolioPage = () => <ComingSoon title="投資組合" />
+const MarketDataPage = () => <ComingSoon title="市場數據" />
+const RealTimeDataPage = () => <ComingSoon title="實時數據" />
+const MarketAnalysisPage = () => <ComingSoon title="市場分析" />
+const CBSCDataPage = () => <ComingSoon title="CBSC 數據" />
+const HistoryPage = () => <ComingSoon title="歷史記錄" />
+const ReportsPage = () => <ComingSoon title="報告" />
+const AlertsPage = () => <ComingSoon title="警報" />
+const TeamPage = () => <ComingSoon title="團隊" />
 
 // Loading component
 const PageLoading: React.FC = () => (
@@ -80,122 +84,31 @@ const router = createBrowserRouter([
               </Suspense>
             ),
           },
-          {
-            path: 'personal',
-            element: (
-              <Suspense fallback={<PageLoading />}>
-                <PersonalStrategiesPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: 'cbsc',
-            element: (
-              <Suspense fallback={<PageLoading />}>
-                <CBSCStrategiesPage />
-              </Suspense>
-            ),
-          },
+          { path: 'personal', element: <PersonalStrategiesPage /> },
+          { path: 'cbsc', element: <CBSCStrategiesPage /> },
         ],
       },
       {
         path: 'indicators',
         children: [
-          {
-            index: true,
-            element: (
-              <Suspense fallback={<PageLoading />}>
-                <TechnicalIndicatorsPage />
-              </Suspense>
-            ),
-          },
+          { index: true, element: <TechnicalIndicatorsPage /> },
         ],
       },
-      {
-        path: 'portfolio',
-        element: (
-          <Suspense fallback={<PageLoading />}>
-            <PortfolioPage />
-          </Suspense>
-        ),
-      },
+      { path: 'portfolio', element: <PortfolioPage /> },
       {
         path: 'market',
         children: [
-          {
-            index: true,
-            element: (
-              <Suspense fallback={<PageLoading />}>
-                <MarketDataPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: 'realtime',
-            element: (
-              <Suspense fallback={<PageLoading />}>
-                <RealTimeDataPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: 'analysis',
-            element: (
-              <Suspense fallback={<PageLoading />}>
-                <MarketAnalysisPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: 'cbsc',
-            element: (
-              <Suspense fallback={<PageLoading />}>
-                <CBSCDataPage />
-              </Suspense>
-            ),
-          },
+          { index: true, element: <MarketDataPage /> },
+          { path: 'realtime', element: <RealTimeDataPage /> },
+          { path: 'analysis', element: <MarketAnalysisPage /> },
+          { path: 'cbsc', element: <CBSCDataPage /> },
         ],
       },
-      {
-        path: 'history',
-        element: (
-          <Suspense fallback={<PageLoading />}>
-            <HistoryPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'reports',
-        element: (
-          <Suspense fallback={<PageLoading />}>
-            <ReportsPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'alerts',
-        element: (
-          <Suspense fallback={<PageLoading />}>
-            <AlertsPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'team',
-        element: (
-          <Suspense fallback={<PageLoading />}>
-            <TeamPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'profile',
-        element: (
-          <Suspense fallback={<PageLoading />}>
-            <ProfilePage />
-          </Suspense>
-        ),
-      },
+      { path: 'history', element: <HistoryPage /> },
+      { path: 'reports', element: <ReportsPage /> },
+      { path: 'alerts', element: <AlertsPage /> },
+      { path: 'team', element: <TeamPage /> },
+      { path: 'profile', element: <ProfilePage /> },
       {
         path: 'settings',
         children: [
