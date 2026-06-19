@@ -9,10 +9,10 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=cbsc_production
 POSTGRES_USER=cbsc_admin
-POSTGRES_PASSWORD=cKelI4TJVKQ5pgCVKHYMY7GUZqqQsHvELoQBTJg-u8IPw!
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env or environment}
 
-# Full connection URL
-DATABASE_URL=postgresql://cbsc_admin:cKelI4TJVKQ5pgCVKHYMY7GUZqqQsHvELoQBTJg-u8IPw!@localhost:5432/cbsc_production
+# Full connection URL (password injected from POSTGRES_PASSWORD env var)
+DATABASE_URL=postgresql://cbsc_admin:${POSTGRES_PASSWORD}@localhost:5432/cbsc_production
 
 # =============================================================================
 # Connection Pool Configuration
