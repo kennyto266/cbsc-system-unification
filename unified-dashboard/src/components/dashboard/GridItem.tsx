@@ -111,25 +111,17 @@ const GridItem: React.FC<GridItemProps> = ({
 
   // Widget content component
   const WidgetComponent = React.lazy(() => {
-    // Dynamic import based on widget type
-    switch (item.type) {
-      case 'market-overview':
-        return import('../../widgets/MarketOverview')
-      case 'strategy-monitor':
-        return import('../../widgets/StrategyMonitor')
-      case 'portfolio-summary':
-        return import('../../widgets/PortfolioSummary')
-      case 'risk-metrics':
-        return import('../../analytics/RiskMetrics')
-      case 'trading-panel':
-        return import('../charts/widgets/TradingPanel')
-      case 'news-feed':
-        return import('../../widgets/StrategyMonitor')
-      case 'system-status':
-        return import('../../widgets/SystemStatus')
-      default:
-        return import('../../widgets/MarketOverview') // Fallback
+    // Dynamic import based on widget type (all routed through widgets/index.ts)
+    const registry: Record<string, () => Promise<any>> = {
+      'market-overview': () => import('../../widgets').then(m => ({ default: m.MarketOverview })),
+      'strategy-monitor': () => import('../../widgets').then(m => ({ default: m.StrategyMonitor })),
+      'portfolio-summary': () => import('../../widgets').then(m => ({ default: m.PortfolioSummary })),
+      'risk-metrics': () => import('../../widgets').then(m => ({ default: m.RiskMetrics })),
+      'trading-panel': () => import('../../widgets').then(m => ({ default: m.TradingPanel })),
+      'news-feed': () => import('../../widgets').then(m => ({ default: m.NewsFeed })),
+      'system-status': () => import('../../widgets').then(m => ({ default: m.SystemStatus })),
     }
+    return registry[item.type] || registry['market-overview']
   })
 
   return (
