@@ -231,7 +231,7 @@ class StockConnectTab(QWidget):
         layout.addWidget(stats)
 
         # 淨買入走勢圖
-        self.plot = pg.PlotWidget(title="南北水淨買入走勢（百萬 HKD）")
+        self.plot = pg.PlotWidget(title="南北水淨買入走勢（綠=流入hk 買入多 / 紅=流出 賣出多）")
         self.plot.setLabel("left", "百萬 HKD")
         self.plot.showGrid(x=True, y=True)
         layout.addWidget(self.plot)
@@ -264,16 +264,28 @@ class StockConnectTab(QWidget):
         self.lbl_sh.setText(f"滬港通: HK${sh:,.0f}M")
         self.lbl_sz.setText(f"深港通: HK${sz:,.0f}M")
 
-        # 圖表
+        # 圖表：淨買入線性走勢圖（正=流入綠色，負=流出紅色）
         valid = df.dropna(subset=["southbound_net_mil"])
         if not valid.empty:
-            x = range(len(valid))
+            x = list(range(len(valid)))
             y = valid["southbound_net_mil"].values
             self.plot.clear()
-            self.plot.clear()
-            for xi, yi in zip(x, y):
-                c = "#52c41a" if yi >= 0 else "#f5222d"
-                self.plot.addItem(pg.BarGraphItem(x=[xi], height=[yi], width=0.6, brush=c))
+            # 畫零軸線
+            self.plot.addItem(pg.InfiniteLine(pos=0, angle=0, pen=pg.mkPen(color="#666", width=1, style=Qt.PenStyle.DashLine)))
+            # 線性圖：正值段用綠色，負值段用紅色
+            for i in range(len(y)):
+                if i == 0:
+                    continue
+                y_prev, y_curr = y[i-1], y[i]
+                # 每段連線根據當前值上色
+                color = "#52c41a" if y_curr >= 0 else "#f5222d"
+                self.plot.plot([i-1, i], [y_prev, y_curr], pen=pg.mkPen(color=color, width=2))
+            # 數據點
+            self.plot.plot(x, list(y), pen=None, symbol="o", symbolSize=6,
+                          symbolBrush=["#52c41a" if v >= 0 else "#f5222d" for v in y])
+            # x 軸日期標籤
+            ticks = [[(i, d[5:]) for i, d in enumerate(valid["date"].values)]]
+            self.plot.getAxis("bottom").setTicks(ticks)
 
         # 表格
         recent = df.iloc[::-1]
