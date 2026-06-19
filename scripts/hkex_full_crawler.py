@@ -193,6 +193,77 @@ def parse_full_daily(html: str, date_str: str) -> dict | None:
             if len(result[f"top_{in_section}"]) >= 10:
                 in_section = None
 
+    # === 5. 十大成交股數 = 牛熊證散戶情緒指標 ===
+    # RC = 牛證(Callable Bull), RP = 熊證(Callable Bear)
+    bull_shares = 0
+    bear_shares = 0
+    bull_value = 0
+    bear_value = 0
+    cbbc_records = []
+
+    # 找十大成交股數區段
+    sc_start = None
+    for i, line in enumerate(lines):
+        if "十大成交股數" in line or "10 MOST ACTIVES (SHARES)" in line:
+            sc_start = i + 1
+            break
+
+    if sc_start:
+        for line in lines[sc_start : sc_start + 15]:
+            if "HKD" not in line:
+                continue
+            m = re.match(
+                r"(\d{5})\s+(\S+)\s+(\S+)\s+(.+?)\s+HKD\s+([\d,]+)\s+([\d,]+)\s+([\d.]+)\s+([\d.]+)",
+                line,
+            )
+            if not m:
+                continue
+
+            rc_code = m.group(3)
+            shares = int(m.group(5).replace(",", ""))
+            turnover = int(m.group(6).replace(",", ""))
+
+            # RC = 牛證, RP = 熊證
+            is_bull = rc_code.startswith("RC")
+            is_bear = rc_code.startswith("RP")
+
+            if is_bull:
+                bull_shares += shares
+                bull_value += turnover
+            elif is_bear:
+                bear_shares += shares
+                bear_value += turnover
+
+            cbbc_records.append({
+                "code": m.group(1),
+                "direction": "bull" if is_bull else "bear" if is_bear else "?",
+                "shares": shares,
+                "turnover": turnover,
+            })
+
+    total_cbbc_shares = bull_shares + bear_shares
+    if total_cbbc_shares > 0:
+        bull_pct = bull_shares / total_cbbc_shares * 100
+        result["retail_sentiment"] = {
+            "date": date_iso,
+            "bull_shares": bull_shares,
+            "bear_shares": bear_shares,
+            "bull_pct": round(bull_pct, 1),
+            "bear_pct": round(100 - bull_pct, 1),
+            "bull_bear_ratio": round(bull_shares / bear_shares, 2) if bear_shares > 0 else 999,
+            "bull_value_hkd": bull_value,
+            "bear_value_hkd": bear_value,
+            "sentiment_score": round(bull_pct, 1),  # 0-100, 50=中性
+            "sentiment_label": (
+                "極度貪婪" if bull_pct > 90
+                else "偏貪婪" if bull_pct > 70
+                else "中性" if bull_pct > 40
+                else "偏恐懼" if bull_pct > 20
+                else "極度恐懼"
+            ),
+            "top_cbbc": cbbc_records[:10],
+        }
+
     # 檢查至少有市場概要數據
     if not ms.get("turnover_hkd") and not ms.get("deals"):
         return None
@@ -267,7 +338,7 @@ def export_excel(records: list[dict], output: str):
         if not td_df.empty:
             td_df.to_excel(writer, sheet_name="十大成交金額", index=False)
 
-        # Sheet 4: 十大成交股數
+        # Sheet 4: 十大成交股數（牛熊證）
         ts_list = []
         for r in records:
             ts_list.extend(r["top_shares"])
@@ -275,8 +346,30 @@ def export_excel(records: list[dict], output: str):
         if not ts_df.empty:
             ts_df.to_excel(writer, sheet_name="十大成交股數", index=False)
 
+        # Sheet 5: 散戶牛熊情緒指標
+        sentiment_list = []
+        for r in records:
+            if "retail_sentiment" in r:
+                rs = r["retail_sentiment"]
+                sentiment_list.append({
+                    "date": rs["date"],
+                    "bull_shares": rs["bull_shares"],
+                    "bear_shares": rs["bear_shares"],
+                    "bull_pct": rs["bull_pct"],
+                    "bear_pct": rs["bear_pct"],
+                    "bull_bear_ratio": rs["bull_bear_ratio"],
+                    "bull_value_hkd": rs["bull_value_hkd"],
+                    "bear_value_hkd": rs["bear_value_hkd"],
+                    "sentiment_score": rs["sentiment_score"],
+                    "sentiment_label": rs["sentiment_label"],
+                })
+        sent_df = pd.DataFrame(sentiment_list)
+        if not sent_df.empty:
+            sent_df.to_excel(writer, sheet_name="散戶牛熊情緒", index=False)
+
+    sent_count = len(sent_df) if 'sent_df' in dir() and not sent_df.empty else 0
     print(f"✅ Excel 已導出: {output}")
-    print(f"   Sheets: 市場概要({len(ms_df)}), 各指數({len(idx_df)}), 十大金額({len(td_df)}), 十大股數({len(ts_df)})")
+    print(f"   Sheets: 市場概要({len(ms_df)}), 各指數({len(idx_df)}), 十大金額({len(td_df)}), 十大股數({len(ts_df)}), 散戶情緒({sent_count})")
 
 
 def main():
