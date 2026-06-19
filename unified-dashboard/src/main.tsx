@@ -14,6 +14,16 @@ import { store } from './store'
 import websocketService from './services/websocket'
 import './styles/globals.css'
 
+// Clear stale Redux Persist data on version mismatch (prevents crash from
+// old localStorage state that doesn't match current store structure)
+const PERSIST_VERSION = 'v2-2026-06-19'
+if (localStorage.getItem('cbsc_persist_version') !== PERSIST_VERSION) {
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('persist:')) localStorage.removeItem(key)
+  })
+  localStorage.setItem('cbsc_persist_version', PERSIST_VERSION)
+}
+
 // Import dayjs locale
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
