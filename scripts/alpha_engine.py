@@ -16,6 +16,9 @@ import sys
 import warnings
 from pathlib import Path
 
+# 清除干擾路徑（CODEX-- 目錄的 telegram 衝突，影響 vectorbt import）
+sys.path = [p for p in sys.path if "CODEX" not in p]
+
 import numpy as np
 import pandas as pd
 
@@ -384,11 +387,11 @@ def backtest_nn(model, test_df: pd.DataFrame, data: dict):
     print("💰 Step 5: NN 信號回測")
     print("=" * 60)
 
-    import torch
+    import vectorbt as vbt
 
     close_all = data["close"]
     symbols = test_df["symbol"].unique()
-    rf = 0.02  # 無風險利率
+    rf_daily = 0.02 / 252  # 無風險利率（日頻）
     fees = 0.0023
 
     results = []
@@ -401,40 +404,49 @@ def backtest_nn(model, test_df: pd.DataFrame, data: dict):
         if len(sym_data) < 20:
             continue
 
-        close = close_all[sym].reindex(sym_data["date"])
+        # 用 sym_data 的 date 作為交易日期（跟 NN 預測日期完全一致）
+        close = close_all[sym].reindex(sym_data["date"]).dropna()
         if len(close) < 20:
             continue
 
-        # NN 信號：pred > 中位數 → 買入
-        median_pred = sym_data["pred"].median()
-        entries = sym_data["pred"] > median_pred
-        exits = sym_data["pred"] < 0
+        # 重新對齊 sym_data 到 close 的有效日期
+        sym_data = sym_data.set_index("date").reindex(close.index)
 
-        # 對齊到 close index
-        entries = entries.reindex(close.index).ffill().fillna(False)
-        exits = exits.reindex(close.index).ffill().fillna(False)
+        # NN 信號：pred > 中位數 → 買入，pred < 0 → 賣出
+        median_pred = sym_data["pred"].median()
+        entries = (sym_data["pred"] > median_pred).values.astype(bool)
+        exits = (sym_data["pred"] < 0).values.astype(bool)
+
+        if entries.sum() == 0:
+            entries[0] = True  # 至少入場一次
 
         try:
-            import vectorbt as vbt
             pf = vbt.Portfolio.from_signals(
                 close, entries, exits,
                 freq="D", fees=fees, sl_stop=0.08, tp_stop=0.25,
+                init_cash=100000,
             )
-            daily_rf = rf / 252
-            sharpe = pf.sharpe_ratio(rf_req=daily_rf) if hasattr(pf, 'sharpe_ratio') else 0
+
+            # Sharpe（手動扣無風險利率，兼容所有 vectorbt 版本）
+            returns = pf.returns()
+            excess = returns - rf_daily
+            if returns.std() > 0:
+                sharpe = float(excess.mean() / returns.std() * np.sqrt(252))
+            else:
+                sharpe = 0.0
             if not np.isfinite(sharpe):
-                sharpe = 0
+                sharpe = 0.0
 
             results.append({
                 "symbol": sym,
-                "sharpe": round(float(sharpe), 3),
+                "sharpe": round(sharpe, 3),
                 "total_return": round(float(pf.total_return()), 3),
                 "max_dd": round(float(pf.max_drawdown()), 3),
                 "win_rate": round(float(pf.trades.win_rate()), 3) if pf.trades.count() > 0 else 0,
                 "num_trades": int(pf.trades.count()),
             })
         except Exception as e:
-            pass
+            print(f"    ⚠ {sym}: {str(e)[:60]}")
 
     if not results:
         print("  ⚠ 無回測結果")
