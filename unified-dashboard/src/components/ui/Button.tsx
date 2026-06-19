@@ -153,4 +153,3 @@ export const ActionButton = {
 }
 
 export { Button, buttonVariants }
-export { TradingButton, ActionButton }

@@ -17,9 +17,9 @@ import {
   useBatchOperationMutation,
 } from '../../store/api/strategiesApi'
 import {
-  setStrategiesFilter,
-  setStrategiesPagination,
-  clearStrategiesData
+  setFilters as setStrategiesFilter,
+  setPagination as setStrategiesPagination,
+  clearFilters as clearStrategiesData
 } from '../../store/slices/strategiesSlice'
 import { Strategy, StrategyStatus, PaginationParams } from '../../types'
 

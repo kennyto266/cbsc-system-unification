@@ -36,7 +36,7 @@ export const createGridItem = (
 /**
  * Validate grid layout
  */
-export const validateGridLayout = (layout: GridLayout): string[] => => {
+export const validateGridLayout = (layout: GridLayout): string[] => {
   const errors: string[] = []
 
   // Check for duplicate IDs

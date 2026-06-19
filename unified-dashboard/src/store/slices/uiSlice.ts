@@ -179,40 +179,39 @@ const initialState: UIState = {
     alerts: [],
   },
 
-  // Legacy properties for backward compatibility
+  // Legacy properties for backward compatibility (values only —
+  // type annotations live in the UIState interface in types/ui.ts)
   themeMode: 'light',
   sidebarCollapsed: false,
-  layoutDensity: 'compact' | 'default' | 'comfortable'
+  layoutDensity: 'default',
 
   // Screen responsiveness
-  screenSize: 'mobile' | 'tablet' | 'desktop'
+  screenSize: 'desktop',
 
   // Loading states
-  loading: boolean
-  loadingMessage?: string
+  loadingMessage: undefined,
 
   // Notifications
-  notifications: Notification[]
+  notifications: [],
 
   // Page meta
-  pageTitle?: string
-  breadcrumbs: BreadcrumbItem[]
+  breadcrumbs: [],
 
   // Quick access
-  recentPages: string[]
-  favoritePages: string[]
+  recentPages: [],
+  favoritePages: [],
 
   // System status
-  systemStatus: 'online' | 'offline' | 'maintenance'
+  systemStatus: 'online',
 
   // Modal states
-  activeModals: string[]
+  activeModals: [],
 
   // WebSocket相關狀態
-  webSocketStatus: WebSocketStatus
-  realtimeStrategies: StrategyUpdate[]
-  realtimeSignals: TradingSignal[]
-  systemHealth: SystemHealth | null
+  webSocketStatus: { connected: false, reconnecting: false, reconnectAttempts: 0 } as WebSocketStatus,
+  realtimeStrategies: [],
+  realtimeSignals: [],
+  systemHealth: null,
 }
 
 interface Notification {
@@ -230,30 +229,6 @@ interface BreadcrumbItem {
   title: string
   path?: string
   icon?: string
-}
-
-const initialState: UIState = {
-  theme: 'light',
-  themeMode: 'light',
-  sidebarCollapsed: false,
-  layoutDensity: 'default',
-  screenSize: 'desktop',
-  loading: false,
-  notifications: [],
-  breadcrumbs: [],
-  recentPages: [],
-  favoritePages: [],
-  systemStatus: 'online',
-  activeModals: [],
-  // WebSocket初始狀態
-  webSocketStatus: {
-    connected: false,
-    reconnecting: false,
-    reconnectAttempts: 0
-  },
-  realtimeStrategies: [],
-  realtimeSignals: [],
-  systemHealth: null
 }
 
 const uiSlice = createSlice({
