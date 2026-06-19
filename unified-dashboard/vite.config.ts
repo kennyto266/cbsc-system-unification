@@ -39,12 +39,16 @@ export default defineConfig({
     }
   },
   define: {
-    // Polyfill process.env for browser (legacy CRA-style code uses process.env)
-    'process.env': JSON.stringify({
-      NODE_ENV: 'development',
-      REACT_APP_API_URL: 'http://localhost:3004',
-      REACT_APP_WS_URL: 'ws://localhost:3004/ws',
-    }),
+    // Replace individual process.env.X references (not process.env as object)
+    'process.env.NODE_ENV': JSON.stringify('development'),
+    'process.env.REACT_APP_API_URL': JSON.stringify('http://localhost:3004'),
+    'process.env.REACT_APP_WS_URL': JSON.stringify('ws://localhost:3004/ws'),
+    'process.env.REACT_APP_API_TIMEOUT': JSON.stringify('30000'),
+    'process.env.REACT_APP_API_VERSION': JSON.stringify('v1'),
+    'process.env.REACT_APP_API_RETRY_ATTEMPTS': JSON.stringify('3'),
+    'process.env.REACT_APP_API_RETRY_DELAY': JSON.stringify('1000'),
+    'process.env.REACT_APP_CACHE_TTL': JSON.stringify('300000'),
+    'process.env.REACT_APP_CACHE_MAX_SIZE': JSON.stringify('100'),
   },
   build: {
     outDir: 'dist',
