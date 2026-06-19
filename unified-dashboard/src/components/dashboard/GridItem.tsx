@@ -13,6 +13,11 @@ import {
 import { GridItem as GridItemType } from '../../types/dashboard/grid'
 import { Button, Dropdown, Space, Tooltip } from 'antd'
 import DragHandle from './DragHandle'
+// Direct widget imports (no lazy loading)
+import MarketOverview from './MarketOverview'
+import RiskMetrics from '../analytics/RiskMetrics'
+import TradingPanel from '../charts/widgets/TradingPanel'
+import SystemStatus from './SystemHealth'
 import ResizeHandle from './ResizeHandle'
 
 interface GridItemProps {
@@ -109,20 +114,17 @@ const GridItem: React.FC<GridItemProps> = ({
     </Tooltip>,
   ] : []
 
-  // Widget content component
-  const WidgetComponent = React.lazy(() => {
-    // Dynamic import based on widget type (all routed through widgets/index.ts)
-    const registry: Record<string, () => Promise<any>> = {
-      'market-overview': () => import('../../widgets').then(m => ({ default: m.MarketOverview })),
-      'strategy-monitor': () => import('../../widgets').then(m => ({ default: m.StrategyMonitor })),
-      'portfolio-summary': () => import('../../widgets').then(m => ({ default: m.PortfolioSummary })),
-      'risk-metrics': () => import('../../widgets').then(m => ({ default: m.RiskMetrics })),
-      'trading-panel': () => import('../../widgets').then(m => ({ default: m.TradingPanel })),
-      'news-feed': () => import('../../widgets').then(m => ({ default: m.NewsFeed })),
-      'system-status': () => import('../../widgets').then(m => ({ default: m.SystemStatus })),
-    }
-    return registry[item.type] || registry['market-overview']
-  })
+  // Widget content — direct import (no lazy loading, personal use)
+  const widgetMap: Record<string, React.ComponentType<any>> = {
+    'market-overview': MarketOverview,
+    'strategy-monitor': MarketOverview,
+    'portfolio-summary': MarketOverview,
+    'risk-metrics': RiskMetrics,
+    'trading-panel': TradingPanel,
+    'news-feed': MarketOverview,
+    'system-status': SystemStatus,
+  }
+  const WidgetComponent = widgetMap[item.type] || MarketOverview
 
   return (
     <motion.div
@@ -172,21 +174,15 @@ const GridItem: React.FC<GridItemProps> = ({
               transition={{ duration: 0.15 }}
               className="h-full"
             >
-              <React.Suspense fallback={
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                </div>
-              }>
-                <WidgetComponent
-                  config={item.config}
-                  isMinimized={item.isMinimized}
-                  isMaximized={item.isMaximized}
-                  onConfigChange={(config: any) => {
-                    // Handle config change
-                    console.log('Config changed for widget', item.id, config)
-                  }}
-                />
-              </React.Suspense>
+              <WidgetComponent
+                config={item.config}
+                isMinimized={item.isMinimized}
+                isMaximized={item.isMaximized}
+                onConfigChange={(config: any) => {
+                  // Handle config change
+                  console.log('Config changed for widget', item.id, config)
+                }}
+              />
             </motion.div>
           )}
         </AnimatePresence>

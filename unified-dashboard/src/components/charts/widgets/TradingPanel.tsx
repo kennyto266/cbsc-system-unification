@@ -24,8 +24,8 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons'
 import { motion, AnimatePresence } from 'framer-motion'
-import { chartUtils } from '../../utils/charts'
-import { useRealTimeData } from '../../hooks'
+import { chartUtils } from '../../../utils/charts'
+import { useRealTimeData } from '../hooks/useRealTimeData'
 
 const { Text, Title } = Typography
 const { Option } = Select
