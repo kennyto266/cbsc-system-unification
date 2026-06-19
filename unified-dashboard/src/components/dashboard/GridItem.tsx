@@ -120,11 +120,11 @@ const GridItem: React.FC<GridItemProps> = ({
       case 'portfolio-summary':
         return import('../../widgets/PortfolioSummary')
       case 'risk-metrics':
-        return import('../../widgets/RiskMetrics')
+        return import('../../analytics/RiskMetrics')
       case 'trading-panel':
-        return import('../../widgets/TradingPanel')
+        return import('../charts/widgets/TradingPanel')
       case 'news-feed':
-        return import('../../widgets/NewsFeed')
+        return import('../../widgets/StrategyMonitor')
       case 'system-status':
         return import('../../widgets/SystemStatus')
       default:

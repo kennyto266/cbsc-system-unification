@@ -90,6 +90,12 @@ const authSlice = createSlice({
       localStorage.removeItem('cbsc_refresh_token')
     },
 
+    // Refresh auth token (called by baseQuery on 401)
+    refreshAuth: (state, action: PayloadAction<string>) => {
+      state.token = action.payload
+      localStorage.setItem('cbsc_token', action.payload)
+    },
+
     // User profile actions
     updateUser: (state, action: PayloadAction<Partial<User>>) => {
       if (state.user) {
@@ -202,6 +208,9 @@ export const {
 
   // Logout action
   logout,
+
+  // Token refresh
+  refreshAuth,
 
   // User profile actions
   updateUser,

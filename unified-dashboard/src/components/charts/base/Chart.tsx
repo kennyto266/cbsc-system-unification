@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { Chart as ChartJS, ChartConfiguration, ChartEvent, ChartTypeRegistry, Plugin } from 'chart.js'
 import { Line, Bar, Pie, Doughnut, Radar, PolarArea, Scatter, Bubble } from 'react-chartjs-2'
-import { ChartTheme, ChartExportOptions, chartUtils } from '../../utils/charts'
+import { ChartTheme, ChartExportOptions, chartUtils } from '../../../utils/charts'
 import { cn } from '@/lib/utils'
 
 // Register Chart.js components
