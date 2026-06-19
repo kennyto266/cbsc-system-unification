@@ -20,7 +20,7 @@ class GLM46Config:
     """Configuration for GLM4.6 API."""
 
     def __init__(self):
-        self.api_key = "***REMOVED***"  # 直接設置
+        self.api_key = os.environ.get("GLM_API_KEY", "")  # 從環境變數讀取
         self.base_url = "https://open.bigmodel.cn / api / paas / v4 / chat / completions"
         self.model = "glm - 4.6"  # 使用 glm - 4.6 模型（按用戶要求）
         self.timeout = 120  # glm - 4.6 需要更長的處理時間

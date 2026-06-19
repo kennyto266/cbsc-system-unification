@@ -30,8 +30,8 @@ def __(mo):
 def __(mo, pd, np, os, Path):
     """GLM-4.6 AI 配置和聊天界面"""
 
-    # 使用您提供的 GLM API Key
-    glm_api_key = "***REMOVED***"
+    # 從環境變數讀取 GLM API Key（切勿硬編碼）
+    glm_api_key = os.environ.get("GLM_API_KEY", "")
 
     try:
         # 配置 GLM-4.6 模型

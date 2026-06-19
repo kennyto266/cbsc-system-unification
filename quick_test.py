@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
+import os
+import sys
+
 import requests
 
-BOT_TOKEN = "***REMOVED***"
+BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+if not BOT_TOKEN:
+    print("❌ 未设置 TELEGRAM_BOT_TOKEN 环境变量")
+    sys.exit(1)
 
 try:
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/getMe"

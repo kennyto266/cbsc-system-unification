@@ -4,12 +4,17 @@
 """
 
 import os
+import sys
 import requests
 import json
 
-# 设置Bot Token
-BOT_TOKEN = "***REMOVED***"
-BOT_USERNAME = "penguinai_bot"
+# 从环境变量读取 Bot Token（切勿硬编码）
+BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "penguinai_bot")
+
+if not BOT_TOKEN:
+    print("❌ 未设置 TELEGRAM_BOT_TOKEN 环境变量")
+    sys.exit(1)
 
 def test_bot_connection():
     """测试Bot连接"""
