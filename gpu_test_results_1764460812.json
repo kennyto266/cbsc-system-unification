@@ -1,7 +1,0 @@
-{
-  "cupy_available": true,
-  "cupy_version": "13.6.0",
-  "cuda_available": true,
-  "gpu_count": 1,
-  "gpu_memory_gb": 15,
-  "gpu_name": 

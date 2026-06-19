@@ -1,4 +1,0 @@
-uid=32_0 RootWebArea url="http://localhost:3004/web_dashboard.html"
-  uid=32_1 StaticText "{"detail":"Not Found"}"
-  uid=32_2 StaticText "美化排版"
-  uid=32_3 checkbox "美化排版"

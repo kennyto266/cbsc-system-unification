@@ -1,9 +1,0 @@
-id,name,category,sharpe,mdd,return
-ML_Prediction,ML Prediction Model,Machine Learning,1.67,-0.25,0.28
-HIBOR_Monetary,HIBOR Monetary Signal,Non-Price Signals,1.45,-0.12,0.22
-RSI_Mean_Reversion,RSI Mean Reversion,Technical Analysis,1.23,-0.15,0.18
-Economic_Combo,Economic Indicator Combo,Non-Price Signals,1.08,-0.16,0.15
-MACD_Momentum,MACD Momentum,Momentum,0.89,-0.22,0.12
-Bollinger_Breakout,Bollinger Breakout,Technical Analysis,0.67,-0.18,0.09
-Dual_MA,Dual Moving Average,Technical Analysis,0.34,-0.14,0.05
-Volatility_Breakout,Volatility Breakout,Momentum,-0.12,-0.31,-0.08

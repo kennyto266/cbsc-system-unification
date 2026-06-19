@@ -1,4 +1,0 @@
-uid=4_0 RootWebArea url="http://localhost:8888/health"
-  uid=4_1 StaticText "{"status":"healthy","timestamp":"2025-12-10T20:22:05.927775","uptime_seconds":25068,"service":"CBSC Dashboard","version":"2.0.0"}"
-  uid=4_2 StaticText "美化排版"
-  uid=4_3 checkbox "美化排版"

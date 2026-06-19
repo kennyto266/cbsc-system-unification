@@ -1,7 +1,0 @@
-test_name,metric_type,value,unit,passed,target_value,percentile_95,sample_count
-computation_cache_lookup,response_time,1.5421602725982666,ms,True,100.0,1.6387104988098145,1000
-computation_cache_storage,response_time,5.3911638259887695,ms,True,100.0,5.635631084442139,100
-indicator_calculation_rsi,response_time,10.366225242614746,ms,True,100.0,10.51933765411377,10
-indicator_calculation_macd,response_time,15.335559844970703,ms,True,100.0,15.520048141479492,10
-memory_usage_indicator,memory_usage,98.91030606220963,MB,True,2048.0,113.33740944707095,30
-throughput_calculations,throughput,96.36666666666666,req/sec,False,1000.0,96.36666666666666,1
