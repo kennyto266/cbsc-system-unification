@@ -140,6 +140,18 @@ class HkexTab(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         layout.addWidget(self.table)
 
+        # 十大成交金額最多股票表格
+        top_group = QGroupBox("🏆 最新十大成交金額最多股票")
+        top_layout = QVBoxLayout()
+        self.top_table = QTableWidget()
+        self.top_table.setColumnCount(5)
+        self.top_table.setHorizontalHeaderLabels(["排名", "代號", "股票", "成交額", "成交股數"])
+        self.top_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.top_table.setMaximumHeight(250)
+        top_layout.addWidget(self.top_table)
+        top_group.setLayout(top_layout)
+        layout.addWidget(top_group)
+
     def load_data(self):
         csv_path = DATA_DIR / "hkex_daily.csv"
         if not csv_path.exists():
@@ -200,6 +212,33 @@ class HkexTab(QWidget):
             self.table.setItem(i, 3, QTableWidgetItem(f"${tov/1e9:.1f}B"))
             self.table.setItem(i, 4, QTableWidgetItem(f"{row.get('advanced_stocks',0) or 0:,}"))
             self.table.setItem(i, 5, QTableWidgetItem(f"{row.get('declined_stocks',0) or 0:,}"))
+
+        # 十大成交金額最多股票（從 Excel JSON 讀取）
+        self.load_top_dollars()
+
+    def load_top_dollars(self):
+        """從 hkex_top_dollars.json 讀取最新一天的十大活躍股"""
+        json_path = Path(__file__).parent / "unified-dashboard" / "public" / "data" / "hkex_top_dollars.json"
+        if not json_path.exists():
+            return
+        import json
+        data = json.loads(json_path.read_text(encoding="utf-8"))
+        if not data:
+            return
+        # 取最新日期
+        latest_date = max(d["date"] for d in data)
+        today_top = [d for d in data if d["date"] == latest_date]
+        today_top.sort(key=lambda x: x.get("rank", 0))
+
+        self.top_table.setRowCount(len(today_top))
+        for i, stock in enumerate(today_top):
+            self.top_table.setItem(i, 0, QTableWidgetItem(str(stock.get("rank", i+1))))
+            self.top_table.setItem(i, 1, QTableWidgetItem(str(stock.get("code", ""))))
+            self.top_table.setItem(i, 2, QTableWidgetItem(str(stock.get("name_cn", ""))))
+            tov = stock.get("turnover_hkd", 0)
+            self.top_table.setItem(i, 3, QTableWidgetItem(f"${tov/1e8:.1f}億" if tov else "-"))
+            vol = stock.get("volume_shares", 0)
+            self.top_table.setItem(i, 4, QTableWidgetItem(f"{vol/1e6:.1f}M" if vol else "-"))
 
 
 # ==============================================================================
