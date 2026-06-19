@@ -1,10 +1,9 @@
-import React, { useMemo, useCallback, useState } from 'react'
-import dynamic from 'next/dynamic'
+import React, { useMemo, useCallback, useState, lazy, Suspense } from 'react'
 import { chartUtils } from '../../utils/charts'
 import { forwardRef, useImperativeHandle } from 'react'
 
-// Dynamically import Plotly for TreeMap
-const Plot = dynamic(() => import('react-plotly.js'), { ssr: false })
+// Vite-compatible lazy import of Plotly (no next/dynamic needed)
+const Plot = lazy(() => import('react-plotly.js'))
 
 export interface TreeMapNode {
   id: string
@@ -413,15 +412,17 @@ const TreeMap = forwardRef<TreeMapRef, TreeMapProps>(({
         </div>
       )}
 
-      <Plot
-        ref={plotRef}
-        data={plotlyData}
-        layout={layout}
-        config={config}
-        style={{ width: '100%', height: '100%' }}
-        onClick={handleClick}
-        onHover={handleHover}
-      />
+      <Suspense fallback={<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>}>
+        <Plot
+          ref={plotRef}
+          data={plotlyData}
+          layout={layout}
+          config={config}
+          style={{ width: '100%', height: '100%' }}
+          onClick={handleClick}
+          onHover={handleHover}
+        />
+      </Suspense>
     </div>
   )
 })

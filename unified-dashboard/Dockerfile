@@ -1,64 +1,39 @@
-# CBSC Unified Dashboard Dockerfile
-# Multi-stage build for production optimization
+# CBSC Unified Dashboard Dockerfile (Vite + React SPA)
+# Multi-stage build: build static assets with Vite, serve with nginx
 
-# Build stage
+# ---- Build stage ----
 FROM node:18-alpine AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package files and install deps (npm — matches package-lock.json)
 COPY package*.json ./
-COPY pnpm-lock.yaml* ./
+RUN npm ci
 
-# Install pnpm
-RUN npm install -g pnpm
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Copy source code
+# Copy source and build
 COPY . .
+RUN npm run build
 
-# Build application
-RUN pnpm build
+# ---- Production stage ----
+FROM nginx:alpine AS runner
 
-# Production stage
-FROM node:18-alpine AS runner
+# Copy built static assets to nginx html dir
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
+# Custom nginx config for SPA routing (fallback to index.html)
+RUN printf 'server {\n\
+    listen 3000;\n\
+    server_name _;\n\
+    root /usr/share/nginx/html;\n\
+    index index.html;\n\
+    location / {\n\
+        try_files $uri $uri/ /index.html;\n\
+    }\n\
+}\n' > /etc/nginx/conf.d/default.conf
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Set working directory
-WORKDIR /app
-
-# Copy build artifacts
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-
-# Copy next-i18next configuration
-COPY --from=builder /app/next-i18next.config.js ./
-
-# Set correct permissions
-RUN mkdir -p /app/.next/cache
-RUN chown -R nextjs:nodejs /app
-
-# Switch to non-root user
-USER nextjs
-
-# Expose port
 EXPOSE 3000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
+  CMD wget -q --spider http://localhost:3000/ || exit 1
 
-# Start application
-CMD ["node", "server.js"]
+CMD ["nginx", "-g", "daemon off;"]

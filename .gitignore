@@ -151,3 +151,6 @@ final_dashboard_screenshot.png
 
 # Backups of the source tree (pre-formatting snapshots etc.)
 backup_before_formatting/
+
+# graphify analysis output
+graphify-out/

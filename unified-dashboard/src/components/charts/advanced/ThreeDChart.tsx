@@ -1,10 +1,9 @@
-import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react'
-import dynamic from 'next/dynamic'
+import React, { useMemo, useRef, useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { chartUtils } from '../../utils/charts'
 import { forwardRef, useImperativeHandle } from 'react'
 
-// Dynamically import Plotly to avoid SSR issues
-const Plot = dynamic(() => import('react-plotly.js'), { ssr: false })
+// Vite-compatible lazy import of Plotly (no next/dynamic needed)
+const Plot = lazy(() => import('react-plotly.js'))
 
 export interface Point3D {
   x: number
@@ -381,14 +380,16 @@ const ThreeDChart = forwardRef<ThreeDChartRef, ThreeDChartProps>(({
         </div>
       )}
 
-      <Plot
-        ref={plotRef}
-        data={plotlyData}
-        layout={layout}
-        config={config}
-        style={{ width: '100%', height: '100%' }}
-        onClick={handleClick}
-      />
+      <Suspense fallback={<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>}>
+        <Plot
+          ref={plotRef}
+          data={plotlyData}
+          layout={layout}
+          config={config}
+          style={{ width: '100%', height: '100%' }}
+          onClick={handleClick}
+        />
+      </Suspense>
     </div>
   )
 })
