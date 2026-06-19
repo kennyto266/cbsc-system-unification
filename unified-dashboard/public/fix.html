@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head><title>Fixing Cache...</title></head>
+<body>
+<h2>清除旧缓存中...</h2>
+<p id="status">正在清除 service worker、cache、localStorage...</p>
+<script>
+async function fixAll() {
+  var s = document.getElementById('status');
+  try {
+    // 1. Unregister all service workers
+    if ('serviceWorker' in navigator) {
+      var regs = await navigator.serviceWorker.getRegistrations();
+      for (var r of regs) { await r.unregister(); s.innerHTML += '<br>✓ Service worker unregistered'; }
+    }
+    // 2. Clear all caches
+    if (window.caches) {
+      var keys = await caches.keys();
+      for (var k of keys) { await caches.delete(k); s.innerHTML += '<br>✓ Cache cleared: ' + k; }
+    }
+    // 3. Clear localStorage
+    localStorage.clear();
+    s.innerHTML += '<br>✓ localStorage cleared';
+    // 4. Clear sessionStorage
+    sessionStorage.clear();
+    s.innerHTML += '<br>✓ sessionStorage cleared';
+    // 5. Clear cookies
+    document.cookie.split(';').forEach(function(c) {
+      document.cookie = c.trim().split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
+    });
+    s.innerHTML += '<br>✓ Cookies cleared';
+    // 6. Wait and redirect
+    s.innerHTML += '<br><br><b>全部清除完成！2 秒后跳转 dashboard...</b>';
+    setTimeout(function() { window.location.href = '/dashboard'; }, 2000);
+  } catch(e) {
+    s.innerHTML += '<br>❌ Error: ' + e.message;
+    s.innerHTML += '<br><br><a href="/dashboard">手动跳转 dashboard</a>';
+  }
+}
+fixAll();
+</script>
+</body>
+</html>
