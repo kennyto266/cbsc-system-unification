@@ -3,19 +3,22 @@
  * Centralized configuration for API endpoints and settings
  */
 
+// Vite env access (replaces CRA's process.env.REACT_APP_*)
+const env = import.meta.env;
+
 // API Base Configuration
 export const API_CONFIG = {
   // Base URL for the API
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3004',
+  baseURL: env.VITE_API_URL || env.REACT_APP_API_URL || 'http://localhost:3004',
 
   // Request timeout in milliseconds
-  timeout: parseInt(process.env.REACT_APP_API_TIMEOUT || '30000'),
+  timeout: parseInt(env.VITE_API_TIMEOUT || env.REACT_APP_API_TIMEOUT || '30000'),
 
   // API version
-  version: process.env.REACT_APP_API_VERSION || 'v1',
+  version: env.VITE_API_VERSION || env.REACT_APP_API_VERSION || 'v1',
 
   // WebSocket URL
-  wsURL: process.env.REACT_APP_WS_URL || 'ws://localhost:3004/ws',
+  wsURL: env.VITE_WS_URL || env.REACT_APP_WS_URL || 'ws://localhost:3004/ws',
 
   // Retry configuration
   retry: {

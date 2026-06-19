@@ -413,3 +413,23 @@ export class ChartUtils {
 }
 
 export default ChartUtils
+
+// Re-export named utility functions from chartUtils.tsx for compatibility
+// (many files import { transformTimeSeriesData, formatNumber, ... } from this module)
+// Explicit .tsx extension to avoid self-reference circular import
+export {
+  transformTimeSeriesData,
+  aggregateTimeSeries,
+  resampleData,
+  calculateMovingAverage,
+  calculateStandardDeviation,
+  calculatePercentiles,
+  detectOutliers,
+  generateColorPalette,
+  formatNumber,
+  formatPercentage,
+  formatDate,
+  debounce,
+  throttle,
+  memoize,
+} from './chartUtils.tsx'

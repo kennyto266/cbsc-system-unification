@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useMemo, useCallback, useState } from 'react'
-import { Chart as ChartJS } from 'chart.js'
+import { Chart as ChartJS, registerables } from 'chart.js'
 import { Chart } from '../base'
 import ChartContainer from '../base/ChartContainer'
 import { chartUtils } from '../../utils/charts'
 
 // Register Chart.js components
-Chart.register(...registerables)
+ChartJS.register(...registerables)
 
 export interface HeatmapDataPoint {
   x: number | string

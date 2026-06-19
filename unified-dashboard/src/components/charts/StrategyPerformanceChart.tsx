@@ -1,6 +1,17 @@
 import React, { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip as ChartJSTooltip,
+  Legend as ChartJSLegend,
+  TimeScale,
+} from 'chart.js'
+import {
   LineChart,
   Line,
   AreaChart,
@@ -50,8 +61,8 @@ ChartJS.register(
   PointElement,
   LineElement,
   Title,
-  Tooltip,
-  Legend,
+  ChartJSTooltip,
+  ChartJSLegend,
   TimeScale
 )
 

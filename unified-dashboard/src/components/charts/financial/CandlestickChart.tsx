@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useMemo, useState, useCallback, forwardRef, useImperativeHandle } from 'react'
-import { Chart as ChartJS, ChartConfiguration, Plugin } from 'chart.js'
+import { Chart as ChartJS, ChartConfiguration, Plugin, registerables } from 'chart.js'
 import { Chart } from '../base'
 import ChartContainer from '../base/ChartContainer'
 import { chartUtils } from '../../utils/charts'
 import 'chartjs-chart-financial'
 
 // Register Chart.js components
-Chart.register(...registerables)
+ChartJS.register(...registerables)
 
 export interface OHLCData {
   timestamp: number | string | Date

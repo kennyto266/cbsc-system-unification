@@ -42,14 +42,11 @@ const { Content } = Layout
 
 const App: React.FC = () => {
   const dispatch = useDispatch()
-  const { isAuthenticated, isLoading, user } = useSelector((state: RootState) => state.auth)
-  const { initializeAuth } = useAuth()
+  // Personal use: skip authentication entirely
+  const isAuthenticated = true
+  const isLoading = false
+  const user = { username: 'admin', name: 'Admin' }
   const { isConnected } = useWebSocket()
-
-  // Initialize authentication on app start
-  useEffect(() => {
-    initializeAuth()
-  }, [])
 
   // Show loading screen while checking authentication
   if (isLoading) {

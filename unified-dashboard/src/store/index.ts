@@ -34,7 +34,8 @@ import {
   activityMiddleware,
 } from './middleware'
 
-// Combine reducers
+// Combine reducers — flat structure (state.auth, state.ui, etc.)
+// RTK Query reducers are included directly so selectors use state.auth etc.
 const rootReducer = combineReducers({
   // Persisted reducers
   auth: persistReducer(authPersistConfig, authReducer),
@@ -47,6 +48,13 @@ const rootReducer = combineReducers({
   analytics: analyticsReducer,
   dashboard: dashboardReducer,
   technicalIndicators: technicalIndicatorsReducer,
+
+  // RTK Query APIs (reducers at root level)
+  [authApi.reducerPath]: authApi.reducer,
+  [marketApi.reducerPath]: marketApi.reducer,
+  [strategiesApi.reducerPath]: strategiesApi.reducer,
+  [monitoringApi.reducerPath]: monitoringApi.reducer,
+  [analyticsApi.reducerPath]: analyticsApi.reducer,
 })
 
 // Create persisted root reducer
@@ -54,15 +62,7 @@ const persistedReducer = persistReducer(persistConfig, rootReducer)
 
 // Configure store with persistence and optimization
 export const store = configureStore({
-  reducer: {
-    persisted: persistedReducer,
-    // RTK Query APIs
-    [authApi.reducerPath]: authApi.reducer,
-    [marketApi.reducerPath]: marketApi.reducer,
-    [strategiesApi.reducerPath]: strategiesApi.reducer,
-    [monitoringApi.reducerPath]: monitoringApi.reducer,
-    [analyticsApi.reducerPath]: analyticsApi.reducer,
-  },
+  reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
@@ -140,14 +140,7 @@ export const store = configureStore({
 export const persistor = persistStore(store)
 
 // Enable refetchOnFocus/refetchOnReconnect behaviors
-setupListeners(store.dispatch, {
-  dispatch: store.dispatch,
-  // Custom effect for background refetch
-  effect: (action, listenerApi) => {
-    // Add custom logic for refetch on focus/reconnect
-    console.log('Refetching on focus/reconnect:', action.type)
-  },
-})
+setupListeners(store.dispatch)
 
 // Export types
 export type RootState = ReturnType<typeof store.getState>

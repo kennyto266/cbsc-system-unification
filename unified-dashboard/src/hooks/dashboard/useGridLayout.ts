@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react'
 import { GridLayout, GridItem, GridConfig, WidgetEvent } from '../../types/dashboard/grid'
 import {
   createGridItem,
+  createWidgetEvent,
   moveWidget,
   resizeWidget,
   addWidget,

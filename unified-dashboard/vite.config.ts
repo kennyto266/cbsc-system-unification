@@ -62,6 +62,14 @@ export default defineConfig({
       }
     }
   },
+  define: {
+    // Polyfill process.env for browser (legacy CRA-style code uses process.env)
+    'process.env': JSON.stringify({
+      NODE_ENV: 'development',
+      REACT_APP_API_URL: 'http://localhost:3004',
+      REACT_APP_WS_URL: 'ws://localhost:3004/ws',
+    }),
+  },
   build: {
     outDir: 'dist',
     sourcemap: true,

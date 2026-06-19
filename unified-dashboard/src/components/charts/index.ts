@@ -34,13 +34,13 @@ export { default as ChartLegend } from './components/shared/ChartLegend'
 export { default as ChartControls } from './components/shared/ChartControls'
 
 // Export hooks
-export { default as useRealTimeData } from './hooks/useRealTimeData'
-export { default as useChartInteraction } from './hooks/useChartInteraction'
-export { default as useChartPerformance } from './hooks/useChartPerformance'
+export { useRealTimeData } from './hooks/useRealTimeData'
+export { useChartInteraction } from './hooks/useChartInteraction'
+export { useChartPerformance } from './hooks/useChartPerformance'
 export { useChartData, useChartSubscription, useMultipleChartSubscriptions } from './providers/ChartDataProvider'
 
 // Export providers
-export { default as ChartDataProvider } from './providers/ChartDataProvider'
+export { ChartDataProvider } from './providers/ChartDataProvider'
 
 // Export types
 export * from './types/chart.types'
