@@ -101,36 +101,53 @@ const initializeApp = async () => {
   }
 }
 
-// Configure Ant Design theme
+// Configure Ant Design theme — CBSC Quant Terminal Dark Mode
+import { theme as antdThemeLib } from 'antd'
 const antdTheme = {
+  algorithm: antdThemeLib.darkAlgorithm,
   token: {
-    colorPrimary: '#1890ff',
-    colorSuccess: '#52c41a',
-    colorWarning: '#faad14',
-    colorError: '#f5222d',
-    colorInfo: '#1890ff',
-    borderRadius: 6,
+    colorPrimary: '#00d4ff',
+    colorSuccess: '#00ff88',
+    colorWarning: '#ffa500',
+    colorError: '#ff3366',
+    colorInfo: '#00d4ff',
+    colorBgBase: '#0a0e1a',
+    colorBgContainer: '#111827',
+    colorBgElevated: '#1a2332',
+    colorText: '#e2e8f0',
+    colorTextSecondary: '#94a3b8',
+    colorBorder: 'rgba(255,255,255,0.1)',
+    colorBorderSecondary: 'rgba(255,255,255,0.06)',
+    borderRadius: 8,
+    fontFamily: "'Noto Sans TC', 'PingFang SC', 'Microsoft YaHei', sans-serif",
     wireframe: false,
   },
   components: {
     Layout: {
-      bodyBg: '#f0f2f5',
-      headerBg: '#001529',
-      siderBg: '#001529',
+      bodyBg: '#0a0e1a',
+      headerBg: '#111827',
+      siderBg: '#111827',
     },
     Menu: {
-      darkItemBg: '#001529',
-      darkSubMenuItemBg: '#000c17',
-      darkItemSelectedBg: '#1890ff',
+      darkItemBg: 'transparent',
+      darkSubMenuItemBg: '#0d1117',
+      darkItemSelectedBg: 'rgba(0,212,255,0.15)',
+      darkItemColor: '#94a3b8',
+      darkItemSelectedColor: '#00d4ff',
     },
-    Button: {
-      borderRadius: 6,
-    },
+    Button: { borderRadius: 6 },
     Card: {
-      borderRadius: 8,
+      borderRadius: 12,
+      colorBgContainer: '#111827',
+      colorBorderSecondary: 'rgba(255,255,255,0.06)',
     },
     Table: {
       borderRadius: 8,
+      colorBgContainer: 'transparent',
+      headerBg: '#1a2332',
+      headerColor: '#94a3b8',
+      rowHoverBg: '#243044',
+      borderColor: 'rgba(255,255,255,0.06)',
     },
   },
 }

@@ -116,7 +116,7 @@ const HkexReport: React.FC = () => {
               title="恆生指數"
               value={latest.hsi_close || 0}
               precision={2}
-              valueStyle={{ color: (latest.hsi_change || 0) >= 0 ? '#3f8600' : '#cf1322' }}
+              valueStyle={{ color: (latest.hsi_change || 0) >= 0 ? '#00ff88' : '#ff3366' }}
               prefix={(latest.hsi_change || 0) >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
               suffix={` (${formatPct(latest.hsi_change_pct)})`}
             />
@@ -171,7 +171,7 @@ const StockConnect: React.FC = () => {
   if (!data.length) return <Empty description="暫無南北水數據。運行 python scripts/stock_connect_crawler.py" />
 
   const latest = data[data.length - 1]
-  const netColor = (latest.southbound_net_mil || 0) >= 0 ? '#3f8600' : '#cf1322'
+  const netColor = (latest.southbound_net_mil || 0) >= 0 ? '#00ff88' : '#ff3366'
 
   const columns = [
     { title: '日期', dataIndex: 'date', key: 'date' },
@@ -185,7 +185,7 @@ const StockConnect: React.FC = () => {
     {
       title: '淨買入', dataIndex: 'southbound_net_mil', key: 'net',
       render: (v: number) => (
-        <span style={{ color: v >= 0 ? '#3f8600' : '#cf1322', fontWeight: 600 }}>
+        <span style={{ color: v >= 0 ? '#00ff88' : '#ff3366', fontWeight: 600 }}>
           {v >= 0 ? '+' : ''}{formatMil(v)}
         </span>
       ),
@@ -259,14 +259,14 @@ const BacktestResults: React.FC = () => {
       render: (v: string) => <strong>{v}</strong> },
     {
       title: 'Sharpe', dataIndex: 'sharpe', key: 'sharpe',
-      render: (v: number) => <span style={{ color: v >= 0.5 ? '#3f8600' : v >= 0 ? '#faad14' : '#cf1322', fontWeight: 600 }}>{v.toFixed(3)}</span>,
+      render: (v: number) => <span style={{ color: v >= 0.5 ? '#00ff88' : v >= 0 ? '#ffa500' : '#ff3366', fontWeight: 600 }}>{v.toFixed(3)}</span>,
       sorter: (a: BacktestRecord, b: BacktestRecord) => a.sharpe - b.sharpe,
       defaultSortOrder: 'descend' as const,
     },
     {
       title: '回報率', dataIndex: 'return', key: 'return',
       render: (v: number) => (
-        <span style={{ color: v >= 0 ? '#3f8600' : '#cf1322' }}>
+        <span style={{ color: v >= 0 ? '#00ff88' : '#ff3366' }}>
           {v >= 0 ? '+' : ''}{(v * 100).toFixed(1)}%
         </span>
       ),
@@ -274,7 +274,7 @@ const BacktestResults: React.FC = () => {
     },
     {
       title: '最大回撤', dataIndex: 'max_dd', key: 'max_dd',
-      render: (v: number) => <span style={{ color: '#cf1322' }}>{(v * 100).toFixed(1)}%</span>,
+      render: (v: number) => <span style={{ color: '#ff3366' }}>{(v * 100).toFixed(1)}%</span>,
       sorter: (a: BacktestRecord, b: BacktestRecord) => a.max_dd - b.max_dd,
     },
     { title: '交易次數', dataIndex: 'trades', key: 'trades', sorter: (a: BacktestRecord, b: BacktestRecord) => a.trades - b.trades },
@@ -299,7 +299,7 @@ const BacktestResults: React.FC = () => {
         </Col>
         <Col span={8}>
           <Card>
-            <Statistic title="最佳 Sharpe" value={bestSharpe.toFixed(3)} valueStyle={{ color: '#3f8600' }} />
+            <Statistic title="最佳 Sharpe" value={bestSharpe.toFixed(3)} valueStyle={{ color: '#00ff88' }} />
           </Card>
         </Col>
         <Col span={8}>
@@ -307,7 +307,7 @@ const BacktestResults: React.FC = () => {
             <Statistic
               title="平均回報"
               value={`${(avgReturn * 100).toFixed(1)}%`}
-              valueStyle={{ color: avgReturn >= 0 ? '#3f8600' : '#cf1322' }}
+              valueStyle={{ color: avgReturn >= 0 ? '#00ff88' : '#ff3366' }}
             />
           </Card>
         </Col>
@@ -329,8 +329,8 @@ const BacktestResults: React.FC = () => {
 // 主頁面
 const MarketDataPage: React.FC = () => {
   return (
-    <div style={{ padding: '24px' }}>
-      <h1 style={{ marginBottom: 24 }}>📊 市場數據中心</h1>
+    <div style={{ padding: '24px', background: '#0a0e1a', minHeight: 'calc(100vh - 64px)' }}>
+      <h1 style={{ marginBottom: 24, color: '#00d4ff', fontFamily: "'JetBrains Mono', monospace", fontSize: 24, textShadow: '0 0 20px rgba(0,212,255,0.15)' }}>📊 市場數據中心</h1>
       <Tabs
         defaultActiveKey="hkex"
         items={[

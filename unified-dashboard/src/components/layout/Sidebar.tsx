@@ -148,6 +148,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onCollapse }) => {
       label: 'CBSC牛熊证',
     },
     {
+      key: '/market-data',
+      icon: <BarChartOutlined />,
+      label: '市場數據中心',
+    },
+    {
       type: 'divider',
     },
     {
@@ -221,8 +226,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onCollapse }) => {
   const getSelectedKeys = () => {
     const path = location.pathname
     // Check for exact matches first
-    if (menuItems.some(item => item?.key === path)) {
+    if (menuItems.some(item => item && typeof item === 'object' && 'key' in item && item.key === path)) {
       return [path]
+    }
+    // Check for prefix matches (e.g. /market-data)
+    for (const item of menuItems) {
+      if (item && typeof item === 'object' && 'key' in item && typeof item.key === 'string' && item.key.startsWith('/')) {
+        if (path.startsWith(item.key)) {
+          return [item.key]
+        }
+      }
     }
     // Check for parent menu matches
     for (const item of menuItems) {
@@ -257,11 +270,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onCollapse }) => {
   }
 
   return (
-    <aside className="fixed left-0 top-16 bottom-0 z-40 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300"
-      style={{ width: collapsed ? 80 : 256 }}
+    <aside className="fixed left-0 top-16 bottom-0 z-40 border-r transition-all duration-300"
+      style={{ width: collapsed ? 80 : 256, background: '#0d1117', borderColor: 'rgba(255,255,255,0.06)' }}
     >
       {/* Logo and Brand */}
-      <div className="flex items-center justify-center h-16 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-center h-16 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
         <AnimatePresence mode="wait">
           {!collapsed ? (
             <motion.div
@@ -272,10 +285,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onCollapse }) => {
               transition={{ duration: 0.2 }}
               className="flex items-center space-x-2"
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <BarChartOutlined className="text-white text-lg" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #00d4ff, #0099cc)' }}>
+                <BarChartOutlined className="text-lg" style={{ color: '#0a0e1a' }} />
               </div>
-              <span className="text-lg font-bold text-gray-900 dark:text-white">CBSC</span>
+              <span className="text-lg font-bold" style={{ color: '#00d4ff', fontFamily: "'JetBrains Mono', monospace" }}>CBSC</span>
             </motion.div>
           ) : (
             <motion.div
@@ -285,8 +298,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onCollapse }) => {
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <BarChartOutlined className="text-white text-lg" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #00d4ff, #0099cc)' }}>
+                <BarChartOutlined className="text-lg" style={{ color: '#0a0e1a' }} />
               </div>
             </motion.div>
           )}
@@ -317,7 +330,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onCollapse }) => {
             className="px-4 pb-4"
           >
             <div className="mt-6 mb-3">
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#64748b' }}>
                 最近使用
               </h3>
             </div>
@@ -326,9 +339,12 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onCollapse }) => {
                 <button
                   key={strategy.id}
                   onClick={() => navigate(`/strategies/${strategy.id}`)}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center space-x-2 group"
+                  className="w-full text-left px-3 py-2 text-sm rounded-lg transition-colors flex items-center space-x-2 group"
+                  style={{ color: '#94a3b8' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#243044'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
-                  <ClockCircleOutlined className="text-gray-400 group-hover:text-blue-500" />
+                  <ClockCircleOutlined style={{ color: '#64748b' }} />
                   <span className="truncate">{strategy.name}</span>
                   <Badge
                     dot
