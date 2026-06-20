@@ -14,7 +14,7 @@ HKEX 日報表（主板）完整數據爬蟲 + Excel 分類導出
 用法:
     python scripts/hkex_full_crawler.py --start 20260501 --end 20260619
     python scripts/hkex_full_crawler.py --date 20260618
-    python scripts/hkex_full_crawler.py --start 20260501 --end 20260619 --excel data/hkex_full.xlsx
+    python scripts/hkex_full_crawler.py --start 20260501 --end 20260619 --excel data/raw_hkex/hkex_full.xlsx
 """
 
 import argparse
@@ -442,7 +442,7 @@ def main():
     parser.add_argument("--date", type=str, help="單日 (yyyymmdd)")
     parser.add_argument("--start", type=str, help="起始日期")
     parser.add_argument("--end", type=str, help="結束日期")
-    parser.add_argument("--excel", type=str, default="data/hkex_full.xlsx", help="Excel 輸出路徑")
+    parser.add_argument("--excel", type=str, default="data/raw_hkex/hkex_full.xlsx", help="Excel 輸出路徑")
     args = parser.parse_args()
 
     today = datetime.now().strftime("%Y%m%d")

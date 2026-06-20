@@ -9,7 +9,7 @@
 用法:
     python scripts/eastmoney_stock_connect.py                    # 全部歷史
     python scripts/eastmoney_stock_connect.py --start 20200101   # 從指定日期
-    python scripts/eastmoney_stock_connect.py --output data/sc_full.csv
+    python scripts/eastmoney_stock_connect.py --output data/stock_connect/sc_full.csv
 """
 
 import argparse
@@ -85,7 +85,7 @@ def _num(val) -> float | None:
         return None
 
 
-def crawl_all(output: str = "data/sc_full.csv", max_pages: int = None):
+def crawl_all(output: str = "data/stock_connect/sc_full.csv", max_pages: int = None):
     """抓取全部歷史數據"""
     print("📥 東方財富 南北水歷史數據爬蟲")
     print(f"   數據源: {API_URL}")
@@ -162,7 +162,7 @@ def crawl_all(output: str = "data/sc_full.csv", max_pages: int = None):
 
 def main():
     parser = argparse.ArgumentParser(description="東方財富南北水歷史爬蟲")
-    parser.add_argument("--output", type=str, default="data/sc_full.csv")
+    parser.add_argument("--output", type=str, default="data/stock_connect/sc_full.csv")
     parser.add_argument("--max-pages", type=int, default=None, help="最大頁數（測試用）")
     args = parser.parse_args()
 

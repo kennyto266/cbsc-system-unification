@@ -66,7 +66,7 @@ class UpdateWorker(QThread):
             subprocess.run(
                 [sys.executable, str(SCRIPTS_DIR / "hkex_full_crawler.py"),
                  "--start", week_ago, "--end", today,
-                 "--excel", str(DATA_DIR / "hkex_sentiment.xlsx")],
+                 "--excel", str(DATA_DIR / "raw_hkex/hkex_sentiment.xlsx")],
                 capture_output=True, text=True, cwd=str(Path(__file__).parent)
             )
             self.progress.emit("✅ HKEX + 牛熊情緒完成")
@@ -105,8 +105,8 @@ class UpdateWorker(QThread):
         每天自動累積，歷史越來越長。
         """
         import openpyxl
-        xlsx_path = DATA_DIR / "hkex_sentiment.xlsx"
-        csv_path = DATA_DIR / "sentiment_history.csv"
+        xlsx_path = DATA_DIR / "raw_hkex/hkex_sentiment.xlsx"
+        csv_path = DATA_DIR / "sentiment/sentiment_history.csv"
 
         if not xlsx_path.exists():
             return
@@ -223,7 +223,7 @@ class HkexTab(QWidget):
         layout.addWidget(sentiment_group)
 
     def load_data(self):
-        csv_path = DATA_DIR / "hkex_daily.csv"
+        csv_path = DATA_DIR / "raw_hkex/hkex_daily.csv"
         if not csv_path.exists():
             return
         df = pd.read_csv(csv_path).sort_values("date")
@@ -310,8 +310,8 @@ class HkexTab(QWidget):
     def load_sentiment(self):
         """讀取散戶牛熊情緒（優先用累積歷史 CSV）"""
         # 優先用 sentiment_history.csv（每日累積，越來越長）
-        csv_path = DATA_DIR / "sentiment_history.csv"
-        xlsx_path = DATA_DIR / "hkex_sentiment.xlsx"
+        csv_path = DATA_DIR / "sentiment/sentiment_history.csv"
+        xlsx_path = DATA_DIR / "raw_hkex/hkex_sentiment.xlsx"
 
         sent = None
         if csv_path.exists():
@@ -322,7 +322,7 @@ class HkexTab(QWidget):
 
         if sent is None or sent.empty:
             if not xlsx_path.exists():
-                xlsx_path = DATA_DIR / "hkex_may_jun.xlsx"
+                xlsx_path = DATA_DIR / "raw_hkex/hkex_may_jun.xlsx"
             if not xlsx_path.exists():
                 return
             try:
@@ -442,7 +442,7 @@ class StockConnectTab(QWidget):
         layout.addWidget(self.table)
 
     def load_data(self):
-        csv_path = DATA_DIR / "stock_connect.csv"
+        csv_path = DATA_DIR / "stock_connect/stock_connect.csv"
         if not csv_path.exists():
             return
         df = pd.read_csv(csv_path).sort_values("date")
@@ -568,8 +568,8 @@ class BacktestTab(QWidget):
 
     def load_data(self):
         # 優先使用 backtest_pro_results.csv（含成本 + walk-forward）
-        pro_path = DATA_DIR / "backtest_pro_results.csv"
-        old_path = DATA_DIR / "backtest_results.csv"
+        pro_path = DATA_DIR / "backtest/backtest_pro_results.csv"
+        old_path = DATA_DIR / "backtest/backtest_results.csv"
         csv_path = pro_path if pro_path.exists() else old_path
         if not csv_path.exists():
             return

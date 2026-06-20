@@ -49,7 +49,7 @@ def main():
     parser = argparse.ArgumentParser(description="yfinance 港股歷史數據抓取")
     parser.add_argument("--symbols", nargs="+", default=None)
     parser.add_argument("--years", type=int, default=5, help="歷史年數")
-    parser.add_argument("--output", type=str, default="data/yf_data.pkl")
+    parser.add_argument("--output", type=str, default="data/price_data/yf_data.pkl")
     parser.add_argument("--workers", type=int, default=10)
     args = parser.parse_args()
 

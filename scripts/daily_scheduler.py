@@ -55,7 +55,7 @@ def run_daily_update():
     result = subprocess.run(
         [PYTHON, str(SCRIPTS / "hkex_full_crawler.py"),
          "--start", week_ago, "--end", today,
-         "--excel", str(DATA / "hkex_sentiment.xlsx")],
+         "--excel", str(DATA / "raw_hkex/hkex_sentiment.xlsx")],
         capture_output=True, text=True, cwd=cwd
     )
     if result.returncode == 0:
@@ -113,7 +113,7 @@ def archive_daily_report(date_iso: str):
     """把今日日報表歸檔為獨立 CSV（每日一個，永不覆蓋）"""
     import pandas as pd
 
-    xlsx = DATA / "hkex_sentiment.xlsx"
+    xlsx = DATA / "raw_hkex/hkex_sentiment.xlsx"
     archive_dir = DATA / "daily_archive"
     archive_dir.mkdir(exist_ok=True)
 
@@ -124,13 +124,13 @@ def archive_daily_report(date_iso: str):
 
     # 把每個 sheet 追加到對應的累積 CSV
     sheet_names = {
-        "市場概要": "market_summary_history.csv",
-        "各指數": "indices_history.csv",
-        "十大成交金額": "top_dollars_history.csv",
-        "十大成交股數": "top_shares_history.csv",
-        "散戶牛熊情緒": "sentiment_history.csv",
-        "全市場沽空比率": "short_ratio_history.csv",
-        "十大沽空股票": "top_short_history.csv",
+        "市場概要": "raw_hkex/market_summary_history.csv",
+        "各指數": "raw_hkex/indices_history.csv",
+        "十大成交金額": "raw_hkex/top_dollars_history.csv",
+        "十大成交股數": "raw_hkex/top_shares_history.csv",
+        "散戶牛熊情緒": "sentiment/sentiment_history.csv",
+        "全市場沽空比率": "raw_hkex/short_ratio_history.csv",
+        "十大沽空股票": "raw_hkex/top_short_history.csv",
     }
 
     for sheet_name, csv_name in sheet_names.items():
@@ -164,7 +164,7 @@ def append_short_selling():
     """累積沽空數據到獨立 CSV"""
     import pandas as pd
 
-    xlsx = DATA / "hkex_sentiment.xlsx"
+    xlsx = DATA / "raw_hkex/hkex_sentiment.xlsx"
     if not xlsx.exists():
         return
 
@@ -172,7 +172,7 @@ def append_short_selling():
         ss = pd.read_excel(xlsx, sheet_name="十大沽空股票")
         if ss.empty:
             return
-        csv_path = DATA / "short_selling_history.csv"
+        csv_path = DATA / "raw_hkex/short_selling_history.csv"
         if csv_path.exists():
             old = pd.read_csv(csv_path)
             combined = pd.concat([old, ss], ignore_index=True).drop_duplicates()
@@ -188,8 +188,8 @@ def append_sentiment():
     """累積牛熊情緒到 sentiment_history.csv"""
     import pandas as pd
 
-    xlsx = DATA / "hkex_sentiment.xlsx"
-    csv_path = DATA / "sentiment_history.csv"
+    xlsx = DATA / "raw_hkex/hkex_sentiment.xlsx"
+    csv_path = DATA / "sentiment/sentiment_history.csv"
 
     if not xlsx.exists():
         return

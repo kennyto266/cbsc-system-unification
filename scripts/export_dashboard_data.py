@@ -60,12 +60,12 @@ def export_hkex_daily():
         # 按日期降序（最新的在前）
         df = df.sort_values("date", ascending=False)
         return df
-    return export_csv_to_json("data/hkex_daily.csv", "hkex_daily.json", transform)
+    return export_csv_to_json("data/raw_hkex/hkex_daily.csv", "hkex_daily.json", transform)
 
 
 def export_stock_connect():
     """南北水資金流向"""
-    return export_csv_to_json("data/stock_connect.csv", "stock_connect.json")
+    return export_csv_to_json("data/stock_connect/stock_connect.csv", "stock_connect.json")
 
 
 def export_backtest():

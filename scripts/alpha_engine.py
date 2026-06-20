@@ -475,7 +475,7 @@ def main():
     parser = argparse.ArgumentParser(description="Alpha 挖掘引擎")
     parser.add_argument("--correlation", action="store_true")
     parser.add_argument("--train", action="store_true")
-    parser.add_argument("--data", type=str, default="data/alpha_data.pkl")
+    parser.add_argument("--data", type=str, default="data/price_data/alpha_data.pkl")
     args = parser.parse_args()
 
     print("🚀 Alpha 挖掘引擎")

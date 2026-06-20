@@ -11,7 +11,7 @@
 
 用法:
     python scripts/stock_connect_crawler.py                    # 今日
-    python scripts/stock_connect_crawler.py --output data/stock_connect.csv
+    python scripts/stock_connect_crawler.py --output data/stock_connect/stock_connect.csv
 """
 
 import argparse
@@ -178,7 +178,7 @@ def crawl_stock_connect() -> dict:
     return result
 
 
-def save_to_csv(result: dict, output: str = "data/stock_connect.csv"):
+def save_to_csv(result: dict, output: str = "data/stock_connect/stock_connect.csv"):
     """增量保存到 CSV"""
     summary = result.get("summary", {})
     if not summary.get("date"):
@@ -282,7 +282,7 @@ def fetch_historical_daily(date_str: str) -> dict | None:
     }
 
 
-def crawl_historical(start: str, end: str, output: str = "data/stock_connect.csv", delay: float = 0.3):
+def crawl_historical(start: str, end: str, output: str = "data/stock_connect/stock_connect.csv", delay: float = 0.3):
     """歷史回填：逐日抓取，自動跳過假期/週末（404=無數據）"""
     start_dt = datetime.strptime(start, "%Y%m%d")
     end_dt = datetime.strptime(end, "%Y%m%d")
@@ -341,7 +341,7 @@ def crawl_historical(start: str, end: str, output: str = "data/stock_connect.csv
 
 def main():
     parser = argparse.ArgumentParser(description="滬港通/深港通 資金流向爬蟲")
-    parser.add_argument("--output", type=str, default="data/stock_connect.csv")
+    parser.add_argument("--output", type=str, default="data/stock_connect/stock_connect.csv")
     parser.add_argument("--json", action="store_true", help="輸出完整 JSON")
     parser.add_argument("--start", type=str, help="歷史回填起始日期 yyyymmdd")
     parser.add_argument("--end", type=str, help="歷史回填結束日期 yyyymmdd")
