@@ -85,8 +85,11 @@ export interface TradingPanelProps {
 }
 
 const TradingPanel: React.FC<TradingPanelProps> = ({
-  pair,
-  orderTypes,
+  pair = { symbol: 'HSI', base: 'HKD', quote: 'HKD', price: 0 },
+  orderTypes = [
+    { value: 'market', label: '市價' },
+    { value: 'limit', label: '限價' },
+  ],
   balances = { base: 0, quote: 0 },
   orderBook,
   currentPrice,
@@ -115,7 +118,7 @@ const TradingPanel: React.FC<TradingPanelProps> = ({
   )
 
   // Use real-time price if available
-  const displayPrice = realTimePrice?.price || currentPrice || pair.price
+  const displayPrice = realTimePrice?.price || currentPrice || pair?.price || 0
 
   // Calculate total when quantity or price changes
   useMemo(() => {
