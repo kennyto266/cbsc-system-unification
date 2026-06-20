@@ -46,6 +46,7 @@ def run_daily_update():
     log("=" * 60)
 
     today = datetime.now().strftime("%Y%m%d")
+    today_iso = datetime.now().strftime("%Y-%m-%d")
     week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y%m%d")
     cwd = str(ROOT)
 
@@ -62,6 +63,11 @@ def run_daily_update():
     else:
         log(f"  ⚠ HKEX 有問題: {result.stderr[:100]}")
 
+    # Step 1b: 把今日日報表存為獨立 CSV（永不覆蓋，每日歸檔）
+    log("📂 Step 1b: 歸檔今日日報表為 CSV...")
+    archive_daily_report(today_iso)
+    log("  ✅ 日報表已歸檔")
+
     # Step 2: 累積牛熊情緒歷史
     log("🐂 Step 2: 累積牛熊情緒歷史...")
     try:
@@ -69,6 +75,14 @@ def run_daily_update():
         log("  ✅ 情緒歷史已更新")
     except Exception as e:
         log(f"  ⚠ 情緒累積失敗: {e}")
+
+    # Step 2b: 累積沽空歷史
+    log("📉 Step 2b: 累積沽空歷史...")
+    try:
+        append_short_selling()
+        log("  ✅ 沽空歷史已更新")
+    except Exception as e:
+        log(f"  ⚠ 沽空累積失敗: {e}")
 
     # Step 3: 南北水
     log("💰 Step 3: 南北水資金流向...")
@@ -93,6 +107,81 @@ def run_daily_update():
     log("=" * 60)
     log("✅ 每日更新完成！")
     log("=" * 60)
+
+
+def archive_daily_report(date_iso: str):
+    """把今日日報表歸檔為獨立 CSV（每日一個，永不覆蓋）"""
+    import pandas as pd
+
+    xlsx = DATA / "hkex_sentiment.xlsx"
+    archive_dir = DATA / "daily_archive"
+    archive_dir.mkdir(exist_ok=True)
+
+    if not xlsx.exists():
+        return
+
+    sheets = pd.read_excel(xlsx, sheet_name=None)
+
+    # 把每個 sheet 追加到對應的累積 CSV
+    sheet_names = {
+        "市場概要": "market_summary_history.csv",
+        "各指數": "indices_history.csv",
+        "十大成交金額": "top_dollars_history.csv",
+        "十大成交股數": "top_shares_history.csv",
+        "散戶牛熊情緒": "sentiment_history.csv",
+        "全市場沽空比率": "short_ratio_history.csv",
+        "十大沽空股票": "top_short_history.csv",
+    }
+
+    for sheet_name, csv_name in sheet_names.items():
+        if sheet_name not in sheets:
+            continue
+        new_data = sheets[sheet_name]
+        if new_data.empty:
+            continue
+
+        csv_path = DATA / csv_name
+        if csv_path.exists():
+            old = pd.read_csv(csv_path)
+            # 只加入新日期的數據
+            if "date" in new_data.columns and "date" in old.columns:
+                new_dates = set(new_data["date"]) - set(old["date"])
+                if not new_dates:
+                    continue
+                new_only = new_data[new_data["date"].isin(new_dates)]
+                combined = pd.concat([old, new_only], ignore_index=True)
+            else:
+                combined = pd.concat([old, new_data], ignore_index=True).drop_duplicates()
+            combined = combined.sort_values("date") if "date" in combined.columns else combined
+        else:
+            combined = new_data
+
+        combined.to_csv(csv_path, index=False, encoding="utf-8-sig")
+        log(f"    {csv_name}: {len(combined)} 行")
+
+
+def append_short_selling():
+    """累積沽空數據到獨立 CSV"""
+    import pandas as pd
+
+    xlsx = DATA / "hkex_sentiment.xlsx"
+    if not xlsx.exists():
+        return
+
+    try:
+        ss = pd.read_excel(xlsx, sheet_name="十大沽空股票")
+        if ss.empty:
+            return
+        csv_path = DATA / "short_selling_history.csv"
+        if csv_path.exists():
+            old = pd.read_csv(csv_path)
+            combined = pd.concat([old, ss], ignore_index=True).drop_duplicates()
+        else:
+            combined = ss
+        combined.to_csv(csv_path, index=False, encoding="utf-8-sig")
+        log(f"  沽空歷史: {len(combined)} 行")
+    except Exception:
+        pass
 
 
 def append_sentiment():
