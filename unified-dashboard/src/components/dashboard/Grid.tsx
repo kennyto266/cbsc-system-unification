@@ -156,19 +156,13 @@ const Grid: React.FC<GridProps> = ({
       <ResponsiveGridLayout
         className={`layout ${isEditMode ? 'edit-mode' : ''} ${isLoading ? 'loading' : ''}`}
         layouts={{
-          [gridConfig.breakpoint]: getLayoutFromItems(layout.items),
+          lg: getLayoutFromItems(layout.items),
+          md: getLayoutFromItems(layout.items),
+          sm: getLayoutFromItems(layout.items),
+          xs: getLayoutFromItems(layout.items),
         }}
-        breakpoints={{
-          [gridConfig.breakpoint]: gridConfig.breakpoint === 'xs' ? 0 :
-            gridConfig.breakpoint === 'sm' ? 640 :
-            gridConfig.breakpoint === 'md' ? 768 :
-            gridConfig.breakpoint === 'lg' ? 1024 :
-            gridConfig.breakpoint === 'xl' ? 1280 :
-            gridConfig.breakpoint === '2xl' ? 1536 : 2560,
-        }}
-        cols={{
-          [gridConfig.breakpoint]: gridConfig.cols,
-        }}
+        breakpoints={{ lg: 1024, md: 768, sm: 640, xs: 0 }}
+        cols={{ lg: gridConfig.cols, md: gridConfig.cols, sm: 2, xs: 1 }}
         rowHeight={gridConfig.rowHeight}
         margin={gridConfig.margin}
         containerPadding={gridConfig.containerPadding}

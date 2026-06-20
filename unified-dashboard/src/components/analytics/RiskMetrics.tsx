@@ -7,6 +7,7 @@ import {
   BarChartOutlined,
   InfoCircleOutlined,
   DashboardOutlined,
+  TrophyOutlined,
 } from '@ant-design/icons'
 
 const { Text } = Typography
