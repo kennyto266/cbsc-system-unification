@@ -66,8 +66,8 @@ class WebSocketManager {
       reconnectInterval?: number
     }
   ) {
-    this.maxReconnectAttempts = options.maxReconnectAttempts || 5
-    this.reconnectInterval = options.reconnectInterval || 3000
+    this.maxReconnectAttempts = opts.maxReconnectAttempts || 5
+    this.reconnectInterval = opts.reconnectInterval || 3000
   }
 
   connect() {
@@ -79,7 +79,7 @@ class WebSocketManager {
       this.ws = new WebSocket(this.url)
       this.setupEventListeners()
     } catch (error) {
-      this.options.onError?.(error as Error)
+      this.opts.onError?.(error as Error)
       this.scheduleReconnect()
     }
   }
@@ -128,7 +128,7 @@ class WebSocketManager {
     }
 
     this.ws.onerror = (error) => {
-      this.options.onError?.(new Error('WebSocket error'))
+      this.opts.onError?.(new Error('WebSocket error'))
     }
   }
 
@@ -292,6 +292,7 @@ class WebSocketManager {
     let maxTotalSize = 0
 
     this.subscriptions.forEach(sub => {
+      if (!sub) return
       const buffer = this.buffers.get(sub.id) || []
       totalBufferSize += buffer.length
       maxTotalSize += sub.bufferSize || 1000
@@ -317,7 +318,12 @@ class WebSocketManager {
   }
 }
 
-export function useRealTimeData(options: UseRealTimeDataOptions): UseRealTimeDataReturn {
+export function useRealTimeData(options: UseRealTimeDataOptions | string | null): UseRealTimeDataReturn {
+  // Handle null/string input (TradingPanel passes null when realTime=false)
+  const opts: UseRealTimeDataOptions = options && typeof options === 'object'
+    ? options
+    : { url: typeof options === 'string' ? options : '', subscriptions: [] }
+
   const [data, setData] = useState<Record<string, TimeSeriesDataPoint[]>>({})
   const [isConnected, setIsConnected] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
@@ -343,12 +349,13 @@ export function useRealTimeData(options: UseRealTimeDataOptions): UseRealTimeDat
     updateFrequency: 0
   })
 
-  // Initialize WebSocket manager
+  // Initialize WebSocket manager (skip if no URL)
   useEffect(() => {
-    wsManagerRef.current = new WebSocketManager(options.url, {
+    if (!opts.url) return  // null/empty URL = no WebSocket
+    wsManagerRef.current = new WebSocketManager(opts.url, {
       onMessage: (message) => {
         if (!isPaused && message.channel) {
-          const subscription = options.subscriptions.find(s => s.channel === message.channel)
+          const subscription = opts.subscriptions.find(s => s.channel === message.channel)
           if (subscription) {
             const buffer = wsManagerRef.current?.getBuffer(subscription.id) || []
 
@@ -379,25 +386,25 @@ export function useRealTimeData(options: UseRealTimeDataOptions): UseRealTimeDat
           ...prev,
           errorCount: prev.errorCount + 1
         }))
-        options.onError?.(error)
+        opts.onError?.(error)
       },
-      maxReconnectAttempts: options.maxReconnectAttempts,
-      reconnectInterval: options.reconnectInterval
+      maxReconnectAttempts: opts.maxReconnectAttempts,
+      reconnectInterval: opts.reconnectInterval
     })
 
     return () => {
-      wsManagerRef.current?.destroy()
+      wsManagerRef.current?.disconnect()
     }
-  }, [options.url, options.maxReconnectAttempts, options.reconnectInterval])
+  }, [opts.url, opts.maxReconnectAttempts, opts.reconnectInterval])
 
   // Initialize subscriptions
   useEffect(() => {
     if (wsManagerRef.current) {
-      options.subscriptions.forEach(subscription => {
+      opts.subscriptions.forEach(subscription => {
         wsManagerRef.current?.subscribe(subscription)
       })
     }
-  }, [options.subscriptions])
+  }, [opts.subscriptions])
 
   // Update metrics periodically
   useEffect(() => {
