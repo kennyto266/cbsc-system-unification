@@ -158,6 +158,29 @@ class HkexTab(QWidget):
         top_group.setLayout(top_layout)
         layout.addWidget(top_group)
 
+        # 散戶牛熊情緒指標
+        sentiment_group = QGroupBox("🐂🐻 散戶牛熊情緒指標（逆向信號：恐懼=買, 貪婪=賣）")
+        sl = QHBoxLayout()
+
+        self.lbl_sentiment_score = QLabel("情緒: --")
+        self.lbl_bull_pct = QLabel("牛證: --%")
+        self.lbl_bear_pct = QLabel("熊證: --%")
+        self.lbl_sentiment_ratio = QLabel("牛熊比: --")
+        for lbl in [self.lbl_sentiment_score, self.lbl_bull_pct, self.lbl_bear_pct, self.lbl_sentiment_ratio]:
+            f = lbl.font(); f.setPointSize(11); f.setBold(True); lbl.setFont(f)
+            sl.addWidget(lbl)
+        sl.addStretch()
+
+        # 情緒走勢圖
+        self.plot_sentiment = pg.PlotWidget(title="散戶情緒走勢（綠=貪婪, 紅=恐懼, 50=中性）")
+        self.plot_sentiment.setLabel("left", "牛證%")
+        self.plot_sentiment.showGrid(x=True, y=True)
+        sentiment_layout = QVBoxLayout()
+        sentiment_layout.addLayout(sl)
+        sentiment_layout.addWidget(self.plot_sentiment)
+        sentiment_group.setLayout(sentiment_layout)
+        layout.addWidget(sentiment_group)
+
     def load_data(self):
         csv_path = DATA_DIR / "hkex_daily.csv"
         if not csv_path.exists():
@@ -239,6 +262,55 @@ class HkexTab(QWidget):
 
         # 十大成交金額最多股票（從 Excel JSON 讀取）
         self.load_top_dollars()
+
+        # 散戶牛熊情緒指標
+        self.load_sentiment()
+
+    def load_sentiment(self):
+        """從 hkex_sentiment.xlsx 讀取散戶牛熊情緒"""
+        import openpyxl
+        xlsx_path = DATA_DIR / "hkex_sentiment.xlsx"
+        if not xlsx_path.exists():
+            # 嘗試 hkex_may_jun.xlsx
+            xlsx_path = DATA_DIR / "hkex_may_jun.xlsx"
+            if not xlsx_path.exists():
+                return
+        try:
+            sent = pd.read_excel(xlsx_path, sheet_name="散戶牛熊情緒")
+        except Exception:
+            return
+        if sent.empty:
+            return
+
+        sent = sent.sort_values("date")
+        latest = sent.iloc[-1]
+
+        # 更新標籤
+        score = latest.get("bull_pct", 50)
+        label = latest.get("sentiment_label", "?")
+        color = "#52c41a" if score > 70 else "#f5222d" if score < 30 else "#faad14"
+        self.lbl_sentiment_score.setText(f"情緒: {score:.0f}/100 ({label})")
+        self.lbl_sentiment_score.setStyleSheet(f"color: {color};")
+        self.lbl_bull_pct.setText(f"牛證: {latest.get('bull_pct',0):.1f}%")
+        self.lbl_bear_pct.setText(f"熊證: {latest.get('bear_pct',0):.1f}%")
+        ratio = latest.get("bull_bear_ratio", 1)
+        self.lbl_sentiment_ratio.setText(f"牛熊比: {ratio:.1f}" if ratio < 999 else "牛熊比: ∞")
+
+        # 情緒走勢圖
+        bull = sent["bull_pct"].values
+        x = list(range(len(bull)))
+        self.plot_sentiment.clear()
+        # 中線（50%）
+        self.plot_sentiment.addItem(pg.InfiniteLine(pos=50, angle=0, pen=pg.mkPen(color="#666", width=1, style=Qt.PenStyle.DashLine)))
+        # 恐懼區（<30%）和貪婪區（>80%）
+        self.plot_sentiment.addItem(pg.InfiniteLine(pos=30, angle=0, pen=pg.mkPen(color="#f5222d", width=1, style=Qt.PenStyle.DashLine)))
+        self.plot_sentiment.addItem(pg.InfiniteLine(pos=80, angle=0, pen=pg.mkPen(color="#52c41a", width=1, style=Qt.PenStyle.DashLine)))
+        # 散戶情緒線
+        for i in range(1, len(bull)):
+            c = "#52c41a" if bull[i] > 70 else "#f5222d" if bull[i] < 30 else "#faad14"
+            self.plot_sentiment.plot([i-1, i], [bull[i-1], bull[i]], pen=pg.mkPen(color=c, width=2))
+        self.plot_sentiment.plot(x, list(bull), pen=None, symbol="o", symbolSize=6,
+                                 symbolBrush=["#52c41a" if v > 70 else "#f5222d" if v < 30 else "#faad14" for v in bull])
 
     def load_top_dollars(self):
         """從 hkex_top_dollars.json 讀取最新一天的十大活躍股"""
