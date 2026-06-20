@@ -264,6 +264,52 @@ def parse_full_daily(html: str, date_str: str) -> dict | None:
             "top_cbbc": cbbc_records[:10],
         }
 
+    # === 6. 沽空比率（Short Selling Ratio）===
+    # 找「賣空成交-每日報表」區段（第二個出現的，含實際數據）
+    short_sell_start = None
+    ss_count = 0
+    for i, line in enumerate(lines):
+        if "賣空成交-每日報表" in line or "SHORT SELL" in line.upper():
+            ss_count += 1
+            if ss_count >= 2:  # 第二個出現的是數據段
+                short_sell_start = i + 3  # 跳過標題行
+                break
+
+    top_short = []
+    market_short_ratio = None
+    if short_sell_start:
+        for line in lines[short_sell_start : short_sell_start + 15]:
+            # 格式: 代號 股票名稱 沽空股數 沽空金額 總成交股數 總成交金額
+            m = re.match(
+                r"(\d{1,5})\s+(.+?)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)", line
+            )
+            if m:
+                short_shares = int(m.group(3).replace(",", ""))
+                total_shares = int(m.group(5).replace(",", ""))
+                ratio = short_shares / total_shares * 100 if total_shares > 0 else 0
+                top_short.append({
+                    "code": m.group(1),
+                    "name": m.group(2).strip()[:15],
+                    "short_shares": short_shares,
+                    "short_value": int(m.group(4).replace(",", "")),
+                    "short_ratio_pct": round(ratio, 1),
+                })
+
+            # 總計行
+            if "總計" in line or "TOTAL" in line.upper():
+                m2 = re.match(r"總計\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)", line)
+                if m2:
+                    ts = int(m2.group(1).replace(",", ""))
+                    ta = int(m2.group(3).replace(",", ""))
+                    market_short_ratio = round(ts / ta * 100, 2) if ta > 0 else 0
+
+    if top_short or market_short_ratio:
+        result["short_selling"] = {
+            "date": date_iso,
+            "market_short_ratio": market_short_ratio,
+            "top_short_stocks": top_short[:10],
+        }
+
     # 檢查至少有市場概要數據
     if not ms.get("turnover_hkd") and not ms.get("deals"):
         return None
@@ -366,6 +412,25 @@ def export_excel(records: list[dict], output: str):
         sent_df = pd.DataFrame(sentiment_list)
         if not sent_df.empty:
             sent_df.to_excel(writer, sheet_name="散戶牛熊情緒", index=False)
+
+        # Sheet 6: 沽空比率
+        short_list = []
+        market_short_list = []
+        for r in records:
+            if "short_selling" in r:
+                ss = r["short_selling"]
+                market_short_list.append({
+                    "date": ss["date"],
+                    "market_short_ratio": ss.get("market_short_ratio"),
+                })
+                for stock in ss.get("top_short_stocks", []):
+                    short_list.append({**stock, "date": ss["date"]})
+        market_ss_df = pd.DataFrame(market_short_list)
+        stock_ss_df = pd.DataFrame(short_list)
+        if not market_ss_df.empty:
+            market_ss_df.to_excel(writer, sheet_name="全市場沽空比率", index=False)
+        if not stock_ss_df.empty:
+            stock_ss_df.to_excel(writer, sheet_name="十大沽空股票", index=False)
 
     sent_count = len(sent_df) if 'sent_df' in dir() and not sent_df.empty else 0
     print(f"✅ Excel 已導出: {output}")
