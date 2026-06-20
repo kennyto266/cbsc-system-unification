@@ -59,21 +59,28 @@ class UpdateWorker(QThread):
     def run(self):
         try:
             today = datetime.now().strftime("%Y%m%d")
-            month_ago = (datetime.now() - timedelta(days=30)).strftime("%Y%m%d")
+            week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y%m%d")
 
-            # 1. HKEX 每日報告
-            self.progress.emit("📥 抓取 HKEX 每日報告...")
+            # 1. HKEX 每日報告（完整版：含牛熊情緒 + 沽空）
+            self.progress.emit("📥 抓取 HKEX 每日報告（牛熊情緒 + 沽空）...")
             subprocess.run(
-                [sys.executable, str(SCRIPTS_DIR / "hkex_daily_crawler.py"),
-                 "--start", month_ago, "--end", today, "--delay", "0.3"],
+                [sys.executable, str(SCRIPTS_DIR / "hkex_full_crawler.py"),
+                 "--start", week_ago, "--end", today,
+                 "--excel", str(DATA_DIR / "hkex_sentiment.xlsx")],
                 capture_output=True, text=True, cwd=str(Path(__file__).parent)
             )
-            self.progress.emit("✅ HKEX 完成")
+            self.progress.emit("✅ HKEX + 牛熊情緒完成")
 
-            # 2. 南北水
+            # 2. 累積牛熊情緒到獨立 CSV（每日追加，不覆蓋）
+            self.progress.emit("🐂 累積牛熊情緒歷史...")
+            self.append_sentiment_history()
+            self.progress.emit("✅ 情緒歷史已更新")
+
+            # 3. 南北水
             self.progress.emit("💰 抓取南北水資金流向...")
             subprocess.run(
-                [sys.executable, str(SCRIPTS_DIR / "stock_connect_crawler.py")],
+                [sys.executable, str(SCRIPTS_DIR / "stock_connect_crawler.py"),
+                 "--start", week_ago, "--end", today],
                 capture_output=True, text=True, cwd=str(Path(__file__).parent)
             )
             self.progress.emit("✅ 南北水完成")
@@ -90,6 +97,40 @@ class UpdateWorker(QThread):
             self.finished_signal.emit(True, "全部更新完成！")
         except Exception as e:
             self.finished_signal.emit(False, f"更新失敗: {e}")
+
+    def append_sentiment_history(self):
+        """
+        從 hkex_sentiment.xlsx 讀取最新牛熊情緒，
+        追加到 sentiment_history.csv（不覆蓋舊數據）。
+        每天自動累積，歷史越來越長。
+        """
+        import openpyxl
+        xlsx_path = DATA_DIR / "hkex_sentiment.xlsx"
+        csv_path = DATA_DIR / "sentiment_history.csv"
+
+        if not xlsx_path.exists():
+            return
+
+        try:
+            # 讀取最新抓取的情緒數據
+            new_sent = pd.read_excel(xlsx_path, sheet_name="散戶牛熊情緒")
+            if new_sent.empty:
+                return
+            new_sent["date"] = pd.to_datetime(new_sent["date"])
+
+            # 讀取已有歷史
+            if csv_path.exists():
+                old = pd.read_csv(csv_path, parse_dates=["date"])
+                # 合併：新數據覆蓋同日期的舊數據，保留舊日期
+                combined = pd.concat([old, new_sent], ignore_index=True)
+                combined = combined.drop_duplicates(subset=["date"], keep="last")
+                combined = combined.sort_values("date")
+            else:
+                combined = new_sent.sort_values("date")
+
+            combined.to_csv(csv_path, index=False, encoding="utf-8-sig")
+        except Exception:
+            pass
 
 
 # ==============================================================================
@@ -267,19 +308,29 @@ class HkexTab(QWidget):
         self.load_sentiment()
 
     def load_sentiment(self):
-        """從 hkex_sentiment.xlsx 讀取散戶牛熊情緒"""
-        import openpyxl
+        """讀取散戶牛熊情緒（優先用累積歷史 CSV）"""
+        # 優先用 sentiment_history.csv（每日累積，越來越長）
+        csv_path = DATA_DIR / "sentiment_history.csv"
         xlsx_path = DATA_DIR / "hkex_sentiment.xlsx"
-        if not xlsx_path.exists():
-            # 嘗試 hkex_may_jun.xlsx
-            xlsx_path = DATA_DIR / "hkex_may_jun.xlsx"
+
+        sent = None
+        if csv_path.exists():
+            try:
+                sent = pd.read_csv(csv_path, parse_dates=["date"])
+            except Exception:
+                sent = None
+
+        if sent is None or sent.empty:
+            if not xlsx_path.exists():
+                xlsx_path = DATA_DIR / "hkex_may_jun.xlsx"
             if not xlsx_path.exists():
                 return
-        try:
-            sent = pd.read_excel(xlsx_path, sheet_name="散戶牛熊情緒")
-        except Exception:
-            return
-        if sent.empty:
+            try:
+                sent = pd.read_excel(xlsx_path, sheet_name="散戶牛熊情緒")
+            except Exception:
+                return
+
+        if sent is None or sent.empty:
             return
 
         sent = sent.sort_values("date")
