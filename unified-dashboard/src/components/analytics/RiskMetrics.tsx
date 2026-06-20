@@ -24,7 +24,12 @@ interface RiskMetricsProps {
   }
 }
 
-const RiskMetrics: React.FC<RiskMetricsProps> = ({ metrics }) => {
+const RiskMetrics: React.FC<RiskMetricsProps> = ({ metrics: m }) => {
+  // 防禦 undefined/null（GridItem 可能不傳 metrics prop）
+  const metrics = m || {
+    volatility: 0, beta: 0, alpha: 0, var95: 0, cvar95: 0,
+    skewness: 0, kurtosis: 0, informationRatio: 0,
+  }
   const getRiskColor = (value: number, type: string) => {
     switch (type) {
       case 'volatility':
