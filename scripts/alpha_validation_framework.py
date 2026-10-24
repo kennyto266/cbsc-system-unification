@@ -1,0 +1,346 @@
+#!/usr/bin/env python3
+"""alpha_validation_framework.py — Alpha 真實性驗證框架 (4 層防 overfitting).
+
+解決核心問題: 83 alpha × 65 股 = 5395 次測試, 純隨機都會有 ~270 個 p<0.05.
+點知邊個 alpha 係真 edge, 邊個只係好彩?
+
+4 層驗證:
+  1. 全局 FDR correction — BH 校正整個 leaderboard, 只信校正後仍顯著的
+  2. 參數穩定性 — threshold ±50% 範圍內 SR 變化 < 30% = 穩定 (唔係 tune 中)
+  3. Universality score — alpha 喺 ≥20% 股票正回報 = universal
+  4. Combinatorial purged CV — 10 次隨機 split (非固定 60/40) 取 OOS 平均
+
+最終 verdict: 4 層全 pass = 🟢 ROBUST; 2-3 pass = 🟡 可能; 0-1 pass = 🔴 可能 overfit
+"""
+import sys
+import warnings
+warnings.filterwarnings("ignore")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from multiprocessing import Pool, cpu_count
+
+from kol_alpha_strategies import KOL_REGISTRY
+from vbt_data import FACTOR_STOCKS, load_stock_close
+from vbt_validation import monte_carlo_pvalue, benjamini_hochberg
+from vbt_kol import run_kol
+import vectorbt as vbt
+
+OUT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports")
+
+
+# ============================================================
+# Layer 1: 全局 FDR Correction
+# ============================================================
+def _mc_worker(args):
+    """Worker: 計一個 (alpha, stock) 嘅 MC p-value (multiprocessing)."""
+    aid, stock = args
+    try:
+        mc = monte_carlo_pvalue(run_kol, aid, stock, n_sims=200)
+        return mc["p_value"] if mc else 1.0
+    except Exception:
+        return 1.0
+
+
+def global_fdr_correction(results_df, alpha=0.05):
+    """對整個 leaderboard 做 BH FDR 校正 (multiprocessing 加速)."""
+    n_workers = min(cpu_count(), 32)
+    combos = [(int(r["Alpha"]), r["股票"]) for _, r in results_df.iterrows()]
+    print(f"  [Layer 1] 計算全局 MC p-values ({len(combos)} pairs, {n_workers} workers)...", flush=True)
+    pvals = []
+    with Pool(n_workers) as pool:
+        for i, pv in enumerate(pool.imap_unordered(_mc_worker, combos, chunksize=8)):
+            pvals.append(pv)
+            if (i + 1) % 100 == 0:
+                print(f"    [{i+1}/{len(combos)}]", flush=True)
+    # BH 校正
+    rejected, adj_p = benjamini_hochberg(pvals, alpha=alpha)
+    results_df["fdr_adj_p"] = adj_p
+    results_df["fdr_pass"] = rejected
+    n_pass = rejected.sum()
+    print(f"  [Layer 1] BH 校正完成: {n_pass}/{len(results_df)} 通過 (α={alpha})", flush=True)
+    return results_df
+
+
+# ============================================================
+# Layer 2: 參數穩定性
+# ============================================================
+def _test_param_stability(args):
+    """Worker: 測試一個 alpha-股 嘅參數穩定性."""
+    aid, stock = args
+    name, kol_name, func, dtype = KOL_REGISTRY.get(aid, ("?", "?", None, "?"))
+    if func is None:
+        return None
+    try:
+        close = load_stock_close(stock)
+        if close is None:
+            return None
+        prices = pd.DataFrame({stock: close})
+        # 基準 SR
+        m0 = func(prices, stock)
+        if not m0:
+            return None
+        base_sr = m0["sharpe"]
+
+        # 測 threshold ±50% (找到 threshold 參數名)
+        import inspect
+        sig = inspect.signature(func)
+        param_names = list(sig.parameters.keys())
+
+        # 找 threshold-like 參數
+        thresh_param = None
+        for pn in param_names:
+            if "threshold" in pn.lower():
+                thresh_param = pn
+                break
+
+        srs = [base_sr]
+        if thresh_param:
+            default_val = sig.parameters[thresh_param].default
+            if default_val != inspect.Parameter.empty and isinstance(default_val, (int, float)):
+                for mult in [0.5, 0.75, 1.25, 1.5]:
+                    kwargs = {thresh_param: default_val * mult}
+                    try:
+                        m = func(prices, stock, **kwargs)
+                        if m:
+                            srs.append(m["sharpe"])
+                    except Exception:
+                        pass
+
+        if len(srs) < 2:
+            return {"alpha": aid, "stock": stock, "stable": True, "sr_spread": 0}
+
+        srs = np.array(srs)
+        sr_mean = np.mean(srs)
+        sr_spread = np.std(srs) / (abs(sr_mean) + 0.01)  # CV of SR across params
+        stable = sr_spread < 0.30  # 變化 < 30% = 穩定
+        return {"alpha": aid, "stock": stock, "stable": stable,
+                "sr_spread": round(sr_spread, 3), "base_sr": round(base_sr, 2),
+                "srs": [round(s, 2) for s in srs]}
+    except Exception:
+        return None
+
+
+def parameter_stability_test(results_df, top_n=200):
+    """Layer 2: 測試參數穩定性 (multiprocessing)."""
+    print(f"  [Layer 2] 參數穩定性測試 (top {top_n} pairs)...", flush=True)
+    # 只測 Sharpe > 0 嘅 (冇意義測負 SR 嘅穩定性)
+    candidates = results_df[results_df["Sharpe"] > 0].head(top_n)
+    combos = [(int(r["Alpha"]), r["股票"]) for _, r in candidates.iterrows()]
+
+    results = []
+    with Pool(min(cpu_count(), 32)) as pool:
+        for r in pool.imap_unordered(_test_param_stability, combos, chunksize=10):
+            if r:
+                results.append(r)
+
+    stable_df = pd.DataFrame(results)
+    if not stable_df.empty:
+        n_stable = stable_df["stable"].sum()
+        print(f"  [Layer 2] {n_stable}/{len(stable_df)} 參數穩定", flush=True)
+    return stable_df
+
+
+# ============================================================
+# Layer 3: Universality Score
+# ============================================================
+def universality_score(results_df, min_pct=0.20):
+    """Layer 3: alpha 喺幾多 % 股票正回報.
+
+    ≥20% = universal; 只喺 1-2 隻 = 個股 overfit.
+    """
+    print("  [Layer 3] Universality score...", flush=True)
+    stats = []
+    for aid, grp in results_df.groupby("Alpha"):
+        n_total = len(grp)
+        n_positive = (grp["Sharpe"] > 0).sum()
+        pct = n_positive / n_total if n_total > 0 else 0
+        mean_sr = grp["Sharpe"].mean()
+        name = KOL_REGISTRY.get(aid, ("?",))[0]
+        universal = pct >= min_pct and n_total >= 5  # 至少測過 5 隻
+        stats.append({
+            "alpha": aid, "name": name,
+            "n_stocks": n_total, "n_positive": n_positive,
+            "positive_pct": round(pct, 2),
+            "mean_sr": round(mean_sr, 2),
+            "universal": universal,
+        })
+    uni_df = pd.DataFrame(stats).sort_values("positive_pct", ascending=False)
+    n_universal = uni_df["universal"].sum()
+    print(f"  [Layer 3] {n_universal}/{len(uni_df)} universal (≥{min_pct:.0%} 正回報)", flush=True)
+    return uni_df
+
+
+# ============================================================
+# Layer 4: Combinatorial Purged Cross-Validation
+# ============================================================
+def _test_cpcv_split(args):
+    """Worker: 測試一個 (alpha, stock, split_ratio) 嘅 OOS Sharpe."""
+    aid, stock, split = args
+    name, kol_name, func, dtype = KOL_REGISTRY.get(aid, ("?", "?", None, "?"))
+    if func is None:
+        return None
+    try:
+        close = load_stock_close(stock)
+        if close is None:
+            return None
+        n = len(close)
+        cut = int(n * split)
+        if cut < 100 or n - cut < 50:
+            return None
+        # OOS 部分
+        oos_close = close.iloc[cut:].dropna()
+        if len(oos_close) < 50:
+            return None
+        prices = pd.DataFrame({stock: oos_close})
+        m = func(prices, stock)
+        if not m:
+            return {"alpha": aid, "stock": stock, "split": split, "oos_sr": None}
+        return {"alpha": aid, "stock": stock, "split": split, "oos_sr": m["sharpe"]}
+    except Exception:
+        return None
+
+
+def combinatorial_purged_cv(results_df, top_n=100, n_splits=10):
+    """Layer 4: 10 次隨機 split (0.5-0.8) 取 OOS 平均.
+
+    非固定 60/40, 而是隨機不同 split 比例 → 測試 OOS 穩健性.
+    """
+    print(f"  [Layer 4] CPCV (top {top_n}, {n_splits} splits)...", flush=True)
+    candidates = results_df[results_df["Sharpe"] > 0].head(top_n)
+    splits = np.linspace(0.5, 0.8, n_splits).tolist()
+    combos = [(int(r["Alpha"]), r["股票"], s) for _, r in candidates.iterrows() for s in splits]
+
+    results = []
+    with Pool(min(cpu_count(), 32)) as pool:
+        for r in pool.imap_unordered(_test_cpcv_split, combos, chunksize=20):
+            if r:
+                results.append(r)
+
+    cv_df = pd.DataFrame(results)
+    if cv_df.empty or "oos_sr" not in cv_df.columns:
+        return cv_df
+
+    # 按 (alpha, stock) 聚合: OOS 平均 + 正比例
+    agg = cv_df.dropna(subset=["oos_sr"]).groupby(["alpha", "stock"]).agg(
+        oos_mean_sr=("oos_sr", "mean"),
+        oos_pos_pct=("oos_sr", lambda x: (x > 0).mean()),
+    ).reset_index()
+    # 通過: OOS 平均 > 0 且 ≥50% splits 正
+    agg["cpcv_pass"] = (agg["oos_mean_sr"] > 0) & (agg["oos_pos_pct"] >= 0.5)
+    n_pass = agg["cpcv_pass"].sum()
+    print(f"  [Layer 4] {n_pass}/{len(agg)} CPCV 通過 (OOS>0 且 ≥50%正)", flush=True)
+    return agg
+
+
+# ============================================================
+# 主函數: 整合 4 層 → 最終 verdict
+# ============================================================
+def main():
+    print("=" * 70)
+    print("🔬 Alpha 真實性驗證框架 (4 層防 overfitting)")
+    print("=" * 70)
+
+    # 載入 leaderboard
+    lb_path = OUT_DIR / "kol_leaderboard.csv"
+    if not lb_path.exists():
+        print("❌ 搵唔到 kol_leaderboard.csv, 請先跑 scan_kol_parallel.py")
+        return
+    df = pd.read_csv(lb_path)
+    print(f"載入 leaderboard: {len(df)} 對有效結果\n")
+
+    # Layer 1: FDR
+    print("─" * 70)
+    print("Layer 1: 全局 FDR Correction (BH α=0.05)")
+    print("─" * 70)
+    fdr_df = global_fdr_correction(df, alpha=0.05)
+
+    # Layer 2: 參數穩定性
+    print("\n" + "─" * 70)
+    print("Layer 2: 參數穩定性 (threshold ±50%, SR CV<30%)")
+    print("─" * 70)
+    stability_df = parameter_stability_test(fdr_df, top_n=150)
+
+    # Layer 3: Universality
+    print("\n" + "─" * 70)
+    print("Layer 3: Universality (≥20% 股票正回報)")
+    print("─" * 70)
+    uni_df = universality_score(fdr_df, min_pct=0.20)
+
+    # Layer 4: CPCV
+    print("\n" + "─" * 70)
+    print("Layer 4: Combinatorial Purged CV (10 splits, OOS>0)")
+    print("─" * 70)
+    cv_df = combinatorial_purged_cv(fdr_df, top_n=80, n_splits=10)
+
+    # ============================================================
+    # 整合: 最終 verdict
+    # ============================================================
+    print("\n" + "=" * 70)
+    print("🏆 最終驗證結果")
+    print("=" * 70)
+
+    # 按 alpha 聚合各層結果
+    verdicts = []
+    for aid, grp in fdr_df.groupby("Alpha"):
+        name = KOL_REGISTRY.get(aid, ("?",))[0]
+        # Layer 1
+        l1_pass = grp["fdr_pass"].any() if "fdr_pass" in grp else False
+        l1_n = grp["fdr_pass"].sum() if "fdr_pass" in grp else 0
+        # Layer 3
+        uni_row = uni_df[uni_df["alpha"] == aid]
+        l3_pass = uni_row["universal"].iloc[0] if not uni_row.empty else False
+        l3_pct = uni_row["positive_pct"].iloc[0] if not uni_row.empty else 0
+        # Layer 2 (至少一個穩定)
+        stab_rows = stability_df[stability_df["alpha"] == aid] if not stability_df.empty else pd.DataFrame()
+        l2_pass = stab_rows["stable"].any() if not stab_rows.empty else False
+        # Layer 4 (至少一個 CPCV pass)
+        cv_rows = cv_df[(cv_df["alpha"] == aid)] if not cv_df.empty else pd.DataFrame()
+        l4_pass = cv_rows["cpcv_pass"].any() if not cv_rows.empty and "cpcv_pass" in cv_rows else False
+        l4_n = cv_rows["cpcv_pass"].sum() if not cv_rows.empty and "cpcv_pass" in cv_rows else 0
+
+        passes = sum([l1_pass, l2_pass, l3_pass, l4_pass])
+        if passes >= 4:
+            verdict = "🟢 ROBUST"
+        elif passes >= 2:
+            verdict = "🟡 可能"
+        else:
+            verdict = "🔴 可能 overfit"
+
+        best_sr = grp["Sharpe"].max()
+        verdicts.append({
+            "alpha": aid, "name": name, "verdict": verdict,
+            "passes": passes,
+            "L1_fdr": f"{'✅' if l1_pass else '❌'} ({l1_n})",
+            "L2_stable": "✅" if l2_pass else "❌",
+            "L3_universal": f"{'✅' if l3_pass else '❌'} ({l3_pct:.0%})",
+            "L4_cpcv": f"{'✅' if l4_pass else '❌'} ({l4_n})",
+            "best_sr": round(best_sr, 2),
+        })
+
+    vdf = pd.DataFrame(verdicts).sort_values(["passes", "best_sr"], ascending=[False, False])
+
+    print(f"\n{'ID':<5} {'verdict':<16} {'pass':>4} {'L1':>8} {'L2':>6} {'L3':>10} {'L4':>8} {'SR':>6} name")
+    print("─" * 90)
+    for _, r in vdf.iterrows():
+        print(f"{r['alpha']:<5} {r['verdict']:<16} {r['passes']:>4} {r['L1_fdr']:>8} {r['L2_stable']:>6} "
+              f"{r['L3_universal']:>10} {r['L4_cpcv']:>8} {r['best_sr']:>6} {r['name'][:25]}")
+
+    # 統計
+    n_robust = (vdf["passes"] >= 4).sum()
+    n_maybe = ((vdf["passes"] >= 2) & (vdf["passes"] < 4)).sum()
+    n_overfit = (vdf["passes"] < 2).sum()
+    print(f"\n🟢 ROBUST (4/4): {n_robust}")
+    print(f"🟡 可能 (2-3/4): {n_maybe}")
+    print(f"🔴 可能 overfit (0-1/4): {n_overfit}")
+
+    # 存檔
+    vdf.to_csv(OUT_DIR / "alpha_validation_verdict.csv", index=False)
+    print(f"\n💾 存到: {OUT_DIR / 'alpha_validation_verdict.csv'}")
+
+
+if __name__ == "__main__":
+    main()

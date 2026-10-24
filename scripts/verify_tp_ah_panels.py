@@ -1,0 +1,44 @@
+"""Verify tp_disp/tp_med + ah_premium panels: pick 3 dates, recompute from raw
+and compare against panel CSV, and cross-check raw TPs vs EM web page sample."""
+import sys
+from pathlib import Path
+import numpy as np
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parent.parent
+NS = ROOT / "data" / "new_sources"
+
+disp = pd.read_csv(NS / "tp_disp_panel.csv", index_col=0, parse_dates=True)
+med = pd.read_csv(NS / "tp_med_panel.csv", index_col=0, parse_dates=True)
+raw = pd.read_csv(NS / "analyst_ratings_em_raw.csv", dtype={"stock_code": str})
+raw["stock_code"] = raw["stock_code"].str.zfill(5)
+raw["date"] = pd.to_datetime(raw["date"])
+
+CLOSE_DIR = ROOT / "data" / "futu_history" / "close_unadj"
+def get_close(code):
+    f = CLOSE_DIR / f"HK.{code}.csv"
+    s = pd.read_csv(f)
+    return pd.Series(s["close"].values, index=pd.to_datetime(s["time_key"]))
+
+ok = True
+for code, d in [("00700", "2026-08-20"), ("00388", "2024-06-14"), ("00941", "2022-03-15")]:
+    d = pd.Timestamp(d)
+    sub = raw[(raw.stock_code == code) & (raw.date <= d - pd.Timedelta(days=1))].dropna(subset=["target_price"])
+    per_broker = sub.sort_values("date").groupby("broker").tail(1)
+    vals = per_broker["target_price"].values
+    c = get_close(code).asof(d)
+    exp_disp = (vals.max() - vals.min()) / c if len(vals) >= 3 else np.nan
+    exp_med = np.median(vals) / c if len(vals) >= 3 else np.nan
+    got_d = disp.at[d, code]; got_m = med.at[d, code]
+    match = (np.isclose(exp_disp, got_d, atol=1e-9, equal_nan=True) and
+             np.isclose(exp_med, got_m, atol=1e-9, equal_nan=True))
+    ok &= match
+    print(f"{code}@{d.date()} nbroker={len(vals)} close={c} "
+          f"disp exp={exp_disp:.4f} got={got_d:.4f} | med exp={exp_med:.4f} got={got_m:.4f} -> {'OK' if match else 'MISMATCH'}")
+
+# AH panel sanity: recompute one cell from raw
+ahr = pd.read_csv(NS / "ah_premium_raw.csv")
+row = ahr[(ahr.date == "2026-08-20") & (ahr.code_h == "00941")]
+ahp = pd.read_csv(NS / "ah_premium_panel.csv", index_col=0)
+print("AH 00941@2026-08-20 raw ah_premium:", row["ah_premium"].tolist(), "panel:", ahp.loc["2026-08-20", "00941"])
+print("ALL_TP_OK" if ok else "TP_FAIL")

@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+"""build_rating_chg_panel.py — thesis rating-change-flow: 東财评级事件史 → rating_chg_63d panel.
+
+輸入: data/new_sources/analyst_ratings_em_raw.csv (156股, 2007→2026, 10282 研報事件)
+  欄: stock_code, date, broker, rating, target_price, price_at_note
+方法: 評級分數 SCORE = {买入:2, 增持:1, 中性:0, 持有:0, 减持:-1, 卖出:-2}
+  同一 broker 對同一股嘅前後評級變化: delta>0 = upgrade, delta<0 = downgrade
+  (首份評級 delta=0 唔計 — 冇前哨比較)
+  rating_chg_63d = 過去 63 個日曆日 upgrade 次數 − downgrade 次數, 日頻 per-stock。
+  首 63 日由第一個事件起滾動 (窗口細都照計, prescan 會驗選股數)。
+輸出: data/factor_store/rating_chg_63d.parquet (wide date × HK.XXXXX)
+"""
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "analyst_ratings_em_raw.csv"
+OUT_DIR = BASE / "data" / "factor_store"
+START = "2021-01-01"
+WINDOW = "63D"
+
+SCORE = {"买入": 2, "增持": 1, "中性": 0, "持有": 0, "减持": -1, "卖出": -2}
+
+df = pd.read_csv(RAW, dtype={"stock_code": str})
+df["date"] = pd.to_datetime(df["date"])
+df = df[df["rating"].isin(SCORE) & (df["date"] >= pd.Timestamp("2019-01-01"))]
+df["score"] = df["rating"].map(SCORE)
+
+# per (stock, broker): delta vs 該 broker 前一份評級
+df = df.sort_values(["stock_code", "broker", "date"])
+df["prev"] = df.groupby(["stock_code", "broker"])["score"].shift(1)
+df["delta"] = df["score"] - df["prev"]
+ev = df[df["delta"].notna() & (df["delta"] != 0)].copy()
+ev["sign"] = np.sign(ev["delta"])
+ev = ev[ev["date"] >= pd.Timestamp(START)]
+print(f"rating change events: {len(ev)} (up {int((ev['sign']>0).sum())} / down {int((ev['sign']<0).sum())}), "
+      f"{ev.stock_code.nunique()} codes, {ev.date.min().date()}→{ev.date.max().date()}")
+
+# 交易日曆: futu close_unadj union (同 anrev 慣例)
+cal = set()
+for f in (BASE / "data" / "futu_history" / "close_unadj").glob("*.csv"):
+    cal.update(pd.to_datetime(pd.read_csv(f, usecols=["time_key"])["time_key"]).dt.normalize())
+idx = pd.DatetimeIndex(sorted(d for d in cal if d >= pd.Timestamp(START)), name="date")
+
+codes = sorted(ev["stock_code"].unique())
+panel = pd.DataFrame(0.0, index=idx, columns=["HK." + c for c in codes])
+for code, g in ev.groupby("stock_code"):
+    if code not in codes:
+        continue
+    # 事件日日曆化 (同日多事件加總) → asof 到交易日
+    daily = g.groupby("date")["sign"].sum().sort_index()
+    daily = daily.reindex(daily.index.union(idx)).fillna(0.0)
+    daily.index.name = "date"
+    roll = daily.rolling(WINDOW, closed="right").sum()
+    # asof: 每個交易日攞最近一個日曆日嘅滾動值 (事件落到下一個交易日)
+    col = "HK." + code
+    panel[col] = roll.reindex(idx, method="ffill").values
+
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+panel.to_parquet(OUT_DIR / "rating_chg_63d.parquet")
+active = panel[panel != 0]
+print(f"rating_chg_63d: {panel.shape}, non-zero cells {int((panel!=0).sum().sum())}, "
+      f"range {panel.index.min().date()}→{panel.index.max().date()}, "
+      f"mean per-day stocks with signal {float((panel!=0).sum(axis=1).tail(500).mean()):.1f}")

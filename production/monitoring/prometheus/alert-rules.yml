@@ -1,0 +1,451 @@
+# CBSC系统生产环境Prometheus告警规则
+
+groups:
+  # ============ 系统可用性告警 ============
+  - name: cbsc-system-availability
+    rules:
+      # 服务宕机告警
+      - alert: ServiceDown
+        expr: up{job=~"cbsc-trading-system|user-management-system|monitoring-system"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: operations
+          service: "{{ $labels.job }}"
+        annotations:
+          summary: "{{ $labels.job }} 服务不可用"
+          description: "{{ $labels.job }} 服务已经宕机超过1分钟，当前状态: {{ $value }}。"
+          runbook_url: "https://wiki.example.com/runbooks/service-down"
+
+      # 实例宕机告警
+      - alert: InstanceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: operations
+        annotations:
+          summary: "实例 {{ $labels.instance }} 不可用"
+          description: "实例 {{ $labels.instance }} 已经宕机超过2分钟。"
+
+  # ============ 应用程序告警 ============
+  - name: cbsc-application-metrics
+    rules:
+      # 高错误率告警
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(http_requests_total{status=~"5.."}[5m]) /
+            rate(http_requests_total[5m])
+          ) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: development
+          service: "{{ $labels.job }}"
+        annotations:
+          summary: "{{ $labels.service }} 错误率过高"
+          description: "{{ $labels.service }} 的5xx错误率在过去5分钟内为 {{ printf \"%.2f\" $value }}%，超过了5%的阈值。"
+
+      # 4xx错误率告警
+      - alert: High4xxErrorRate
+        expr: |
+          (
+            rate(http_requests_total{status=~"4.."}[5m]) /
+            rate(http_requests_total[5m])
+          ) * 100 > 10
+        for: 10m
+        labels:
+          severity: warning
+          team: development
+        annotations:
+          summary: "4xx错误率过高"
+          description: "4xx错误率在过去10分钟内为 {{ printf \"%.2f\" $value }}%。"
+
+      # 高延迟告警
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(http_request_duration_seconds_bucket[5m])
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          team: development
+        annotations:
+          summary: "API响应延迟过高"
+          description: "95百分位响应延迟为 {{ printf \"%.2f\" $value }} 秒，超过了2秒的阈值。"
+
+      # 低吞吐量告警
+      - alert: LowThroughput
+        expr: rate(http_requests_total[5m]) < 0.1
+        for: 15m
+        labels:
+          severity: warning
+          team: operations
+        annotations:
+          summary: "请求吞吐量过低"
+          description: "API请求吞吐量为 {{ printf \"%.2f\" $value }} req/s，低于预期水平。"
+
+      # 活跃会话数告警
+      - alert: HighActiveSessions
+        expr: active_sessions_total > 1000
+        for: 10m
+        labels:
+          severity: warning
+          team: operations
+        annotations:
+          summary: "活跃会话数过高"
+          description: "当前活跃会话数为 {{ $value }}，超过了1000的限制。"
+
+  # ============ CBSC交易系统特定告警 ============
+  - name: cbsc-trading-alerts
+    rules:
+      # 数据质量告警
+      - alert: DataQualityDegradation
+        expr: cbsc_data_quality_score < 80
+        for: 2m
+        labels:
+          severity: warning
+          team: trading
+          system: "CBSC Trading System"
+        annotations:
+          summary: "数据质量下降"
+          description: "CBSC数据质量评分为 {{ $value }}，低于80分的阈值。"
+
+      # 策略计算延迟告警
+      - alert: StrategyCalculationDelay
+        expr: cbsc_strategy_calculation_duration_seconds > 30
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "策略计算延迟过高"
+          description: "策略计算耗时 {{ printf \"%.2f\" $value }} 秒，超过了30秒的阈值。"
+
+      # 异常交易信号告警
+      - alert: AbnormalTradingSignals
+        expr: rate(cbsc_trading_signals_total{signal_type="abnormal"}[5m]) > 10
+        for: 1m
+        labels:
+          severity: critical
+          team: trading
+        annotations:
+          summary: "检测到异常交易信号"
+          description: "在过去5分钟内检测到 {{ printf \"%.0f\" $value }} 个异常交易信号。"
+
+      # 回测失败告警
+      - alert: BacktestFailure
+        expr: cbsc_backtest_status{status="failed"} == 1
+        for: 1m
+        labels:
+          severity: warning
+          team: development
+        annotations:
+          summary: "回测执行失败"
+          description: "回测 {{ $labels.strategy }} 执行失败，需要检查策略配置。"
+
+      # 风险指标异常告警
+      - alert: RiskMetricsAnomaly
+        expr: |
+          (
+            cbsc_portfolio_var > 100000 or
+            cbsc_max_drawdown > 0.15 or
+            cbsc_sharpe_ratio < 0.5
+          ) == 1
+        for: 5m
+        labels:
+          severity: critical
+          team: risk-management
+        annotations:
+          summary: "风险指标异常"
+          description: "检测到风险指标异常，请立即检查投资组合状态。"
+
+      # 市场数据更新延迟告警
+      - alert: MarketDataDelay
+        expr: time() - cbsc_market_data_last_update_timestamp > 300
+        for: 2m
+        labels:
+          severity: critical
+          team: operations
+        annotations:
+          summary: "市场数据更新延迟"
+          description: "市场数据超过5分钟未更新，当前延迟 {{ printf \"%.0f\" $value }} 秒。"
+
+  # ============ 资源使用告警 ============
+  - name: cbsc-resource-alerts
+    rules:
+      # CPU使用率告警
+      - alert: HighCPUUsage
+        expr: |
+          (
+            sum(rate(container_cpu_usage_seconds_total{container_name="cbsc-trading-system"}[5m])) * 100
+          ) > 80
+        for: 10m
+        labels:
+          severity: warning
+          team: operations
+        annotations:
+          summary: "CPU使用率过高"
+          description: "CBSC交易系统CPU使用率为 {{ printf \"%.2f\" $value }}%，超过了80%的阈值。"
+
+      # 内存使用率告警
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            container_memory_usage_bytes{container_name="cbsc-trading-system"} /
+            container_spec_memory_limit_bytes{container_name="cbsc-trading-system"}
+          ) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          team: operations
+        annotations:
+          summary: "内存使用率过高"
+          description: "CBSC交易系统内存使用率为 {{ printf \"%.2f\" $value }}%，超过了85%的阈值。"
+
+      # 磁盘空间告警
+      - alert: DiskSpaceLow
+        expr: |
+          (
+            node_filesystem_avail_bytes{mountpoint="/data"} /
+            node_filesystem_size_bytes{mountpoint="/data"}
+          ) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+          team: operations
+        annotations:
+          summary: "磁盘空间不足"
+          description: "数据目录磁盘剩余空间为 {{ printf \"%.2f\" $value }}%，低于10%的阈值。"
+
+      # 网络错误率告警
+      - alert: HighNetworkErrorRate
+        expr: |
+          (
+            rate(container_network_transmit_errors_total[5m]) +
+            rate(container_network_receive_errors_total[5m])
+          ) > 10
+        for: 5m
+        labels:
+          severity: warning
+          team: operations
+        annotations:
+          summary: "网络错误率过高"
+          description: "网络错误率为 {{ printf \"%.2f\" $value }} errors/s，超过了阈值。"
+
+  # ============ 数据库告警 ============
+  - name: cbsc-database-alerts
+    rules:
+      # 数据库连接数告警
+      - alert: DatabaseConnectionHigh
+        expr: pg_stat_database_numbackends / pg_settings_max_connections * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "数据库连接数过高"
+          description: "数据库连接数为 {{ printf \"%.2f\" $value }}%，超过了80%的阈值。"
+
+      # 数据库慢查询告警
+      - alert: DatabaseSlowQueries
+        expr: pg_stat_statements_mean_time_seconds > 1
+        for: 10m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "数据库慢查询"
+          description: "数据库平均查询时间为 {{ printf \"%.2f\" $value }} 秒，超过了1秒的阈值。"
+
+      # 数据库复制延迟告警
+      - alert: DatabaseReplicationLag
+        expr: pg_replication_lag_seconds > 60
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "数据库复制延迟"
+          description: "数据库复制延迟为 {{ printf \"%.0f\" $value }} 秒，超过了60秒的阈值。"
+
+  # ============ Redis告警 ============
+  - name: cbsc-redis-alerts
+    rules:
+      # Redis内存使用率告警
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          team: operations
+        annotations:
+          summary: "Redis内存使用率过高"
+          description: "Redis内存使用率为 {{ printf \"%.2f\" $value }}%，超过了90%的阈值。"
+
+      # Redis连接数告警
+      - alert: RedisConnectionHigh
+        expr: redis_connected_clients > 500
+        for: 5m
+        labels:
+          severity: warning
+          team: operations
+        annotations:
+          summary: "Redis连接数过高"
+          description: "Redis连接数为 {{ $value }}，超过了500的限制。"
+
+  # ============ 业务指标告警 ============
+  - name: cbsc-business-alerts
+    rules:
+      # 用户登录失败率告警
+      - alert: UserLoginFailureRateHigh
+        expr: |
+          (
+            rate(user_login_failures_total[5m]) /
+            (rate(user_login_attempts_total[5m]) + rate(user_login_failures_total[5m]))
+          ) * 100 > 20
+        for: 5m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "用户登录失败率过高"
+          description: "用户登录失败率为 {{ printf \"%.2f\" $value }}%，可能存在攻击行为。"
+
+      # API密钥使用异常告警
+      - alert: APIKeyAnomaly
+        expr: |
+          rate(api_requests_total[5m]) > 1000 and
+          (
+            rate(api_requests_total[5m]) /
+            rate(api_requests_total{api_key_type="valid"}[5m])
+          ) > 10
+        for: 2m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "API密钥使用异常"
+          description: "检测到异常的API使用模式，可能存在密钥泄露。"
+
+      # 交易量异常告警
+      - alert: TradingVolumeAnomaly
+        expr: |
+          abs(
+            rate(trading_volume_total[1h]) -
+            rate(trading_volume_total offset 24h)[1h]
+          ) / rate(trading_volume_total offset 24h)[1h] * 100 > 200
+        for: 10m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "交易量异常波动"
+          description: "当前交易量相比昨日同期变化 {{ printf \"%.2f\" $value }}%，需要检查市场状态。"
+
+  # ============ 安全告警 ============
+  - name: cbsc-security-alerts
+    rules:
+      # 未授权访问尝试告警
+      - alert: UnauthorizedAccessAttempts
+        expr: rate(unauthorized_access_attempts_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: "检测到未授权访问尝试"
+          description: "在过去5分钟内检测到 {{ printf \"%.0f\" $value }} 次未授权访问尝试。"
+
+      # 异常IP访问告警
+      - alert: SuspiciousIPActivity
+        expr: |
+          sum by (source_ip) (
+            rate(http_requests_total{status=~"4..|5.."}[5m])
+          ) > 100
+        for: 3m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "可疑IP活动"
+          description: "IP {{ $labels.source_ip }} 在过去5分钟内产生了 {{ printf \"%.0f\" $value }} 次异常请求。"
+
+      # 证书即将过期告警
+      - alert: CertificateExpiringSoon
+        expr: |
+          probe_ssl_earliest_cert_expiry - time() < 86400 * 7
+        for: 1h
+        labels:
+          severity: warning
+          team: operations
+        annotations:
+          summary: "SSL证书即将过期"
+          description: "SSL证书将在 {{ printf \"%.0f\" ($value / 86400) }} 天后过期。"
+
+  # ============ 基础设施告警 ============
+  - name: cbsc-infrastructure-alerts
+    rules:
+      # 节点不可用告警
+      - alert: NodeDown
+        expr: up{job="node-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: operations
+        annotations:
+          summary: "节点 {{ $labels.instance }} 不可用"
+          description: "节点 {{ $labels.instance }} 已经不可用超过1分钟。"
+
+      # 容器重启告警
+      - alert: ContainerRestarting
+        expr: |
+          rate(kube_pod_container_status_restarts_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: operations
+        annotations:
+          summary: "容器频繁重启"
+          description: "容器 {{ $labels.container }} 在过去15分钟内重启了 {{ printf \"%.0f\" $value }} 次。"
+
+      # Pending Pod告警
+      - alert: PodPending
+        expr: |
+          kube_pod_status_phase{phase="Pending"} == 1
+        for: 10m
+        labels:
+          severity: warning
+          team: operations
+        annotations:
+          summary: "Pod处于Pending状态"
+          description: "Pod {{ $labels.pod }} 在命名空间 {{ $labels.namespace }} 中已经Pending超过10分钟。"
+
+      # 存储使用率告警
+      - alert: PersistentVolumeUsageCritical
+        expr: |
+          (
+            kubelet_volume_stats_used_bytes /
+            kubelet_volume_stats_capacity_bytes
+          ) * 100 > 95
+        for: 5m
+        labels:
+          severity: critical
+          team: operations
+        annotations:
+          summary: "持久卷使用率严重"
+          description: "持久卷 {{ $labels.persistentvolumeclaim }} 使用率为 {{ printf \"%.2f\" $value }}%。"
+
+      # 配置重载失败告警
+      - alert: ConfigurationReloadFailure
+        expr: |
+          max_over_time(prometheus_config_last_reload_successful[5m]) == 0
+        for: 10m
+        labels:
+          severity: critical
+          team: operations
+        annotations:
+          summary: "Prometheus配置重载失败"
+          description: "Prometheus配置重载失败，请检查配置文件语法。"

@@ -1,0 +1,407 @@
+#!/usr/bin/env python3
+"""
+牛牛 DEMO Pair Trade 自動落單
+
+整合動態相關性止損嘅 pair trade 執行系統。
+只喺 SIMULATE（模擬）環境執行，唔碰真實資金。
+
+功能：
+1. 讀取動態相關性信號（SIGNAL 級別）
+2. 計算 hedge ratio 加權倉位
+3. 喺富途 DEMO 戶口落單（買 A + 沽 B）
+4. 動態止損：相關性崩潰自動平倉
+5. 監控持倉 z-score，回歸均值自動平倉獲利
+
+安全機制：
+- 預設 SIMULATE 環境
+- 單筆最大 10 萬 HKD
+- 最多同時 5 個 pair
+- 必須有 SIGNAL 級信號先落單
+- dry-run 模式預覽唔落單
+
+用法:
+    python scripts/futu_pair_trade.py --dry-run         # 預覽（唔落單）
+    python scripts/futu_pair_trade.py --execute          # 真正落 DEMO 單
+    python scripts/futu_pair_trade.py --close-all        # 平晒所有持倉
+    python scripts/futu_pair_trade.py --monitor          # 監控現有持倉
+"""
+import os
+import sys
+import json
+import argparse
+from pathlib import Path
+from datetime import datetime
+
+sys.path = [p for p in sys.path if "CODEX" not in p]
+
+import numpy as np
+import pandas as pd
+
+ROOT = Path(__file__).parent.parent
+DATA_DIR = ROOT / "data"
+OUTPUT_DIR = DATA_DIR / "pair_trade_vbt"
+
+FUTU_HOST = os.getenv("FUTU_OPEND_HOST", "127.0.0.1")
+FUTU_PORT = int(os.getenv("FUTU_OPEND_PORT", "1130"))
+
+# 安全參數
+MAX_POSITION_HKD = 100_000     # 單個 pair 最大 10 萬
+MAX_PAIRS = 5                   # 最多同時 5 個 pair
+MIN_CORR = 0.5                  # 最低相關性要求
+ENTRY_Z = 2.0                   # 進場 z-score
+EXIT_Z = 0.5                    # 平倉 z-score
+DANGER_CORR = 0.3               # 相關性低於此 → 強制平倉
+
+# 戶口配置
+# acc_id=17372476: HK CASH STOCK（支援買入，唔支援沽空）
+# acc_id=7030473: HK MARGIN OPTION（只支援期權，唔支援正股）
+HK_CASH_ACC_ID = 17372476      # 唯一可落港股正股單嘅 DEMO 戶口
+
+
+def normalize_code(code):
+    """正規化股票代碼。"""
+    return code if code.startswith("HK.") else f"HK.{code.zfill(5)}"
+
+
+def load_signals():
+    """讀取動態相關性信號。"""
+    path = OUTPUT_DIR / "dynamic_signals.csv"
+    if not path.exists():
+        print("❌ 搵唔到動態信號，請先運行: python scripts/dynamic_correlation.py")
+        return None
+    df = pd.read_csv(path)
+    # 只取 SIGNAL 級別（相關性穩定 + z-score 超過 ±2）
+    signals = df[df["risk_level"] == "SIGNAL"].copy()
+    signals["abs_z"] = signals["z_score"].abs()
+    signals = signals.sort_values("abs_z", ascending=False)
+    return signals
+
+
+def calculate_position_size(price_a, price_b, hedge_ratio, lot_a=100, lot_b=100, max_hkd=MAX_POSITION_HKD):
+    """計算 dollar-neutral 倉位大小（按每手股數對齊）。
+
+    spread = log(A) - hedge × log(B)
+    做多 spread = 買 A + 沽 B（按 hedge ratio 加權）
+
+    lot_a/lot_b: 每手股數（港股唔同股票唔同，要查）
+
+    返回 (qty_a, qty_b, total_cost_a, total_cost_b)
+    """
+    half_budget = max_hkd / 2
+
+    # B 腿數量（對齊每手股數）
+    qty_b = int(half_budget / price_b / lot_b) * lot_b
+    if qty_b == 0:
+        qty_b = lot_b
+
+    # A 腿數量 = qty_b × hedge_ratio（dollar-neutral），對齊 lot_a
+    qty_a = int(qty_b * hedge_ratio / lot_a) * lot_a
+    if qty_a == 0:
+        qty_a = lot_a
+
+    cost_a = qty_a * price_a
+    cost_b = qty_b * price_b
+    return qty_a, qty_b, cost_a, cost_b
+
+
+def get_lot_sizes(futu, codes):
+    """查詢每隻股嘅每手股數（lot_size）。"""
+    lot_map = {}
+    qctx = futu.OpenQuoteContext(host=FUTU_HOST, port=FUTU_PORT)
+    try:
+        ret, data = qctx.get_market_snapshot(codes)
+        if ret == futu.RET_OK and not data.empty:
+            for _, row in data.iterrows():
+                code = row.get("code", "")
+                lot = int(row.get("lot_size", 100) or 100)
+                lot_map[code] = max(lot, 100)
+    finally:
+        qctx.close()
+    # fallback
+    for c in codes:
+        if c not in lot_map:
+            lot_map[c] = 100
+    return lot_map
+
+
+def execute_pair_trade(futu, ctx, signal, dry_run=True, lot_map=None, long_only=True):
+    """執行一個 pair trade。
+
+    long_only=True（CASH 戶口）：
+      z < -2 → 買 A（A 相對 B 太平，預期反彈）
+      z > +2 → 買 B（B 相對 A 強勢，預期 A 回落 B 繼續強）
+
+    long_only=False（MARGIN 戶口，需要沽空權限）：
+      z < -2 → 買 A + 沽 B（完整 pair）
+      z > +2 → 沽 A + 買 B（完整 pair）
+    """
+    code_a = signal["code_a"]
+    code_b = signal["code_b"]
+    z = signal["z_score"]
+    corr = signal["rolling_corr_now"]
+    hedge = signal["hedge_ratio"]
+    price_a = signal["price_a"]
+    price_b = signal["price_b"]
+
+    lot_a = (lot_map or {}).get(code_a, 100)
+    lot_b = (lot_map or {}).get(code_b, 100)
+
+    # 判斷方向 + 倉位
+    if z < -ENTRY_Z:
+        # A 太平 → 買 A
+        buy_code, buy_price, buy_lot = code_a, price_a, lot_a
+        if long_only:
+            action_cn = "買 {}（相對低估，預期反彈）".format(code_a)
+            sell_code = None
+        else:
+            action_cn = "買 {} / 沽 {}".format(code_a, code_b)
+            sell_code, sell_price, sell_lot = code_b, price_b, lot_b
+    elif z > ENTRY_Z:
+        # B 相對強勢 → 買 B
+        buy_code, buy_price, buy_lot = code_b, price_b, lot_b
+        if long_only:
+            action_cn = "買 {}（相對強勢，A 預期回落）".format(code_b)
+            sell_code = None
+        else:
+            action_cn = "沽 {} / 買 {}".format(code_a, code_b)
+            sell_code, sell_price, sell_lot = code_a, price_a, lot_a
+    else:
+        return None
+
+    # 計算倉位
+    budget = MAX_POSITION_HKD
+    qty_buy = int(budget / buy_price / buy_lot) * buy_lot
+    if qty_buy == 0:
+        qty_buy = buy_lot
+    cost_buy = qty_buy * buy_price
+
+    print("\n  ▸ {} ↔ {}".format(code_a, code_b))
+    print("    信號: z={:+.2f}, corr={:.2f}, hedge={:.3f}".format(z, corr, hedge))
+    print("    每手: {}={}股, {}={}股".format(code_a, lot_a, code_b, lot_b))
+    print("    方向: {}".format(action_cn))
+    print("    買入: {} {} 股 @ ${} (HK${:,})".format(buy_code, qty_buy, buy_price, int(cost_buy)))
+
+    if not long_only and sell_code:
+        qty_sell = int(budget / sell_price / sell_lot * hedge / sell_lot) * sell_lot
+        if qty_sell == 0:
+            qty_sell = sell_lot
+        cost_sell = qty_sell * sell_price
+        print("    沽空: {} {} 股 @ ${} (HK${:,})".format(sell_code, qty_sell, sell_price, int(cost_sell)))
+    else:
+        qty_sell = 0
+        sell_code = None
+
+    if dry_run:
+        print("    [DRY-RUN] 唔會真正落單")
+        return {"status": "dry_run", "pair": f"{code_a}-{code_b}"}
+
+    # 真正落單（DEMO）
+    orders = []
+    for code, side, qty, price in [(code_a, side_a, qty_a, price_a), (code_b, side_b, qty_b, price_b)]:
+        try:
+            trd_side = futu.TrdSide.BUY if side == "BUY" else futu.TrdSide.SELL
+            ret, data = ctx.place_order(
+                price=price, qty=qty, code=code,
+                trd_side=trd_side,
+                order_type=futu.OrderType.NORMAL,
+                trd_env=futu.TrdEnv.SIMULATE,
+            )
+            if ret == futu.RET_OK:
+                order_id = data.iloc[0]["order_id"]
+                status = data.iloc[0]["order_status"]
+                print("    ✓ {} {} 股 @ {} → order_id={} [{}]".format(
+                    side, qty, price, order_id, status))
+                orders.append({"code": code, "side": side, "qty": qty,
+                               "price": price, "order_id": str(order_id), "status": str(status)})
+            else:
+                print("    ✗ {} 落單失敗: {}".format(code, data))
+        except Exception as e:
+            print("    ✗ {} 異常: {}".format(code, e))
+
+    return {"status": "executed", "orders": orders}
+
+
+def close_all_positions(futu, ctx, dry_run=True):
+    """平晒所有 DEMO 持倉。"""
+    print("\n📋 查詢現有持倉...")
+    ret, positions = ctx.position_list_query(trd_env=futu.TrdEnv.SIMULATE)
+    if ret != futu.RET_OK or positions.empty:
+        print("  無持倉")
+        return
+
+    print("  持倉 {} 個:".format(len(positions)))
+    for _, row in positions.iterrows():
+        code = row["code"]
+        qty = int(row["qty"])
+        # 取最新價
+        print("  - {} {} 股".format(code, qty))
+
+        if dry_run:
+            print("    [DRY-RUN] 唔會平倉")
+            continue
+
+        # 沽出
+        try:
+            # 先取最新價
+            qctx = futu.OpenQuoteContext(host=FUTU_HOST, port=FUTU_PORT)
+            ret2, snap = qctx.get_market_snapshot([code])
+            qctx.close()
+            if ret2 == futu.RET_OK and not snap.empty:
+                price = float(snap.iloc[0]["last_price"])
+            else:
+                price = float(row.get("current_price", 0))
+
+            ret, data = ctx.place_order(
+                price=price, qty=qty, code=code,
+                trd_side=futu.TrdSide.SELL,
+                order_type=futu.OrderType.NORMAL,
+                trd_env=futu.TrdEnv.SIMULATE,
+            )
+            if ret == futu.RET_OK:
+                print("    ✓ 平倉 order_id={}".format(data.iloc[0]["order_id"]))
+            else:
+                print("    ✗ 平倉失敗: {}".format(data))
+        except Exception as e:
+            print("    ✗ 異常: {}".format(e))
+
+
+def monitor_positions(futu, ctx):
+    """監控現有持倉 + 動態相關性止損。"""
+    print("\n📊 監控 DEMO 持倉 + 動態止損")
+
+    ret, positions = ctx.position_list_query(trd_env=futu.TrdEnv.SIMULATE)
+    if ret != futu.RET_OK or positions.empty:
+        print("  無持倉")
+        return
+
+    # 讀取動態信號
+    signals_df = load_signals()
+    signal_map = {}
+    if signals_df is not None:
+        for _, r in signals_df.iterrows():
+            key = tuple(sorted([r["code_a"], r["code_b"]]))
+            signal_map[key] = r
+
+    print("  持倉 {} 個:".format(len(positions)))
+    for _, row in positions.iterrows():
+        code = row["code"]
+        qty = int(row["qty"])
+        cost = float(row.get("cost_price", 0))
+        current = float(row.get("current_price", 0))
+        pnl = (current - cost) * qty if current and cost else 0
+        pnl_pct = (current / cost - 1) * 100 if cost else 0
+
+        emoji = "📈" if pnl >= 0 else "📉"
+        print("  {} {} {} 股 | 成本 ${:.2f} 現價 ${:.2f} | {} HK${:+.0f} ({:+.1f}%)".format(
+            emoji, code, qty, cost, current, emoji, pnl, pnl_pct))
+
+    # 檢查動態止損
+    print("\n  🔍 動態止損檢查:")
+    danger_signals = signals_df[signals_df["risk_level"] == "DANGER"] if signals_df is not None else pd.DataFrame()
+    held_codes = set(positions["code"].tolist())
+
+    if not danger_signals.empty:
+        for _, r in danger_signals.iterrows():
+            if r["code_a"] in held_codes or r["code_b"] in held_codes:
+                print("  🚨 DANGER: {}-{} 相關性崩潰 ({}) → 建議立即平倉!".format(
+                    r["code_a"], r["code_b"], r["rolling_corr_now"]))
+    else:
+        print("  ✓ 冇相關性崩潰警報")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="牛牛 DEMO Pair Trade 落單")
+    parser.add_argument("--dry-run", action="store_true", help="預覽唔落單（預設）")
+    parser.add_argument("--execute", action="store_true", help="真正落 DEMO 單")
+    parser.add_argument("--close-all", action="store_true", help="平晒所有持倉")
+    parser.add_argument("--monitor", action="store_true", help="監控持倉")
+    parser.add_argument("--max-pairs", type=int, default=3, help="最多開幾多個 pair")
+    args = parser.parse_args()
+
+    dry_run = not args.execute
+
+    print("=" * 75)
+    print("🐮 牛牛 DEMO Pair Trade 系統")
+    print("=" * 75)
+    print("時間: {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    print("環境: {} ← 模擬資金，唔影響真實戶口".format(
+        "SIMULATE (DEMO)" if not args.execute else "SIMULATE (DEMO) [EXECUTE MODE]"))
+    print("OpenD: {}:{}".format(FUTU_HOST, FUTU_PORT))
+
+    import futu
+
+    # 連線
+    try:
+        ctx = futu.OpenSecTradeContext(
+            host=FUTU_HOST, port=FUTU_PORT,
+            filter_trdmarket=futu.TrdMarket.HK,
+        )
+        # 測試連線
+        ret, _ = ctx.get_acc_list()
+        if ret != futu.RET_OK:
+            print("\n❌ 交易 API 連線失敗（OpenD 配置問題？）")
+            print("   確認 OpenD.xml 嘅 <ip> 係 127.0.0.1")
+            return
+        print("✓ 交易 API 連線成功")
+    except Exception as e:
+        print("\n❌ 連線失敗: {}".format(e))
+        return
+
+    try:
+        if args.close_all:
+            close_all_positions(futu, ctx, dry_run=dry_run)
+        elif args.monitor:
+            monitor_positions(futu, ctx)
+        else:
+            # 落單模式
+            print("\n📡 讀取動態相關性信號...")
+            signals = load_signals()
+            if signals is None or signals.empty:
+                print("  目前冇 SIGNAL 級信號（需要 z>±2 + corr>0.5）")
+                print("  建議先運行: python scripts/dynamic_correlation.py")
+                return
+
+            n_signals = len(signals)
+            n_execute = min(n_signals, args.max_pairs)
+            print("  找到 {} 個 SIGNAL，將執行前 {} 個".format(n_signals, n_execute))
+
+            executed = []
+            for i in range(n_execute):
+                signal = signals.iloc[i].to_dict()
+                result = execute_pair_trade(futu, ctx, signal, dry_run=dry_run)
+                if result:
+                    executed.append(result)
+
+            # 摘要
+            print("\n" + "=" * 75)
+            print("📋 執行摘要")
+            print("=" * 75)
+            print("  模式: {}".format("DRY-RUN（預覽）" if dry_run else "EXECUTE（已落 DEMO 單）"))
+            print("  執行 pair 數: {}".format(len(executed)))
+            if not dry_run and executed:
+                print("\n  💡 去富途 App 模擬交易版面查看訂單狀態")
+                print("  💡 監控: python scripts/futu_pair_trade.py --monitor")
+                print("  💡 平倉: python scripts/futu_pair_trade.py --close-all --execute")
+
+            # 儲存執行記錄
+            log_path = OUTPUT_DIR / "trade_log.json"
+            log_entry = {
+                "timestamp": datetime.now().isoformat(),
+                "mode": "dry_run" if dry_run else "execute",
+                "pairs": executed,
+            }
+            logs = []
+            if log_path.exists():
+                with open(log_path, "r", encoding="utf-8") as f:
+                    logs = json.load(f)
+            logs.append(log_entry)
+            with open(log_path, "w", encoding="utf-8") as f:
+                json.dump(logs, f, indent=2, ensure_ascii=False, default=str)
+
+    finally:
+        ctx.close()
+        print("\n✓ 連線關閉")
+
+
+if __name__ == "__main__":
+    main()

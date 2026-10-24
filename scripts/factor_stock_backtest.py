@@ -1,0 +1,257 @@
+#!/usr/bin/env python3
+"""
+因子 → 個股回測
+
+測試宏觀因子（VIX/DXY/USDCNH...）對每隻 HSI 成分股嘅預測力。
+用最優參數（VIX: N=3, threshold=0.8%, holding=7）回測 60 隻股票。
+
+用法:
+    python scripts/factor_stock_backtest.py                    # 全部因子 × 全部股票
+    python scripts/factor_stock_backtest.py --factor vix       # 只測 VIX
+    python scripts/factor_stock_backtest.py --top 10           # 只測前 10 隻
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, ".")
+
+import argparse
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from datetime import datetime
+
+ROOT = Path(__file__).parent.parent
+DATA = ROOT / "data"
+FACTORS_DIR = DATA / "factors"
+
+
+def load_factor_returns(name):
+    """載入因子收益率"""
+    path = FACTORS_DIR / f"{name}.csv"
+    if not path.exists():
+        return None
+    df = pd.read_csv(path, index_col="date", parse_dates=True)
+    return df["close"].sort_index()
+
+
+def load_stock_prices():
+    """載入個股價格"""
+    pkl = DATA / "hsi_prices.pkl"
+    if not pkl.exists():
+        raise FileNotFoundError("請先運行 pair_trade_vbt.py")
+    return pd.read_pickle(pkl)
+
+
+def find_trading_statistics(returns, trading_days=252):
+    """阿程的統計函數"""
+    returns = pd.Series(returns).dropna()
+    if len(returns) == 0:
+        return {"sharpe": 0, "cagr": 0, "max_dd": 0, "n_trades": 0, "win_rate": 0}
+    cum = (1 + returns).cumprod()
+    total_ret = cum.iloc[-1] - 1
+    years = len(returns) / trading_days
+    sharpe = float(returns.mean() / returns.std() * np.sqrt(trading_days)) if returns.std() > 0 else 0
+    cagr = float((total_ret + 1) ** (1 / years) - 1) if years > 0 else 0
+    max_dd = float((cum / cum.cummax() - 1).min())
+    return {"sharpe": round(sharpe, 3), "cagr": round(cagr * 100, 1),
+            "max_dd": round(max_dd * 100, 1), "n_days": len(returns)}
+
+
+def backtest_factor_stock(factor_close, stock_close, n_days=3, threshold=0.008,
+                          holding=7, direction="contrarian"):
+    """用因子信號預測個股方向
+
+    阿程式規則：
+    - 因子連續 N 日同方向 + 累計 > threshold → 信號
+    - direction="contrarian": 因子升→做空個股（恐慌時避險）
+    - direction="follow": 因子升→買入個股（趨勢跟隨）
+    """
+    factor_ret = factor_close.pct_change()
+    cum_ret = factor_close / factor_close.shift(n_days - 1) - 1
+    stock_ret = stock_close.pct_change()
+
+    # 對齊日期
+    common = factor_ret.index.intersection(stock_ret.index)
+    fr = factor_ret.reindex(common)
+    sr = stock_ret.reindex(common)
+    cr = cum_ret.reindex(common)
+
+    if len(common) < n_days + holding + 10:
+        return None
+
+    # 生成倉位
+    position = pd.Series(0.0, index=common)
+    n_trades = 0
+
+    factor_vals = fr.values
+    cum_vals = cr.values
+    n = len(factor_vals)
+
+    for i in range(n_days, n - holding):
+        window = factor_vals[i - n_days + 1: i + 1]
+        cum = cum_vals[i]
+        if np.isnan(cum):
+            continue
+        all_pos = bool(np.all(window > 0))
+        all_neg = bool(np.all(window < 0))
+
+        if all_pos and cum > threshold:
+            # 因子連續升 → 做空（contrarian）
+            pos = -1.0 if direction == "contrarian" else 1.0
+            position.iloc[i + 1: i + 1 + holding] = pos
+            n_trades += 1
+        elif all_neg and cum < -threshold:
+            # 因子連續跌 → 做多（contrarian）
+            pos = 1.0 if direction == "contrarian" else -1.0
+            position.iloc[i + 1: i + 1 + holding] = pos
+            n_trades += 1
+
+    if n_trades == 0:
+        return None
+
+    # 策略回報
+    strategy_ret = (position.shift(1) * sr).dropna()
+
+    # 扣交易成本（0.1% 每次轉倉）
+    trades = position.diff().abs()
+    cost = trades * 0.001
+    strategy_ret = strategy_ret - cost.reindex(strategy_ret.index).fillna(0)
+
+    stats = find_trading_statistics(strategy_ret)
+    stats["n_trades"] = n_trades
+
+    # 勝率
+    trade_periods = strategy_ret[position.shift(1) != 0]
+    if len(trade_periods) > 0:
+        stats["win_rate"] = round(float((trade_periods > 0).mean() * 100), 1)
+    else:
+        stats["win_rate"] = 0
+
+    # B&H 對比
+    bh = find_trading_statistics(sr)
+    stats["bh_sharpe"] = bh.get("sharpe", 0)
+    stats["bh_cagr"] = bh.get("cagr", 0)
+    stats["alpha"] = round(stats["sharpe"] - stats["bh_sharpe"], 3)
+
+    return stats
+
+
+def load_stock_names():
+    """載入股票名稱"""
+    import futu
+    ctx = futu.OpenQuoteContext(host="127.0.0.1", port=1130)
+    try:
+        prices = load_stock_prices()
+        ret, data = ctx.get_market_snapshot(list(prices.columns[:60]))
+        name_map = {}
+        if ret == futu.RET_OK and not data.empty:
+            for _, row in data.iterrows():
+                name_map[row["code"]] = str(row.get("name", ""))
+        return name_map
+    finally:
+        ctx.close()
+
+
+def main():
+    parser = argparse.ArgumentParser(description="因子 → 個股回測")
+    parser.add_argument("--factor", default="vix", help="因子名稱")
+    parser.add_argument("--n-days", type=int, default=3)
+    parser.add_argument("--threshold", type=float, default=0.008)
+    parser.add_argument("--holding", type=int, default=7)
+    parser.add_argument("--top", type=int, default=0, help="只測前 N 隻（0=全部）")
+    parser.add_argument("--all-factors", action="store_true", help="測試所有因子")
+    args = parser.parse_args()
+
+    print("=" * 80)
+    print("📊 因子 → 個股回測")
+    print("=" * 80)
+    print("時間: {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+
+    factor_close = load_factor_returns(args.factor)
+    if factor_close is None:
+        print("❌ 因子 {} 不存在".format(args.factor))
+        return
+
+    prices = load_stock_prices()
+    stocks = list(prices.columns)
+    if args.top > 0:
+        stocks = stocks[:args.top]
+
+    print("因子: {} (N={}, threshold={}%, holding={}日)".format(
+        args.factor, args.n_days, args.threshold * 100, args.holding))
+    print("股票數: {}".format(len(stocks)))
+    print()
+
+    # 嘗試載入股票名稱
+    try:
+        name_map = load_stock_names()
+    except Exception:
+        name_map = {}
+
+    # 回測每隻股票
+    results = []
+    print("{:<14} {:<10} {:>7} {:>7} {:>7} {:>5} {:>6} {:>7} {:>7}".format(
+        "代碼", "名稱", "Sharpe", "年回報%", "MaxDD%", "交易", "勝率%", "B&H_SR", "Alpha"))
+    print("-" * 80)
+
+    for stock in stocks:
+        stock_close = prices[stock].dropna()
+        if len(stock_close) < 60:
+            continue
+
+        r = backtest_factor_stock(factor_close, stock_close,
+                                  n_days=args.n_days,
+                                  threshold=args.threshold,
+                                  holding=args.holding)
+        if r and r["n_trades"] > 0:
+            name = name_map.get(stock, "")[:8]
+            results.append({
+                "stock": stock,
+                "name": name,
+                **r,
+            })
+            print("{:<14} {:<10} {:>7.2f} {:>6.1f}% {:>6.1f}% {:>5} {:>5.0f}% {:>7.2f} {:>+7.2f}".format(
+                stock, name, r["sharpe"], r["cagr"], r["max_dd"],
+                r["n_trades"], r["win_rate"], r["bh_sharpe"], r["alpha"]))
+
+    if not results:
+        print("\n⚠️ 冇股票產生有效信號")
+        return
+
+    # 排名
+    df = pd.DataFrame(results).sort_values("sharpe", ascending=False)
+
+    print("\n" + "=" * 80)
+    print("🏆 個股表現排名（按 Sharpe）")
+    print("=" * 80)
+
+    winners = df[df["sharpe"] > 0]
+    losers = df[df["sharpe"] <= 0]
+    beat_bh = df[df["alpha"] > 0]
+
+    print("\n  📊 統計:")
+    print("     總股票:     {}".format(len(df)))
+    print("     Sharpe > 0: {} ({:.0f}%)".format(len(winners), len(winners) / len(df) * 100))
+    print("     跑贏 B&H:   {} ({:.0f}%)".format(len(beat_bh), len(beat_bh) / len(df) * 100))
+    print("     Sharpe 中位: {:.2f}".format(df["sharpe"].median()))
+    print("     平均勝率:   {:.0f}%".format(df["win_rate"].mean()))
+
+    print("\n  🥇 Top 10 表現最好:")
+    for _, r in df.head(10).iterrows():
+        print("     {} {:<10} Sharpe={:.2f} 年回報={:.1f}% 勝率={:.0f}% Alpha={:+.2f}".format(
+            r["stock"], r["name"], r["sharpe"], r["cagr"], r["win_rate"], r["alpha"]))
+
+    if len(losers) > 0:
+        print("\n  ❌ Top 5 表現最差:")
+        for _, r in df.tail(5).iterrows():
+            print("     {} {:<10} Sharpe={:.2f} 年回報={:.1f}%".format(
+                r["stock"], r["name"], r["sharpe"], r["cagr"]))
+
+    # 儲存
+    output = FACTORS_DIR / "factor_stock_backtest_{}.csv".format(args.factor)
+    df.to_csv(output, index=False)
+    print("\n✓ 儲存: {}".format(output.relative_to(ROOT)))
+
+
+if __name__ == "__main__":
+    main()

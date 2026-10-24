@@ -1,0 +1,63 @@
+import React, { useState, useEffect } from 'react'
+import { Card, Table, Tag, Spin, Row, Col, Statistic } from 'antd'
+
+interface Strategy {
+  strategy: string
+  sharpe_median: number
+  ann_return_median: number
+  max_dd_mean: number
+  n_stocks: number
+  n_positive: number
+  best_stock: string
+  best_sharpe: number
+}
+
+const StrategiesPage: React.FC = () => {
+  const [data, setData] = useState<Strategy[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/strategies/list').then(r => r.json()).then(d => {
+      setData(d.data?.strategies || [])
+      setLoading(false)
+    }).catch(() => setLoading(false))
+  }, [])
+
+  const columns = [
+    { title: '#', key: 'rank', width: 40, render: (_: any, __: any, i: number) => i + 1 },
+    { title: '策略', dataIndex: 'strategy', key: 'strat',
+      render: (v: string) => <strong>{v}</strong> },
+    { title: 'Sharpe 中位數', dataIndex: 'sharpe_median', key: 'sr', align: 'right' as const,
+      sorter: (a: Strategy, b: Strategy) => a.sharpe_median - b.sharpe_median,
+      render: (v: number) => <Tag color={v > 1 ? 'green' : v > 0 ? 'orange' : 'red'}>{v?.toFixed(3)}</Tag> },
+    { title: '年回報%', dataIndex: 'ann_return_median', key: 'ret', align: 'right' as const,
+      sorter: (a: Strategy, b: Strategy) => a.ann_return_median - b.ann_return_median,
+      render: (v: number) => <span style={{ color: v >= 0 ? '#52c41a' : '#ff4d4f' }}>{v?.toFixed(1)}%</span> },
+    { title: 'MaxDD%', dataIndex: 'max_dd_mean', key: 'dd', align: 'right' as const, render: (v: number) => v?.toFixed(1) + '%' },
+    { title: '測試股數', dataIndex: 'n_stocks', key: 'ns', align: 'right' as const },
+    { title: '正數', dataIndex: 'n_positive', key: 'np', align: 'right' as const,
+      render: (v: number, r: Strategy) => `${v}/${r.n_stocks}` },
+    { title: '最佳股票', dataIndex: 'best_stock', key: 'bs', width: 100 },
+    { title: '最佳 Sharpe', dataIndex: 'best_sharpe', key: 'bsr', align: 'right' as const,
+      render: (v: number) => <Tag color="blue">{v?.toFixed(2)}</Tag> },
+  ]
+
+  const positive = data.filter(s => s.sharpe_median > 0).length
+
+  return (
+    <div style={{ padding: 24 }}>
+      <h2 style={{ marginBottom: 16 }}>🔬 hkptrc 策略回測結果</h2>
+      <Row gutter={16} style={{ marginBottom: 16 }}>
+        <Col span={6}><Card><Statistic title="總策略數" value={data.length} /></Card></Col>
+        <Col span={6}><Card><Statistic title="正 Sharpe" value={positive} valueStyle={{ color: '#52c41a' }} /></Card></Col>
+        <Col span={6}><Card><Statistic title="最佳 Sharpe" value={data[0]?.sharpe_median || 0} precision={2} /></Card></Col>
+        <Col span={6}><Card><Statistic title="最佳年回報" value={data[0]?.ann_return_median || 0} suffix="%" valueStyle={{ color: '#52c41a' }} /></Card></Col>
+      </Row>
+      <Card title="策略排名（按 Sharpe 中位數，rf=4%）" size="small">
+        {loading ? <Spin /> : <Table dataSource={data} columns={columns} rowKey="strategy" size="small" pagination={false} />}
+      </Card>
+    </div>
+  )
+}
+
+export default StrategiesPage

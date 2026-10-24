@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""build_fxs_cnyaud_panel.py — fxba thesis: CNYAUD 敏感度 derived → fxs_cnyaud panel.
+
+[09-30 G62277 重建] 原 builder 係 untracked 檔, 09-30 16:27 worktree 清場穿
+junction 事故被剷 (零 git 史 — _factor_store_refresh.py 拆線註解實錄; 同晚
+hibor_1m 同案)。本檔由 factor_store 黃金樣板反推重建, 方法同 build_bbex_panel.py
+(09-27 黃金樣板反推先例)。formula 證據三路對齊:
+  1) factor_panels.py register_panel('fxs_cnyaud') 註解 (09-28 agent2-H):
+     beta_i = close 對 fxcnyaud_close rolling 252d cov/var (min_periods 126),
+     fx_mom_z = CNYAUD 63d 動能對 252d 基線 z, fxs = beta × z;
+  2) _a1_write_theses_r22/r24.py crawl_spec 逐句同款;
+  3) 黃金樣板逐格回歸 (2026-09-30 重算): 源穩定期 (2025-01→2026-09-25)
+     maxdiff ~1e-5 級、尾 5 行 ~1e-8 級 (HK.00005 09-23/24/25 逐格一致)。
+
+[黃金樣板 bit-exact 不可重現聲明 — 唔係公式問題, 係源 vintage 漂移]
+golden (1227d×51, 至 2026-09-28) 建基於 09-28 vintage 源; 2026-09-30 重算用
+今日源, 四處漂移實錄 (驗證輸出 backtests/_g62277_rediff/fxs_cnyaud_new.parquet):
+  a) ohlcv_5y 全 51 檔 09-30 20:30 refetch — yahoo auto_adjust restate
+     2021-2024 歷史 → beta 側 2022-2024 era maxdiff 0.456 / mean 0.0048;
+  b) crawl_cnyaud 每跑 full 重構: sina 999 行滑窗邊界 cut=sina.index.min()
+     日日前移, 邊界行 sina→ECB 翻寫 + sina 窗內值 micro-jitter → z 側
+     源穩定期 (2025-01→2026-09-25) maxdiff 9.8e-6 (14679/21777 格 >1e-9);
+  c) 尾行 09-28 fx sina 值被 revise → 尾行 maxdiff 1.18e-2 (09-28 截面
+     spearman 仍 0.9987);
+  d) 頭 2 行 (2021-09-29/09-30) 源已滾出 5y 窗 — golden 全 NaN 行再現唔到,
+     各股 beta 暖機跟住遲 2 個交易日 (golden 首值 2022-04-04/49 股 →
+     今日重算 2022-04-07; 99 格 NaN 差異全集中 04-04/04-06 兩日, 暖機
+     頭位移嘅忠實後果)。
+公式本身鎖死: 288 組合掃描 (收益/匯率變化定義 × 動量 × 對齊日曆 × z 視窗
+× ddof), 冠軍組合喺源穩定期領先次名 3 個數量級 (9.8e-6 vs 2.8e-2);
+冪等: 連跑兩次 0.0 diff (含 NaN 圖樣)。
+
+輸入:
+  data/ohlcv_5y/HK_XXXXX.csv        — 51 股 close (HK_UNIVERSE 52 − HK.00011
+                                       無檔; vbt_data.HK_UNIVERSE 順序 = 欄序)
+  data/new_sources/cnyaud/cnyaud_daily.csv — cnyaud_close 欄 (crawl_cnyaud.py
+                                       canonical raw; 同 fxcnyaud_close.parquet
+                                       逐值一致已核)
+輸出 (--out 預設):
+  factor_store/fxs_cnyaud.parquet — wide (time_key × HK.XXXXX),
+    index name='time_key' (datetime64)
+
+最終配方 (逐項):
+  日曆      = 51 股 ohlcv time_key 聯集 (union) — panel index; 51/51 日期
+              皆落喺 fx 日曆內 (sina+ECB 全平日覆蓋)
+  個股收益  = close.pct_change(fill_method=None)
+  匯率變化  = cnyaud_close.pct_change(fill_method=None) 喺 fx 自身日曆算,
+              再 reindex 去股票日曆
+  beta_i    = rolling(252, min_periods=126).cov(ret_i, fx_chg)
+              / rolling(252, min_periods=126).var(fx_chg)
+              (ddof 兩邊同 1, 比值不變)
+  fx_mom    = cnyaud_close.pct_change(63, fill_method=None) — fx 自身日曆
+  fx_mom_z  = (mom − mom.rolling(252).mean()) / mom.rolling(252).std()  [ddof=1]
+  fxs[t,i]  = beta_i[t] × fx_mom_z[t]
+  暖機      = beta min_periods 126 → 各股首值 = 自身第 126 個 obs
+              (主力 2022-04-04; HK.00001 2022-04-06 清明順延; HK.02269
+              2021-12-30 起步 → 2022-07-08)
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+HERE = Path(__file__).resolve().parent
+BASE = HERE.parent
+BT = BASE.parent / "backtests"
+
+# 後備硬拷貝 — vbt_data.HK_UNIVERSE (52 股) 2026-09-30 快照; 寧願明寫都
+# 唔靜靜跌落 sorted(glob) (欄序會變, 黃金樣板欄序 = HK_UNIVERSE 順序)。
+_HK_UNIVERSE_FALLBACK = [
+    "HK.00005", "HK.00388", "HK.00001", "HK.00002", "HK.00003", "HK.00006",
+    "HK.00011", "HK.00012", "HK.00016", "HK.00017", "HK.00027", "HK.00066",
+    "HK.00101", "HK.00175", "HK.00241", "HK.00268", "HK.00285", "HK.00291",
+    "HK.00386", "HK.00688", "HK.00700", "HK.00762", "HK.00823", "HK.00883",
+    "HK.00939", "HK.00941", "HK.01038", "HK.01088", "HK.01109", "HK.01299",
+    "HK.01398", "HK.01876", "HK.01928", "HK.02013", "HK.02318", "HK.02388",
+    "HK.02628", "HK.03690", "HK.06862", "HK.09618", "HK.09988", "HK.09999",
+    "HK.01810", "HK.09992", "HK.01211", "HK.01024", "HK.02899", "HK.09888",
+    "HK.00992", "HK.01801", "HK.00020", "HK.02269",
+]
+
+BETA_WINDOW = 252
+BETA_MIN_PERIODS = 126
+MOM_WINDOW = 63
+Z_BASELINE = 252
+
+
+def _load_universe() -> list[str]:
+    try:
+        sys.path.insert(0, str(BT))
+        from vbt_data import HK_UNIVERSE  # noqa: PLC0415
+        return list(HK_UNIVERSE)
+    except Exception as e:  # noqa: BLE001
+        print(f"[fxs-build] vbt_data.HK_UNIVERSE 攞唔到 ({e}) — 用後備硬拷貝", flush=True)
+        return list(_HK_UNIVERSE_FALLBACK)
+
+
+def _load_closes(ohlcv_dir: Path, universe: list[str]) -> pd.DataFrame:
+    closes: dict[str, pd.Series] = {}
+    skipped = []
+    for code in universe:
+        fp = ohlcv_dir / f"{code.replace('.', '_')}.csv"
+        if not fp.exists():
+            skipped.append(code)
+            continue
+        df = pd.read_csv(fp, parse_dates=["time_key"]).set_index("time_key").sort_index()
+        closes[code] = df["close"].astype(float)
+    if skipped:
+        print(f"[fxs-build] ohlcv 無檔跳過 (照舊出欄以外): {', '.join(skipped)}", flush=True)
+    prices = pd.DataFrame(closes).sort_index()
+    prices = prices[~prices.index.duplicated(keep="last")]
+    prices.index.name = "time_key"
+    return prices
+
+
+def _load_fx(csv_path: Path) -> pd.Series:
+    df = pd.read_csv(csv_path, parse_dates=["date"]).set_index("date").sort_index()
+    s = df["cnyaud_close"].astype(float)
+    s = s[~s.index.duplicated(keep="last")]
+    s.name = "cnyaud_close"
+    return s
+
+
+def build_panel(prices: pd.DataFrame, fx: pd.Series) -> pd.DataFrame:
+    """fxs_cnyaud = beta_i(252d, mp126) × fx_mom_z(63d vs 252d) — 見 docstring 配方."""
+    rets = prices.pct_change(fill_method=None)
+    fx_chg = fx.pct_change(fill_method=None).reindex(prices.index)
+    cov = rets.rolling(BETA_WINDOW, min_periods=BETA_MIN_PERIODS).cov(fx_chg)
+    var = fx_chg.rolling(BETA_WINDOW, min_periods=BETA_MIN_PERIODS).var()
+    beta = cov.div(var, axis=0)
+    mom = fx.pct_change(MOM_WINDOW, fill_method=None)
+    z = (mom - mom.rolling(Z_BASELINE).mean()) / mom.rolling(Z_BASELINE).std()
+    panel = beta.mul(z.reindex(prices.index), axis=0)
+    panel.index.name = "time_key"
+    return panel
+
+
+def _atomic_parquet(df: pd.DataFrame, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    df.to_parquet(tmp)
+    os.replace(tmp, path)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="build fxs_cnyaud panel (fxba 匯率敏感度截面)")
+    ap.add_argument("--data-root", type=Path, default=BASE / "data",
+                    help="data 根 (預設 HERE/data)")
+    ap.add_argument("--out", type=Path, default=None,
+                    help="輸出 parquet (預設 <data-root>/factor_store/fxs_cnyaud.parquet)")
+    args = ap.parse_args()
+
+    ohlcv_dir = args.data_root / "ohlcv_5y"
+    fx_csv = args.data_root / "new_sources" / "cnyaud" / "cnyaud_daily.csv"
+    out = args.out or (args.data_root / "factor_store" / "fxs_cnyaud.parquet")
+
+    if not fx_csv.exists():
+        print(f"[fxs-build] fx raw 唔在場: {fx_csv} — 唔靜靜寫壞 parquet", flush=True)
+        return 1
+
+    universe = _load_universe()
+    prices = _load_closes(ohlcv_dir, universe)
+    fx = _load_fx(fx_csv)
+    panel = build_panel(prices, fx)
+
+    _atomic_parquet(panel, out)
+    n_valid = int(panel.notna().sum().sum())
+    print(f"[fxs-build] fxs_cnyaud: {panel.shape[0]}d × {panel.shape[1]}stk "
+          f"({panel.index[0].date()} → {panel.index[-1].date()}), "
+          f"valid cells {n_valid}/{panel.size} → {out}", flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

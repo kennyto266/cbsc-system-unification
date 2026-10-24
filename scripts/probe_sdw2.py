@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+"""probe2 — searchsdw.aspx vs searchsdw_c.aspx: 近期 vs 2023 日期有冇結果 table."""
+import requests, re
+
+for URL in ["https://www3.hkexnews.hk/sdw/search/searchsdw.aspx",
+            "https://www3.hkexnews.hk/sdw/search/searchsdw_c.aspx"]:
+    print("###", URL)
+    s = requests.Session()
+    s.headers["User-Agent"] = "Mozilla/5.0"
+    r = s.get(URL, timeout=15)
+    vs = re.search(r'name="__VIEWSTATE"[^>]*value="([^"]*)"', r.text).group(1)
+    vg = re.search(r'name="__VIEWSTATEGENERATOR"[^>]*value="([^"]*)"', r.text).group(1)
+    for date in ["2026/08/21", "2025/12/31", "2023/06/15"]:
+        data = {"__EVENTTARGET": "btnSearch", "__EVENTARGUMENT": "", "__VIEWSTATE": vs,
+                "__VIEWSTATEGENERATOR": vg, "txtStockCode": "00700",
+                "txtShareholdingDate": date, "today": "20260823",
+                "sortBy": "shareholding", "sortDirection": "desc",
+                "originalShareholdingDate": "", "alertMsg": ""}
+        r2 = s.post(URL, data=data, timeout=20)
+        t = r2.text
+        n = len(re.findall(r'(<td class="col-participant-name"|mobile-list-body)', t))
+        hits = re.findall(r'(中國結算|CHINA CLEAR|Bank of Communications)', t)
+        print(f"  {date}: len={len(t)} rowmark={n} namehits={len(hits)}")

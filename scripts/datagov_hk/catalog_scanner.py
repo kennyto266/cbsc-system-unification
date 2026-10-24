@@ -1,0 +1,64 @@
+"""掃 data.gov.hk 搜尋 API,分頁拿全部 dataset metadata → dataset_catalog。"""
+from urllib.parse import quote
+
+from .browser import browser_session
+from . import db
+
+API = "https://data.gov.hk/api/v1/datasets"
+
+
+def _to_catalog_row(rec: dict, category_fallback: str) -> dict:
+    name = rec.get("name") or {}
+    return {
+        "id": rec["id"],
+        "provider": rec.get("provider", ""),
+        "category": rec.get("category", category_fallback),
+        "name_tc": name.get("tc"),
+        "name_sc": name.get("sc"),
+        "name_en": name.get("en"),
+        "formats": str(rec.get("format", [])),
+        "is_api_avail": 1 if rec.get("isApiAvailable") else 0,
+        "score": rec.get("score"),
+    }
+
+
+def scan_catalog(keyword: str = "金融", lang: str = "tc", page_size: int = 100,
+                 category: str = None) -> int:
+    """掃目錄。category 指定時用 category filter(擴展其他範疇);否則用 keyword。"""
+    all_rows = []
+    offset = 0
+    with browser_session() as b:
+        while True:
+            if category:
+                params = (f"?limit={page_size}&offset={offset}&sortBy=relevance"
+                          f"&category={category}&lang={lang}")
+            else:
+                kw = quote(keyword)
+                params = (f"?limit={page_size}&offset={offset}&sortBy=relevance"
+                          f"&keyword={kw}&lang={lang}")
+            url = API + params
+            j = b.fetch_json(url)
+            ds = j.get("datasets", [])
+            if not ds:
+                break
+            cat_fb = category or "finance"
+            all_rows.extend(_to_catalog_row(r, cat_fb) for r in ds)
+            total = j.get("total", 0)
+            if offset + len(ds) >= total or len(ds) < page_size:
+                break
+            offset += page_size
+    conn = db.get_conn()
+    db.init_schema(conn)
+    db.upsert_catalog(conn, all_rows)
+    conn.close()
+    return len(all_rows)
+
+
+if __name__ == "__main__":
+    import argparse
+    p = argparse.ArgumentParser()
+    p.add_argument("--keyword", default="金融")
+    p.add_argument("--category", default=None)
+    a = p.parse_args()
+    n = scan_catalog(keyword=a.keyword, category=a.category)
+    print(f"catalog: {n} datasets written to dataset_catalog")

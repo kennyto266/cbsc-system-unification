@@ -1,0 +1,270 @@
+#!/usr/bin/env python3
+"""ml_transformer_v2.py — 擴展特徵集 Transformer (A150).
+
+vs A27 (v1): 8 factors → 18 factors (+FRED 7 + divergence 3) + 6 technicals = 24 dims.
+同一架構 (Transformer Encoder, d_model=64, 3 layers), input_dim 14→24.
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+import warnings; warnings.filterwarnings("ignore")
+
+import math, numpy as np, pandas as pd
+from pathlib import Path
+import torch, torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
+from vbt_data import load_stock_close, load_factor_close, TOTAL_COST, SLIPPAGE, INIT_CASH_FACTOR
+import vectorbt as vbt
+
+DATA_10YR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr")
+FACT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors")
+MODEL_PATH = Path(r"C:\Users\Penguin8n\ZCodeProject\backtests\ml_model_v2.pt")
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"🖥️ Device: {DEVICE}" + (f" ({torch.cuda.get_device_name(0)})" if DEVICE == "cuda" else ""))
+
+# ponytail: reuse v1 constants where they don't change
+STOCKS = ["HK.00700","HK.09988","HK.03690","HK.01810","HK.01211",
+          "HK.00005","HK.00939","HK.00388","HK.00941","HK.01299",
+          "HK.02313","HK.02018","HK.06862","HK.02688","HK.01093"]
+LOOKBACK = 20; FORWARD = 5
+TRAIN_END = "2022-12-31"; TEST_START = "2023-01-01"
+D_MODEL = 64; N_HEAD = 4; N_LAYERS = 3; DROPOUT = 0.1
+BATCH_SIZE = 256; EPOCHS = 80; LR = 1e-4; WEIGHT_DECAY = 1e-4
+EARLY_STOP_PATIENCE = 10
+
+
+def _load_csv(file, col="close"):
+    p = FACT_DIR / file
+    if not p.exists(): return None
+    df = pd.read_csv(p)
+    dc = next((c for c in df.columns if c.lower() in ("date","end_of_day","datetime","time","time_key")), df.columns[0])
+    df[dc] = pd.to_datetime(df[dc], errors="coerce")
+    if col not in df.columns:
+        for c in df.columns:
+            if c == dc: continue
+            try: df[c].astype(float); col = c; break
+            except: continue
+    df = df.dropna(subset=[dc, col]).sort_values(dc).drop_duplicates(subset=dc, keep="last")
+    s = pd.Series(df[col].astype(float).values, index=pd.to_datetime(df[dc].values), name=col)
+    if getattr(s.index, "tz", None) is not None: s.index = s.index.tz_localize(None)
+    return s
+
+
+def _z(series, window=120):
+    return (series - series.rolling(window).mean()) / series.rolling(window).std().replace(0, np.nan)
+
+
+def build_features(stock):
+    """24-dim features: 8 original + 7 FRED + 3 divergence + 6 technicals."""
+    fname = stock.replace(".", "_")
+    p = DATA_10YR / f"{fname}.csv"
+    if p.exists():
+        df = pd.read_csv(p, parse_dates=["time_key"]).set_index("time_key").sort_index()
+        close = df["close"].astype(float)
+    else:
+        close = load_stock_close(stock)
+    if close is None or len(close) < 500:
+        return None, None
+
+    features = pd.DataFrame(index=close.index)
+
+    # --- Original 8 macro factors ---
+    for f_name in ["dxy", "usdcnh", "vix", "gold", "copper", "sp500", "us_10y_yield", "hibor"]:
+        factor = load_factor_close(f_name)
+        if factor is not None:
+            features[f"{f_name}_z"] = _z(factor.reindex(close.index).ffill())
+
+    # --- 7 FRED factors ---
+    fred_map = {"dgs2": "fred_dgs2.csv", "dgs10": "fred_dgs10.csv", "fedfunds": "fred_fedfunds.csv",
+                "walcl": "fred_walcl.csv", "t10yie": "fred_t10yie.csv", "baa10y": "fred_baa10y.csv",
+                "nfci": "fred_nfci.csv"}
+    for tag, file in fred_map.items():
+        f = _load_csv(file)
+        if f is not None:
+            features[f"fred_{tag}_z"] = _z(f.reindex(close.index).ffill())
+
+    # --- 3 divergence features ---
+    gold = load_factor_close("gold"); copper = load_factor_close("copper")
+    dgs10 = _load_csv("fred_dgs10.csv")
+    if gold is not None and copper is not None:
+        ga = gold.reindex(close.index).ffill(); ca = copper.reindex(close.index).ffill()
+        features["div_copper_gold_z"] = _z(ca) - _z(ga)
+    if copper is not None and dgs10 is not None:
+        ca2 = copper.reindex(close.index).ffill(); da = dgs10.reindex(close.index).ffill()
+        features["div_copper_bond_z"] = _z(ca2) - _z(da)
+    # 南北向 divergence
+    sc_path = FACT_DIR.parent / "stock_connect" / "sc_full.csv"
+    if sc_path.exists():
+        sc = pd.read_csv(sc_path)
+        sc["date"] = pd.to_datetime(sc["date"], errors="coerce")
+        south = sc[sc["type_name"].str.contains("南向", na=False)].groupby("date")["net_buy"].sum().sort_index()
+        north = sc[sc["type_name"].str.contains("北向", na=False)].groupby("date")["net_buy"].sum().sort_index()
+        s5 = south.rolling(5).sum().reindex(close.index).ffill()
+        n5 = north.rolling(5).sum().reindex(close.index).ffill()
+        features["div_south_north_z"] = _z(s5) - _z(n5)
+
+    # --- 6 technicals ---
+    features["ret_1d"] = close.pct_change(1)
+    features["ret_5d"] = close.pct_change(5)
+    features["ret_20d"] = close.pct_change(20)
+    features["vol_20d"] = close.pct_change().rolling(20).std()
+    features["sma_ratio"] = close / close.rolling(50).mean() - 1
+    features["high_low_ratio"] = (close.rolling(20).max() - close.rolling(20).min()) / close
+
+    fwd = close.pct_change(FORWARD).shift(-FORWARD)
+    label = (fwd > fwd.rolling(252).median()).astype(float)
+    valid = features.dropna().index.intersection(label.dropna().index)
+    return features.loc[valid], label.loc[valid]
+
+
+def create_sequences(features, label, lookback=LOOKBACK):
+    X, y = [], []
+    for i in range(lookback, len(features)):
+        X.append(features.iloc[i - lookback:i].values)
+        y.append(label.iloc[i])
+    return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32)
+
+
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, max_len=500):
+        super().__init__()
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe.unsqueeze(0))
+
+    def forward(self, x):
+        return x + self.pe[:, :x.size(1)]
+
+
+class TransformerModelV2(nn.Module):
+    """Transformer Encoder, input_dim=24."""
+    def __init__(self, input_dim, d_model=D_MODEL, nhead=N_HEAD, num_layers=N_LAYERS, dropout=DROPOUT):
+        super().__init__()
+        self.input_proj = nn.Linear(input_dim, d_model)
+        self.pos_enc = PositionalEncoding(d_model, max_len=LOOKBACK + 10)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model, nhead=nhead, dim_feedforward=d_model * 4,
+            dropout=dropout, batch_first=True, activation="gelu")
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        self.head = nn.Sequential(nn.Linear(d_model, 32), nn.GELU(), nn.Dropout(dropout), nn.Linear(32, 1), nn.Sigmoid())
+
+    def forward(self, x):
+        x = self.input_proj(x)
+        x = self.pos_enc(x)
+        x = self.encoder(x)
+        return self.head(x[:, -1, :]).squeeze(-1)
+
+
+def train_model(X_train, y_train, X_val, y_val):
+    model = TransformerModelV2(X_train.shape[2]).to(DEVICE)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
+    criterion = nn.BCELoss()
+    train_loader = DataLoader(TensorDataset(torch.FloatTensor(X_train), torch.FloatTensor(y_train)), batch_size=BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(TensorDataset(torch.FloatTensor(X_val), torch.FloatTensor(y_val)), batch_size=BATCH_SIZE, shuffle=False)
+    best_val, best_state, patience = float("inf"), None, 0
+    for epoch in range(EPOCHS):
+        model.train()
+        for xb, yb in train_loader:
+            xb, yb = xb.to(DEVICE), yb.to(DEVICE)
+            optimizer.zero_grad()
+            loss = criterion(model(xb), yb); loss.backward(); optimizer.step()
+        scheduler.step()
+        model.eval(); val_loss = 0
+        with torch.no_grad():
+            for xb, yb in val_loader:
+                val_loss += criterion(model(xb.to(DEVICE)), yb.to(DEVICE)).item()
+        val_loss /= len(val_loader)
+        if (epoch + 1) % 10 == 0:
+            print(f"  Epoch {epoch+1}/{EPOCHS}: val={val_loss:.4f}", flush=True)
+        if val_loss < best_val:
+            best_val = val_loss; best_state = {k: v.clone() for k, v in model.state_dict().items()}; patience = 0
+        else:
+            patience += 1
+            if patience >= EARLY_STOP_PATIENCE:
+                print(f"  ⏹️ Early stop @ {epoch+1} (best val={best_val:.4f})", flush=True); break
+    if best_state: model.load_state_dict(best_state)
+    return model
+
+
+def main():
+    print("=" * 70)
+    print(f"🧠 Transformer V2 — A150 (24-dim: 8+7+3+6)")
+    print(f"   Device: {DEVICE} | Lookback: {LOOKBACK} | Forward: {FORWARD}")
+    print("=" * 70)
+
+    print("\n1️⃣ 構建特徵矩陣...", flush=True)
+    all_X_train, all_y_train, all_X_test, all_y_test = [], [], [], []
+    test_data = {}
+    for stock in STOCKS:
+        features, label = build_features(stock)
+        if features is None: continue
+        n_features = features.shape[1]
+        X, y = create_sequences(features, label)
+        dates = features.index[LOOKBACK:]
+        close = load_stock_close(stock)
+        if close is None: continue
+        dates_arr = dates.values if hasattr(dates, 'values') else np.array(dates)
+        train_mask = dates_arr < np.datetime64(TRAIN_END)
+        test_mask = dates_arr >= np.datetime64(TEST_START)
+        if train_mask.sum() > 100:
+            all_X_train.append(X[train_mask]); all_y_train.append(y[train_mask])
+        if test_mask.sum() > 50:
+            all_X_test.append(X[test_mask]); all_y_test.append(y[test_mask])
+            test_data[stock] = (close, dates[test_mask])
+        print(f"  {stock}: train={train_mask.sum()} test={test_mask.sum()} features={n_features}", flush=True)
+
+    X_train = np.concatenate(all_X_train); y_train = np.concatenate(all_y_train)
+    X_test = np.concatenate(all_X_test); y_test = np.concatenate(all_y_test)
+    val_size = int(len(X_train) * 0.15)
+    X_val, y_val = X_train[-val_size:], y_train[-val_size:]
+    X_train_real, y_train_real = X_train[:-val_size], y_train[:-val_size]
+    print(f"\n  訓練: {len(X_train_real)} | 驗證: {len(X_val)} | 測試: {len(X_test)} | dims={X_train.shape[2]}")
+    print(f"  正樣本: train={y_train_real.mean():.2f} test={y_test.mean():.2f}")
+
+    print(f"\n2️⃣ 訓練 Transformer V2...", flush=True)
+    model = train_model(X_train_real, y_train_real, X_val, y_val)
+    torch.save(model.state_dict(), MODEL_PATH)
+    print(f"\n💾 Model saved: {MODEL_PATH}", flush=True)
+
+    print(f"\n3️⃣ OOS 回測...", flush=True)
+    model.eval(); results = []
+    with torch.no_grad():
+        for stock, (close, dates) in test_data.items():
+            features, label = build_features(stock)
+            if features is None: continue
+            X, y = create_sequences(features, label)
+            idx = features.index[LOOKBACK:]
+            idx_arr = idx.values if hasattr(idx, 'values') else np.array(idx)
+            test_mask = idx_arr >= np.datetime64(TEST_START)
+            X_test_s = X[test_mask]; dates_s = idx[test_mask]
+            if len(X_test_s) == 0: continue
+            preds = model(torch.FloatTensor(X_test_s).to(DEVICE)).cpu().numpy()
+            close_test = close.reindex(dates_s).dropna()
+            valid = close_test.index
+            # 對齊: preds 可能比 valid 長或短, 取較短
+            n = min(len(preds), len(valid))
+            preds = preds[:n]; valid = valid[:n]
+            entries = pd.Series(preds > 0.5, index=valid).shift(1).fillna(False)
+            exits = pd.Series(preds < 0.3, index=valid).shift(1).fillna(False)
+            if not entries.any(): continue
+            pf = vbt.Portfolio.from_signals(close=close_test, entries=entries, exits=exits,
+                                            fees=TOTAL_COST/2, slippage=SLIPPAGE, freq="1D", init_cash=INIT_CASH_FACTOR)
+            sr = float(pf.sharpe_ratio()); ret = float(pf.total_return())
+            print(f"  {stock}: SR={sr:.3f} ret={ret*100:.1f}% trades={pf.trades.count()}", flush=True)
+            results.append({"stock": stock, "sharpe": sr, "return": ret})
+
+    df = pd.DataFrame(results)
+    if len(df) > 0:
+        print(f"\n{'='*70}\n📊 V2 OOS 結果\n{'='*70}")
+        print(f"  正 Sharpe: {(df['sharpe']>0).sum()}/{len(df)}")
+        print(f"  SR>1.0: {(df['sharpe']>1.0).sum()}/{len(df)}")
+        print(f"  平均 Sharpe: {df['sharpe'].mean():.3f}")
+        print(df.sort_values("sharpe", ascending=False).to_string(index=False))
+
+
+if __name__ == "__main__":
+    main()

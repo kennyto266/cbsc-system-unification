@@ -1,0 +1,50 @@
+# Kubernetes Namespace for CBSC Strategy Management System
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cbsc-strategy
+  labels:
+    name: cbsc-strategy
+    environment: production
+    project: strategy-management
+    version: v2
+---
+# Resource Quota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: cbsc-strategy-quota
+  namespace: cbsc-strategy
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+    persistentvolumeclaims: "10"
+    services: "10"
+    secrets: "20"
+    configmaps: "20"
+---
+# Limit Range
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cbsc-strategy-limits
+  namespace: cbsc-strategy
+spec:
+  limits:
+  - default:
+      cpu: "500m"
+      memory: "1Gi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "256Mi"
+    type: Container
+  - max:
+      cpu: "2"
+      memory: "4Gi"
+    min:
+      cpu: "50m"
+      memory: "128Mi"
+    type: Container

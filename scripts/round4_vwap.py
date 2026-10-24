@@ -1,0 +1,178 @@
+"""Test VWAP reversion + Overnight>3% correlation with A159-162."""
+import sys
+sys.path = [p for p in sys.path if 'CODEX' not in p]
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\backtests')
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts')
+import warnings
+warnings.filterwarnings('ignore')
+import numpy as np, pandas as pd
+from pathlib import Path
+from vbt_data import FACTOR_STOCKS
+
+DATA_5Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y')
+DATA_10Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr')
+SPLIT = pd.Timestamp('2024-01-01')
+
+ohlcv_cache = {}
+close_all = {}; open_all = {}
+for s in FACTOR_STOCKS:
+    fname = s.replace('.', '_')
+    for d in [DATA_10Y, DATA_5Y]:
+        p = d / f'{fname}.csv'
+        if p.exists():
+            df = pd.read_csv(p, parse_dates=['time_key']).set_index('time_key').sort_index()
+            ohlcv_cache[s] = df
+            close_all[s] = df['close'].astype(float)
+            open_all[s] = df['open'].astype(float)
+            break
+close_panel = pd.DataFrame(close_all); open_panel = pd.DataFrame(open_all)
+ret_panel = close_panel.pct_change()
+
+
+def ts_portfolio(entry_func, hold=5):
+    all_rets = {}
+    for stock, df in ohlcv_cache.items():
+        if len(df) < 400: continue
+        close = df['close'].astype(float)
+        try:
+            entries = entry_func(close, df)
+            if entries is None: continue
+            ret1 = close.pct_change()
+            pos = pd.Series(0, index=close.index); in_pos=False; dl=0
+            for i in range(len(close)):
+                if entries.iloc[i] and not in_pos: in_pos=True; dl=hold
+                pos.iloc[i]=1 if in_pos else 0
+                if in_pos:
+                    dl-=1
+                    if dl<=0: in_pos=False
+            all_rets[stock] = (pos.shift(1)*ret1).dropna()
+        except: pass
+    if not all_rets: return None
+    return pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+
+
+# Existing
+def a159(c,d):
+    vol=d['volume'].astype(float); ef=c.ewm(span=12,adjust=False).mean(); es=c.ewm(span=26,adjust=False).mean()
+    m=ef-es; s=m.ewm(span=9,adjust=False).mean(); h=m-s
+    e1=((h>0)&(h>h.shift(1))).shift(1).fillna(False)
+    vs=(vol-vol.rolling(20).mean())/vol.rolling(20).std().replace(0,np.nan)
+    e2=((vs>1.5)&(c.pct_change(5)>0)).shift(1).fillna(False)
+    return (e1&e2).fillna(False)
+def a160(c,d):
+    sma=c.rolling(100).mean(); dev=(c-sma)/sma
+    z=(dev-dev.rolling(120).mean())/dev.rolling(120).std().replace(0,np.nan)
+    return (z<-1.5).shift(1).fillna(False)
+def a161(c,d):
+    hi,lo=d['high'].astype(float),d['low'].astype(float)
+    tr=pd.concat([(hi-lo),(hi-c.shift()).abs(),(lo-c.shift()).abs()],axis=1).max(axis=1)
+    atr=tr.rolling(14).mean(); ap=atr/c
+    la=ap.rolling(60).rank(pct=True)<0.15; sma=c.rolling(50).mean()
+    return (la&(c>sma)).shift(1).fillna(False)
+FAC=Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors')
+dv=pd.read_csv(FAC/'vix.csv').set_index(pd.to_datetime(pd.read_csv(FAC/'vix.csv')['date'])).sort_index()
+vix=dv['close'].astype(float)
+def a162(c,d):
+    va=vix.reindex(c.index).ffill()
+    z=(va-va.rolling(90).mean())/va.rolling(90).std().replace(0,np.nan)
+    return (z>2.0).shift(1).fillna(False)
+
+# VWAP reversion param sweep
+print('='*65)
+print('VWAP Reversion Parameter Sweep')
+print('='*65)
+def vwap_revert(close, df, vwap_p=10, z_w=60, z_t=1.5):
+    typical = (df['high'].astype(float) + df['low'].astype(float) + close) / 3
+    vol = df['volume'].astype(float)
+    vwap = (typical * vol).rolling(vwap_p).sum() / vol.rolling(vwap_p).sum().replace(0, np.nan)
+    div = (close - vwap) / vwap
+    z = (div - div.rolling(z_w).mean()) / div.rolling(z_w).std().replace(0, np.nan)
+    return (z < -z_t).shift(1).fillna(False)
+
+print(f'{"vwap_p":>7} {"z_w":>4} {"z_t":>4} {"hold":>4} {"OOS":>6} {"ret":>7} {"DD":>7}')
+for vp in [5, 10, 20]:
+    for zw in [40, 60, 120]:
+        for zt in [1.0, 1.5, 2.0]:
+            for hold in [3, 5]:
+                result = ts_portfolio(lambda c,d,vp=vp,zw=zw,zt=zt: vwap_revert(c,d,vp,zw,zt), hold=hold)
+                if result is None: continue
+                oos = result[result.index>=SPLIT].dropna()
+                if len(oos) < 20: continue
+                sr = oos.mean()/oos.std()*np.sqrt(252) if oos.std()>0 else 0
+                ret = (1+oos).cumprod().iloc[-1]-1
+                dd = ((1+oos).cumprod()/(1+oos).cumprod().cummax()-1).min()
+                tag = '🟢' if sr > 1.0 else '✨' if sr > 0.7 else '  ' if sr > 0.4 else '❌'
+                print(f'  {tag} {vp:>6} {zw:>4} {zt:>4.1f} {hold:>4} {sr:>+5.2f} {ret:>+6.1%} {dd:>6.1%}')
+
+# Best VWAP config
+best_vwap = ts_portfolio(lambda c,d: vwap_revert(c,d,vwap_p=10,z_w=60,z_t=1.5), hold=3)
+
+# Overnight>3% continuation
+print('\n' + '='*65)
+print('Overnight Continuation Parameter Sweep')
+print('='*65)
+def overnight_cont(close, df, gap_t=0.03, hold=3):
+    opn = df['open'].astype(float)
+    gap = opn / close.shift(1) - 1
+    return (gap > gap_t).shift(1).fillna(False)
+
+for gt in [0.01, 0.02, 0.03]:
+    for hold in [3, 5]:
+        result = ts_portfolio(lambda c,d,g=gt: overnight_cont(c,d,g), hold=hold)
+        if result is None: continue
+        oos = result[result.index>=SPLIT].dropna()
+        if len(oos) < 20: continue
+        sr = oos.mean()/oos.std()*np.sqrt(252) if oos.std()>0 else 0
+        ret = (1+oos).cumprod().iloc[-1]-1
+        dd = ((1+oos).cumprod()/(1+oos).cumprod().cummax()-1).min()
+        tag = '🟢' if sr > 1.0 else '✨' if sr > 0.7 else '  ' if sr > 0.4 else '❌'
+        print(f'  {tag} gap>{gt:.0%} hold{hold}: SR={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')
+
+best_overnight = ts_portfolio(lambda c,d: overnight_cont(c,d,0.03), hold=3)
+
+# Correlation
+print('\n' + '='*65)
+print('Correlation Test')
+print('='*65)
+all_returns = {
+    'A159': ts_portfolio(a159, hold=3),
+    'A160': ts_portfolio(a160, hold=10),
+    'A161': ts_portfolio(a161, hold=3),
+    'A162': ts_portfolio(a162, hold=5),
+    'VWAP_rev': best_vwap,
+    'Overnight': best_overnight,
+}
+df_all = pd.DataFrame(all_returns).dropna()
+oos = df_all[df_all.index >= SPLIT]
+print(f'\n{"Signal":<12} {"OOS_SR":>7} {"ret":>7} {"DD":>7} {"cA159":>6} {"cA160":>6} {"cA161":>6} {"cA162":>6} {"avg":>5}')
+print('-'*75)
+for col in df_all.columns:
+    s = oos[col]; sr = s.mean()/s.std()*np.sqrt(252) if s.std()>0 else 0
+    ret = (1+s).cumprod().iloc[-1]-1
+    dd = ((1+s).cumprod()/(1+s).cumprod().cummax()-1).min()
+    cs = [abs(oos[col].corr(oos[c])) for c in ['A159','A160','A161','A162']]
+    avg_c = np.mean(cs)
+    tag = '🟢' if sr > 1.0 else '✨' if sr > 0.7 else '  ' if sr > 0.4 else '❌'
+    low = '⭐' if avg_c < 0.3 else ''
+    print(f'  {tag} {col:<10} {sr:>+6.2f} {ret:>+6.1%} {dd:>6.1%} {cs[0]:>5.2f} {cs[1]:>5.2f} {cs[2]:>5.2f} {cs[3]:>5.2f} {avg_c:>4.2f} {low}')
+
+# 5-way combos
+print('\n=== 5-Way Combos ===')
+for fifth in ['VWAP_rev', 'Overnight']:
+    combo = oos['A159']*0.2 + oos['A160']*0.2 + oos['A161']*0.2 + oos['A162']*0.2 + oos[fifth]*0.2
+    sr = combo.mean()/combo.std()*np.sqrt(252) if combo.std()>0 else 0
+    ret = (1+combo).cumprod().iloc[-1]-1
+    dd = ((1+combo).cumprod()/(1+combo).cumprod().cummax()-1).min()
+    tag = '🏆' if sr > 2.2 else '🟢'
+    print(f'  {tag} +{fifth}(20%): SR={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')
+
+# Walk-forward for best 5-way (VWAP)
+print('\n=== Walk-Forward 5-way (+VWAP) ===')
+combo_all = (df_all['A159']+df_all['A160']+df_all['A161']+df_all['A162']+df_all['VWAP_rev'])/5
+for year in range(2019, 2027):
+    yr = combo_all[combo_all.index.year == year].dropna()
+    if len(yr) < 20: continue
+    sr = yr.mean()/yr.std()*np.sqrt(252) if yr.std()>0 else 0
+    ret = (1+yr).cumprod().iloc[-1]-1
+    tag = '✅' if sr > 0.5 else '⚠️' if sr > 0 else '❌'
+    print(f'  {year}: SR={sr:+.2f} ret={ret:+.1%} {tag}')

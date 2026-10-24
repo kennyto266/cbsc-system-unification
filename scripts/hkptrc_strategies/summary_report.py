@@ -1,0 +1,205 @@
+"""
+hkptrc 策略總匯報告 — 整合所有 Batch 結果 + 對比 Buy & Hold
+
+產出：
+1. 完整排名表（所有策略 × 所有股票）
+2. 策略匯總對比（邊個策略最好）
+3. 最佳策略-股票組合
+4. Markdown 報告
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, __file__.rsplit("\\", 1)[0])
+
+from common import *
+import numpy as np
+import pandas as pd
+from pathlib import Path
+
+
+def load_all_results():
+    """載入所有 batch 結果。"""
+    all_results = []
+    for f in ["batch1_trend_meanrev.csv", "batch2_filters.csv",
+              "batch3_portfolio.csv", "batch4_complex.csv",
+              "strategy_16_northbound.csv", "strategy_17_leading.csv",
+              "strategy_18_sec.csv", "strategy_19_mta.csv"]:
+        path = OUTPUT_DIR / f
+        if path.exists():
+            df = pd.read_csv(path)
+            df = df.replace([np.inf, -np.inf], np.nan)
+            all_results.append(df)
+    if not all_results:
+        return pd.DataFrame()
+    return pd.concat(all_results, ignore_index=True)
+
+
+def load_buyhold():
+    path = OUTPUT_DIR / "batch1_buyhold_benchmark.csv"
+    if path.exists():
+        df = pd.read_csv(path)
+        return df.replace([np.inf, -np.inf], np.nan)
+    return pd.DataFrame()
+
+
+def generate_report(results_df, bh_df):
+    """生成完整報告。"""
+    report = []
+    report.append("=" * 95)
+    report.append("🏆 hkptrc 19 個策略 × 10 隻股票 VectorBT 回測總匯")
+    report.append("=" * 95)
+    report.append("")
+
+    # 清理：去掉冇交易 + inf 嘅結果
+    clean = results_df.dropna(subset=["sharpe"]).copy()
+    clean = clean[np.isfinite(clean["sharpe"])]
+
+    report.append("總回測數: {}（有效 {}）".format(len(results_df), len(clean)))
+    report.append("")
+
+    # 1. 策略匯總
+    report.append("=" * 95)
+    report.append("📊 各策略表現匯總（中位數）")
+    report.append("=" * 95)
+    report.append("")
+    report.append("{:<32} {:>4} {:>8} {:>8} {:>8} {:>8} {:>8}".format(
+        "策略", "樣本", "Sharpe", "AnnRet%", "MaxDD%", "Sortino", "Win%"))
+    report.append("-" * 85)
+
+    strategy_summary = []
+    for strat, grp in clean.groupby("strategy"):
+        row = {
+            "strategy": strat,
+            "n": len(grp),
+            "sharpe_median": grp["sharpe"].median(),
+            "ann_ret_median": grp["annual_return_pct"].median(),
+            "max_dd_mean": grp["max_drawdown_pct"].mean(),
+            "sortino_median": grp["sortino"].median(),
+            "win_rate_median": grp["win_rate_pct"].median(),
+        }
+        strategy_summary.append(row)
+
+    summary_df = pd.DataFrame(strategy_summary).sort_values("sharpe_median", ascending=False)
+    for _, r in summary_df.iterrows():
+        report.append("{:<32} {:>4} {:>8.2f} {:>7.1f}% {:>7.1f}% {:>8.2f} {:>7.0f}%".format(
+            r["strategy"], r["n"], r["sharpe_median"],
+            r["ann_ret_median"], r["max_dd_mean"],
+            r["sortino_median"], r["win_rate_median"]))
+
+    # B&H 對比
+    if not bh_df.empty:
+        bh_clean = bh_df.dropna(subset=["sharpe"])
+        bh_clean = bh_clean[np.isfinite(bh_clean["sharpe"])]
+        report.append("{:<32} {:>4} {:>8.2f} {:>7.1f}% {:>7.1f}% {:>8.2f} {:>7.0f}%".format(
+            ">>> Buy & Hold (基準)",
+            len(bh_clean), bh_clean["sharpe"].median(),
+            bh_clean["annual_return_pct"].median(),
+            bh_clean["max_drawdown_pct"].mean(),
+            bh_clean["sortino"].median() if "sortino" in bh_clean.columns else 0,
+            0))
+
+    # 2. Top 20 最佳組合
+    report.append("")
+    report.append("=" * 95)
+    report.append("🏆 Top 20 最佳策略-股票組合（按 Sharpe）")
+    report.append("=" * 95)
+    report.append("")
+    report.append("{:<4} {:<28} {:<12} {:>7} {:>8} {:>7} {:>5} {:>5}".format(
+        "#", "策略", "股票", "Sharpe", "AnnRet%", "MaxDD%", "Trd", "Win%"))
+    report.append("-" * 85)
+
+    top20 = clean.sort_values("sharpe", ascending=False).head(20)
+    for i, (_, r) in enumerate(top20.iterrows(), 1):
+        report.append("{:<4} {:<28} {:<12} {:>7.2f} {:>7.1f}% {:>6.1f}% {:>5} {:>4.0f}%".format(
+            i, str(r["strategy"])[:26], str(r["stock"])[:10],
+            r["sharpe"], r["annual_return_pct"], r["max_drawdown_pct"],
+            r["n_trades"], r["win_rate_pct"]))
+
+    # 3. 跑贏 Buy & Hold 嘅比例
+    report.append("")
+    report.append("=" * 95)
+    report.append("📊 策略 vs Buy & Hold 對比")
+    report.append("=" * 95)
+    report.append("")
+
+    bh_sharpe_median = bh_clean["sharpe"].median() if not bh_df.empty else 0
+    bh_ann_ret = bh_clean["annual_return_pct"].median() if not bh_df.empty else 0
+    bh_maxdd = bh_clean["max_drawdown_pct"].mean() if not bh_df.empty else 0
+
+    beat_sharpe = (clean["sharpe"] > bh_sharpe_median).sum()
+    beat_ret = (clean["annual_return_pct"] > bh_ann_ret).sum()
+    lower_dd = (clean["max_drawdown_pct"] > bh_maxdd).sum()  # MaxDD 負數，越大（接近0）越好
+
+    report.append("Buy & Hold 基準: Sharpe 中位數 {:.2f}, 年回報 {:.1f}%, MaxDD {:.1f}%".format(
+        bh_sharpe_median, bh_ann_ret, bh_maxdd))
+    report.append("")
+    report.append("策略跑贏 B&H Sharpe:    {}/{} ({:.0f}%)".format(
+        beat_sharpe, len(clean), beat_sharpe/len(clean)*100))
+    report.append("策略跑贏 B&H 年回報:    {}/{} ({:.0f}%)".format(
+        beat_ret, len(clean), beat_ret/len(clean)*100))
+    report.append("策略 MaxDD 更細:        {}/{} ({:.0f}%)".format(
+        lower_dd, len(clean), lower_dd/len(clean)*100))
+
+    # 4. 策略排名總結
+    report.append("")
+    report.append("=" * 95)
+    report.append("📋 策略排名總結")
+    report.append("=" * 95)
+    report.append("")
+
+    for rank, (_, r) in enumerate(summary_df.iterrows(), 1):
+        medal = ["🥇", "🥈", "🥉"][rank-1] if rank <= 3 else "  "
+        beat = "✓ 跑贏 B&H" if r["sharpe_median"] > bh_sharpe_median else "✗"
+        report.append("{} #{} {}: Sharpe {:.2f}, 年回報 {:.1f}%, MaxDD {:.1f}% {}".format(
+            medal, rank, r["strategy"], r["sharpe_median"],
+            r["ann_ret_median"], r["max_dd_mean"], beat))
+
+    # 5. 數據限制說明
+    report.append("")
+    report.append("=" * 95)
+    report.append("⚠️ 重要說明")
+    report.append("=" * 95)
+    report.append("")
+    report.append("1. 數據只有 245 日（1年），短期結果可能 overfitting")
+    report.append("2. HSI 數據冇真實 volume，#2 Volume Profile 用 histogram 近似")
+    report.append("3. 冇真實 high/low，部分策略用 close ± ATR 估算")
+    report.append("4. #16 改用北水（南向港股通）資金流向代替 CCASS（CCASS 網站 anti-bot）")
+    report.append("5. #17/#19 用日線近似 intraday 策略（富途 intraday 歷史有限）")
+    report.append("6. #18 SEC 數據只覆蓋美股大戶，對港股為間接指標")
+    report.append("7. #13 Rebalancing 需要多策略 equity curves，併入 #14 Shannon's Demon")
+    report.append("8. 所有結果已扣除 0.23% 來回成本 + rf 4%")
+
+    return "\n".join(report)
+
+
+def main():
+    results = load_all_results()
+    bh = load_buyhold()
+
+    if results.empty:
+        print("❌ 搵唔到結果，請先運行 batch1-4")
+        return
+
+    report = generate_report(results, bh)
+    print(report)
+
+    # 儲存
+    report_path = OUTPUT_DIR / "SUMMARY_REPORT.md"
+    with open(report_path, "w", encoding="utf-8") as f:
+        f.write("# hkptrc 策略回測總匯報告\n\n")
+        f.write("```\n")
+        f.write(report)
+        f.write("\n```\n")
+
+    # 儲存完整結果
+    all_results = results.copy()
+    all_results.to_csv(OUTPUT_DIR / "all_strategies_complete.csv", index=False)
+
+    print("\n✓ 儲存:")
+    print("  - SUMMARY_REPORT.md（完整報告）")
+    print("  - all_strategies_complete.csv（所有結果）")
+    print("\n📁 輸出目錄: {}".format(OUTPUT_DIR.relative_to(ROOT)))
+
+
+if __name__ == "__main__":
+    main()

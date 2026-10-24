@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+"""build_sdw_hold_pct_full.py — 南向持股佔比 wide panel (sdw_hold_pct_full).
+
+來源: data/new_sources/ccass_south_holdings_panel.csv (東財 RPT_MUTUAL_HOLD_DET, 每 (date,stock) 有 SH/SZ 兩 legs)
+  → sum hold_shares_ratio per (date, stock_code) → wide panel date × stock (%)
+  合併 southbound_holdings_em_hist.csv (已 sum) 去重驗證.
+輸出: data/new_sources/sdw_hold_pct_full_panel.csv
+"""
+from pathlib import Path
+import pandas as pd
+
+NS = Path(__file__).resolve().parent.parent / "data" / "new_sources"
+
+legs = pd.read_csv(NS / "ccass_south_holdings_panel.csv", dtype={"stock_code": str})
+legs["stock_code"] = legs["stock_code"].str.zfill(5)
+s1 = legs.groupby(["date", "stock_code"], as_index=False)["hold_shares_ratio"].sum()
+s1 = s1.rename(columns={"hold_shares_ratio": "pct"})
+
+h = pd.read_csv(NS / "southbound_holdings_em_hist.csv", dtype={"stock_code": str})
+h["stock_code"] = h["stock_code"].str.zfill(5)
+s2 = h[["date", "stock_code", "pct_of_total"]].rename(columns={"pct_of_total": "pct"})
+
+m = pd.concat([s2, s1]).groupby(["date", "stock_code"], as_index=False)["pct"].max()
+p = m.pivot(index="date", columns="stock_code", values="pct").sort_index()
+p.index.name = "date"
+p.to_csv(NS / "sdw_hold_pct_full_panel.csv")
+print(f"panel {p.shape}, {p.index[0]} -> {p.index[-1]}")
+# cross-check overlap between two sources
+ov = s1.merge(s2, on=["date", "stock_code"], suffixes=("_legs", "_hist"))
+if len(ov):
+    d = (ov["pct_legs"] - ov["pct_hist"]).abs()
+    print(f"overlap {len(ov)} rows, mean|diff|={d.mean():.4f}pp, max={d.max():.4f}pp")

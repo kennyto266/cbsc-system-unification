@@ -1,0 +1,195 @@
+r"""collect_hsi_iv.py — Collect daily HSI ATM implied volatility via Futu.
+
+Fetches HSI index options (HK.800000), finds ATM call+put for the nearest
+monthly expiry, computes Black-Scholes IV, and saves as a daily factor CSV.
+
+Usage:
+    python cbsc-system-unification/scripts/collect_hsi_iv.py
+    # Run during HK market hours (09:30-16:00 HKT) for live prices.
+
+Output: cbsc-system-unification/data/factors/hsi_iv.csv
+    Columns: date, atm_iv, put_call_vol_ratio, put_call_oi_ratio
+"""
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / ".venv" / "Lib" / "site-packages"))
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+from datetime import datetime, timezone, timedelta
+from scipy.stats import norm
+from scipy.optimize import brentq
+
+from futu import OpenQuoteContext
+
+HKT = timezone(timedelta(hours=8))
+FACT_DIR = Path(__file__).resolve().parents[1] / "data" / "factors"
+OUT_PATH = FACT_DIR / "hsi_iv.csv"
+
+
+def black_scholes(S, K, T, r, sigma, opt_type):
+    """Black-Scholes option price."""
+    if T <= 0 or sigma <= 0:
+        return max(0, S - K) if opt_type == "CALL" else max(0, K - S)
+    d1 = (np.log(S / K) + (r + sigma**2 / 2) * T) / (sigma * np.sqrt(T))
+    d2 = d1 - sigma * np.sqrt(T)
+    if opt_type == "CALL":
+        return S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
+    else:
+        return K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
+
+
+def solve_iv(S, K, T, r, market_price, opt_type):
+    """Solve for IV using Brent's method (fast, robust)."""
+    if market_price <= 0 or T <= 0:
+        return None
+    intrinsic = max(0, S - K) if opt_type == "CALL" else max(0, K - S)
+    if market_price < intrinsic:
+        return None
+
+    def obj(sigma):
+        return black_scholes(S, K, T, r, sigma, opt_type) - market_price
+
+    try:
+        return brentq(obj, 0.01, 5.0, xtol=0.0001) * 100  # to %
+    except (ValueError, RuntimeError):
+        return None
+
+
+def collect_iv():
+    ctx = OpenQuoteContext(host="127.0.0.1", port=11111)
+    try:
+        # HSI spot
+        ret, spot_df = ctx.get_market_snapshot(["HK.800000"])
+        if not isinstance(spot_df, pd.DataFrame) or len(spot_df) == 0:
+            print("ERROR: Cannot get HSI spot")
+            return
+        hsi = float(spot_df.iloc[0]["last_price"])
+        if hsi <= 0:
+            hsi = float(spot_df.iloc[0]["update_price"])
+        print(f"HSI spot: {hsi:.0f}")
+
+        # Get nearest monthly expiry (within 30-day API limit)
+        today = datetime.now(HKT).strftime("%Y-%m-%d")
+        end = (datetime.now(HKT) + timedelta(days=30)).strftime("%Y-%m-%d")
+        ret, chain = ctx.get_option_chain("HK.800000", start=today, end=end)
+        if not isinstance(chain, pd.DataFrame) or len(chain) == 0:
+            print("ERROR: No option chain")
+            return
+
+        chain["strike"] = pd.to_numeric(chain["strike_price"], errors="coerce")
+        # Pick nearest monthly expiry (not weekly)
+        monthly = chain[chain.get("expiration_cycle", "") == "MONTH"]
+        if monthly.empty:
+            monthly = chain
+        expiry_str = monthly["strike_time"].iloc[0]
+        expiry = pd.to_datetime(expiry_str, utc=True)
+        expiry_chain = chain[chain["strike_time"] == expiry_str]
+
+        # ATM ± 500 points
+        atm = expiry_chain[(expiry_chain["strike"] - hsi).abs() < 500].copy()
+        if len(atm) == 0:
+            print("ERROR: No ATM options")
+            return
+
+        codes = atm["code"].tolist()
+        ret2, snaps = ctx.get_market_snapshot(codes)
+        if not isinstance(snaps, pd.DataFrame) or len(snaps) == 0:
+            print("ERROR: No option snapshots")
+            return
+
+        snaps = snaps.merge(
+            atm[["code", "option_type", "strike"]].rename(columns={
+                "option_type": "opt_type", "strike": "opt_strike"
+            }),
+            on="code"
+        )
+
+        # Time to expiry
+        now = datetime.now(timezone.utc)
+        T = max((expiry - now).total_seconds() / (365.25 * 86400), 1/365)
+        r = 0.04
+
+        print(f"Expiry: {expiry.date()}, T={T:.4f}y, contracts: {len(snaps)}")
+
+        # Compute IV for each contract with valid price
+        ivs = []
+        call_vol = 0
+        put_vol = 0
+        for _, row in snaps.iterrows():
+            mp = float(row.get("last_price", 0) or row.get("update_price", 0) or 0)
+            ot = row["opt_type"]
+            vol = float(row.get("volume", 0) or 0)
+            K = row["opt_strike"]
+
+            if ot == "CALL":
+                call_vol += vol
+            else:
+                put_vol += vol
+
+            if mp > 5:  # skip stale/zero prices
+                iv = solve_iv(hsi, K, T, r, mp, ot)
+                if iv and 5 < iv < 100:
+                    ivs.append(iv)
+                    print(f"  {ot:4s} K={K:.0f} price={mp:.0f} vol={vol:.0f} → IV={iv:.1f}%")
+
+        atm_iv = np.median(ivs) if ivs else None
+        pcr = put_vol / call_vol if call_vol > 0 else None
+
+        print(f"\nATM IV (median): {atm_iv:.1f}%" if atm_iv else "No valid IV")
+        print(f"Put/Call vol ratio: {pcr:.3f}" if pcr else "No volume")
+
+        # Append to CSV
+        today_str = datetime.now(HKT).strftime("%Y-%m-%d")
+        new_row = pd.DataFrame([{
+            "date": today_str,
+            "atm_iv": round(atm_iv, 2) if atm_iv else "",
+            "put_call_vol_ratio": round(pcr, 3) if pcr else "",
+        }])
+
+        if OUT_PATH.exists():
+            existing = pd.read_csv(OUT_PATH, parse_dates=["date"])
+            existing = existing[existing["date"] != today_str]
+
+            # [09-04] 縮行防護 + 自動復原: 有自動化會 git-restore 呢個 repo,
+            # 將未提交嘅 IV 積累還原到舊 commit 版本 (09-01/09-04 兩次食咗數據)。
+            # 若 .bak 比主檔長 → 主檔被還原過 → 用 .bak 做底復原。
+            bak_path = str(OUT_PATH) + ".bak"
+            try:
+                bak_rows = len(pd.read_csv(bak_path)) if os.path.exists(bak_path) else 0
+                if bak_rows > len(existing) + 1:  # +1 容許 .bak 冇今日行
+                    print(f"⚠️ 主檔 ({len(existing)} 行) 比 .bak ({bak_rows} 行) 短 — "
+                          f"疑似被 git-restore 還原, 用 .bak 復原")
+                    existing = pd.read_csv(bak_path, parse_dates=["date"])
+                    existing = existing[existing["date"] != today_str]
+            except Exception:
+                pass
+
+            combined = pd.concat([existing, new_row], ignore_index=True)
+        else:
+            combined = new_row
+
+        # .bak 保護: 只喺新版本更長時先覆蓋 .bak (確保 .bak 永遠係最長版本)
+        import shutil
+        bak_path = str(OUT_PATH) + ".bak"
+        try:
+            bak_rows = len(pd.read_csv(bak_path)) if os.path.exists(bak_path) else 0
+            if len(combined) > bak_rows:
+                shutil.copy2(OUT_PATH, bak_path)
+        except Exception:
+            if OUT_PATH.exists():
+                shutil.copy2(OUT_PATH, bak_path)
+
+        combined.to_csv(OUT_PATH, index=False)
+        print(f"\nSaved to {OUT_PATH} ({len(combined)} rows)")
+
+    finally:
+        ctx.close()
+
+
+if __name__ == "__main__":
+    collect_iv()

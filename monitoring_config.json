@@ -1,0 +1,28 @@
+{
+  "prometheus": {
+    "scrape_interval": "15s",
+    "metrics_path": "/metrics",
+    "targets": [
+      "api:3004"
+    ]
+  },
+  "grafana": {
+    "dashboard_url": "${GRAFANA_URL}",
+    "panels": [
+      "API Response Time",
+      "Request Rate",
+      "Error Rate",
+      "Active Connections"
+    ]
+  },
+  "alerts": {
+    "api_down": {
+      "condition": "up == 0",
+      "severity": "critical"
+    },
+    "high_error_rate": {
+      "condition": "rate(http_requests_total{status=~\"5..\"}[5m]) > 0.1",
+      "severity": "warning"
+    }
+  }
+}

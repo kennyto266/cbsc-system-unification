@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBSC 性能监控仪表板</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --dark-bg: #1f2937;
+            --light-bg: #f9fafb;
+            --card-bg: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--light-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background: var(--dark-bg);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.active {
+            background: var(--secondary-color);
+        }
+
+        .status-dot.warning {
+            background: var(--warning-color);
+        }
+
+        .status-dot.error {
+            background: var(--danger-color);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-title {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .metric-unit {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-left: 0.25rem;
+        }
+
+        .metric-change {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+
+        .metric-change.positive {
+            color: var(--secondary-color);
+        }
+
+        .metric-change.negative {
+            color: var(--danger-color);
+        }
+
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .chart-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chart-control {
+            padding: 0.375rem 0.75rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chart-control:hover {
+            background: var(--light-bg);
+        }
+
+        .chart-control.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .alerts-section {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .alerts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .alerts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .alert-item {
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.2s;
+        }
+
+        .alert-item:hover {
+            transform: translateX(4px);
+        }
+
+        .alert-item.critical {
+            background: #fef2f2;
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .alert-item.warning {
+            background: #fffbeb;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .alert-item.info {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .alert-icon {
+            font-size: 1.25rem;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .alert-message {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .alert-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            color: var(--text-secondary);
+        }
+
+        .refresh-button {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 1.25rem;
+        }
+
+        .refresh-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+        }
+
+        .refresh-button:active {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+
+            .navbar {
+                padding: 1rem;
+            }
+
+            .navbar h1 {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>🚀 CBSC 性能监控仪表板</h1>
+        <div class="status-indicator">
+            <span>系统状态</span>
+            <div class="status-dot active" id="statusDot"></div>
+            <span id="statusText">正常运行</span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 关键指标 -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-title">API响应时间</span>
+                    <span>⏱️</span>
+                </div>
+                <div>
+                    <span class="metric-value" id="apiResponseTime">--</span>
+                    <span class="metric-unit">ms</span>
+                </div>
+                <div class="metric-change positive" id="responseTimeChange">
+                    ↓ 比上周快 12%
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-title">请求成功率</span>
+                    <span>✅</span>
+                </div>
+                <div>
+                    <span class="metric-value" id="successRate">--</span>
+                    <span class="metric-unit">%</span>
+                </div>
+                <div class="metric-change positive" id="successRateChange">
+                    ↑ 比上周高 2.3%
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-title">并发用户数</span>
+                    <span>👥</span>
+                </div>
+                <div>
+                    <span class="metric-value" id="concurrentUsers">--</span>
+                    <span class="metric-unit">人</span>
+                </div>
+                <div class="metric-change negative" id="concurrentUsersChange">
+                    ↓ 比峰值低 15%
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-title">CPU使用率</span>
+                    <span>🔥</span>
+                </div>
+                <div>
+                    <span class="metric-value" id="cpuUsage">--</span>
+                    <span class="metric-unit">%</span>
+                </div>
+                <div class="metric-change positive" id="cpuUsageChange">
+                    正常范围
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-title">内存使用率</span>
+                    <span>💾</span>
+                </div>
+                <div>
+                    <span class="metric-value" id="memoryUsage">--</span>
+                    <span class="metric-unit">%</span>
+                </div>
+                <div class="metric-change positive" id="memoryUsageChange">
+                    正常范围
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-title">系统正常运行时间</span>
+                    <span>⏰</span>
+                </div>
+                <div>
+                    <span class="metric-value" id="uptime">--</span>
+                    <span class="metric-unit">%</span>
+                </div>
+                <div class="metric-change positive" id="uptimeChange">
+                    本月无故障
+                </div>
+            </div>
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="charts-section">
+            <!-- 响应时间趋势 -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">响应时间趋势</h3>
+                    <div class="chart-controls">
+                        <button class="chart-control active" data-period="1h">1小时</button>
+                        <button class="chart-control" data-period="24h">24小时</button>
+                        <button class="chart-control" data-period="7d">7天</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="responseTimeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 请求量趋势 -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">请求量趋势</h3>
+                    <div class="chart-controls">
+                        <button class="chart-control active" data-period="1h">1小时</button>
+                        <button class="chart-control" data-period="24h">24小时</button>
+                        <button class="chart-control" data-period="7d">7天</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="requestVolumeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 系统资源使用 -->
+            <div class="chart-card full-width">
+                <div class="chart-header">
+                    <h3 class="chart-title">系统资源使用情况</h3>
+                    <div class="chart-controls">
+                        <button class="chart-control active" data-period="1h">实时</button>
+                        <button class="chart-control" data-period="24h">24小时</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="systemResourcesChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 警报区域 -->
+        <div class="alerts-section">
+            <div class="alerts-header">
+                <h3 class="chart-title">最新警报</h3>
+                <span id="alertCount">0 条新警报</span>
+            </div>
+            <div class="alerts-list" id="alertsList">
+                <div class="loading">正在加载警报...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 刷新按钮 -->
+    <button class="refresh-button" id="refreshButton" title="刷新数据">
+        ↻
+    </button>
+
+    <script>
+        // 全局变量
+        let charts = {};
+        let updateInterval;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            loadData();
+            startAutoUpdate();
+
+            // 绑定事件
+            document.getElementById('refreshButton').addEventListener('click', () => {
+                refreshAllData();
+            });
+
+            // 绑定时间段切换
+            document.querySelectorAll('.chart-control').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const controls = e.target.parentElement.querySelectorAll('.chart-control');
+                    controls.forEach(c => c.classList.remove('active'));
+                    e.target.classList.add('active');
+                    updateChartPeriod(e.target.dataset.period);
+                });
+            });
+        });
+
+        // 初始化图表
+        function initCharts() {
+            // 响应时间趋势图
+            const responseTimeCtx = document.getElementById('responseTimeChart').getContext('2d');
+            charts.responseTime = new Chart(responseTimeCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '平均响应时间',
+                        data: [],
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'P95响应时间',
+                        data: [],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '响应时间 (ms)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+
+            // 请求量趋势图
+            const requestVolumeCtx = document.getElementById('requestVolumeChart').getContext('2d');
+            charts.requestVolume = new Chart(requestVolumeCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '成功请求',
+                        data: [],
+                        backgroundColor: '#10b981'
+                    }, {
+                        label: '失败请求',
+                        data: [],
+                        backgroundColor: '#ef4444'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '请求数'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+
+            // 系统资源图
+            const systemResourcesCtx = document.getElementById('systemResourcesChart').getContext('2d');
+            charts.systemResources = new Chart(systemResourcesCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'CPU使用率',
+                        data: [],
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.4,
+                        fill: false
+                    }, {
+                        label: '内存使用率',
+                        data: [],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4,
+                        fill: false
+                    }, {
+                        label: '磁盘使用率',
+                        data: [],
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        tension: 0.4,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: '使用率 (%)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        // 加载数据
+        async function loadData() {
+            try {
+                // 模拟API调用
+                const metrics = await fetchMetrics();
+                updateMetrics(metrics);
+                updateCharts(metrics);
+                updateAlerts();
+                updateSystemStatus(metrics);
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                showError('无法加载性能数据');
+            }
+        }
+
+        // 模拟API调用获取指标
+        async function fetchMetrics() {
+            // 这里应该是实际的API调用
+            // 现在使用模拟数据
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const now = Date.now();
+            return {
+                current: {
+                    apiResponseTime: 120 + Math.random() * 50,
+                    successRate: 98.5 + Math.random() * 1.5,
+                    concurrentUsers: 250 + Math.floor(Math.random() * 100),
+                    cpuUsage: 45 + Math.random() * 20,
+                    memoryUsage: 60 + Math.random() * 15,
+                    uptime: 99.95
+                },
+                trends: {
+                    responseTime: generateTimeSeriesData(20, 100, 200),
+                    requestVolume: generateTimeSeriesData(20, 800, 1200),
+                    cpuUsage: generateTimeSeriesData(20, 30, 80),
+                    memoryUsage: generateTimeSeriesData(20, 50, 75),
+                    diskUsage: generateTimeSeriesData(20, 60, 70)
+                }
+            };
+        }
+
+        // 生成时间序列数据
+        function generateTimeSeriesData(points, min, max) {
+            const data = [];
+            const now = Date.now();
+            for (let i = points - 1; i >= 0; i--) {
+                data.push({
+                    time: new Date(now - i * 60000),
+                    value: min + Math.random() * (max - min)
+                });
+            }
+            return data;
+        }
+
+        // 更新指标显示
+        function updateMetrics(metrics) {
+            document.getElementById('apiResponseTime').textContent = metrics.current.apiResponseTime.toFixed(0);
+            document.getElementById('successRate').textContent = metrics.current.successRate.toFixed(1);
+            document.getElementById('concurrentUsers').textContent = metrics.current.concurrentUsers;
+            document.getElementById('cpuUsage').textContent = metrics.current.cpuUsage.toFixed(1);
+            document.getElementById('memoryUsage').textContent = metrics.current.memoryUsage.toFixed(1);
+            document.getElementById('uptime').textContent = metrics.current.uptime.toFixed(2);
+
+            // 更新变化指示器
+            updateChangeIndicators(metrics);
+        }
+
+        // 更新变化指示器
+        function updateChangeIndicators(metrics) {
+            const indicators = {
+                responseTimeChange: metrics.current.apiResponseTime < 150 ? 'positive' : 'negative',
+                successRateChange: metrics.current.successRate > 95 ? 'positive' : 'negative',
+                cpuUsageChange: metrics.current.cpuUsage < 70 ? 'positive' : 'negative',
+                memoryUsageChange: metrics.current.memoryUsage < 80 ? 'positive' : 'negative'
+            };
+
+            Object.entries(indicators).forEach(([id, status]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.className = `metric-change ${status}`;
+                    element.textContent = status === 'positive' ? '正常范围' : '需要关注';
+                }
+            });
+        }
+
+        // 更新图表
+        function updateCharts(metrics) {
+            // 更新响应时间图表
+            const responseTimeData = metrics.trends.responseTime;
+            charts.responseTime.data.labels = responseTimeData.map(d =>
+                d.time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+            );
+            charts.responseTime.data.datasets[0].data = responseTimeData.map(d => d.value);
+            charts.responseTime.data.datasets[1].data = responseTimeData.map(d => d.value * 1.2); // P95模拟
+            charts.responseTime.update();
+
+            // 更新请求量图表
+            const requestVolumeData = metrics.trends.requestVolume;
+            charts.requestVolume.data.labels = requestVolumeData.map(d =>
+                d.time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+            );
+            charts.requestVolume.data.datasets[0].data = requestVolumeData.map(d =>
+                Math.floor(d.value * 0.95) // 成功请求
+            );
+            charts.requestVolume.data.datasets[1].data = requestVolumeData.map(d =>
+                Math.floor(d.value * 0.05) // 失败请求
+            );
+            charts.requestVolume.update();
+
+            // 更新系统资源图表
+            const systemData = metrics.trends.cpuUsage.map((d, i) => ({
+                time: d.time,
+                cpu: d.value,
+                memory: metrics.trends.memoryUsage[i].value,
+                disk: metrics.trends.diskUsage[i].value
+            }));
+
+            charts.systemResources.data.labels = systemData.map(d =>
+                d.time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+            );
+            charts.systemResources.data.datasets[0].data = systemData.map(d => d.cpu);
+            charts.systemResources.data.datasets[1].data = systemData.map(d => d.memory);
+            charts.systemResources.data.datasets[2].data = systemData.map(d => d.disk);
+            charts.systemResources.update();
+        }
+
+        // 更新警报
+        async function updateAlerts() {
+            const alertsList = document.getElementById('alertsList');
+
+            // 模拟警报数据
+            const mockAlerts = [
+                {
+                    type: 'warning',
+                    icon: '⚠️',
+                    title: 'CPU使用率偏高',
+                    message: 'CPU使用率持续超过80%，建议检查系统负载',
+                    time: new Date(Date.now() - 300000)
+                },
+                {
+                    type: 'info',
+                    icon: 'ℹ️',
+                    title: '系统自动优化完成',
+                    message: '系统已完成自动内存优化，释放了500MB内存',
+                    time: new Date(Date.now() - 600000)
+                }
+            ];
+
+            if (mockAlerts.length === 0) {
+                alertsList.innerHTML = '<div style="text-align: center; color: #6b7280;">暂无新警报</div>';
+                document.getElementById('alertCount').textContent = '0 条新警报';
+            } else {
+                alertsList.innerHTML = mockAlerts.map(alert => `
+                    <div class="alert-item ${alert.type}">
+                        <span class="alert-icon">${alert.icon}</span>
+                        <div class="alert-content">
+                            <div class="alert-title">${alert.title}</div>
+                            <div class="alert-message">${alert.message}</div>
+                        </div>
+                        <span class="alert-time">${formatTime(alert.time)}</span>
+                    </div>
+                `).join('');
+                document.getElementById('alertCount').textContent = `${mockAlerts.length} 条新警报`;
+            }
+        }
+
+        // 更新系统状态
+        function updateSystemStatus(metrics) {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+
+            // 判断系统状态
+            if (metrics.current.successRate < 95 || metrics.current.cpuUsage > 90) {
+                statusDot.className = 'status-dot error';
+                statusText.textContent = '系统异常';
+            } else if (metrics.current.successRate < 98 || metrics.current.cpuUsage > 70) {
+                statusDot.className = 'status-dot warning';
+                statusText.textContent = '性能警告';
+            } else {
+                statusDot.className = 'status-dot active';
+                statusText.textContent = '正常运行';
+            }
+        }
+
+        // 格式化时间
+        function formatTime(date) {
+            const now = Date.now();
+            const diff = now - date.getTime();
+            const minutes = Math.floor(diff / 60000);
+
+            if (minutes < 1) {
+                return '刚刚';
+            } else if (minutes < 60) {
+                return `${minutes}分钟前`;
+            } else {
+                const hours = Math.floor(minutes / 60);
+                return `${hours}小时前`;
+            }
+        }
+
+        // 开始自动更新
+        function startAutoUpdate() {
+            updateInterval = setInterval(() => {
+                loadData();
+            }, 30000); // 每30秒更新一次
+        }
+
+        // 刷新所有数据
+        function refreshAllData() {
+            const button = document.getElementById('refreshButton');
+            button.style.transform = 'rotate(360deg)';
+            button.style.transition = 'transform 0.5s';
+
+            loadData().then(() => {
+                setTimeout(() => {
+                    button.style.transform = 'rotate(0deg)';
+                }, 500);
+            });
+        }
+
+        // 显示错误
+        function showError(message) {
+            // 实现错误显示逻辑
+            console.error(message);
+        }
+
+        // 更新图表时间段
+        function updateChartPeriod(period) {
+            // 根据时间段重新加载数据
+            console.log('切换到时间段:', period);
+            loadData();
+        }
+
+        // 清理
+        window.addEventListener('beforeunload', () => {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+        });
+    </script>
+</body>
+</html>

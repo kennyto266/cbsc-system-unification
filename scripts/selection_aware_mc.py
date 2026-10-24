@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+"""Selection-aware Monte Carlo — 最嚴格的 false positive 測試.
+
+核心問題: 我地從 leaderboard 選 top 策略, 但 leaderboard 本身係 in-sample 篩選.
+如果喺完全隨機的數據上跑同一個 pipeline (掃描全部策略 → 選最佳), 能唔能産生類似既 Sharpe?
+
+方法:
+  1. 用真實股票的 daily returns, 但隨機打亂時序 (破壞所有 predictability)
+  2. 喺呢啲 "隨機漫步" 數據上跑完整 pipeline: 全部策略 × 全部股票
+  3. 記錄最佳 Sharpe (代表 "純運氣" 能達到的最高值)
+  4. 重複 N 次 (預設 200, --n N 覆蓋)
+  5. 比較: 真實 best Sharpe vs 隨機 best Sharpe 分佈
+     如果真實 > 95% 的隨機 → alpha 是真的 (p < 0.05)
+
+效能優化 (vs 舊版):
+  - random walk 用 numpy 向量化 (舊版逐行 pd.concat = O(n²), 慢 100x)
+  - 股票 close 只 load 一次再 cache (舊版每個 sim 每隻股重新 load CSV)
+  - multiprocessing pool 跑 N sims (舊版單線程)
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings
+warnings.filterwarnings("ignore")
+
+import argparse
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from datetime import datetime
+
+import kol_alpha_strategies as kol
+from kol_alpha_strategies import KOL_REGISTRY
+from vbt_data import load_stock_close
+
+OUT = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports")
+
+# 策略池 + 股票池: 動態讀取, 同 algotrade 一致 (ROBUST 17 × 全部 100 股).
+# 舊版硬編碼 [2,7,9,15,17,20,21,23,24,25,26] × 15 股 = 測緊一個 algotrade 冇用既池,
+# 係 confound. 改為讀 alpha_validation_verdict.csv 嘅 passes>=4 (ROBUST).
+def _load_pool():
+    """返 (alpha_ids, stocks) — 同 algotrade __init__ 邏輯一致."""
+    vp = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports\alpha_validation_verdict.csv")
+    try:
+        vd = pd.read_csv(vp)
+        robust = vd[vd["passes"] >= 4]
+        alpha_ids = sorted(robust["alpha"].unique().tolist())
+    except Exception:
+        alpha_ids = [10, 15, 17, 27, 36, 39, 43, 45, 46, 47, 52, 58, 62, 71, 73, 74, 88]
+    try:
+        from vbt_data import FACTOR_STOCKS
+        stocks = sorted(FACTOR_STOCKS)
+    except Exception:
+        stocks = ["HK.00700", "HK.09988", "HK.03690", "HK.00005", "HK.00939"]
+    return alpha_ids, stocks
+
+
+ALPHA_IDS, STOCKS = _load_pool()
+
+# 全局 cache: stock → close Series (load 一次, 所有 sim 共用)
+_CLOSE_CACHE: dict = {}
+
+
+def _get_close(stock):
+    """Cache 版 load_stock_close (避免每個 sim 重讀 CSV)."""
+    if stock not in _CLOSE_CACHE:
+        c = load_stock_close(stock)
+        _CLOSE_CACHE[stock] = c
+    return _CLOSE_CACHE[stock]
+
+
+def _run_strategy_on_data(func, close_series, stock):
+    """跑一個策略喺指定 close series 上, 返 Sharpe."""
+    if len(close_series) < 300:
+        return None, 0.0
+    prices = pd.DataFrame({stock: close_series})
+    captured = {"pf": None}
+    orig_bs = kol.backtest_signals
+
+    def spy(close, entries, exits, se=None, sx=None, _c=captured):
+        pf = orig_bs(close, entries, exits, se, sx)
+        if pf is not None:
+            _c["pf"] = pf
+        return pf
+
+    kol.backtest_signals = spy
+    try:
+        m = func(prices, stock)
+    except Exception:
+        m = None
+    finally:
+        kol.backtest_signals = orig_bs
+
+    if m is None:
+        return None, 0.0
+    return m, float(m.get("sharpe", 0.0))
+
+
+def make_random_walk(close):
+    """用真實 daily returns 但隨機打亂時序 → 純隨機漫步 (numpy 向量化版).
+
+    舊版逐行 pd.concat (O(n²), 2-5 秒/隻). 新版 numpy cumprod (<10ms/隻).
+    """
+    returns = close.pct_change().dropna().to_numpy()
+    if len(returns) < 300:
+        return close  # 唔夠數據, 唟住用原裝
+    np.random.shuffle(returns)  # in-place 打亂
+    start_price = float(close.iloc[0])
+    # 向量化重建: price[i] = start * prod(1 + r[:i])
+    random_prices = start_price * np.cumprod(1.0 + returns)
+    return pd.Series(random_prices, index=close.index[:len(returns)])
+
+
+def run_real_pipeline():
+    """跑真實數據 pipeline, 返 best Sharpe + 全部分佈."""
+    all_sharpes = []
+    for aid in ALPHA_IDS:
+        if aid not in KOL_REGISTRY:
+            continue
+        name, kol_name, func, _ = KOL_REGISTRY[aid]
+        for stock in STOCKS:
+            close = _get_close(stock)
+            if close is None or len(close) < 300:
+                continue
+            m, sharpe = _run_strategy_on_data(func, close, stock)
+            all_sharpes.append(sharpe)
+    all_sharpes = np.array(all_sharpes)
+    return float(all_sharpes.max()) if len(all_sharpes) else 0.0, all_sharpes
+
+
+def run_random_pipeline(_sim_id):
+    """跑隨機漫步 pipeline 一次, 返 best Sharpe.
+
+    _sim_id 只係為 multiprocessing 唔 cache (每次唔同 random state).
+    """
+    best_sharpe = 0.0
+    for aid in ALPHA_IDS:
+        if aid not in KOL_REGISTRY:
+            continue
+        name, kol_name, func, _ = KOL_REGISTRY[aid]
+        for stock in STOCKS:
+            close = _get_close(stock)
+            if close is None or len(close) < 300:
+                continue
+            random_close = make_random_walk(close)
+            m, sharpe = _run_strategy_on_data(func, random_close, stock)
+            if sharpe > best_sharpe:
+                best_sharpe = sharpe
+    return best_sharpe
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--n", type=int, default=200, help="模擬次數 (預設 200)")
+    ap.add_argument("--serial", action="store_true", help="單線程 (debug)")
+    args = ap.parse_args()
+    N_SIMS = args.n
+
+    print("=" * 70)
+    print("🔬 Selection-Aware Monte Carlo")
+    print("  隨機漫步數據上跑完整 pipeline, 測假陽性")
+    print(f"  策略: {len(ALPHA_IDS)} 個 × 股票: {len(STOCKS)} 隻")
+    print(f"  模擬次數: {N_SIMS}  (p-value 解析度: {1.0/N_SIMS:.4f})")
+    print("=" * 70, flush=True)
+
+    # 1. 真實數據 best Sharpe
+    print("\n1️⃣ 跑真實數據 pipeline...", flush=True)
+    real_best, real_dist = run_real_pipeline()
+    print(f"   真實 best Sharpe: {real_best:.3f} (跑了 {len(real_dist)} 個策略×股票)")
+    print(f"   真實 Sharpe 分佈: mean={real_dist.mean():.2f} "
+          f"median={np.median(real_dist):.2f} 95th={np.percentile(real_dist,95):.2f}")
+
+    # 2. 隨機漫步 pipeline (multiprocessing)
+    print(f"\n2️⃣ 跑 {N_SIMS} 次隨機漫步 pipeline {'(serial)' if args.serial else '(multiprocessing)'}...",
+          flush=True)
+    if args.serial:
+        random_bests = []
+        for i in range(N_SIMS):
+            rb = run_random_pipeline(i)
+            random_bests.append(rb)
+            if (i + 1) % 20 == 0:
+                print(f"   模擬 {i+1}/{N_SIMS}: best Sharpe = {rb:.3f}", flush=True)
+    else:
+        from multiprocessing import Pool
+        with Pool() as pool:
+            random_bests = []
+            for i, rb in enumerate(pool.imap_unordered(run_random_pipeline, range(N_SIMS))):
+                random_bests.append(rb)
+                if (i + 1) % 20 == 0:
+                    print(f"   模擬 {i+1}/{N_SIMS} 完成 (最近 best={rb:.3f})", flush=True)
+
+    random_bests = np.array(sorted(random_bests))
+
+    # 3. 比較
+    p_value = (random_bests >= real_best).sum() / N_SIMS
+    percentile = (random_bests < real_best).sum() / N_SIMS * 100
+
+    print(f"\n{'='*70}")
+    print(f"📊 Selection-Aware MC 結果")
+    print(f"{'='*70}")
+    print(f"  真實 best Sharpe:    {real_best:.3f}")
+    print(f"  隨機 best Sharpe:")
+    print(f"    平均:              {random_bests.mean():.3f}")
+    print(f"    中位數:            {np.median(random_bests):.3f}")
+    print(f"    95th percentile:   {np.percentile(random_bests, 95):.3f}")
+    print(f"    最高:              {random_bests.max():.3f}")
+    print(f"  p-value:             {p_value:.4f}  (解析度 {1.0/N_SIMS:.4f})")
+    print(f"  真實 Sharpe 百分位:  {percentile:.1f}%")
+    print()
+    if p_value < 0.05:
+        print(f"  ✅ 通過 (p={p_value:.4f} < 0.05)")
+        print(f"     真實策略既 Sharpe 顯著高過隨機 — alpha 是真的")
+        print(f"     隨機數據只有 {p_value*100:.1f}% 機率達到真實 Sharpe 水平")
+    else:
+        print(f"  ❌ 唔通過 (p={p_value:.4f} >= 0.05)")
+        print(f"     隨機數據都能達到類似 Sharpe — 可能只是選擇偏差/運氣")
+        print(f"     需要更嚴格的篩選或更多 OOS 數據")
+    print()
+
+    # 存結果 (含完整隨機分佈)
+    df = pd.DataFrame({
+        "real_best": [real_best],
+        "real_mean": [real_dist.mean()],
+        "real_95th": [np.percentile(real_dist, 95)],
+        "random_mean": [random_bests.mean()],
+        "random_median": [np.median(random_bests)],
+        "random_95th": [np.percentile(random_bests, 95)],
+        "random_max": [random_bests.max()],
+        "p_value": [p_value],
+        "passed": [p_value < 0.05],
+        "n_sims": [N_SIMS],
+        "date": [datetime.now().isoformat()],
+    })
+    csv_path = OUT / "selection_aware_mc.csv"
+    OUT.mkdir(parents=True, exist_ok=True)
+    df.to_csv(csv_path, index=False)
+    # 亦存完整隨機分佈 (方便之後畫圖 / 重算 percentile)
+    pd.DataFrame({"random_best_sharpe": random_bests}).to_csv(
+        OUT / "selection_aware_mc_distribution.csv", index=False)
+    print(f"報告: {csv_path}")
+    print(f"分佈: {OUT / 'selection_aware_mc_distribution.csv'}")
+
+
+if __name__ == "__main__":
+    main()

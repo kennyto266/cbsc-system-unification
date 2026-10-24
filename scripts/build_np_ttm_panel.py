@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+"""build_np_ttm_panel.py — [09-24 G37241] np_ttm panel canonical builder.
+
+np_ttm (歸母淨利潤 TTM, 50股) 原本 _a2h_npsu_np_ttm.py (agent2-H 一次性
+build, 絕對路徑, 含官方 API 自查) 09-24 15:30 起 parquet — 但冇註冊冇排程
+(G32004 ifhp 同款半: builder 在生, 接線甩咗 → verify dept FAIL 未註冊)。
+本 builder = 同配方 canonical 版 (相對路徑, 純本地重建唔掂網絡), COLLECTORS
+接線日更; 官方 API 對照留返一次性 _a2h script / verify dept 電池。
+
+  raw: data/new_sources/em_fundamentals/mainindicator.csv HOLDER_PROFIT
+       (YTD 累計; 源頭重爬歸上游 — 呢度只負責重建)
+  配方 100% 照 build_cell7_panels.py 09-17 體檢修正版:
+    ytd_to_period (YTD→單期) → rolling('365D', min_periods=2).sum() TTM
+    → 業績日曆 PIT 公布日+1 (冇就 +60日 lag) → 400日 staleness cap
+  誠實新鮮度: mainindicator 源頭未重爬嗰陣, ffill 帽爆自然 NaN、日曆照
+  伸到 prices 最後日 (ifhp 同款 — C5 紅係源頭真陳舊, 唔廣播假新鮮)。
+
+輸出: data/factor_store/np_ttm.parquet (index=prices 日曆, columns=HK.xxxxx)
+"""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+STALENESS_CAP_DAYS = 400   # 約 4 個季度 + buffer; 觀測斷流超過即唔 ffill
+PIT_FALLBACK_DAYS = 60     # 業績日曆冇公布日嘅 lag (build_eveb_panels 同款)
+PIT_WINDOW_DAYS = 170      # 公布日搜尋窗 [report_date, +170日]
+
+
+def ytd_to_period(df: pd.DataFrame, col: str,
+                  date_col: str = "report_date") -> pd.Series:
+    """YTD 累計 → 單期值. 同 (股,年) 內對上一個非NaN YTD diff;
+    年內首個觀測 = YTD 本身. Q1/Q3 NaN 佔位行唔會干擾 diff (cell7 同款).
+
+    date_col: 分組/排序軸. [10-03 G13954] 生產 caller 傳 "std_date" —
+    非曆年結股 (06-30 結) 東財 REPORT_DATE≠STD_REPORT_DATE, rd 軸分組會
+    將同財年報告拆入唔同日曆年, YTD diff 變跨財年基期垃圾; std 軸先係
+    財年語義. default 保留 rd 軸 (向後兼容, 曆年結股兩軸同一)."""
+    df = df.sort_values(["code5", date_col])
+    yr = df[date_col].dt.year
+    prev_ytd = df.groupby([df["code5"], yr])[col].transform(
+        lambda x: x.ffill().shift(1))
+    out = np.where(prev_ytd.notna(), df[col] - prev_ytd, df[col])
+    return pd.Series(out, index=df.index)
+
+
+def series_ttm(s: pd.Series) -> pd.Series:
+    """時間窗 TTM: 單期 series rolling('365D', min_periods=2).sum() —
+    報告頻率無關 (季度/半年股都啱, cell7 體檢修正 #2)."""
+    return s.rolling("365D", min_periods=2).sum()
+
+
+def eff_date_factory(ann_by_code: dict):
+    """PIT 生效日: 業績日曆有公布日嘅用公布日+1; 冇就 report_date+60日."""
+    def eff(code: str, rd: pd.Timestamp) -> pd.Timestamp:
+        for d in ann_by_code.get(code, []):
+            if rd <= d <= rd + pd.Timedelta(days=PIT_WINDOW_DAYS):
+                return d + pd.Timedelta(days=1)
+        return rd + pd.Timedelta(days=PIT_FALLBACK_DAYS)
+    return eff
+
+
+def to_wide(cols: dict, idx: pd.DatetimeIndex) -> pd.DataFrame:
+    """{HK.code: Series(觀測生效日)} → wide panel: PIT ffill +
+    400日 staleness cap (斷流唔再 ffill, cell7 to_panel 同款)."""
+    panel = pd.DataFrame(np.nan, index=idx, columns=list(cols.keys()))
+    for col, s in cols.items():
+        s = s[~s.index.duplicated(keep="last")].sort_index()
+        if s.empty:
+            continue
+        daily = s.reindex(idx, method="ffill")
+        pos = s.index.searchsorted(idx, side="right") - 1
+        valid = pos >= 0
+        last_obs = s.index[np.where(valid, pos, 0)]
+        stale = np.array([
+            valid[i] and (idx[i] - last_obs[i]).days > STALENESS_CAP_DAYS
+            for i in range(len(idx))])
+        panel[col] = daily.where(~stale).values
+    return panel
+
+
+def build_panel(raw: pd.DataFrame, cal: pd.DataFrame,
+                idx: pd.DatetimeIndex, price_cols) -> pd.DataFrame:
+    """mainindicator raw + 業績日曆 → np_ttm wide panel (純函數俾測試).
+
+    [10-03 G13954] 值軸 = std_date (財年語義): ytd 分組 + TTM rolling 都
+    喺 STD_REPORT_DATE 軸; 生效日對照用返實際 report_date (公布日跟實際
+    報告走 — 用 std 軸搵公布日, 06-30 年結股年報會落入 fallback +60 早
+    生效半年 = 前視)."""
+    cal = cal.copy()
+    cal["d"] = pd.to_datetime(cal["doc_date"], dayfirst=True)
+    ann = {code: sorted(g["d"].tolist())
+           for code, g in cal.groupby("stock_code")}
+    eff = eff_date_factory(ann)
+
+    raw = raw.sort_values(["code5", "std_date"])
+    raw = raw.assign(np_1p=ytd_to_period(raw, "HOLDER_PROFIT",
+                                         date_col="std_date"))
+
+    cols = {}
+    for code, g in raw.dropna(subset=["np_1p"]).groupby("code5"):
+        col = f"HK.{code}"
+        if col not in price_cols:
+            continue
+        g = g.drop_duplicates("std_date", keep="last")
+        s = g.set_index("std_date")["np_1p"].sort_index()
+        if len(s) < 2:
+            continue
+        ttm = series_ttm(s).dropna()
+        if ttm.empty:
+            continue
+        # TTM 值喺 std 軸計; 移去 PIT 生效日用返同 row 實際 report_date
+        rd_by_std = pd.Series(g["report_date"].values,
+                              index=g["std_date"].values)
+        ttm.index = pd.DatetimeIndex(
+            [eff(code, rd_by_std[sd]) for sd in ttm.index])
+        cols[col] = ttm
+    return to_wide(cols, idx)
+
+
+def main() -> int:
+    base = Path(__file__).resolve().parent.parent
+    bt = base.parent / "backtests"
+    raw_p = base / "data" / "new_sources" / "em_fundamentals" / "mainindicator.csv"
+    cal_p = base / "data" / "new_sources" / "results_calendar_raw.csv"
+    out_p = base / "data" / "factor_store" / "np_ttm.parquet"
+
+    sys.path.insert(0, str(bt))
+    import os
+    os.chdir(str(bt))            # llm_cs_adapter 對 cwd 敏感 (cell7/_a2h 同款)
+    from llm_cs_adapter import _load_prices_and_rets
+    prices, _ = _load_prices_and_rets()
+
+    raw = pd.read_csv(raw_p, dtype={"SECURITY_CODE": str}, encoding="utf-8-sig")
+    raw["report_date"] = pd.to_datetime(raw["REPORT_DATE"])
+    raw["std_date"] = pd.to_datetime(raw["STD_REPORT_DATE"])
+    raw["code5"] = raw["SECURITY_CODE"].str.zfill(5)
+    raw["HOLDER_PROFIT"] = pd.to_numeric(raw["HOLDER_PROFIT"], errors="coerce")
+    cal = pd.read_csv(cal_p, dtype={"stock_code": str})
+
+    panel = build_panel(raw, cal, prices.index, set(prices.columns))
+    out_p.parent.mkdir(parents=True, exist_ok=True)
+    panel.to_parquet(out_p)
+
+    nn = int(panel.notna().sum().sum())
+    cov = int((panel.notna().sum() > 0).sum())
+    print(f"np_ttm: {panel.shape[0]}日 × {panel.shape[1]}股 "
+          f"({panel.index.min().date()} → {panel.index.max().date()}) "
+          f"cells {nn} | {cov}股有值 → {out_p.name}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

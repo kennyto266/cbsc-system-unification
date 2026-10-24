@@ -1,0 +1,141 @@
+"""
+hkptrc 策略實作 Batch 2: 濾網系統 (策略 #9-11)
+
+#9  Bayes 濾網方法論（方向/波幅/時間/Multi-Timeframe）
+#10 SD-ATR Spread 濾網（Momentum 喺 Non-Trending 開倉）
+#11 Permutation Entropy 濾網
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, __file__.rsplit("\\", 1)[0])
+
+from common import *
+import numpy as np
+import pandas as pd
+
+
+def strategy_09_bayes_filter(prices, stock, sma_fast=10, sma_slow=30, rsi_period=14):
+    """#9 Bayes 濾網 — 方向性濾網：RSI > 50 + SMA 交叉"""
+    close = prices[stock].dropna()
+    if len(close) < 100:
+        return None
+
+    sma_f = compute_sma(close, sma_fast)
+    sma_s = compute_sma(close, sma_slow)
+    rsi = compute_rsi(close, rsi_period)
+
+    # 主訊號：SMA 交叉
+    long_signal = (sma_f > sma_s) & (sma_f.shift(1) <= sma_s.shift(1))
+    short_signal = (sma_f < sma_s) & (sma_f.shift(1) >= sma_s.shift(1))
+
+    # 方向性濾網：RSI > 50 先算好倉訊號
+    bullish_filter = rsi > 50
+    bearish_filter = rsi < 50
+
+    entries = (long_signal & bullish_filter).fillna(False)
+    exits = (sma_f < sma_s).fillna(False)
+    short_entries = (short_signal & bearish_filter).fillna(False)
+    short_exits = (sma_f > sma_s).fillna(False)
+
+    pf = backtest_signals(close, entries, exits, short_entries, short_exits)
+    return extract_metrics(pf, "09_BayesFilter_RSI", stock)
+
+
+def strategy_10_sd_atr_spread(prices, stock, window=14, sma_fast=10, sma_slow=30, z_threshold=-2.0):
+    """#10 SD-ATR Spread — Momentum 喺 Non-Trending 開倉"""
+    df = prices[[stock]].copy()
+    df.columns = ["close"]
+    # HSI 數據冇 high/low，用 close ± ATR 估算
+    atr = compute_atr_from_close(df["close"], window)
+    df["high"] = df["close"] + atr * 0.5
+    df["low"] = df["close"] - atr * 0.5
+
+    if len(df) < 250 + window:
+        return None
+
+    spread_z = compute_sd_atr_spread(df, window)
+
+    sma_f = compute_sma(df["close"], sma_fast)
+    sma_s = compute_sma(df["close"], sma_slow)
+
+    long_signal = (sma_f > sma_s) & (sma_f.shift(1) <= sma_s.shift(1))
+    short_signal = (sma_f < sma_s) & (sma_f.shift(1) >= sma_s.shift(1))
+
+    # 濾網：Spread Z-Score < -2（Non-Trending）
+    non_trending = spread_z < z_threshold
+
+    entries = (long_signal & non_trending).fillna(False)
+    exits = (sma_f < sma_s).fillna(False)
+    short_entries = (short_signal & non_trending).fillna(False)
+    short_exits = (sma_f > sma_s).fillna(False)
+
+    pf = backtest_signals(df["close"], entries, exits, short_entries, short_exits)
+    return extract_metrics(pf, "10_SD_ATR_Spread", stock)
+
+
+def compute_atr_from_close(close, window=14):
+    """用 close 近似 ATR（冇 HLC 數據時）"""
+    tr = close.diff().abs()
+    return tr.rolling(window).mean()
+
+
+def strategy_11_permutation_entropy(prices, stock, order=4, window=50, sma_period=100):
+    """#11 Permutation Entropy — 高 Entropy 先開 Momentum 倉"""
+    close = prices[stock].dropna()
+    if len(close) < window + sma_period + order:
+        return None
+
+    pe = compute_permutation_entropy(close, order=order, window=window)
+    pe = pe.reindex(close.index)
+    pe_mean = pe.rolling(100).mean()
+
+    sma = compute_sma(close, sma_period)
+    long_signal = (close > sma) & (close.shift(1) <= sma.shift(1))
+    short_signal = (close < sma) & (close.shift(1) >= sma.shift(1))
+
+    valid = (pe > pe_mean).fillna(False)
+
+    entries = (long_signal & valid).fillna(False)
+    exits = (close < sma).fillna(False)
+    short_entries = (short_signal & valid).fillna(False)
+    short_exits = (close > sma).fillna(False)
+
+    pf = backtest_signals(close, entries, exits, short_entries, short_exits)
+    return extract_metrics(pf, "11_PermutationEntropy", stock)
+
+
+def run_batch2(prices, stocks=None):
+    """運行 Batch 2 所有策略。"""
+    stocks = stocks or TEST_STOCKS
+    all_results = []
+
+    strategies = [
+        ("09 Bayes Filter (RSI)", strategy_09_bayes_filter),
+        ("10 SD-ATR Spread", strategy_10_sd_atr_spread),
+        ("11 Permutation Entropy", strategy_11_permutation_entropy),
+    ]
+
+    for strat_name, func in strategies:
+        print("\n運行 {} ...".format(strat_name))
+        for stock in stocks:
+            if stock not in prices.columns:
+                continue
+            result = func(prices, stock)
+            if result:
+                all_results.append(result)
+
+    return all_results
+
+
+if __name__ == "__main__":
+    print("=" * 95)
+    print("📊 hkptrc Batch 2: 濾網系統策略 (VectorBT)")
+    print("=" * 95)
+
+    prices = load_prices(250)
+    print("數據: {} 日 × {} 股".format(len(prices), prices.shape[1]))
+
+    results = run_batch2(prices)
+    print_results_table(results, "Batch 2 結果 (濾網系統)")
+
+    save_results(results, "batch2_filters.csv")

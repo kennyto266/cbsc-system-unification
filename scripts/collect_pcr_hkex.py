@@ -1,0 +1,124 @@
+"""collect_pcr_hkex.py — T-pcr-01: HKEX Stock Options Daily Market Report -> per-stock put/call panel.
+
+路徑 (已 pilot 驗證):
+  https://www.hkex.com.hk/eng/stat/dmstat/dayrpt/dqe{YYMMDD}.zip
+  zip 內 dqe{YYMMDD}.csv, SUMMARY TRADING VOLUME / OPEN INTEREST 表:
+  HKATS_CODE, NAME, (CODE), VOL_TOTAL, VOL_CALLS, VOL_PUTS, OI_TOTAL, OI_CALLS, OI_PUTS, IV%
+  (週末/假日 404 = 跳過; 缺 early 2021 檔案照記錄)
+
+Output: data/new_sources/pcr_raw.csv — date, code, hkats_code, put_volume, call_volume,
+        put_oi, call_oi, iv
+Checkpoint: pcr_checkpoint.json (最後完成日期, 斷咗重跑由落後一日開始).
+"""
+import csv
+import io
+import json
+import time
+import urllib.request
+import zipfile
+from datetime import date, datetime, timedelta
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+OUT_DIR = BASE / "data" / "new_sources"
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+RAW = OUT_DIR / "pcr_raw.csv"
+CKPT = OUT_DIR / "pcr_checkpoint.json"
+
+CODES = {'00001','00002','00003','00005','00006','00012','00016','00017','00020','00027',
+'00066','00101','00175','00241','00268','00285','00291','00386','00388','00688','00700','00762',
+'00823','00883','00939','00941','00992','01024','01038','01088','01109','01211','01299','01398',
+'01801','01810','01876','01928','02013','02269','02318','02388','02628','02899','03690','06862',
+'09618','09888','09988','09992','09999'}
+
+FROM = date(2021, 1, 4)
+TO = date(2026, 8, 21)
+
+HDRS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Referer": "https://www.hkex.com.hk/eng/stat/dmstat/dayrpt/dmararchive.asp"}
+log = lambda *a: print(datetime.now().strftime("%H:%M:%S"), *a, flush=True)
+
+
+def fetch_zip(ymd):
+    url = f"https://www.hkex.com.hk/eng/stat/dmstat/dayrpt/dqe{ymd}.zip"
+    for i in range(3):
+        try:
+            req = urllib.request.Request(url, headers=HDRS)
+            return urllib.request.urlopen(req, timeout=40).read()
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                return None
+            raise
+        except Exception:
+            if i == 2:
+                raise
+            time.sleep(4)
+
+
+def parse(b, iso):
+    z = zipfile.ZipFile(io.BytesIO(b))
+    txt = z.read(z.namelist()[0]).decode("utf-8", "replace")
+    rows = []
+    for line in txt.splitlines():
+        parts = [p.strip() for p in line.split(",")]
+        # e.g. TCH,TENCENT HOLDINGS LTD,(00700),114041,58550,55491,1820996,844440,976556,23
+        if len(parts) >= 9 and parts[2].startswith("(") and parts[2].endswith(")"):
+            code = parts[2][1:-1]
+            if code not in CODES:
+                continue
+            try:
+                rows.append({
+                    "date": iso, "code": code, "hkats_code": parts[0],
+                    "put_volume": int(parts[5]), "call_volume": int(parts[4]),
+                    "put_oi": int(parts[8]), "call_oi": int(parts[7]),
+                    "iv": parts[9] if len(parts) > 9 and parts[9] else "",
+                })
+            except ValueError:
+                continue
+    return rows
+
+
+def main():
+    ck = {"last_done": None}
+    if CKPT.exists():
+        ck = json.loads(CKPT.read_text())
+    start = FROM
+    if ck.get("last_done"):
+        start = datetime.strptime(ck["last_done"], "%Y-%m-%d").date() + timedelta(days=1)
+    new = not RAW.exists()
+    fp = open(RAW, "a", newline="", encoding="utf-8")
+    w = csv.DictWriter(fp, fieldnames=["date","code","hkats_code","put_volume","call_volume","put_oi","call_oi","iv"])
+    if new:
+        w.writeheader()
+    d = start
+    n_days = n_rows = n_missing = 0
+    while d <= TO:
+        if d.weekday() < 5:  # skip Sat/Sun; holidays -> 404 skip
+            ymd = d.strftime("%y%m%d")
+            try:
+                b = fetch_zip(ymd)
+            except Exception as e:
+                log("ERR", ymd, e)
+                time.sleep(10)
+                b = fetch_zip(ymd)
+            if b is None:
+                n_missing += 1
+            else:
+                rows = parse(b, d.isoformat())
+                w.writerows(rows)
+                fp.flush()
+                n_rows += len(rows)
+                n_days += 1
+                if n_days % 50 == 0:
+                    ck["last_done"] = d.isoformat()
+                    CKPT.write_text(json.dumps(ck))
+                    log(f"{d} days={n_days} rows={n_rows} missing404={n_missing}")
+        ck["last_done"] = d.isoformat()
+        d += timedelta(days=1)
+    fp.close()
+    CKPT.write_text(json.dumps(ck))
+    log(f"ALL DONE days={n_days} rows={n_rows} missing404={n_missing}")
+
+
+if __name__ == "__main__":
+    main()

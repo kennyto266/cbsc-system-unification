@@ -1,0 +1,206 @@
+#!/usr/bin/env python3
+"""composite_oos_scan.py — composite/derived factor OOS 掃描.
+
+測 derived signal (唔係單一 column, 而係兩個 column 既組合):
+  A) Yield curve slope:
+     - efn_2y - efn_10y (期限結構, 倒掛訊號)
+     - efb_30d - efn_2y (bill vs note, 短端壓力)
+     - efn_3y - efn_10y (中長斜率)
+  B) Cross-currency (匯率相對強弱):
+     - cny / usd (人民幣 vs 美元相對強弱)
+     - cny / jpy (人民幣 vs 日元, risk sentiment)
+     - eur / usd (歐美息差預期)
+     - cny / aud (商品貨幣對比)
+
+鐵律: composite 用 IS 期計, frozen 測 OOS. logic = regime/z_reversal/trend.
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from datetime import datetime
+
+import kol_alpha_strategies as kol
+from vbt_data import load_stock_close, FACTOR_STOCKS
+
+OUT = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports")
+SPLIT = "2024-01-01"
+FACT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors")
+
+
+def _load_col(file, col):
+    df = pd.read_csv(FACT_DIR / file)
+    dc = next((c for c in df.columns if c.lower() in ("date","end_of_day","datetime","time","time_key")), df.columns[0])
+    df[dc] = pd.to_datetime(df[dc], errors="coerce")
+    df = df.dropna(subset=[dc, col]).sort_values(dc).drop_duplicates(subset=dc, keep="last")
+    return pd.Series(df[col].astype(float).values, index=df[dc].values, name=col)
+
+
+def make_composite(file_a, col_a, file_b, col_b, op="diff"):
+    """load 兩個 series, 做 diff 或 ratio. 返 composite Series."""
+    a = _load_col(file_a, col_a)
+    b = _load_col(file_b, col_b)
+    common = a.index.intersection(b.index)
+    a, b = a.reindex(common), b.reindex(common)
+    if op == "diff":
+        return (a - b).dropna()
+    elif op == "ratio":
+        # ratio 要防除零
+        return (a / b.replace(0, np.nan)).dropna()
+    return None
+
+
+def _run_signal(close_stock, factor, entry, exit_c, holding=7):
+    common = factor.index.intersection(close_stock.index)
+    if len(common) < 200:
+        return None
+    fc = factor.reindex(common).ffill().fillna(0)
+    cl = close_stock.reindex(common)
+    ec = entry.reindex(common).fillna(False).values
+    xc = exit_c.reindex(common).fillna(False).values
+    n = len(fc)
+    entries = np.zeros(n, dtype=bool)
+    exits = np.zeros(n, dtype=bool)
+    for i in range(n - 1):
+        if ec[i]:
+            ei = min(i + 1 + holding, n - 1)
+            for j in range(i + 2, ei):
+                if j < n and xc[j]:
+                    ei = j; break
+            entries[i + 1] = True; exits[ei] = True
+    if not entries.any():
+        return None
+    pf = kol.backtest_signals(cl, pd.Series(entries, index=common),
+                              pd.Series(exits, index=common), None, None)
+    if pf is None or pf.trades.count() == 0:
+        return None
+    try:
+        s = pf.sharpe_ratio()
+        return float(s) if not np.isnan(s) else 0.0
+    except Exception:
+        return 0.0
+
+
+def make_signals(factor, logic, **kw):
+    f = factor.dropna()
+    if len(f) < 200:
+        return None
+    if logic == "z_reversal":
+        z_win = kw.get("z_win", 60)
+        z = (f - f.rolling(z_win).mean()) / f.rolling(z_win).std()
+        return z > kw.get("th", 2.0), z < 0
+    elif logic == "trend":
+        sma = kw.get("sma", 50)
+        fa = f.rolling(sma).mean()
+        return ((f > fa) & (f.shift(1) <= fa.shift(1)),
+                (f < fa) & (f.shift(1) >= fa.shift(1)))
+    elif logic == "regime":
+        sma = kw.get("sma", 70)
+        fa = f.rolling(sma).mean()
+        return f > fa, f < fa
+    return None
+
+
+# composite factor 候選 (file_a, col_a, file_b, col_b, op, 名)
+COMPOSITES = [
+    # Yield curve slope (term structure)
+    ("efbn-yield-daily.csv", "efn_2y", "efbn-yield-daily.csv", "efn_10y", "diff", "yield_slope_2y10y"),
+    ("efbn-yield-daily.csv", "efb_30d", "efbn-yield-daily.csv", "efn_2y", "diff", "yield_slope_bill_note"),
+    ("efbn-yield-daily.csv", "efn_3y", "efbn-yield-daily.csv", "efn_10y", "diff", "yield_slope_3y10y"),
+    ("efbn-yield-daily.csv", "efn_5y", "efbn-yield-daily.csv", "efn_10y", "diff", "yield_slope_5y10y"),
+    # Cross-currency (relative strength)
+    ("er-eeri-daily.csv", "cny", "er-eeri-daily.csv", "usd", "ratio", "cny_usd_ratio"),
+    ("er-eeri-daily.csv", "cny", "er-eeri-daily.csv", "jpy", "ratio", "cny_jpy_ratio"),
+    ("er-eeri-daily.csv", "eur", "er-eeri-daily.csv", "usd", "ratio", "eur_usd_ratio"),
+    ("er-eeri-daily.csv", "cny", "er-eeri-daily.csv", "aud", "ratio", "cny_aud_ratio"),
+    ("er-eeri-daily.csv", "krw", "er-eeri-daily.csv", "jpy", "ratio", "krw_jpy_ratio"),
+]
+
+CONFIGS = [
+    ("regime", {"sma": 70}, 10),
+    ("regime", {"sma": 120}, 14),
+    ("trend", {"sma": 50}, 7),
+    ("z_reversal", {"z_win": 60, "th": 1.5}, 7),
+    ("z_reversal", {"z_win": 90, "th": 2.0}, 10),
+]
+
+
+def main():
+    stocks = sorted(FACTOR_STOCKS)[:40]
+    print("=" * 70)
+    print("🔬 Composite Factor OOS 掃描")
+    print(f"  候選: {len(COMPOSITES)} (yield slope + cross-currency)")
+    print(f"  股票: {len(stocks)} 隻  IS<{SPLIT}  OOS>={SPLIT}")
+    print("=" * 70, flush=True)
+
+    print("\n1️⃣ Load + split stock data...", flush=True)
+    stock_data = {}
+    for s in stocks:
+        c = load_stock_close(s)
+        if c is None or len(c) < 400: continue
+        stock_data[s] = {"is": c[c.index < SPLIT], "oos": c[c.index >= SPLIT]}
+    print(f"   {len(stock_data)} 隻有足夠數據", flush=True)
+
+    print(f"\n2️⃣ 掃描 composite × stock (IS best → frozen OOS)...", flush=True)
+    all_rows = []
+    for ci, (fa, ca, fb, cb, op, name) in enumerate(COMPOSITES):
+        try:
+            comp = make_composite(fa, ca, fb, cb, op)
+        except Exception as e:
+            print(f"   [{ci+1}] {name}: composite 失敗 {e}", flush=True)
+            continue
+        if comp is None or len(comp) < 200:
+            print(f"   [{ci+1}] {name}: 數據不足", flush=True)
+            continue
+        comp_is = comp[comp.index < SPLIT]
+        comp_oos = comp[comp.index >= SPLIT]
+        cnt = 0
+        for s, parts in stock_data.items():
+            # IS: 試所有 config, 揀 best
+            best = None
+            for logic, params, holding in CONFIGS:
+                sig = make_signals(comp_is, logic, **params)
+                if sig is None: continue
+                sh = _run_signal(parts["is"], comp_is, sig[0], sig[1], holding=holding)
+                if sh is not None and (best is None or sh > best["sh"]):
+                    best = {"logic": logic, "params": params, "holding": holding, "sh": sh}
+            if best is None or best["sh"] < 0.3:
+                continue
+            # OOS: frozen same config
+            sig_oos = make_signals(comp_oos, best["logic"], **best["params"])
+            sh_oos = _run_signal(parts["oos"], comp_oos, sig_oos[0], sig_oos[1], holding=best["holding"])
+            sh_oos = sh_oos if sh_oos is not None else -99.0
+            all_rows.append({"composite": name, "stock": s, "logic": best["logic"],
+                             "params": str(best["params"]), "holding": best["holding"],
+                             "is_sharpe": best["sh"], "oos_sharpe": sh_oos,
+                             "decay": (1 - sh_oos/best["sh"])*100 if best["sh"] != 0 else -99})
+            if sh_oos > 0.3: cnt += 1
+        print(f"   [{ci+1}/{len(COMPOSITES)}] {name}: {cnt} 隻股 OOS>0.3", flush=True)
+
+    df = pd.DataFrame(all_rows)
+    if len(df) == 0:
+        print("\n❌ 無結果"); return
+    OUT.mkdir(parents=True, exist_ok=True)
+    df.to_csv(OUT / "composite_oos_scan.csv", index=False)
+
+    print(f"\n{'='*70}\n📊 Composite Factor OOS 結果\n{'='*70}")
+    passed = df[df["oos_sharpe"] > 0.3].sort_values("oos_sharpe", ascending=False)
+    print(f"\n✅ OOS 通過 (>0.3): {len(passed)}")
+    if len(passed) > 0:
+        print(passed[["composite","stock","logic","is_sharpe","oos_sharpe","decay"]].head(20).to_string(index=False))
+    print(f"\n=== Per-composite 勝率 ===")
+    for n in df["composite"].unique():
+        sub = df[df["composite"]==n]
+        wr = (sub["oos_sharpe"]>0.3).mean()*100
+        print(f"  {n:24s}: {wr:5.1f}% pass  OOS med={sub['oos_sharpe'].median():.2f}  (n={len(sub)})")
+    print(f"\n報告: {OUT / 'composite_oos_scan.csv'}")
+
+
+if __name__ == "__main__":
+    main()

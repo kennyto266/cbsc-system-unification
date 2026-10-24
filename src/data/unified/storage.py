@@ -1,0 +1,170 @@
+"""
+Parquet 分區存儲
+
+統一所有數據嘅存儲格式：Parquet + 分區（symbol/freq/year）
+"""
+import logging
+from pathlib import Path
+from datetime import datetime
+from typing import Optional, List, Union
+
+import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from .config import (
+    MARKET_DATA_DIR, ALT_DATA_DIR, FUNDAMENTAL_DIR, METADATA_DIR
+)
+
+logger = logging.getLogger(__name__)
+
+
+class ParquetStore:
+    """Parquet 分區存儲管理器。
+
+    分區結構：
+        {base_dir}/{category}/{partition_path}/data.parquet
+
+    例如：
+        data/market_data/daily/symbol=00700/year=2026/data.parquet
+        data/alternative_data/ccass/symbol=00700/year=2026/data.parquet
+    """
+
+    def __init__(self, base_dir: Path = None):
+        self.base_dir = base_dir or MARKET_DATA_DIR
+
+    def _build_path(self, category: str, symbol: str, freq: str,
+                    year: int, month: int = None) -> Path:
+        """構建分區路徑。"""
+        sym_clean = symbol.replace("HK.", "").replace(".", "_")
+        parts = [str(self.base_dir.parent / category), freq,
+                 "symbol={}".format(sym_clean), "year={}".format(year)]
+        if month is not None:
+            parts.append("month={:02d}".format(month))
+        path = Path("/".join(parts))
+        path.mkdir(parents=True, exist_ok=True)
+        return path / "data.parquet"
+
+    def save(self, df: pd.DataFrame, category: str = "market_data",
+             symbol: str = None, freq: str = "daily",
+             partition_by: List[str] = None) -> dict:
+        """儲存 DataFrame 到 Parquet 分區。
+
+        Args:
+            df: 要儲存嘅數據（必須有 datetime index 或 date column）
+            category: market_data / alternative_data / fundamental
+            symbol: 股票代碼
+            freq: daily / 1min / 5min / 15min
+            partition_by: 額外分區欄位
+
+        Returns:
+            {"success": bool, "rows": int, "paths": [str]}
+        """
+        if df.empty:
+            return {"success": False, "error": "Empty DataFrame"}
+
+        # 確保有 date column
+        df = df.copy()
+        if isinstance(df.index, pd.DatetimeIndex):
+            df = df.reset_index().rename(columns={df.index.name or "index": "date"})
+        if "date" not in df.columns:
+            return {"success": False, "error": "No date column"}
+
+        df["date"] = pd.to_datetime(df["date"])
+        df["year"] = df["date"].dt.year
+        if freq in ("1min", "5min", "15min", "60min"):
+            df["month"] = df["date"].dt.month
+
+        paths = []
+        # 按 year（+ month）分組儲存
+        group_cols = ["year"]
+        if "month" in df.columns:
+            group_cols.append("month")
+
+        for keys, group in df.groupby(group_cols):
+            if not isinstance(keys, tuple):
+                keys = (keys,)
+            if len(group_cols) == 1:
+                year = int(keys[0])
+                month = None
+            else:
+                year, month = int(keys[0]), int(keys[1])
+
+            path = self._build_path(category, symbol, freq, year, month)
+            # 合併已有數據（去重）
+            if path.exists():
+                existing = pd.read_parquet(path)
+                combined = pd.concat([existing, group], ignore_index=True)
+                combined = combined.drop_duplicates(subset=["date"], keep="last")
+                combined = combined.sort_values("date")
+            else:
+                combined = group.drop(columns=group_cols).sort_values("date")
+
+            combined.to_parquet(path, engine="pyarrow", compression="snappy", index=False)
+            paths.append(str(path))
+
+        logger.info("✓ 儲存 {} rows → {} partitions".format(len(df), len(paths)))
+        return {"success": True, "rows": len(df), "paths": paths}
+
+    def load(self, category: str = "market_data", symbol: str = None,
+             freq: str = "daily", start: str = None, end: str = None) -> Optional[pd.DataFrame]:
+        """從 Parquet 分區讀取數據。
+
+        Args:
+            category, symbol, freq: 同 save() 對應
+            start, end: 日期篩選 (YYYY-MM-DD)
+
+        Returns:
+            DataFrame with date column, 或 None
+        """
+        sym_clean = symbol.replace("HK.", "").replace(".", "_") if symbol else "*"
+        pattern = "{}/{}/symbol={}/year=*/data.parquet".format(
+            category, freq, sym_clean)
+
+        base = self.base_dir.parent / category
+        files = sorted(base.glob("{}/symbol={}/year=*/data.parquet".format(freq, sym_clean)))
+
+        if not files:
+            return None
+
+        dfs = []
+        for f in files:
+            dfs.append(pd.read_parquet(f))
+
+        df = pd.concat(dfs, ignore_index=True)
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.sort_values("date").drop_duplicates(subset=["date"], keep="last")
+
+        if start:
+            df = df[df["date"] >= pd.Timestamp(start)]
+        if end:
+            df = df[df["date"] <= pd.Timestamp(end)]
+
+        return df.reset_index(drop=True) if not df.empty else None
+
+    def list_symbols(self, category: str = "market_data",
+                     freq: str = "daily") -> List[str]:
+        """列出某類別嘅所有 symbol。"""
+        base = self.base_dir.parent / category / freq
+        if not base.exists():
+            return []
+        return sorted([d.name.replace("symbol=", "HK.") for d in base.iterdir() if d.is_dir()])
+
+    def get_info(self, category: str = "market_data", symbol: str = None,
+                 freq: str = "daily") -> dict:
+        """取得數據範圍資訊。"""
+        df = self.load(category, symbol, freq)
+        if df is None or df.empty:
+            return {"exists": False}
+        return {
+            "exists": True,
+            "symbol": symbol,
+            "freq": freq,
+            "rows": len(df),
+            "date_range": "{} to {}".format(df["date"].min().date(), df["date"].max().date()),
+            "columns": list(df.columns),
+        }
+
+
+# 全域實例
+store = ParquetStore()

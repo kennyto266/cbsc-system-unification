@@ -1,0 +1,219 @@
+{
+  "health_metrics": [
+    {
+      "name": "cpu_usage",
+      "threshold_warning": 80.0,
+      "threshold_critical": 90.0,
+      "threshold_emergency": 95.0,
+      "unit": "%",
+      "higher_is_better": false,
+      "measurement_interval": 30
+    },
+    {
+      "name": "memory_usage",
+      "threshold_warning": 80.0,
+      "threshold_critical": 90.0,
+      "threshold_emergency": 95.0,
+      "unit": "%",
+      "higher_is_better": false,
+      "measurement_interval": 30
+    },
+    {
+      "name": "disk_usage",
+      "threshold_warning": 85.0,
+      "threshold_critical": 95.0,
+      "threshold_emergency": 98.0,
+      "unit": "%",
+      "higher_is_better": false,
+      "measurement_interval": 60
+    },
+    {
+      "name": "process_count",
+      "threshold_warning": 200,
+      "threshold_critical": 300,
+      "threshold_emergency": 500,
+      "unit": "count",
+      "higher_is_better": false,
+      "measurement_interval": 60
+    },
+    {
+      "name": "error_rate",
+      "threshold_warning": 5.0,
+      "threshold_critical": 10.0,
+      "threshold_emergency": 20.0,
+      "unit": "%",
+      "higher_is_better": false,
+      "measurement_interval": 30
+    },
+    {
+      "name": "response_time",
+      "threshold_warning": 2000.0,
+      "threshold_critical": 5000.0,
+      "threshold_emergency": 10000.0,
+      "unit": "ms",
+      "higher_is_better": false,
+      "measurement_interval": 30
+    },
+    {
+      "name": "queue_depth",
+      "threshold_warning": 1000,
+      "threshold_critical": 5000,
+      "threshold_emergency": 10000,
+      "unit": "messages",
+      "higher_is_better": false,
+      "measurement_interval": 30
+    },
+    {
+      "name": "database_connections",
+      "threshold_warning": 80,
+      "threshold_critical": 90,
+      "threshold_emergency": 95,
+      "unit": "connections",
+      "higher_is_better": false,
+      "measurement_interval": 30
+    }
+  ],
+  "trigger_conditions": [
+    {
+      "name": "high_cpu_usage",
+      "metric_name": "cpu_usage",
+      "operator": ">",
+      "threshold": 90.0,
+      "consecutive_violations": 3,
+      "action": "scale_down",
+      "enabled": true
+    },
+    {
+      "name": "critical_cpu_usage",
+      "metric_name": "cpu_usage",
+      "operator": ">",
+      "threshold": 95.0,
+      "consecutive_violations": 1,
+      "action": "rollback",
+      "enabled": true
+    },
+    {
+      "name": "high_memory_usage",
+      "metric_name": "memory_usage",
+      "operator": ">",
+      "threshold": 90.0,
+      "consecutive_violations": 2,
+      "action": "restart_service",
+      "enabled": true
+    },
+    {
+      "name": "critical_memory_usage",
+      "metric_name": "memory_usage",
+      "operator": ">",
+      "threshold": 95.0,
+      "consecutive_violations": 1,
+      "action": "rollback",
+      "enabled": true
+    },
+    {
+      "name": "high_error_rate",
+      "metric_name": "error_rate",
+      "operator": ">",
+      "threshold": 15.0,
+      "consecutive_violations": 1,
+      "action": "rollback",
+      "enabled": true
+    },
+    {
+      "name": "critical_error_rate",
+      "metric_name": "error_rate",
+      "operator": ">",
+      "threshold": 25.0,
+      "consecutive_violations": 1,
+      "action": "emergency_stop",
+      "enabled": true
+    },
+    {
+      "name": "slow_response_time",
+      "metric_name": "response_time",
+      "operator": ">",
+      "threshold": 8000.0,
+      "consecutive_violations": 2,
+      "action": "scale_down",
+      "enabled": true
+    },
+    {
+      "name": "critical_response_time",
+      "metric_name": "response_time",
+      "operator": ">",
+      "threshold": 15000.0,
+      "consecutive_violations": 1,
+      "action": "rollback",
+      "enabled": true
+    },
+    {
+      "name": "high_queue_depth",
+      "metric_name": "queue_depth",
+      "operator": ">",
+      "threshold": 8000,
+      "consecutive_violations": 2,
+      "action": "scale_down",
+      "enabled": true
+    },
+    {
+      "name": "critical_queue_depth",
+      "metric_name": "queue_depth",
+      "operator": ">",
+      "threshold": 15000,
+      "consecutive_violations": 1,
+      "action": "rollback",
+      "enabled": true
+    },
+    {
+      "name": "database_connection_exhaustion",
+      "metric_name": "database_connections",
+      "operator": ">",
+      "threshold": 90,
+      "consecutive_violations": 1,
+      "action": "restart_service",
+      "enabled": true
+    },
+    {
+      "name": "critical_disk_usage",
+      "metric_name": "disk_usage",
+      "operator": ">",
+      "threshold": 95.0,
+      "consecutive_violations": 1,
+      "action": "emergency_stop",
+      "enabled": true
+    }
+  ],
+  "monitoring_interval": 10,
+  "emergency_timeout": 30,
+  "emergency_cooldown_minutes": 15,
+  "max_emergencies_per_hour": 5,
+  "alert_settings": {
+    "email_enabled": true,
+    "webhook_enabled": true,
+    "sms_enabled": false,
+    "pager_duty_enabled": false
+  },
+  "recovery_settings": {
+    "max_rollback_attempts": 3,
+    "rollback_timeout_seconds": 60,
+    "service_restart_timeout_seconds": 120,
+    "verification_timeout_seconds": 60
+  },
+  "notification_settings": {
+    "alert_recipients": [
+      "devops@company.com",
+      "oncall@company.com"
+    ],
+    "escalation_rules": {
+      "critical": {
+        "notify_immediately": true,
+        "escalation_minutes": 15
+      },
+      "emergency": {
+        "notify_immediately": true,
+        "escalation_minutes": 5,
+        "include_management": true
+      }
+    }
+  }
+}

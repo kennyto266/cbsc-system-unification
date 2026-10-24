@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+"""build_perm_entropy_panel.py — T-peco: 日回報路徑複雜度 panel.
+
+order-4 permutation entropy, rolling 63d (min_periods=31), normalized (0-1):
+  每日取滾動 63 日窗內每日嘅 order-4 排列模式 (24 種), 熵 / log(24).
+  低 = 路徑有序順滑; 高 = 鋸齒隨機.
+
+輸出: data/factor_store/perm_entropy_63d.parquet (wide date × HK.XXXXX)
+註冊: backtests/factor_panels.py register_panel("perm_entropy_63d", ...)
+"""
+import sys
+from itertools import permutations
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+# 51 股核心池價格 — 用 backtests 嘅數據路徑 (同 eval scope close 一致)
+BT = BASE.parent / "backtests"
+sys.path.insert(0, str(BT))
+
+OUT = BASE / "data" / "factor_store" / "perm_entropy_63d.parquet"
+OUT.parent.mkdir(parents=True, exist_ok=True)
+
+PERMS = {p: i for i, p in enumerate(permutations(range(4)))}
+NPERM = len(PERMS)  # 24
+
+
+def perm_entropy_63d(close_col: pd.Series, win: int = 63, minp: int = 31) -> pd.Series:
+    r = close_col.pct_change().dropna()
+    if len(r) < minp:
+        return pd.Series(dtype=float)
+    vals = r.values
+    n = len(vals)
+    # order-4 pattern per t (用 t-3..t)
+    pats = np.full(n, -1, dtype=np.int64)
+    for t in range(3, n):
+        w = vals[t - 3:t + 1]
+        pats[t] = PERMS[tuple(np.argsort(w, kind="stable"))]
+    # rolling entropy
+    out = np.full(n, np.nan)
+    log24 = np.log(NPERM)
+    for t in range(minp - 1, n):
+        seg = pats[t - win + 1:t + 1]
+        seg = seg[seg >= 0]
+        if len(seg) < minp - 3:
+            continue
+        counts = np.bincount(seg, minlength=NPERM).astype(float)
+        p = counts[counts > 0] / len(seg)
+        out[t] = -(p * np.log(p)).sum() / log24
+    return pd.Series(out, index=r.index)
+
+
+def main() -> int:
+    # llm_cs_adapter 同一價格源: _load_prices_and_rets() 內部 loader
+    from llm_cs_adapter import _load_prices_and_rets
+    prices, _rets = _load_prices_and_rets()
+    close = prices
+
+    print(f"close panel: {close.shape} {close.index.min().date()} → {close.index.max().date()}")
+    cols = {}
+    for c in close.columns:
+        s = perm_entropy_63d(close[c])
+        if len(s):
+            cols[c] = s
+    panel = pd.DataFrame(cols)
+    print(f"perm_entropy_63d panel: {panel.shape} 非NaN cells={int(panel.notna().sum().sum())}")
+    panel.to_parquet(OUT)
+    print(f"→ {OUT}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

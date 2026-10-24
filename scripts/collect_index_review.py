@@ -1,0 +1,111 @@
+"""collect_index_review.py — agent2-H 2026-08-23: thesis cs_index_inclusion_drift.
+
+恒指公司指數檢討結果新聞稿 PDF (hsi.com.hk, 2021-02→2026-08 23份季檢)
+→ data/new_sources/index_review_events.csv
+  columns: index_name, action(add/remove), stock_code, stock_name,
+           announce_date, effective_date
+
+PDF 結構 (2026 格式實測): 每個指數節 (1. Hang Seng Index / 2. HSCEI /
+3. TECH / 4. Composite / 5. Biotech...) 內有 "Inclusion:" / "Exclusion:"
+段落, 跟住表格: 4位 Stock Code + Exchange + Company Name。
+生效日喺開頭: "take effect on 7 September 2026"。
+"""
+import io
+import re
+import time
+import urllib.request
+from pathlib import Path
+
+import pandas as pd
+from pypdf import PdfReader
+
+BASE = Path(__file__).resolve().parent.parent
+OUT = BASE / "data" / "new_sources" / "index_review_events.csv"
+PDFS = [
+    "20260821T174500", "20260522T174500", "20260213T174500",
+    "20251121T174500", "20250822T174500", "20250516T174501",
+    "20250221T174505", "20241122T174500", "20240816T180003",
+    "20240517T180000", "20240216T000000", "20231117T180000",
+    "20230818T183005", "20230512T175000", "20230224T163000",
+    "20221118T000000", "20220819T000000", "20220520T000000",
+    "20220218T000000", "20211119T000000", "20210820T000000",
+    "20210521T000000", "20210226T000000",
+]
+URL = "https://www.hsi.com.hk/static/uploads/contents/en/news/pressRelease/{}.pdf"
+HDRS = {"User-Agent": "Mozilla/5.0"}
+MONTHS = {m: i + 1 for i, m in enumerate(
+    ["January", "February", "March", "April", "May", "June", "July",
+     "August", "September", "October", "November", "December"])}
+
+# 指數節標題 (PDF 節序): 數字 + 名
+SEC_RE = re.compile(
+    r"(\d+)\.\s+(Hang Seng Index|Hang Seng China Enterprises Index|"
+    r"Hang Seng TECH Index|Hang Seng Composite Index|Hang Seng Biotech Index)")
+EFF_RE = re.compile(r"take effect on (\d{1,2})\s+(\w+)\s+(\d{4})")
+# 表格行兩種格式:
+#   舊: "1519 J&T Global Express Ltd. - W HSI – Commerce & Industry"
+#       (Code Company 表頭, 4位代碼行首, 冇SEHK)
+#   新: "1347 SEHK Hua Hong Grace Semiconductor Ltd."
+ROW_RE = re.compile(r"^(\d{1,5})\s+(SEHK\s+)?([A-Z(].+)$")
+
+
+def parse_date(d, m, y):
+    return f"{int(y)}-{MONTHS[m]:02d}-{int(d):02d}"
+
+
+rows = []
+for stamp in PDFS:
+    ann = f"{stamp[:4]}-{stamp[4:6]}-{stamp[6:8]}"
+    url = URL.format(stamp)
+    try:
+        data = urllib.request.urlopen(
+            urllib.request.Request(url, headers=HDRS), timeout=30).read()
+    except Exception as e:
+        print("DL FAIL", stamp, e)
+        continue
+    text = "\n".join(p.extract_text() or ""
+                     for p in PdfReader(io.BytesIO(data)).pages)
+    # 生效日 (第一個 take effect on)
+    m = EFF_RE.search(text)
+    eff = parse_date(*m.groups()) if m else ""
+    lines = [l.strip() for l in text.splitlines()]
+    cur_idx, cur_act = "", ""
+    n_here = 0
+    for i, l in enumerate(lines):
+        s = SEC_RE.match(l)
+        if s:
+            cur_idx = s.group(2)
+            cur_act = ""
+            continue
+        low = l.lower()
+        if low.startswith("inclusion"):
+            cur_act = "add"; continue
+        if low.startswith("removal") or low.startswith("exclusion") or low.startswith("deletion"):
+            cur_act = "remove"; continue
+        # "Code Company" 表頭 / 附註行唔係事件
+        if re.match(r"^Code\s+Company", l) or l.startswith("Stock Code"):
+            continue
+        # 節之間雜項標題重設
+        if re.match(r"^\d+\.\s", l):
+            cur_idx, cur_act = "", ""; continue
+        r_ = ROW_RE.match(l)
+        if r_ and cur_idx and cur_act:
+            code, name = r_.group(1), (r_.group(3) or "").strip()
+            # 吸收延續行 (下一行唔係新代碼/標題)
+            j = i + 1
+            while j < len(lines) and len(lines[j]) > 2 and \
+                    not ROW_RE.match(lines[j]) and \
+                    not re.match(r"^\d+\.\s", lines[j]) and \
+                    not lines[j].lower().startswith(("inclusion", "exclusion", "the ", "appendix")):
+                name += " " + lines[j]; j += 1
+            rows.append((cur_idx, cur_act, code.zfill(5), name.strip()[:60], ann, eff, stamp))
+            n_here += 1
+    print(stamp, "eff=", eff, "events:", n_here)
+    time.sleep(0.4)
+
+df = pd.DataFrame(rows, columns=["index_name", "action", "stock_code",
+                                 "stock_name", "announce_date",
+                                 "effective_date", "pdf"])
+df.to_csv(OUT, index=False)
+print(len(df), "rows ->", OUT.name)
+print(df.groupby(["index_name", "action"]).size().to_dict())

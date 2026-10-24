@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+"""real_alpha_backtest.py — 8 個真 alpha 全期 vbt 回測 + 交易密度分析.
+
+用完整 5 年 (2021-2026) 數據, 對全部 100 股跑 8 個 OOS-validated alpha:
+  - A27 Transformer, A74 風險阻尼
+  - A131 貼現窗, A132 NEER, A136 CNY/AUD, A137 EUR/USD, A139 KRW/JPY
+  - A140 核心邊緣gated
+
+輸出: per-alpha 全期 Sharpe, 每年交易次數, 平均持倉, 交易密度判斷.
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from datetime import datetime
+
+import kol_alpha_strategies as kol
+from kol_alpha_strategies import KOL_REGISTRY
+from vbt_data import load_stock_close, FACTOR_STOCKS
+
+OUT = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports")
+
+# 8 個真 alpha
+REAL_ALPHAS = [27, 74, 131, 132, 136, 137, 139, 140]
+
+
+def run_alpha_full(close_full, alpha_id, stock):
+    """跑 alpha 喺完整 close 上, 返 (metrics, n_trades, trades_df)."""
+    prices = pd.DataFrame({stock: close_full})
+    func = KOL_REGISTRY[alpha_id][2]
+    try:
+        m = func(prices, stock)
+        if m is None:
+            return None, 0, None
+        return m, m.get("n_trades", 0), m
+    except Exception:
+        return None, 0, None
+
+
+def main():
+    stocks = sorted(FACTOR_STOCKS)
+    print("=" * 70)
+    print("📊 8 個真 alpha 全期 vbt 回測 (2021-2026)")
+    print(f"  Alpha: {REAL_ALPHAS}")
+    print(f"  股票: {len(stocks)} 隻  |  全期 5 年")
+    print("=" * 70, flush=True)
+
+    # 預 load
+    print("\n1️⃣ Load stock data...", flush=True)
+    stock_close = {}
+    for s in stocks:
+        c = load_stock_close(s)
+        if c is not None and len(c) >= 400:
+            stock_close[s] = c
+    print(f"   {len(stock_close)} 隻有足夠數據", flush=True)
+
+    print(f"\n2️⃣ 跑每個 alpha × 每隻股...", flush=True)
+    all_rows = []
+    for aid in REAL_ALPHAS:
+        name = KOL_REGISTRY[aid][0]
+        sharpes, trades_list, rets = [], [], []
+        per_stock_rows = []
+        for s, c in stock_close.items():
+            m, nt, _ = run_alpha_full(c, aid, s)
+            if m is None:
+                continue
+            sh = float(m.get("sharpe", 0))
+            nt = int(m.get("n_trades", 0))
+            ret = float(m.get("total_return_pct", 0))
+            sharpes.append(sh)
+            trades_list.append(nt)
+            rets.append(ret)
+            per_stock_rows.append({"alpha": aid, "stock": s, "sharpe": sh,
+                                   "n_trades": nt, "return_pct": ret,
+                                   "first_date": str(c.index[0].date()),
+                                   "last_date": str(c.index[-1].date())})
+        all_rows.extend(per_stock_rows)
+        n_stocks = len(sharpes)
+        avg_trades = np.mean(trades_list) if trades_list else 0
+        # 每年交易 = total_trades / 5 年
+        per_year = avg_trades / 5 if avg_trades else 0
+        print(f"   A{aid} {name}: {n_stocks} 股有效  "
+              f"Sharpe mean={np.mean(sharpes):.2f}  "
+              f"trades/股={avg_trades:.0f}  → {per_year:.1f}/年", flush=True)
+
+    df = pd.DataFrame(all_rows)
+    OUT.mkdir(parents=True, exist_ok=True)
+    df.to_csv(OUT / "real_alpha_full_backtest.csv", index=False)
+
+    # 交易密度分析
+    print(f"\n{'='*70}")
+    print(f"📊 交易密度分析")
+    print(f"{'='*70}")
+    print(f"\n{'Alpha':<6} {'名稱':<22} {'股數':>4} {'Sharpe':>7} {'trades/股':>9} "
+          f"{'trades/年':>9} {'總trades':>8} {'>10/年%':>7}")
+    summary = []
+    for aid in REAL_ALPHAS:
+        sub = df[df["alpha"] == aid]
+        if len(sub) == 0: continue
+        name = KOL_REGISTRY[aid][0]
+        n = len(sub)
+        sh_mean = sub["sharpe"].mean()
+        avg_tr = sub["n_trades"].mean()
+        per_year = avg_tr / 5
+        total_tr = sub["n_trades"].sum()
+        # 多少股票每年 >= 10 trades (實戰密度門檻)
+        dense_pct = (sub["n_trades"] >= 50).mean() * 100  # 50 trades/5yr = 10/yr
+        summary.append({"alpha": aid, "name": name, "n_stocks": n,
+                        "sharpe_mean": sh_mean, "trades_per_stock": avg_tr,
+                        "trades_per_year": per_year, "total_trades": total_tr,
+                        "dense_pct": dense_pct})
+        print(f"A{aid:<5} {name:<22} {n:>4} {sh_mean:>7.2f} {avg_tr:>9.0f} "
+              f"{per_year:>9.1f} {total_tr:>8.0f} {dense_pct:>6.0f}%")
+
+    # 判斷: 邊個 alpha 有足夠交易密度
+    print(f"\n=== 實戰密度判斷 (每年 >= 10 trades 算足夠) ===")
+    for s in summary:
+        verdict = "🟢足夠" if s["trades_per_year"] >= 10 else (
+                  "🟡邊緣" if s["trades_per_year"] >= 5 else "🔴太少")
+        print(f"  A{s['alpha']}: {s['trades_per_year']:.1f}/年/股 → {verdict} "
+              f"({s['dense_pct']:.0f}% 股票達標)")
+
+    # 組合層面: 如果同時跑 8 個 alpha × 100 股, 總交易量
+    total_all = sum(s["total_trades"] for s in summary)
+    per_year_all = total_all / 5
+    print(f"\n=== 組合總量 (8 alpha × 100 股) ===")
+    print(f"  5 年總交易: {total_all:.0f} 筆")
+    print(f"  平均每年: {per_year_all:.0f} 筆")
+    print(f"  平均每日: {per_year_all/252:.1f} 筆")
+
+    pd.DataFrame(summary).to_csv(OUT / "real_alpha_density_summary.csv", index=False)
+    print(f"\n報告: {OUT / 'real_alpha_full_backtest.csv'}")
+    print(f"摘要: {OUT / 'real_alpha_density_summary.csv'}")
+
+
+if __name__ == "__main__":
+    main()

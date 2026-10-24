@@ -1,0 +1,75 @@
+"""
+統一數據層配置
+
+所有數據源共用嘅路徑、常數、headers
+"""
+import os
+from pathlib import Path
+
+# ============================================================
+# 路徑
+# ============================================================
+ROOT = Path(__file__).parent.parent.parent.parent  # cbsc-system-unification/
+DATA_DIR = ROOT / "data"
+
+# 統一 Parquet 存儲結構
+MARKET_DATA_DIR = DATA_DIR / "market_data"
+ALT_DATA_DIR = DATA_DIR / "alternative_data"
+FUNDAMENTAL_DIR = DATA_DIR / "fundamental"
+METADATA_DIR = DATA_DIR / "metadata"
+
+# 確保目錄存在
+for d in [MARKET_DATA_DIR, ALT_DATA_DIR, FUNDAMENTAL_DIR, METADATA_DIR]:
+    d.mkdir(parents=True, exist_ok=True)
+
+# ============================================================
+# 富途 API
+# ============================================================
+FUTU_HOST = os.getenv("FUTU_OPEND_HOST", "127.0.0.1")
+FUTU_PORT = int(os.getenv("FUTU_OPEND_PORT", "1130"))
+
+# ============================================================
+# HTTP Headers（共用）
+# ============================================================
+DEFAULT_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+}
+
+HKEX_HEADERS = {
+    **DEFAULT_HEADERS,
+    "Referer": "https://www.hkex.com.hk/",
+}
+
+EASTMONEY_HEADERS = {
+    **DEFAULT_HEADERS,
+    "Referer": "https://data.eastmoney.com/",
+}
+
+CCASS_HEADERS = {
+    **DEFAULT_HEADERS,
+    "Referer": "https://www3.hkexnews.hk/sdw/search/searchsdw.aspx",
+}
+
+# ============================================================
+# 交易成本（港股）
+# ============================================================
+STAMP_DUTY     = 0.001       # 印花稅 0.1% (SELL only)
+COMMISSION     = 0.0005      # 佣金 0.05% (min 50 HKD)
+SETTLEMENT_FEE = 0.00005     # 交收費 0.005%
+TRADING_FEE    = 0.0000565   # 交易費 0.00565%
+SFC_LEVY       = 0.000027    # 證監會徵費 0.0027%
+FRC_LEVY       = 0.0000015   # 財匯局徵費 0.00015%
+FEE_PER_SIDE = (COMMISSION + SETTLEMENT_FEE + TRADING_FEE + SFC_LEVY + FRC_LEVY
+                + STAMP_DUTY * 0.5)   # 0.001135
+RF_RATE = 0.04            # 無風險利率 4%
+
+# ============================================================
+# 數據源 URL
+# ============================================================
+URLS = {
+    "hkex_daily": "https://www.hkex.com.hk/chi/stat/smstat/dayquot/d{YYMMDD}c.htm",
+    "hkex_stock_connect": "https://www.hkex.com.hk/Mutual-Market/Stock-Connect",
+    "hkex_ccass": "https://www3.hkexnews.hk/sdw/search/searchsdw.aspx",
+    "eastmoney_api": "https://datacenter-web.eastmoney.com/api/data/v1/get",
+    "sec_edgar": "https://data.sec.gov",
+}

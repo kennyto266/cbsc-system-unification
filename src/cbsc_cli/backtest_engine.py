@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+"""回測引擎 — 阿程式因子回測 + 參數掃描"""
+from __future__ import annotations
+import sys
+from pathlib import Path
+import numpy as np
+import pandas as pd
+
+ROOT = Path(__file__).parent.parent.parent
+FACTORS_DIR = ROOT / "data" / "factors"
+
+def find_trading_statistics(returns, trading_days=252):
+    """阿程的統計函數"""
+    returns = returns.dropna()
+    if len(returns) == 0: return {}
+    cum = (1 + returns).cumprod()
+    total_ret = cum.iloc[-1] - 1
+    years = len(returns) / trading_days
+    sharpe = returns.mean() / returns.std() * np.sqrt(trading_days) if returns.std() > 0 else 0
+    cagr = (total_ret + 1) ** (1 / years) - 1 if years > 0 else 0
+    max_dd = (cum / cum.cummax() - 1).min()
+    return {
+        "total_return": round(total_ret * 100, 2),
+        "sharpe": round(sharpe, 3),
+        "cagr": round(cagr * 100, 2),
+        "max_drawdown": round(max_dd * 100, 2),
+        "n_days": len(returns),
+    }
+
+def backtest_factor(factor_name, n_days=4, threshold=0.004, holding=14, direction="contrarian"):
+    """阿程式單因子回測"""
+    from src.cbsc_cli.factor_screener import load_hsif
+    from src.cbsc_cli.factor_collector import load_factor
+
+    try:
+        factor = load_factor(factor_name)
+    except FileNotFoundError:
+        print(f"❌ 因子 {factor_name} 不存在"); return None
+
+    hsif = load_hsif()
+    if hsif is None: print("❌ 搵唔到恆指數據"); return None
+
+    # 對齊
+    common = factor.index.intersection(hsif.index)
+    factor = factor.reindex(common)
+    hsif = hsif.reindex(common)
+
+    factor_ret = factor.pct_change()
+    hsif_ret = hsif.pct_change()
+    cum_ret = factor / factor.shift(n_days - 1) - 1
+
+    # 信號
+    position = pd.Series(0, index=common)
+    for i in range(len(common) - holding):
+        window = factor_ret.iloc[i:i+n_days]
+        if len(window) < n_days: continue
+        cum = cum_ret.iloc[i]
+        if pd.isna(cum): continue
+
+        if (window > 0).all() and cum > threshold:
+            # 因子連續升+累計>threshold
+            pos = -1 if direction == "contrarian" else 1
+            position.iloc[i+1:i+1+holding] = pos
+        elif (window < 0).all() and cum < -threshold:
+            pos = 1 if direction == "contrarian" else -1
+            position.iloc[i+1:i+1+holding] = pos
+
+    # 策略回報
+    strategy_ret = position.shift(1) * hsif_ret
+    strategy_ret = strategy_ret.dropna()
+
+    # 扣交易成本（每次轉倉 0.1%）
+    trades = position.diff().abs()
+    cost = trades * 0.001
+    strategy_ret = strategy_ret - cost.reindex(strategy_ret.index).fillna(0)
+
+    stats = find_trading_statistics(strategy_ret)
+    if not stats:
+        stats = {"total_return": 0, "sharpe": 0, "cagr": 0, "max_drawdown": 0, "n_days": 0}
+    stats["factor"] = factor_name
+    stats["n_days_param"] = n_days
+    stats["threshold"] = threshold
+    stats["holding"] = holding
+    n_trades = int((trades[trades > 0].sum() / 2)) if not trades.empty else 0
+    stats["n_trades"] = n_trades
+
+    # B&H 對比
+    bh_stats = find_trading_statistics(hsif_ret)
+    stats["bh_sharpe"] = bh_stats.get("sharpe", 0)
+    stats["bh_return"] = bh_stats.get("total_return", 0)
+    stats["alpha"] = round(stats.get("sharpe", 0) - stats["bh_sharpe"], 3)
+
+    return stats
+
+def param_sweep(factor_name,
+                n_days_list=[3, 4, 5, 7],
+                threshold_list=[0.002, 0.004, 0.006, 0.008],
+                holding_list=[7, 10, 14, 21]):
+    """參數掃描"""
+    print(f"\n🔬 參數掃描: {factor_name}")
+    print(f"  {len(n_days_list)} × {len(threshold_list)} × {len(holding_list)} = {len(n_days_list)*len(threshold_list)*len(holding_list)} 組合\n")
+
+    results = []
+    for nd in n_days_list:
+        for th in threshold_list:
+            for hd in holding_list:
+                r = backtest_factor(factor_name, nd, th, hd)
+                if r and r["n_trades"] > 0:
+                    results.append(r)
+
+    if not results:
+        print("  ⚠️ 冇有效回測結果"); return pd.DataFrame()
+
+    df = pd.DataFrame(results).sort_values("sharpe", ascending=False)
+    print(f"{'#':<3} {'N':>3} {'thresh':>7} {'hold':>5} {'Sharpe':>7} {'年回報%':>7} {'MaxDD%':>7} {'交易數':>5} {'Alpha':>7}")
+    print("-" * 60)
+    for i, (_, r) in enumerate(df.head(10).iterrows(), 1):
+        print(f"{i:<3} {r['n_days_param']:>3} {r['threshold']:>7.3f} {r['holding']:>5} {r['sharpe']:>7.2f} {r['cagr']:>6.1f}% {r['max_drawdown']:>6.1f}% {r['n_trades']:>5} {r['alpha']:>+7.2f}")
+
+    output = FACTORS_DIR / f"backtest_{factor_name}.csv"
+    df.to_csv(output, index=False)
+    print(f"\n✓ 儲存: {output.relative_to(ROOT)}")
+    return df
+
+def backtest_all_factors():
+    """回測所有因子嘅預設參數"""
+    from src.cbsc_cli.factor_collector import load_all_factors
+    factors = load_all_factors()
+
+    if not factors:
+        print("❌ 冇因子數據"); return
+
+    print(f"\n📊 回測 {len(factors)} 個因子（預設: N=4, threshold=0.4%, holding=14日）\n")
+    print(f"{'因子':<14} {'Sharpe':>7} {'年回報%':>7} {'MaxDD%':>7} {'交易數':>5} {'B&H_SR':>7} {'Alpha':>7}")
+    print("-" * 65)
+
+    results = []
+    for name in factors:
+        r = backtest_factor(name)
+        if r:
+            results.append(r)
+            print(f"{name:<14} {r['sharpe']:>7.2f} {r['cagr']:>6.1f}% {r['max_drawdown']:>6.1f}% {r['n_trades']:>5} {r['bh_sharpe']:>7.2f} {r['alpha']:>+7.2f}")
+
+    df = pd.DataFrame(results).sort_values("sharpe", ascending=False)
+    output = FACTORS_DIR / "backtest_all_factors.csv"
+    df.to_csv(output, index=False)
+    print(f"\n✓ 儲存: {output.relative_to(ROOT)}")
+    return df
+
+def main(args=None):
+    if args is None:
+        backtest_all_factors(); return
+
+    factor = getattr(args, "factor", None)
+    sweep = getattr(args, "sweep", False)
+    strategy = getattr(args, "strategy", None)
+
+    if sweep and factor:
+        param_sweep(factor)
+    elif factor:
+        r = backtest_factor(factor)
+        if r:
+            print(f"\n📊 {factor} 回測結果:")
+            for k, v in r.items(): print(f"  {k}: {v}")
+    elif strategy == "all":
+        backtest_all_factors()
+    else:
+        backtest_all_factors()
+
+if __name__ == "__main__":
+    main()

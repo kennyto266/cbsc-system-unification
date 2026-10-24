@@ -1,0 +1,212 @@
+"""Futu 全數據 backfill — 一站式攞晒所有值得攞嘅歷史數據。
+
+數據源 (全部經 OpenD, 自動限流 30req/30s):
+  1. short_volume          — get_daily_short_volume (9年)       [另有大 script 跑緊]
+  2. short_interest        — get_short_interest (空頭持倉, HK)
+  3. broker_top10          — get_top_ten_buy_sell_brokers (569日, HK獨有)
+  4. iv_hv_history         — get_option_underlying_his_volatility (IV/HV, 逐364日窗)
+  5. capital_distribution  — get_capital_flow 歷史? (檢查接口; 實時先得就記錄)
+  6. shareholders_changes  — get_shareholders_holding_changes (事件流)
+
+每個 source 一個子目錄, resume-safe (有檔案就跳過)。
+"""
+import sys, time, json
+from pathlib import Path
+
+import pandas as pd
+from futu import OpenQuoteContext, RET_OK
+
+ROOT = Path(r'C:/Users/Penguin8n/ZCodeProject')
+OUTBASE = ROOT / 'cbsc-system-unification/data/futu_history'
+OUTBASE.mkdir(parents=True, exist_ok=True)
+sys.path.insert(0, str(ROOT / 'backtests'))
+sys.path.insert(0, str(ROOT))
+import bootstrap  # noqa
+from trading_core.universe import filter_universe
+from backtests.full_revalidate import preload_prices
+
+_REQ_TS: list[float] = []
+
+def _throttle():
+    global _REQ_TS
+    now = time.time()
+    _REQ_TS = [t for t in _REQ_TS if now - t < 31]
+    if len(_REQ_TS) >= 28:
+        wait = 31 - (now - _REQ_TS[0])
+        if wait > 0:
+            time.sleep(wait + 0.5)
+    _REQ_TS.append(time.time())
+
+def call_retry(qctx, fn, *args, tries=3, **kw):
+    for i in range(tries):
+        _throttle()
+        r = fn(*args, **kw)
+        ret = r[0]
+        if ret == RET_OK:
+            return r
+        msg = str(r[1]) if len(r) > 1 else str(r)
+        if '频率太高' in msg or 'rate' in msg.lower():
+            print(f'    rate-limited, wait 32s ({i+1}/{tries})', flush=True)
+            time.sleep(32)
+            continue
+        print(f'    ERR: {msg[:90]}', flush=True)
+        return None
+    return None
+
+
+def backfill_short_interest(qctx, codes, outdir):
+    """空頭持倉 (HK): aggregated_short, ratio, days_to_cover."""
+    outdir.mkdir(parents=True, exist_ok=True)
+    for i, code in enumerate(codes, 1):
+        fp = outdir / f"{code.replace('.', '_')}.csv"
+        if fp.exists():
+            continue
+        next_key = None
+        rows = []
+        for page in range(80):
+            r = call_retry(qctx, qctx.get_short_interest, code, next_key=next_key, num=50)
+            if r is None:
+                rows = []
+                break
+            hk = r[2] if len(r) > 2 else None
+            if hk is None or not len(hk):
+                # 有啲 code 返喺 r[1]
+                hk = r[1] if isinstance(r[1], pd.DataFrame) and len(r[1]) else None
+            if hk is None or not len(hk):
+                break
+            rows.append(hk)
+            next_key = hk.attrs.get('next_key')
+            if next_key in (None, '-1', -1):
+                break
+        if rows:
+            df = pd.concat(rows).drop_duplicates(subset=['timestamp']).sort_values('timestamp')
+            df.to_csv(fp, index=False)
+            print(f'[{i}/{len(codes)}] SI {code}: {len(df)}', flush=True)
+        else:
+            print(f'[{i}/{len(codes)}] SI {code}: empty', flush=True)
+
+
+def backfill_brokers(qctx, codes, outdir, max_days=560):
+    """十大經紀商買賣 (HK獨有): 每日一個請求 days_before=d。"""
+    outdir.mkdir(parents=True, exist_ok=True)
+    for i, code in enumerate(codes, 1):
+        fp = outdir / f"{code.replace('.', '_')}.parquet"
+        if fp.exists():
+            continue
+        frames = []
+        empty_streak = 0
+        for d in range(max_days):
+            r = call_retry(qctx, qctx.get_top_ten_buy_sell_brokers, code, days_before=d)
+            if r is None:
+                continue
+            df = r[1]
+            if df is None or not len(df):
+                empty_streak += 1
+                if empty_streak >= 10:   # 連續10日空 = 歷史到頭
+                    break
+                continue
+            empty_streak = 0
+            df = df.copy()
+            df['days_before'] = d
+            frames.append(df)
+        if frames:
+            all_df = pd.concat(frames)
+            all_df.to_parquet(fp)
+            print(f'[{i}/{len(codes)}] BRK {code}: {len(frames)} days, {len(all_df)} rows', flush=True)
+        else:
+            print(f'[{i}/{len(codes)}] BRK {code}: empty', flush=True)
+
+
+def backfill_iv_hv(qctx, codes, outdir, start_year=2023):
+    """IV/HV 歷史: 364日窗口逐段翻。"""
+    outdir.mkdir(parents=True, exist_ok=True)
+    for i, code in enumerate(codes, 1):
+        fp = outdir / f"{code.replace('.', '_')}.csv"
+        if fp.exists():
+            continue
+        rows = []
+        # 每年一窗 (begin/end 跨度上限 364 日)
+        import datetime as _dt
+        y = start_year
+        while _dt.date(y, 1, 1) <= _dt.date.today():
+            b, e = f'{y}-01-01', f'{y}-12-31'
+            page = None
+            for _ in range(10):
+                r = call_retry(qctx, qctx.get_option_underlying_his_volatility,
+                               code, begin_time=b, end_time=e, page_req_key=page)
+                if r is None:
+                    break
+                df = r[1]
+                if df is not None and len(df):
+                    rows.append(df)
+                page = r[2] if len(r) > 2 else None
+                if page in (None, '', '-1'):
+                    break
+            y += 1
+        if rows:
+            df = pd.concat(rows).drop_duplicates(subset=['time']).sort_values('time')
+            df.to_csv(fp, index=False)
+            print(f'[{i}/{len(codes)}] IV {code}: {len(df)} days ({df["time"].min()}~{df["time"].max()})', flush=True)
+        else:
+            print(f'[{i}/{len(codes)}] IV {code}: empty', flush=True)
+
+
+def backfill_shareholder_changes(qctx, codes, outdir):
+    """股東持股變動事件流。"""
+    outdir.mkdir(parents=True, exist_ok=True)
+    for i, code in enumerate(codes, 1):
+        fp = outdir / f"{code.replace('.', '_')}.csv"
+        if fp.exists():
+            continue
+        rows = []
+        next_key = None
+        for _ in range(30):
+            kw = dict(code=code, num=50)
+            if next_key:
+                kw['next_key'] = next_key
+            r = call_retry(qctx, qctx.get_shareholders_holding_changes, **kw)
+            if r is None:
+                break
+            df = r[1]
+            if df is not None and len(df):
+                rows.append(df)
+                next_key = df.attrs.get('next_key')
+            else:
+                next_key = None
+            if next_key in (None, '', '-1'):
+                break
+        if rows:
+            df = pd.concat(rows)
+            df.to_csv(fp, index=False)
+            print(f'[{i}/{len(codes)}] SHC {code}: {len(df)} events', flush=True)
+        else:
+            print(f'[{i}/{len(codes)}] SHC {code}: empty', flush=True)
+
+
+SOURCES = {
+    'short_interest': backfill_short_interest,
+    'brokers': backfill_brokers,
+    'iv_hv': backfill_iv_hv,
+    'shareholder_changes': backfill_shareholder_changes,
+}
+
+
+def main():
+    which = sys.argv[1] if len(sys.argv) > 1 else 'all'
+    u = filter_universe(preload_prices())
+    codes = list(u.columns)
+    print(f'universe: {len(codes)} | sources: {which}', flush=True)
+    qctx = OpenQuoteContext(host='127.0.0.1', port=11111)
+    try:
+        for name, fn in SOURCES.items():
+            if which not in ('all', name):
+                continue
+            print(f'\n===== {name} =====', flush=True)
+            fn(qctx, codes, OUTBASE / name)
+    finally:
+        qctx.close()
+    print('\nALL DONE', flush=True)
+
+
+if __name__ == '__main__':
+    main()

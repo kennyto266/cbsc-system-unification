@@ -1,0 +1,117 @@
+#!/usr/bin/env python
+"""collect_gw_capex_em.py — 東財 HK F10 資產負債表/現金流量表 (STD_ITEM 長表) 全量爬.
+
+ thesis1 goodwill_impairment_overhang: 商譽 + 股東權益 (RPT_HKF10_FN_BALANCE)
+ thesis2 capex_intensity_cycle: 購建固定資產 + 加:折舊及攤銷 (RPT_HKF10_FN_CASHFLOW)
+ 51 股池 (同 ocf_oi_ttm / short_ratio_5y 對齊), 1998→2026 全部報告期.
+ 有 checkpoint 續傳 (gw_capex_ckpt.json), 累積式 append 落 gw_capex_raw.csv.
+"""
+import json
+import time
+import urllib.request
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(r"C:/Users/Penguin8n/ZCodeProject/cbsc-system-unification")
+OUT = BASE / "data" / "new_sources" / "gw_capex_raw.csv"
+CKPT = BASE / "data" / "new_sources" / "gw_capex_ckpt.json"
+PANEL_CODES = sorted({c.split(".")[1] for c in pd.read_parquet(
+    BASE / "data" / "factor_store" / "dps_yoy.parquet").columns})
+
+HDR = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+       "Referer": "https://emweb.securities.eastmoney.com/"}
+
+API = ("https://datacenter.eastmoney.com/securities/api/data/v1/get?"
+       "reportName={rn}&columns=ALL&filter=(SECUCODE%3D%22{sc}%22)"
+       "&pageNumber={pg}&pageSize=200&sortTypes=-1&sortColumns=REPORT_DATE"
+       "&source=F10&client=PC")
+
+KEEP = {"商誉", "股东权益", "购建固定资产", "加:折旧及摊销", "归属于母公司股东权益", "负商誉"}
+
+DEDUP_KEY = ("code", "report_name", "report_date", "item")
+
+
+def dedupe_rows(rows):
+    """[G50389] keep='last' — 尾窗重掃爬到嘅重述值自然覆蓋舊值; ckpt rows 同
+    CSV 同一口徑, 唔跨輪疊 dup (舊版 ckpt 存 raw list, 重掃一輪翻倍膨脹)."""
+    seen = {}
+    for r in rows:
+        seen[tuple(r[k] for k in DEDUP_KEY)] = r
+    return list(seen.values())
+
+
+def fetch(rn, sc, pg, tries=3):
+    for t in range(tries):
+        try:
+            req = urllib.request.Request(API.format(rn=rn, sc=sc, pg=pg), headers=HDR)
+            d = json.loads(urllib.request.urlopen(req, timeout=30).read())
+            r = d.get("result") or {}
+            return r.get("data") or [], r.get("pages", 1)
+        except Exception as e:
+            if t == tries - 1:
+                print(f"  {sc} {rn} pg{pg} ERR {str(e)[:70]}")
+                return [], 0
+            time.sleep(2 + 2 * t)
+
+
+def main():
+    done = set()
+    rows = []
+    if CKPT.exists():
+        st = json.loads(CKPT.read_text(encoding="utf-8"))
+        done, rows = set(st["done"]), st["rows"]
+        print(f"續傳: {len(done)} 股已完成, 現有 {len(rows)} rows")
+    # [G50389] done 鎖唔再永久 — 已 done 股每輪重掃 page 1 (API sortTypes=-1
+    # REPORT_DATE 倒序, page 1 = 最新報告期 + 重述值), results_hkex 尾窗重掃
+    # 同款; 未 done 嘅股照舊行全史 backfill。年報季 (約 12 月起新報告期) 唔會
+    # 再靜靜陳腐。
+    tail_codes = [c for c in PANEL_CODES if c in done]
+    codes = [c for c in PANEL_CODES if c not in done]
+    print(f"池: {len(PANEL_CODES)} 股, 全史待爬 {len(codes)}, 尾窗重掃 {len(tail_codes)}")
+    for i, code in enumerate(codes + tail_codes):
+        tail = code in done
+        sc = f"{code}.HK"
+        for rn in ("RPT_HKF10_FN_BALANCE", "RPT_HKF10_FN_CASHFLOW_PC"):
+            name_key = "ITEM_NAME" if rn.endswith("BALANCE") else "STD_ITEM_NAME"
+            pg = 1
+            while True:
+                data, pages = fetch(rn, sc, pg)
+                for r in data or []:
+                    if r.get(name_key) in KEEP:
+                        rows.append({
+                            "code": code, "report_name": rn,
+                            "report_date": str(r.get("REPORT_DATE", ""))[:10],
+                            "date_type": r.get("DATE_TYPE_CODE"),
+                            "item": r.get(name_key),
+                            "amount": r.get("AMOUNT"),
+                        })
+                if tail or pg >= min(pages, 12):
+                    break  # 尾窗只掃 page 1 — 日更成本 51 股 × 2 請求
+                pg += 1
+                time.sleep(0.3)
+            time.sleep(0.3)
+        done.add(code)
+        if (i + 1) % 5 == 0 or i + 1 == len(codes + tail_codes):
+            rows = dedupe_rows(rows)
+            pd.DataFrame(rows).sort_values(
+                ["code", "report_name", "report_date"]).to_csv(
+                OUT, index=False, encoding="utf-8-sig")
+            CKPT.write_text(json.dumps({"done": sorted(done), "rows": rows}),
+                            encoding="utf-8")
+            print(f"  [{i+1}/{len(codes + tail_codes)}] {code}: 累計 {len(rows)} rows (ckpt 已存)")
+        time.sleep(0.4)
+    rows = dedupe_rows(rows)
+    df = pd.DataFrame(rows).sort_values(["code", "report_name", "report_date"])
+    df.to_csv(OUT, index=False, encoding="utf-8-sig")
+    CKPT.write_text(json.dumps({"done": sorted(done), "rows": rows}),
+                    encoding="utf-8")
+    print(f"DONE: {len(df)} rows × {df['code'].nunique()} 股 → {OUT.name}")
+    for it in ("商誉", "股东权益", "购建固定资产", "加:折旧及摊销"):
+        s = df[df["item"] == it]
+        print(f"  {it}: {len(s)} rows × {s['code'].nunique()} 股 "
+              f"({s['report_date'].min()} → {s['report_date'].max()})")
+
+
+if __name__ == "__main__":
+    main()

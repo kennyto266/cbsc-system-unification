@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+"""collect_didx_pool.py — [09-24 G27337] dbpz 上游 DI 3A 事件 collector (per-stock).
+
+didx_di_raw_*.csv (HKEX DION 3A 通知, build_di_buy_prem_panel 嘅事件源) 原本
+agent inline 爬 — 爬蟲从未入庫 → 09-17 後斷流 (gsvi_5y 同款)。全市場日榜
+endpoint 探測唔通 (NSNotice3AList 全市場參數組合全彈 "temporarily
+unavailable", 09-24 實錄); collect_di_notices.py 嘅 per-stock sid 查詢實證
+在生 → 本 collector 行同一路徑, 範圍 = eval universe 51 股池:
+
+  取捨 (記錄在案): panel 1107 股闊度唔會再增長 — llm_cs_adapter reindex 只
+  食 universe 欄, 非 pool 欄唔影響 eval; 全市場 endpoint 有得撳嗰日再升級。
+
+  增量窗 = 現有全部 didx_di_raw_*.csv 最大 event_date + 1 → 今日
+  冪等: form_serial 去重 (builder 端同款); per-stock sid 查詢天然 scoped 去
+  HK 股 corp — A 股腿 corp ("X Ltd. - A Shares") 係另一個 sid, 查唔到
+  (builder A/H regex 變成第二道保險)
+  corp_name = di_corp2code.csv 反查 — builder 端 c2c 正查 roundtrip 必須中
+  (roundtrip 唔中嘅股直接跳過並記數, 唔好寫孤兒行)
+  sid 快取: didx_pool_sid_cache.json (sid 永唔變, 慳每日 51 個 lookup)
+
+輸出: data/new_sources/didx_di_raw_pool.csv (12 欄 didx schema,
+glob didx_di_raw_*.csv 自動食)
+"""
+from __future__ import annotations
+
+import csv
+import json
+import re
+import sys
+import time
+import urllib.parse
+from datetime import datetime, timedelta
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+NS = BASE / "data" / "new_sources"
+NEW_SRC = NS
+FIELDS = ["form_serial", "event_date", "corp_name", "director_name",
+          "shares_bought_sold", "reason", "avg_price", "shares_interested",
+          "pct_issued", "extra1", "extra2", "extra3"]
+
+# collect_di_notices 同 dir — 重用佢實證在生嘅 DION 路徑 (fetch/parse/sid)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from collect_di_notices import (POOL, HOST, fetch, parse_rows, lookup_sid)  # noqa: E402
+
+DELAY = 1.2
+
+
+def _load_reverse_c2c(ns: Path) -> dict:
+    """stock_code → corp_name (di_corp2code 主表+fix 表, 首個命中)."""
+    rev = {}
+    for fn in ("di_corp2code.csv", "di_corp2code_fix.csv"):
+        fp = ns / fn
+        if not fp.exists():
+            continue
+        with open(fp, encoding="utf-8") as f:
+            for r in csv.DictReader(f):
+                if r.get("stock_code") and r.get("corp_name"):
+                    rev[r["corp_name"]] = r["stock_code"]
+    # 反轉: code → corp (同 code 兩個名 — 邊個都 roundtrip 得, A/B regex 兩個都唔中)
+    return {v: k for k, v in rev.items()}
+
+
+def compute_window(ns: Path, now: datetime | None = None) -> tuple:
+    """(sd, ed) — 現有全部 didx 檔最大 event_date+1 → 今日; 冇歷史 = 近 7 日."""
+    now = now or datetime.now()
+    best = None
+    for fp in sorted(ns.glob("didx_di_raw_*.csv")):
+        try:
+            with open(fp, encoding="utf-8") as f:
+                for r in csv.DictReader(f):
+                    dd, mm, yy = (r.get("event_date") or "").split("/")
+                    if len(yy) == 4 and yy.isdigit():
+                        d = datetime(int(yy), int(mm), int(dd))
+                        best = d if best is None or d > best else best
+        except Exception:
+            continue
+    ed = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    sd = (best + timedelta(days=1) if best
+          else ed - timedelta(days=7))
+    return sd, ed
+
+
+def _sid_for(code: str, cache_fp: Path) -> tuple:
+    """lookup_sid 帶檔案快取 (sid 永唔變)."""
+    cache = json.loads(cache_fp.read_text(encoding="utf-8")) \
+        if cache_fp.exists() else {}
+    if code in cache:
+        return tuple(cache[code])
+    sid, corpn = lookup_sid(code)
+    if sid:
+        cache[code] = [sid, corpn]
+        cache_fp.write_text(json.dumps(cache, indent=1), encoding="utf-8")
+    return sid, corpn
+
+
+def crawl_window(code: str, sid: str, corpn_q: str, sd: str, ed: str) -> list:
+    """per-stock 增量窗查詢 — 照 collect_di_notices.crawl_stock 縮窗版."""
+    rows_all, pg = [], 1
+    while pg < 50:
+        url = (f"{HOST}/di/NSNotice3AList.aspx?sa2=nd&sid={sid}&corpn={corpn_q}"
+               f"&sd={urllib.parse.quote(sd)}&ed={urllib.parse.quote(ed)}&cid=0&sa1=cl"
+               f"&scsd={urllib.parse.quote(sd)}&sced={urllib.parse.quote(ed)}&sc={code}"
+               f"&src=MAIN&lang=EN&g_lang=en&&pg={pg}")
+        rows = parse_rows(fetch(url))
+        if not rows:
+            break
+        rows_all.extend(rows)
+        if len(rows) < 50:
+            break
+        pg += 1
+        time.sleep(DELAY)
+    return rows_all
+
+
+def collect(ns: Path | None = None, now: datetime | None = None,
+            pool: list | None = None) -> dict:
+    now = now or datetime.now()
+    ns = Path(ns) if ns is not None else NEW_SRC
+    out_fp = ns / "didx_di_raw_pool.csv"
+    sid_cache_fp = ns / "didx_pool_sid_cache.json"
+    sd, ed = compute_window(ns, now)
+    if sd > ed:
+        return {"window": None, "rows": 0}
+    sd_s, ed_s = sd.strftime("%d/%m/%Y"), ed.strftime("%d/%m/%Y")
+    rev = _load_reverse_c2c(ns)
+    have_serials = set()
+    if out_fp.exists():
+        with open(out_fp, encoding="utf-8") as f:
+            have_serials = {r.get("form_serial") for r in csv.DictReader(f)}
+    new_rows, skipped_roundtrip, errors = [], 0, 0
+    for code in (pool if pool is not None else POOL):
+        corp = rev.get(code)
+        if not corp:
+            skipped_roundtrip += 1
+            continue
+        try:
+            sid, corpn_q = _sid_for(code, sid_cache_fp)
+            if not sid:
+                errors += 1
+                continue
+            for t in crawl_window(code, sid, corpn_q, sd_s, ed_s):
+                serial = t[0]
+                if serial in have_serials:
+                    continue
+                new_rows.append({
+                    "form_serial": serial, "event_date": t[7],
+                    "corp_name": corp, "director_name": t[1],
+                    "shares_bought_sold": t[2], "reason": t[3],
+                    "avg_price": t[4], "shares_interested": t[5],
+                    "pct_issued": t[6], "extra1": "", "extra2": "", "extra3": "",
+                })
+                have_serials.add(serial)
+        except Exception:
+            errors += 1
+        time.sleep(DELAY)
+    if new_rows:
+        exists = out_fp.exists()
+        with open(out_fp, "a", encoding="utf-8", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=FIELDS)
+            if not exists:
+                w.writeheader()
+            for r in new_rows:
+                w.writerow(r)
+    return {"window": f"{sd_s}→{ed_s}", "rows": len(new_rows),
+            "skipped_roundtrip": skipped_roundtrip, "errors": errors}
+
+
+def main() -> int:
+    st = collect()
+    print(f"didx pool 增量 [{st['window']}]: 新增 {st['rows']} 行 "
+          f"(roundtrip 跳 {st['skipped_roundtrip']} 股, 錯 {st['errors']}) "
+          f"→ didx_di_raw_pool.csv")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

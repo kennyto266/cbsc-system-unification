@@ -1,0 +1,385 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""hkma_msb_update.py — HKMA 主站 MSB Excel mirror 三源 collector.
+
+[G67804 10-15 建立 → G8198 10-16 事故再生重建]
+api.hkma.gov.hk WAF IP flag 全 405 (連 api root 都 405, 主站 200) →
+換源 www.hkma.gov.hk 主站 MSB (Monthly Statistical Bulletin) Excel mirror:
+
+  discount_window → T070303.xls  Table 7.3.3 Daily (1998-09-07→)
+  er-eeri         → T060103.xls  Table 6.1.3 Daily sheet 0 = new basket 2020+
+                                (舊籃子欄 dem/nlg/bef/frf/itl 已凍結 08-31)
+  hkd-fer         → T060203.xls  Table 6.2.3 Daily (1996-01-02→)
+
+節奏 (spec: .scratch/hkma-rescue/spec-draft.md @ 主倉):
+  • 月度 checkpoint — state json + 本地 xls cache, 同月免重下 (斷點續爬)
+  • 08-31 對照硬閘 — 新數同 08-31 已知值逐位對唔上即 fail 唔寫 (防主站改版)
+  • DW hibor 日尾 derive — hibor.csv (HKAB, hibor_update.py 日更) 補 xls 月更
+    之後嘅日尾: overnight=ir_overnight, fixing_1m=ir_1m, base=stepwise ffill,
+    LAW offer=base (spec 附錄: API 08-31 實證 LAW=base)
+  • api 復活 lane 唔喺呢度 — factor_updater.update_hkma_msb 每日單發 probe
+
+interface: update_factor(name) → bool  (factor_updater.update_hkma_msb 包住;
+submodule pin 未落地窗口 import 唔到會 graceful False, 唔炸 guard)
+
+用法:
+  python hkma_msb_update.py                     # 全部三源
+  python hkma_msb_update.py discount_window     # 單源
+"""
+import json
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
+import requests
+
+try:
+    import xlrd
+    from xlrd.xldate import xldate_as_datetime
+except ImportError:      # xlrd 2.x 已實測讀到 (spec §落地步驟); 冇即冇得行
+    xlrd = None
+
+FACT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors")
+MSB_CACHE_DIR = FACT_DIR.parent / "_msb_cache"
+CHECKPOINT_FILE = MSB_CACHE_DIR / "checkpoint.json"
+
+# 主站 MSB Excel mirror (curl 實測 200;WAF 只封 api 路徑/IP)
+MSB_BASE = "https://www.hkma.gov.hk/media/eng/doc/market-data-and-statistics/monthly-statistical-bulletin"
+UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+DOWNLOAD_TIMEOUT = 60      # spec: timeout 60
+DOWNLOAD_RETRIES = 2       # 主站唔係 IP flag 對象, 暫時性錯誤可小重試
+INTER_FILE_SLEEP = 2.0     # spec: 3 GET 之間 2s 間隔 (限速)
+
+# Excel serial 合理窗 (~1954-2034) — T060103 尾部 footnote 有 stray float
+# (serial 1 → 1900-01-01) 混喺 col0, 要過濾
+SERIAL_MIN, SERIAL_MAX = 20000, 60000
+
+# ---------------------------------------------------------------
+# 三表 parse 配方 (寫死欄位 index 最稳 — spec 風險 2;實測 08-31 逐位全中)
+# ---------------------------------------------------------------
+MSB_TABLES = {
+    "discount_window": {
+        "file": "T070303.xls",
+        "sheet": 0,
+        "csv": "discount_window.csv",
+        "date_col": "date",
+        # header r7-r10 中英雙行: c3=Base Rate / c4=Overnight HIBOR /
+        # c5=1M HIBOR fixing / c7=LAW offer rate (c6 係 merged 空欄)
+        "cols": {3: "disc_win_base_rate", 4: "hibor_overnight",
+                 5: "hibor_fixing_1m", 7: "liquid_adj_win_offer_rate"},
+    },
+    "er-eeri": {
+        "file": "T060103.xls",
+        "sheet": 0,   # 'new basket, 01.2020=100' (2020-01-02→)
+        "csv": "er-eeri-daily.csv",
+        "date_col": "end_of_day",
+        "cols": {
+            3: "usd", 4: "gbp", 5: "jpy", 6: "cad", 7: "aud", 8: "sgd",
+            9: "twd", 10: "chf", 11: "cny", 12: "krw", 13: "thb", 14: "myr",
+            15: "eur", 16: "php", 17: "inr", 18: "idr", 19: "zar",
+            20: "special_drawing_rights",
+            21: "neeri_2020_trade_wgt", 22: "neeri_2020_import_wgt",
+            23: "neeri_2020_export_wgt",
+        },
+    },
+    "hkd-fer": {
+        "file": "T060203.xls",
+        "sheet": 0,
+        "csv": "hkd-fer-daily.csv",
+        "date_col": "date",
+        # c3-c9 = spot/1w/1m/3m/6m/9m/12m ↔ csv 欄位一一對應 (spec §3)
+        "cols": {3: "hkd_fer_spot", 4: "hkd_fer_1w", 5: "hkd_fer_1m",
+                 6: "hkd_fer_3m", 7: "hkd_fer_6m", 8: "hkd_fer_9m",
+                 9: "hkd_fer_12m"},
+    },
+}
+
+# ---------------------------------------------------------------
+# 08-31 對照硬閘 (G67804 換源驗證實錄;主站改版/parse 錯位 → 呢度即爆)
+# ---------------------------------------------------------------
+GATE_DATE = "2026-08-31"
+GATE_TOL = 1e-6
+GATE_0831 = {
+    "discount_window": {"disc_win_base_rate": 4.0, "hibor_overnight": 4.0,
+                        "hibor_fixing_1m": 2.85},
+    "er-eeri": {"usd": 7.839, "gbp": 10.6145, "jpy": 0.04903, "cad": 5.6395,
+                "aud": 5.612, "sgd": 6.158},
+    "hkd-fer": {"hkd_fer_spot": 7.8378, "hkd_fer_1w": -11.5, "hkd_fer_1m": -67.0,
+                "hkd_fer_3m": -218.5, "hkd_fer_6m": -398.5,
+                "hkd_fer_9m": -574.0, "hkd_fer_12m": -713.0},
+}
+
+
+def _load_checkpoint():
+    """讀月度 checkpoint state (冇檔/壞 json → 空 state, 唔炸)."""
+    try:
+        with open(CHECKPOINT_FILE, "r", encoding="utf-8") as f:
+            state = json.load(f)
+        return state if isinstance(state, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_checkpoint(state):
+    """寫月度 checkpoint state (壞鎖/磁碟錯誤只記錄, 唔炸主流程)."""
+    try:
+        MSB_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        with open(CHECKPOINT_FILE, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, ensure_ascii=False)
+    except OSError as e:
+        print(f"  ⚠️ checkpoint 寫入失敗 ({e}) — 下次會重下載")
+
+
+def _download_msb(xls_name):
+    """下載 MSB Excel 到 cache (月度 checkpoint 同月免重下).
+
+    回傳 (cache_path, error_msg);checkpoint 命中時 error_msg=None 且零網絡請求。
+    """
+    cache_path = MSB_CACHE_DIR / xls_name
+    url = f"{MSB_BASE}/{xls_name}"
+    month_key = datetime.now().strftime("%Y-%m")
+    state = _load_checkpoint()
+    entry = state.get(xls_name, {})
+
+    # checkpoint 命中: 同月 + cache 檔仍在 → 免重下 (斷點續爬)
+    if entry.get("month") == month_key and cache_path.exists():
+        print(f"  ⏭️ {xls_name}: checkpoint 命中 ({month_key}, "
+              f"max_date={entry.get('max_date', '?')})")
+        return cache_path, None
+
+    wait = 2.0
+    for attempt in range(DOWNLOAD_RETRIES + 1):
+        try:
+            r = requests.get(url, headers={"User-Agent": UA},
+                             timeout=DOWNLOAD_TIMEOUT)
+            if r.status_code == 200 and r.content:
+                try:
+                    MSB_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+                    cache_path.write_bytes(r.content)
+                except OSError as e:
+                    return None, f"cache 寫入失敗: {e}"
+                state[xls_name] = {"month": month_key,
+                                   "bytes": len(r.content),
+                                   "downloaded_at": datetime.now().strftime(
+                                       "%Y-%m-%d %H:%M")}
+                _save_checkpoint(state)
+                print(f"  ⬇️ {xls_name}: {len(r.content)/1e6:.1f}MB 下載成功")
+                return cache_path, None
+            if 500 <= r.status_code < 600 and attempt < DOWNLOAD_RETRIES:
+                print(f"      ↻ HTTP {r.status_code}, {wait:.0f}s 後重試 "
+                      f"({attempt+1}/{DOWNLOAD_RETRIES})")
+                time.sleep(wait)
+                wait *= 2
+                continue
+            return None, f"HTTP {r.status_code}"
+        except requests.exceptions.RequestException as e:
+            if attempt < DOWNLOAD_RETRIES:
+                print(f"      ↜ {type(e).__name__}, {wait:.0f}s 後重試 "
+                      f"({attempt+1}/{DOWNLOAD_RETRIES})")
+                time.sleep(wait)
+                wait *= 2
+                continue
+            return None, str(e)
+    return None, "未知錯誤"
+
+
+def _parse_msb_xls(xls_path, cfg):
+    """xlrd 解 MSB Daily 表 → DataFrame (date_col + cols).
+
+    只認 col0 係數字 + serial 喺合理窗嘅行 (過濾 header/footnote/stray float)。
+    '-' / '' / merged 空格 → NaN。
+    """
+    if xlrd is None:
+        raise RuntimeError("xlrd 未安裝 (pip install xlrd)")
+    wb = xlrd.open_workbook(str(xls_path))
+    sh = wb.sheet_by_index(cfg["sheet"])
+    rows = []
+    for r in range(sh.nrows):
+        v = sh.cell_value(r, 0)
+        if not isinstance(v, float) or not (SERIAL_MIN <= v <= SERIAL_MAX):
+            continue
+        rec = {cfg["date_col"]: xldate_as_datetime(v, wb.datemode)}
+        for c, name in cfg["cols"].items():
+            cv = sh.cell_value(r, c) if c < sh.ncols else ""
+            rec[name] = cv if isinstance(cv, float) else None
+        rows.append(rec)
+    if not rows:
+        raise RuntimeError("parse 0 行 — 表格式變咗?")
+    df = pd.DataFrame(rows)
+    df[cfg["date_col"]] = pd.to_datetime(df[cfg["date_col"]])
+    # xls binary float 有尾數噪音 (7.847 → 7.8469999999999995) — round 10dp
+    # 清走, 令新行同 API 時代舊行 byte-級一致 (實值 ≤8dp, 10dp 無損)
+    value_cols = list(cfg["cols"].values())
+    df[value_cols] = df[value_cols].round(10)
+    return df.sort_values(cfg["date_col"]).reset_index(drop=True)
+
+
+def _hard_gate(df, name, cfg):
+    """08-31 對照硬閘: 新數同已知值逐位對唔上 → False (防 mirror 改版寫錯數)."""
+    gate = GATE_0831[name]
+    date_col = cfg["date_col"]
+    row = df.loc[df[date_col] == pd.Timestamp(GATE_DATE)]
+    if row.empty:
+        print(f"  🚫 {name}: 硬閘 fail — mirror 冇 {GATE_DATE} 行")
+        return False
+    row = row.iloc[0]
+    for col, expect in gate.items():
+        got = row.get(col)
+        if pd.isna(got) or abs(float(got) - expect) > GATE_TOL:
+            print(f"  🚫 {name}: 硬閘 fail — {col} {GATE_DATE} 期望 "
+                  f"{expect} 實得 {got} (mirror 改版?)")
+            return False
+    print(f"  🔒 {name}: {GATE_DATE} 硬閘 {len(gate)} 值全中")
+    return True
+
+
+def _merge_write(csv_path, new_df, date_col):
+    """增量合併寫回 (凍結語義): xls 值優先, 舊 csv 值補 xls 嘅 NaN.
+
+    [G8198 r2] 唔用 concat keep=last — 佢會成行覆蓋, 令 xls 冇帶嘅舊欄
+    (er-eeri 廢幣欄 dem/nlg/…、舊籃子 neeri_2010_*;spec: 凍結 08-31 唔再長)
+    喺重疊日期被鏟空 (935 行 neeri_2010 實錄)。combine_first 以 date 做
+    key: 新值 win、舊值填窿、舊欄原封保留、日期 union 升序。
+    """
+    old_df = pd.read_csv(csv_path) if csv_path.exists() else None
+    new_idx = new_df.set_index(date_col)
+    if old_df is not None and len(old_df):
+        old_cols = list(old_df.columns)          # 凍結舊欄序 (combine_first 會重排)
+        old_df = old_df.copy()
+        old_df[date_col] = pd.to_datetime(old_df[date_col], errors="coerce")
+        old_df = old_df.dropna(subset=[date_col]).set_index(date_col)
+        combined = new_idx.combine_first(old_df)   # xls 優先 + 舊值補 NaN
+        order = ([c for c in old_cols if c in combined.columns]
+                 + [c for c in combined.columns if c not in old_cols])
+        combined = combined[order]
+    else:
+        combined = new_idx
+    combined = (combined.sort_index()
+                .reset_index()
+                .rename(columns={"index": date_col}))
+    combined[date_col] = pd.to_datetime(combined[date_col]).dt.strftime("%Y-%m-%d")
+    combined.to_csv(csv_path, index=False)
+    return combined
+
+
+def _dw_hibor_dayend_derive(combined, cfg):
+    """DW 日尾 derive: hibor.csv (HKAB 日更) 補 xls 月更之後嘅日尾.
+
+    hibor_overnight=ir_overnight, hibor_fixing_1m=ir_1m,
+    disc_win_base_rate=xls 尾個 base (政策利率 stepwise ffill — 唔日變),
+    liquid_adj_win_offer_rate=base (spec 附錄實證)。
+    """
+    hibor_path = FACT_DIR / "hibor.csv"
+    date_col = cfg["date_col"]
+    if not hibor_path.exists():
+        print("  ⚠️ hibor.csv 唔存在 — 跳過日尾 derive")
+        return combined
+    hib = pd.read_csv(hibor_path)
+    hib["date"] = pd.to_datetime(hib["date"], errors="coerce")
+    hib = hib.dropna(subset=["date"])
+    if not len(hib):
+        print("  ⚠️ hibor.csv 冇有效行 — 跳過日尾 derive")
+        return combined
+
+    combined = combined.copy()
+    combined[date_col] = pd.to_datetime(combined[date_col])
+    last_known = combined.dropna(subset=["disc_win_base_rate"])
+    if not len(last_known):
+        print("  ⚠️ 冇已知 base rate — 跳過日尾 derive")
+        return combined
+    base_rate = float(last_known.iloc[-1]["disc_win_base_rate"])
+    done_max = combined[date_col].max()
+
+    tail = hib[hib["date"] > done_max].sort_values("date")
+    if not len(tail):
+        print(f"  ℹ️ hibor 冇新過 {done_max.date()} 嘅日尾 — derive 0 行")
+        return combined
+    derive = pd.DataFrame({
+        date_col: tail["date"],
+        "disc_win_base_rate": base_rate,
+        "hibor_overnight": pd.to_numeric(tail["ir_overnight"], errors="coerce"),
+        "hibor_fixing_1m": pd.to_numeric(tail["ir_1m"], errors="coerce"),
+        "liquid_adj_win_offer_rate": base_rate,
+    })
+    combined = (pd.concat([combined, derive], ignore_index=True)
+                .drop_duplicates(subset=[date_col], keep="last")
+                .sort_values(date_col))
+    print(f"  ➕ HKAB 日尾 derive {len(derive)} 行 "
+          f"({derive[date_col].min().date()}→{derive[date_col].max().date()}, "
+          f"base={base_rate} ffill)")
+    return combined
+
+
+def update_factor(name):
+    """單源更新入口 (factor_updater.update_hkma_msb 包住). 回傳 bool."""
+    if name not in MSB_TABLES:
+        print(f"  ❌ {name}: 唔喺 MSB_TABLES "
+              f"({', '.join(MSB_TABLES)})")
+        return False
+    cfg = MSB_TABLES[name]
+    try:
+        if xlrd is None:
+            print(f"  ❌ {name}: xlrd 未安裝")
+            return False
+        xls_path, err = _download_msb(cfg["file"])
+        if err:
+            print(f"  ❌ {name}: MSB mirror 下載失敗 — {err}")
+            return False
+        df = _parse_msb_xls(xls_path, cfg)
+        if not _hard_gate(df, name, cfg):
+            return False          # 硬閘 fail → 唔寫任何嘢
+        combined = _merge_write(FACT_DIR / cfg["csv"], df, cfg["date_col"])
+        if name == "discount_window":
+            combined = _dw_hibor_dayend_derive(combined, cfg)
+            combined[cfg["date_col"]] = combined[cfg["date_col"]].dt.strftime(
+                "%Y-%m-%d")
+            combined.to_csv(FACT_DIR / cfg["csv"], index=False)
+        latest = combined[cfg["date_col"]].iloc[-1]
+        n = len(combined)
+        state = _load_checkpoint()
+        state.setdefault(cfg["file"], {}).update(
+            {"max_date": str(latest)[:10], "rows": int(n)})
+        _save_checkpoint(state)
+        print(f"  ✅ {name}: {n} 行, 最新={latest}")
+        return True
+    except Exception as e:
+        print(f"  ❌ {name}: {type(e).__name__}: {e}")
+        return False
+
+
+def main(targets=None):
+    print("=" * 55)
+    print(f"📥 HKMA MSB mirror updater — {datetime.now():%Y-%m-%d %H:%M}")
+    print("=" * 55)
+    targets = targets or list(MSB_TABLES)
+    results = {}
+    processed = 0
+    for name in targets:
+        if name not in MSB_TABLES:
+            continue
+        if processed:
+            time.sleep(INTER_FILE_SLEEP)   # 限速: GET 之間 2s
+        processed += 1
+        results[name] = update_factor(name)
+    ok = sum(1 for v in results.values() if v)
+    print(f"{'='*55}")
+    print(f"更新結果: {ok}/{len(results)} 成功")
+    for name, v in results.items():
+        print(f"  {'✅' if v else '❌'} {name}")
+    print("=" * 55)
+    return ok == len(results)
+
+
+if __name__ == "__main__":
+    # Windows 排程 stdout 預設 cp950, 印 emoji 會炸 — 強制 UTF-8
+    # (factor_updater.py 同款藥方)
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+    _targets = sys.argv[1:] if len(sys.argv) > 1 else None
+    sys.exit(0 if main(_targets) else 1)

@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+"""build_fxsb_share_panel.py — ccass_participants_long.csv → fxsb_share.parquet.
+
+[2026-09-23 agent2-H fxsb thesis] 外資大行託管份額 panel:
+  輸入 data/new_sources/ccass_participants_long.csv
+    (shown_date, stock, participant_id, participant_name, shares, pct_of_issued)
+  白名單 = 13 間外資大行 CCASS participant (ID 精確匹配, 全倉庫唯一 —
+  2026-09-23 盤點: GOLDMAN/MORGAN STANLEY/JPMORGAN/UBS/BNP/CITIBANK/
+  DEUTSCHE/NOMURA/MERRILL/SOCGEN/MIZUHO/DAIWA/JEFFERIES; BARCLAYS/CS/MACQUARIE
+  倉庫內 51 股零持倉紀錄)。
+  ID 而非名稱 regex — 避開 SENCHI MORGAN CAPITAL / CS WEALTH 呢類假陽性
+  (09-23 盤點教訓: 名稱模糊匹配會撈埋本地同名小券商)。
+  值 = 白名單內 participant 嘅 pct_of_issued 加總 (外資組託管佔已發行股本 %)。
+輸出: data/factor_store/fxsb_share.parquet — wide (date × HK.XXXXX)。
+  factor_panels.py 用 _load_futu_panel('fxsb_share') 註冊 (eval scope 實名)。
+"""
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "ccass_participants_long.csv"
+OUT = BASE / "data" / "factor_store" / "fxsb_share.parquet"
+
+# 外資大行白名單 — participant_id 精確 (2026-09-23 倉庫盤點實證)
+FOREIGN_BROKER_IDS = {
+    "B01451",  # GOLDMAN SACHS (ASIA) SECURITIES LTD
+    "B01274",  # MORGAN STANLEY HONG KONG SECURITIES LTD
+    "B01110",  # J.P. MORGAN BROKING (HONG KONG) LTD
+    "B01161",  # UBS SECURITIES HONG KONG LTD
+    "C00093",  # BNP PARIBAS
+    "C00010",  # CITIBANK N.A.
+    "C00074",  # DEUTSCHE BANK AG
+    "B01961",  # NOMURA INTERNATIONAL (HONG KONG) LTD
+    "B01224",  # MERRILL LYNCH FAR EAST LTD
+    "C00111",  # SOCIETE GENERALE
+    "B01832",  # MIZUHO SECURITIES ASIA LTD
+    "B01777",  # DAIWA CAPITAL MARKETS HONG KONG LTD
+    "B01914",  # JEFFERIES HONG KONG LTD
+}
+
+
+def main() -> int:
+    df = pd.read_csv(RAW, dtype={"stock": str, "participant_id": str})
+    df["stock"] = df["stock"].str.strip().str.zfill(5)
+    df["date"] = pd.to_datetime(df["shown_date"], format="%Y/%m/%d", errors="coerce")
+    df = df[df["date"].notna()]
+    df = df.drop_duplicates(subset=["date", "stock", "participant_id"], keep="last")
+    df["pct"] = pd.to_numeric(df["pct_of_issued"], errors="coerce")
+
+    # 白名單 ID 命中 + 名稱覆核 (防 ID 重用/串檔: 命中者名稱必須仍係大行)
+    NAME_GUARD = ("GOLDMAN|MORGAN STANLEY|J.P. MORGAN|JPMORGAN|UBS|BNP|CITIBANK|"
+                  "DEUTSCHE|NOMURA|MERRILL|SOCIETE GENERALE|MIZUHO|DAIWA|JEFFERIES")
+    hit = df[df["participant_id"].isin(FOREIGN_BROKER_IDS)]
+    bad = hit[~hit["participant_name"].str.upper().str.contains(NAME_GUARD, regex=True, na=False)]
+    if len(bad):
+        print(f"⚠️ ID 命中但名稱唔似大行 {len(bad)} 行 — 剔除:")
+        print(bad[["date", "stock", "participant_id", "participant_name"]].drop_duplicates().to_string())
+        hit = hit[hit["participant_name"].str.upper().str.contains(NAME_GUARD, regex=True, na=False)]
+
+    grp = (hit.groupby(["date", "stock"])["pct"].sum().reset_index())
+    panel = grp.pivot(index="date", columns="stock", values="pct").sort_index()
+    panel = panel[~panel.index.duplicated(keep="last")]
+    panel.columns = ["HK." + str(c).zfill(5) for c in panel.columns]
+    print(f"raw {len(df)} 行, 白名單命中 {len(hit)} 行 → panel {panel.shape}")
+    print(f"  日期: {panel.index.min().date()} → {panel.index.max().date()}")
+    print(f"  股數: {panel.shape[1]}, 每股中位數有效日: {int(panel.notna().sum().median())}")
+    panel.to_parquet(OUT)
+    print(f"→ {OUT}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

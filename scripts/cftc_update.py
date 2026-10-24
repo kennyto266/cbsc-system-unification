@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""cftc_update.py — 從 CFTC 下載 Commitments of Traders (COT) 因子.
+
+數據源: CFTC 官方年報 zip 文件 (透過 cot_reports library)
+報告頻率: 週度 (每週五/二發佈, 涵蓋上週二收盤持倉)
+
+更新 12 個商品/金融合約嘅 net position + commercial ratio:
+  copper, crude_oil_wti, djia, gold_comex, natural_gas,
+  ndx_100, silver, sp500_cme,
+  us_tnote_2y, us_tnote_5y, us_tnote_10y, usd_index
+
+用法:
+  python cftc_update.py              # 更新全部
+  python cftc_update.py gold_comex   # 指定商品
+
+增量更新: 只保留最後已有日期之後嘅新數據, 但每年數據全量重寫.
+"""
+import warnings
+warnings.filterwarnings("ignore")
+import sys
+import os
+import pandas as pd
+import numpy as np
+from pathlib import Path
+from datetime import datetime
+
+FACT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors")
+
+# cot_reports 需要喺可寫嘅 cwd 操作 (佢會存 annual.txt)
+os.chdir(FACT_DIR)
+
+# CFTC 報告入面嘅 Market and Exchange Names 欄位 (前綴匹配)
+CFTC_MARKETS = {
+    "copper":         "COPPER- #1 - COMMODITY EXCHANGE",
+    "crude_oil_wti":  "CRUDE OIL, LIGHT SWEET",
+    "djia":           "DJIA CONSOLIDATED",
+    "gold_comex":     "GOLD - COMMODITY EXCHANGE",
+    "natural_gas":    "NATURAL GAS",
+    "ndx_100":        "NASDAQ-100",
+    "silver":         "SILVER - COMMODITY EXCHANGE",
+    "sp500_cme":      "E-MINI S&P 500",
+    "us_tnote_2y":    "UST 2Y NOTE",
+    "us_tnote_5y":    "UST 5Y NOTE",
+    "us_tnote_10y":   "UST 10Y NOTE",
+    "usd_index":      "USD INDEX",
+}
+
+
+def fetch_all_cot() -> pd.DataFrame:
+    """拉最近 2 年 COT 數據 (足以覆蓋增量更新)."""
+    import cot_reports as cot
+
+    current_year = datetime.now().year
+    frames = []
+    for year in [current_year, current_year - 1]:
+        try:
+            df = cot.cot_year(year=year, cot_report_type='legacy_fut')
+            frames.append(df)
+            print(f"  下載 {year}: {len(df)} rows")
+        except Exception as e:
+            print(f"  下載 {year} 失敗: {e}")
+
+    if not frames:
+        return pd.DataFrame()
+
+    combined = pd.concat(frames, ignore_index=True)
+    return combined
+
+
+def update_commodity(df_all: pd.DataFrame, commodity_key: str) -> bool:
+    """從全量 DataFrame 抽取指定商品, 更新 net + ratio CSV."""
+    market_prefix = CFTC_MARKETS[commodity_key]
+
+    # 篩選商品
+    mask = df_all["Market and Exchange Names"].str.upper().str.startswith(
+        market_prefix.upper(), na=False
+    )
+    df = df_all[mask].copy()
+    if len(df) == 0:
+        print(f"  [{commodity_key}] ⚠️ 冇搵到 (market='{market_prefix}')")
+        return False
+
+    # 解析日期 + 持倉
+    df["date"] = pd.to_datetime(df["As of Date in Form YYYY-MM-DD"])
+    nc_long = pd.to_numeric(df["Noncommercial Positions-Long (All)"], errors="coerce")
+    nc_short = pd.to_numeric(df["Noncommercial Positions-Short (All)"], errors="coerce")
+    comm_long = pd.to_numeric(df["Commercial Positions-Long (All)"], errors="coerce")
+    comm_short = pd.to_numeric(df["Commercial Positions-Short (All)"], errors="coerce")
+
+    net = nc_long - nc_short
+    total_comm = comm_long + comm_short
+    ratio = comm_short / total_comm.where(total_comm > 0, other=np.nan)
+
+    result = pd.DataFrame({
+        "date": df["date"],
+        "net_position": net,
+        "commercial_ratio": ratio,
+    }).dropna(subset=["date"]).sort_values("date").reset_index(drop=True)
+
+    # 寫 net CSV (date, close, return 格式 — 兼容現有文件)
+    net_file = FACT_DIR / f"cftc_{commodity_key}_net.csv"
+    ratio_file = FACT_DIR / f"cftc_{commodity_key}_ratio.csv"
+
+    # net
+    net_df = result[["date", "net_position"]].copy()
+    net_df["close"] = net_df["net_position"]
+    net_df["return"] = net_df["close"].pct_change()
+    net_df = net_df[["date", "close", "return"]]
+    net_df.to_csv(net_file, index=False)
+
+    # ratio
+    ratio_df = result[["date", "commercial_ratio"]].copy()
+    ratio_df["close"] = ratio_df["commercial_ratio"]
+    ratio_df["return"] = ratio_df["close"].pct_change()
+    ratio_df = ratio_df[["date", "close", "return"]]
+    ratio_df.to_csv(ratio_file, index=False)
+
+    last_date = result["date"].max().date()
+    print(f"  [{commodity_key}] ✅ {len(result)} rows, last={last_date}")
+    return True
+
+
+def main():
+    keys = sys.argv[1:] if len(sys.argv) > 1 else list(CFTC_MARKETS.keys())
+
+    print(f"CFTC COT Updater — 更新 {len(keys)} 個商品")
+    print(f"時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print()
+
+    # 一次性拉全部 COT 數據
+    print("下載 CFTC 數據...")
+    df_all = fetch_all_cot()
+    if len(df_all) == 0:
+        print("❌ 下載失敗")
+        return
+    print(f"總共 {len(df_all)} rows\n")
+
+    ok = 0
+    fail = 0
+    for key in keys:
+        if key not in CFTC_MARKETS:
+            print(f"  [{key}] ⚠️ 未知商品 (可選: {', '.join(CFTC_MARKETS.keys())})")
+            fail += 1
+            continue
+        try:
+            if update_commodity(df_all, key):
+                ok += 1
+            else:
+                fail += 1
+        except Exception as e:
+            print(f"  [{key}] ❌ {e}")
+            fail += 1
+
+    # 清理 cot_reports 嘅暫存文件
+    for tmp in ["annual.txt", "annual.zip"]:
+        tmp_path = FACT_DIR / tmp
+        if tmp_path.exists():
+            tmp_path.unlink()
+
+    print(f"\n完成: {ok} OK, {fail} 失敗")
+
+
+if __name__ == "__main__":
+    main()

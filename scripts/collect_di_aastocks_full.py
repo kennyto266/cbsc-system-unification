@@ -1,0 +1,95 @@
+"""collect_di_aastocks_full.py — expand DI coverage from 50 to full 984 universe (thesis digs).
+Same source/parser as collect_di_aastocks.py; separate raw/ckpt files so old data untouched.
+"""
+import csv, json, re, time, urllib.request
+from datetime import datetime
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+OUT_DIR = BASE / "data" / "new_sources"
+RAW = OUT_DIR / "di_aastocks_full_raw.csv"
+CKPT = OUT_DIR / "di_aastocks_full_ckpt.json"
+
+codes = [l.strip().zfill(5) for l in (OUT_DIR / "universe_codes.csv").read_text(encoding="utf-8").splitlines()[1:] if l.strip()]
+# skip codes already in old 50-stock raw
+old = set(r.split(",")[0] for r in (OUT_DIR / "di_aastocks_raw.csv").read_text(encoding="utf-8").splitlines()[1:])
+codes = [c for c in codes if c not in old]
+print("to crawl:", len(codes), flush=True)
+
+HDRS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36"}
+DATE_RE = re.compile(r"^20\d\d/\d\d/\d\d$")
+log = lambda *a: print(datetime.now().strftime("%H:%M:%S"), *a, flush=True)
+
+def fetch(url, tries=3):
+    for i in range(tries):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=HDRS), timeout=25) as r:
+                return r.read().decode("utf-8", "replace")
+        except Exception:
+            if i == 2:
+                raise
+            time.sleep(3)
+
+def parse(html):
+    rows = []
+    for t in re.findall(r"<table[^>]*>(.*?)</table>", html, re.S):
+        if "權益披露" not in t:
+            continue
+        for tr in re.findall(r"<tr[^>]*>(.*?)</tr>", t, re.S):
+            cells = [re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", c)).strip()
+                     for c in re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", tr, re.S)]
+            if len(cells) >= 8 and DATE_RE.match(cells[0]):
+                date, holder, avg, ntype, traded, pct_chg, after, pct_after = cells[:8]
+                def clean(s):
+                    m = re.match(r"([\d\.,]+)\(L\)", s)
+                    return m.group(1).replace(",", "") if m else ""
+                rows.append([date, holder, avg or "", ntype.split(" ")[0],
+                             clean(traded), clean(after), pct_after.split("(L)")[0]])
+        if rows:
+            break
+    return rows
+
+def crawl_code(code):
+    out, page = [], 1
+    while page <= 200:
+        url = f"https://www.aastocks.com/tc/stock/InterestsDisclosure.aspx?symbol={code}&shareholder=&page={page}"
+        rows = parse(fetch(url))
+        if not rows:
+            break
+        out.extend(rows)
+        if rows[-1][0] < "2024/08":   # ~2年 backfill, 夠 21d rolling 同 sweep window
+            break
+        page += 1
+        time.sleep(0.4)
+    return out
+
+ckpt = json.loads(CKPT.read_text()) if CKPT.exists() else {"done": {}}
+exists = RAW.exists()
+f = open(RAW, "a", newline="", encoding="utf-8")
+w = csv.writer(f)
+if not exists:
+    w.writerow(["stock_code", "date", "holder", "avg_price", "notice_type",
+                "shares_traded_l", "shares_after_l", "pct_after_l"])
+for i, code in enumerate(codes):
+    if ckpt["done"].get(code):
+        continue
+    try:
+        rows = crawl_code(code)
+    except Exception as e:
+        log(code, "FAIL", str(e)[:80])
+        time.sleep(3)
+        continue
+    seen = set()
+    for r in rows:
+        k = tuple(r)
+        if k not in seen:
+            seen.add(k)
+            w.writerow([code] + r)
+    f.flush()
+    ckpt["done"][code] = len(rows)
+    CKPT.write_text(json.dumps(ckpt))
+    if i % 25 == 0:
+        log(i, code, len(rows), "rows")
+    time.sleep(0.6)
+f.close()
+log("DONE")

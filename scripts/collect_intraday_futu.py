@@ -1,0 +1,211 @@
+#!/usr/bin/env python3
+"""
+日內 5min K線收集器 — 富途 OpenAPI 版 (8 年歷史深度)
+
+升級自 collect_intraday.py (yfinance 版, 只有 60 日).
+富途 5min K線有 8 年歷史, 解鎖 B2 microstructure spike 嘅 walk-forward retest.
+
+連線策略 (學自 collect_hsi_ohlcv.py 嘅實戰經驗):
+  - 直接 import OpenQuoteContext 會 hang (OpenD 唔回應時無法 recover)
+  - 所以用 subprocess + hard timeout: 每次拉一隻都 spawn 子進程, 超時即 kill
+  - 子進程用 stdout 傳 CSV 返, 主進程 parse
+
+設計 (B2 spike 結論 + 用戶決策 2026-07-24):
+  - Scope: 全部 42 隻 HSI_CORE
+  - Backfill: 一次過拉 ~8y (max_count 大, Futu 內部 paginate)
+  - Layout: 沿用 intraday_5min/*.parquet (flat, B2 spike loader 已兼容)
+  - Incremental: --update-only 模式 merge 落現有 parquet
+
+用法:
+    python scripts/collect_intraday_futu.py                    # 全量 backfill (42 隻)
+    python scripts/collect_intraday_futu.py --update-only      # 增量 (每日 post-close)
+    python scripts/collect_intraday_futu.py --stocks HK.00700  # 指定
+
+Futu 限制:
+  - 5min 歷史: 最近 8 年
+  - max_count: 1000 bars/page, 內部 auto-paginate
+  - rate: 60 req/30s (子進程間 sleep 0.5s 已足夠)
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+
+import argparse
+import socket
+import subprocess
+import time
+from io import StringIO
+from pathlib import Path
+
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parent.parent
+INTRADAY_DIR = ROOT / "data" / "intraday_5min"
+INTRADAY_DIR.mkdir(parents=True, exist_ok=True)
+
+HSI_CORE = [
+    "HK.00005", "HK.00388", "HK.00001", "HK.00002", "HK.00003", "HK.00006",
+    "HK.00011", "HK.00012", "HK.00016", "HK.00017", "HK.00027", "HK.00066",
+    "HK.00101", "HK.00175", "HK.00241", "HK.00268", "HK.00285", "HK.00291",
+    "HK.00386", "HK.00688", "HK.00700", "HK.00762", "HK.00823", "HK.00883",
+    "HK.00939", "HK.00941", "HK.01038", "HK.01088", "HK.01109", "HK.01299",
+    "HK.01398", "HK.01876", "HK.01928", "HK.02013", "HK.02318", "HK.02388",
+    "HK.02628", "HK.03690", "HK.06862", "HK.09618", "HK.09988", "HK.09999",
+]
+
+
+def opend_alive(host="127.0.0.1", port=11111) -> bool:
+    """快 check OpenD port 是否接受連線."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(4)
+    try:
+        sock.connect((host, port)); sock.close()
+        return True
+    except Exception:
+        return False
+
+
+def fetch_futu_5min(code: str, max_count: int = 20000, timeout_sec: int = 60) -> pd.DataFrame | None:
+    """子進程拉 5min K線 (硬 timeout, 唔會 hang 主進程).
+
+    子進程寫 parquet 到 temp file (唔用 stdout — 避免 Futu log 污染 CSV).
+    主進程讀 temp file + 刪除.
+    """
+    import tempfile, os
+    fd, tmp_path = tempfile.mkstemp(suffix=".parquet")
+    os.close(fd)
+    # 用 file:// scheme python literal 傳 path, 避免 quoting 問題
+    script = (
+        "import sys\n"
+        "import logging\n"
+        "logging.disable(logging.CRITICAL)\n"  # 屏蔽 Futu connection log
+        "import pandas as pd\n"
+        "from futu import OpenQuoteContext\n"
+        f"q = OpenQuoteContext(host='127.0.0.1', port=11111)\n"
+        "try:\n"
+        f"    ret, df, _ = q.request_history_kline({code!r}, ktype='K_5M', "
+        f"autype='qfq', max_count={max_count})\n"
+        "    if ret != 0 or df is None or len(df) == 0:\n"
+        "        sys.exit(1)\n"
+        "    out = pd.DataFrame({\n"
+        "        'datetime': pd.to_datetime(df['time_key']),\n"
+        "        'open': df['open'].astype(float),\n"
+        "        'high': df['high'].astype(float),\n"
+        "        'low': df['low'].astype(float),\n"
+        "        'close': df['close'].astype(float),\n"
+        "        'volume': df['volume'].astype(float),\n"
+        "        'turnover': df['turnover'].astype(float) if 'turnover' in df.columns else 0.0,\n"
+        "    })\n"
+        f"    out.to_parquet({tmp_path!r}, index=False)\n"
+        "finally:\n"
+        "    q.close()\n"
+    )
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True, text=True, timeout=timeout_sec,
+        )
+        if proc.returncode != 0:
+            return None
+        if not os.path.exists(tmp_path):
+            return None
+        df = pd.read_parquet(tmp_path)
+        return df if not df.empty else None
+    except subprocess.TimeoutExpired:
+        print(f"    [timeout] {code} 超過 {timeout_sec}s, skip")
+        return None
+    except Exception as e:
+        print(f"    [err] {code}: {str(e)[:60]}")
+        return None
+    finally:
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            pass
+
+
+def normalize(df: pd.DataFrame) -> pd.DataFrame:
+    """清理 + 去重 + 排序."""
+    df = df.copy()
+    df["datetime"] = pd.to_datetime(df["datetime"])
+    if df["datetime"].dt.tz is not None:
+        df["datetime"] = df["datetime"].dt.tz_convert(None)
+    return df.sort_values("datetime").drop_duplicates(
+        subset=["datetime"]).reset_index(drop=True)
+
+
+def merge_with_existing(new_df: pd.DataFrame, out_path: Path) -> pd.DataFrame:
+    """增量 merge."""
+    if out_path.exists():
+        try:
+            old = pd.read_parquet(out_path)
+            combined = pd.concat([old, new_df], ignore_index=True)
+            return combined.drop_duplicates(subset=["datetime"], keep="last").sort_values("datetime").reset_index(drop=True)
+        except Exception:
+            pass
+    return new_df
+
+
+def collect_stock(code: str, freq: str = "5m", update_only: bool = False,
+                   timeout_sec: int = 90, verbose: bool = True) -> int:
+    out_path = INTRADAY_DIR / f"{code.replace('.', '_')}_{freq}.parquet"
+    # Futu 5min 實測上限 ~16000 bars (~1y). update-only: recent 3000; 全量: 拉晒可用歷史.
+    max_count = 3000 if update_only else 20000
+    df = fetch_futu_5min(code, max_count=max_count, timeout_sec=timeout_sec)
+    if df is None or df.empty:
+        if verbose:
+            print(f"  ❌ {code}: 拎唔到")
+        return 0
+    df = normalize(df)
+    if update_only:
+        df = merge_with_existing(df, out_path)
+    df.to_parquet(out_path, index=False, engine="pyarrow")
+    if verbose:
+        n_days = df["datetime"].dt.date.nunique()
+        bpd = len(df) / n_days if n_days else 0
+        print(f"  ✅ {code}: {len(df):,} bars, {n_days} 日, ~{bpd:.0f} bars/日 "
+              f"[{df['datetime'].min().date()} ~ {df['datetime'].max().date()}]")
+    return len(df)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="收集日內 5min K線 (富途, 8y 歷史)")
+    parser.add_argument("--freq", default="5m", choices=["5m", "15m", "30m", "60m"])
+    parser.add_argument("--stocks", help="指定 (逗號分隔), 預設 HSI_CORE 42 隻")
+    parser.add_argument("--update-only", action="store_true",
+                        help="增量模式 (每日 post-close, merge 落現有 parquet)")
+    parser.add_argument("--timeout", type=int, default=60, help="每隻股 fetch timeout (秒)")
+    args = parser.parse_args()
+
+    stocks = args.stocks.split(",") if args.stocks else HSI_CORE
+
+    print("=" * 64)
+    print(f"📥 富途日內 {args.freq} K線收集器 (subprocess + timeout)")
+    print(f"   股票: {len(stocks)} 隻")
+    print(f"   模式: {'增量 update-only' if args.update_only else '全量 backfill (~8y)'}")
+    print(f"   OpenD: {'✓ alive' if opend_alive() else '✗ DEAD — 先啟動 FutuOpenD'}")
+    print(f"   輸出: {INTRADAY_DIR}/")
+    print("=" * 64)
+
+    if not opend_alive():
+        print("\n❌ OpenD port 11111 冇開. 請先啟動 FutuOpenD 再跑.")
+        return 1
+
+    ok, total, total_bars = 0, 0, 0
+    for code in stocks:
+        total += 1
+        rows = collect_stock(code, freq=args.freq, update_only=args.update_only,
+                              timeout_sec=args.timeout)
+        if rows > 0:
+            ok += 1
+            total_bars += rows
+        time.sleep(0.5)  # rate politeness
+
+    print(f"\n{'='*64}")
+    print(f"✅ 完成: {ok}/{total} 隻, 共 {total_bars:,} bars")
+    if ok < total:
+        print(f"   ⚠️  {total - ok} 隻失敗 (timeout / 冇 5min 數據)")
+    print(f"{'='*64}")
+
+
+if __name__ == "__main__":
+    main()

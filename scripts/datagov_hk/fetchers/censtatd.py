@@ -1,0 +1,125 @@
+"""Censtatd(統計處)fetcher:每個 table 多個 stat-var,各一個 CSV。
+
+管線:
+  1. table_<code>_comp.json  → 拿 theme_id + table_component_list[{stat_var,stat_pres}]
+  2. 每個組合 → MDT_<theme>_<code>_<statvar>_<prestype>.csv
+  3. CSV: CCYY,Q/M,obs_value,sd_value → long-format rows
+
+dataset_id 形如 'hk-censtatd-tablechart-340-95001' → table_code='340-95001'。
+"""
+import io
+import time
+
+import pandas as pd
+import requests
+
+CENSTATD = "https://www.censtatd.gov.hk/data"
+
+
+def _table_code(dataset_id: str) -> str:
+    # hk-censtatd-tablechart-340-95001 -> 340-95001
+    return dataset_id.replace("hk-censtatd-tablechart-", "")
+
+
+def _obs_date(row) -> str:
+    """CCYY + (Q or M) → date string. 年度無 Q/M = YYYY;季度=YYYY-Qn;月=YYYY-MM."""
+    try:
+        y = str(int(float(row.get("CCYY"))))
+    except (TypeError, ValueError):
+        return None
+    q = row.get("Q")
+    m = row.get("M")
+    if pd.notna(m) and m != "":
+        try:
+            return f"{y}-{int(float(m)):02d}"
+        except (TypeError, ValueError):
+            return y
+    if pd.notna(q) and q != "":
+        try:
+            return f"{y}-Q{int(float(q))}"
+        except (TypeError, ValueError):
+            return y
+    return y  # 年度
+
+
+class CenstatdFetcher:
+    def __init__(self, dataset_id: str, max_retries: int = 2):
+        self.dataset_id = dataset_id
+        self.code = _table_code(dataset_id)
+        self.max_retries = max_retries
+
+    def _get(self, url) -> str:
+        last = None
+        for _ in range(self.max_retries + 1):
+            try:
+                r = requests.get(url, timeout=20,
+                                 headers={"User-Agent": "Mozilla/5.0"})
+                if r.status_code == 200:
+                    return r.text
+                last = f"HTTP {r.status_code}"
+            except requests.RequestException as e:
+                last = str(e)[:120]
+            time.sleep(0.3)
+        raise RuntimeError(f"censtatd fetch failed: {last} :: {url}")
+
+    def _components(self) -> list:
+        """回 [(theme, stat_var, stat_pres)] 列表。空 = 唔係 stat table(e.g. 文章)。"""
+        r = requests.get(f"{CENSTATD}/table_{self.code}_comp.json", timeout=20,
+                         headers={"User-Agent": "Mozilla/5.0"})
+        if r.status_code != 200:
+            return []
+        try:
+            j = r.json()
+        except ValueError:
+            return []  # 非 JSON(文章/fallback)
+        theme = j.get("theme_id", "")
+        tcl = j.get("table_component_list", [])
+        comps = []
+        for c in tcl:
+            sv = c.get("stat_var")
+            sp = c.get("stat_pres")
+            if sv and sp:
+                comps.append((theme, sv, sp))
+        return comps
+
+    def fetch(self, since=None) -> list:
+        rows = []
+        for theme, sv, sp in self._components():
+            url = f"{CENSTATD}/MDT_{theme}_{self.code}_{sv}_{sp}.csv"
+            try:
+                txt = self._get(url)
+            except Exception:
+                continue
+            try:
+                df = pd.read_csv(io.StringIO(txt))
+            except Exception:
+                continue
+            field = f"{sv}"
+            for _, r in df.iterrows():
+                d = _obs_date(r)
+                if not d or pd.isna(r.get("obs_value")):
+                    continue
+                if since and d < since:
+                    continue
+                try:
+                    val = float(r["obs_value"])
+                except (TypeError, ValueError):
+                    continue
+                rows.append((self.dataset_id, d, field, val, sp))
+            time.sleep(0.1)
+        return rows
+
+    def run(self, conn) -> int:
+        from .. import db
+        last = db.last_obs_date(conn, self.dataset_id)
+        try:
+            rows = self.fetch(since=last)
+        except Exception as e:
+            db.set_status(conn, self.dataset_id, f"error: {str(e)[:200]}")
+            return 0
+        if rows:
+            db.upsert_raw(conn, rows)
+        from datetime import datetime
+        db.set_status(conn, self.dataset_id, "ok",
+                      last_fetched=datetime.utcnow().isoformat())
+        return len(rows)

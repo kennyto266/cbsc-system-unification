@@ -1,0 +1,587 @@
+{
+  "hk-hkma-t03-t030601assetquality-ais": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/assetquality-ais",
+    "fmt": "json",
+    "slug": "assetquality-ais"
+  },
+  "hk-hkma-t03-t030602assetquality-retailbanks": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/assetquality-retailbanks",
+    "fmt": "json",
+    "slug": "assetquality-retailbanks"
+  },
+  "hk-hkma-t03-t030901balance-sheet-ais": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/balance-sheet-ais",
+    "fmt": "json",
+    "slug": "balance-sheet-ais"
+  },
+  "hk-hkma-t03-t030904balance-sheet-dtc": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/balance-sheet-dtc",
+    "fmt": "json",
+    "slug": "balance-sheet-dtc"
+  },
+  "hk-hkma-t03-t030902balance-sheet-lb": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/balance-sheet-lb",
+    "fmt": "json",
+    "slug": "balance-sheet-lb"
+  },
+  "hk-hkma-t03-t030903balance-sheet-rlb": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/balance-sheet-rlb",
+    "fmt": "json",
+    "slug": "balance-sheet-rlb"
+  },
+  "hk-hkma-t03-t0314capital-adequacy": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/capital-adequacy",
+    "fmt": "json",
+    "slug": "capital-adequacy"
+  },
+  "hk-hkma-t03-t031201ch-statistics-ch-turnover": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/ch-statistics-ch-turnover",
+    "fmt": "json",
+    "slug": "ch-statistics-ch-turnover"
+  },
+  "hk-hkma-t03-t031202ch-statistics-fps-reg": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/ch-statistics-fps-reg",
+    "fmt": "json",
+    "slug": "ch-statistics-fps-reg"
+  },
+  "hk-hkma-t03-t031204ch-statistics-turnover-fps-hkd-payment-val": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/ch-statistics-turnover-fps-hkd-payment-val",
+    "fmt": "json",
+    "slug": "ch-statistics-turnover-fps-hkd-payment-val"
+  },
+  "hk-hkma-t03-t031203ch-statistics-turnover-fps-hkd-payment-vol": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/ch-statistics-turnover-fps-hkd-payment-vol",
+    "fmt": "json",
+    "slug": "ch-statistics-turnover-fps-hkd-payment-vol"
+  },
+  "hk-hkma-t03-t031206ch-statistics-turnover-fps-rmb-payment-val": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/ch-statistics-turnover-fps-rmb-payment-val",
+    "fmt": "json",
+    "slug": "ch-statistics-turnover-fps-rmb-payment-val"
+  },
+  "hk-hkma-t03-t031205ch-statistics-turnover-fps-rmb-payment-vol": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/ch-statistics-turnover-fps-rmb-payment-vol",
+    "fmt": "json",
+    "slug": "ch-statistics-turnover-fps-rmb-payment-vol"
+  },
+  "hk-hkma-t03-t0308credit-card-lending-survey": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/credit-card-lending-survey",
+    "fmt": "json",
+    "slug": "credit-card-lending-survey"
+  },
+  "hk-hkma-t03-t0302customer-deposits-by-currency": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/customer-deposits-by-currency",
+    "fmt": "json",
+    "slug": "customer-deposits-by-currency"
+  },
+  "hk-hkma-t03-t030302customer-deposits-by-type-cny": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/customer-deposits-by-type-cny",
+    "fmt": "json",
+    "slug": "customer-deposits-by-type-cny"
+  },
+  "hk-hkma-t03-t030301customer-deposits-by-type-hkd-fc": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/customer-deposits-by-type-hkd-fc",
+    "fmt": "json",
+    "slug": "customer-deposits-by-type-hkd-fc"
+  },
+  "hk-hkma-t03-t031101elc-endperiod": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/elc-endperiod",
+    "fmt": "json",
+    "slug": "elc-endperiod"
+  },
+  "hk-hkma-t03-t031102elc-pos-v-all": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/elc-pos-v-all",
+    "fmt": "json",
+    "slug": "elc-pos-v-all"
+  },
+  "hk-hkma-t03-t031104elc-pos-v-jp": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/elc-pos-v-jp",
+    "fmt": "json",
+    "slug": "elc-pos-v-jp"
+  },
+  "hk-hkma-t03-t031103elc-pos-v-mc": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/elc-pos-v-mc",
+    "fmt": "json",
+    "slug": "elc-pos-v-mc"
+  },
+  "hk-hkma-t03-t031105elc-pos-v-sin": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/elc-pos-v-sin",
+    "fmt": "json",
+    "slug": "elc-pos-v-sin"
+  },
+  "hk-hkma-t03-t031106elc-pos-v-uk": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/elc-pos-v-uk",
+    "fmt": "json",
+    "slug": "elc-pos-v-uk"
+  },
+  "hk-hkma-t03-t031107elc-pos-v-us": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/elc-pos-v-us",
+    "fmt": "json",
+    "slug": "elc-pos-v-us"
+  },
+  "hk-hkma-t03-t031001fc-position-all": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/fc-position-all",
+    "fmt": "json",
+    "slug": "fc-position-all"
+  },
+  "hk-hkma-t03-t031007fc-position-cad": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/fc-position-cad",
+    "fmt": "json",
+    "slug": "fc-position-cad"
+  },
+  "hk-hkma-t03-t031008fc-position-chf": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/fc-position-chf",
+    "fmt": "json",
+    "slug": "fc-position-chf"
+  },
+  "hk-hkma-t03-t031006fc-position-dem": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/fc-position-dem",
+    "fmt": "json",
+    "slug": "fc-position-dem"
+  },
+  "hk-hkma-t03-t031005fc-position-eur": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/fc-position-eur",
+    "fmt": "json",
+    "slug": "fc-position-eur"
+  },
+  "hk-hkma-t03-t031003fc-position-gbp": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/fc-position-gbp",
+    "fmt": "json",
+    "slug": "fc-position-gbp"
+  },
+  "hk-hkma-t03-t031004fc-position-jpy": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/fc-position-jpy",
+    "fmt": "json",
+    "slug": "fc-position-jpy"
+  },
+  "hk-hkma-t03-t031009fc-position-other": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/fc-position-other",
+    "fmt": "json",
+    "slug": "fc-position-other"
+  },
+  "hk-hkma-t03-t031002fc-position-usd": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/fc-position-usd",
+    "fmt": "json",
+    "slug": "fc-position-usd"
+  },
+  "hk-hkma-t03-t0315liquidity": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/liquidity",
+    "fmt": "json",
+    "slug": "liquidity"
+  },
+  "hk-hkma-t03-t030501loans-by-sector-ais": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/loans-by-sector-ais",
+    "fmt": "json",
+    "slug": "loans-by-sector-ais"
+  },
+  "hk-hkma-t03-t030504loans-by-sector-dtc": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/loans-by-sector-dtc",
+    "fmt": "json",
+    "slug": "loans-by-sector-dtc"
+  },
+  "hk-hkma-t03-t030502loans-by-sector-lb": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/loans-by-sector-lb",
+    "fmt": "json",
+    "slug": "loans-by-sector-lb"
+  },
+  "hk-hkma-t03-t030503loans-by-sector-rlb": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/loans-by-sector-rlb",
+    "fmt": "json",
+    "slug": "loans-by-sector-rlb"
+  },
+  "hk-hkma-t03-t030401loans-by-type-ais": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/loans-by-type-ais",
+    "fmt": "json",
+    "slug": "loans-by-type-ais"
+  },
+  "hk-hkma-t03-t030404loans-by-type-dtc": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/loans-by-type-dtc",
+    "fmt": "json",
+    "slug": "loans-by-type-dtc"
+  },
+  "hk-hkma-t03-t030402loans-by-type-lb": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/loans-by-type-lb",
+    "fmt": "json",
+    "slug": "loans-by-type-lb"
+  },
+  "hk-hkma-t03-t030403loans-by-type-rlb": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/loans-by-type-rlb",
+    "fmt": "json",
+    "slug": "loans-by-type-rlb"
+  },
+  "hk-hkma-t03-t031301mr-lending": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/mr-lending",
+    "fmt": "json",
+    "slug": "mr-lending"
+  },
+  "hk-hkma-t03-t031302mr-lending-ais-type": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/mr-lending-ais-type",
+    "fmt": "json",
+    "slug": "mr-lending-ais-type"
+  },
+  "hk-hkma-t03-t031303mr-lending-borrowers-type": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/mr-lending-borrowers-type",
+    "fmt": "json",
+    "slug": "mr-lending-borrowers-type"
+  },
+  "hk-hkma-t03-t0301number-of-ais-lros": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/number-of-ais-lros",
+    "fmt": "json",
+    "slug": "number-of-ais-lros"
+  },
+  "hk-hkma-t03-t031304other-mr-non-bank-exposures": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/other-mr-non-bank-exposures",
+    "fmt": "json",
+    "slug": "other-mr-non-bank-exposures"
+  },
+  "hk-hkma-t03-t0316residential-mortgage-loans-neg-equity": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/residential-mortgage-loans-neg-equity",
+    "fmt": "json",
+    "slug": "residential-mortgage-loans-neg-equity"
+  },
+  "hk-hkma-t03-t0307residential-mortgage-survey": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/banking/residential-mortgage-survey",
+    "fmt": "json",
+    "slug": "residential-mortgage-survey"
+  },
+  "hk-hkma-t08-t0805analysis-fc-reserve-assets": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/ef-fc-resv-assets/analysis-fc-reserve-assets",
+    "fmt": "json",
+    "slug": "analysis-fc-reserve-assets"
+  },
+  "hk-hkma-t08-t0803currency-board-account": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/ef-fc-resv-assets/currency-board-account",
+    "fmt": "json",
+    "slug": "currency-board-account"
+  },
+  "hk-hkma-t08-t0806data-intreserve-fcliquidity": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/ef-fc-resv-assets/data-intreserve-fcliquidity",
+    "fmt": "json",
+    "slug": "data-intreserve-fcliquidity"
+  },
+  "hk-hkma-t08-t0802ef-analyt-acct": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/ef-fc-resv-assets/ef-analyt-acct",
+    "fmt": "json",
+    "slug": "ef-analyt-acct"
+  },
+  "hk-hkma-t08-t080102ef-bal-sheet-abridged": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/ef-fc-resv-assets/ef-bal-sheet-abridged",
+    "fmt": "json",
+    "slug": "ef-bal-sheet-abridged"
+  },
+  "hk-hkma-t08-t080101ef-bal-sheet-half-yearly-efbs": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/ef-fc-resv-assets/ef-bal-sheet-half-yearly-efbs",
+    "fmt": "json",
+    "slug": "ef-bal-sheet-half-yearly-efbs"
+  },
+  "hk-hkma-t08-t0804fc-resv-assests": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/ef-fc-resv-assets/fc-resv-assests",
+    "fmt": "json",
+    "slug": "fc-resv-assests"
+  },
+  "hk-hkma-t05-t050701cmu-outstanding-remain-tenor-all-currencies": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/cmu-outstanding-remain-tenor-all-currencies",
+    "fmt": "json",
+    "slug": "cmu-outstanding-remain-tenor-all-currencies"
+  },
+  "hk-hkma-t05-t050702cmu-outstanding-remain-tenor-hkd": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/cmu-outstanding-remain-tenor-hkd",
+    "fmt": "json",
+    "slug": "cmu-outstanding-remain-tenor-hkd"
+  },
+  "hk-hkma-t05-t050705cmu-outstanding-remain-tenor-other-fc": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/cmu-outstanding-remain-tenor-other-fc",
+    "fmt": "json",
+    "slug": "cmu-outstanding-remain-tenor-other-fc"
+  },
+  "hk-hkma-t05-t050703cmu-outstanding-remain-tenor-rmb": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/cmu-outstanding-remain-tenor-rmb",
+    "fmt": "json",
+    "slug": "cmu-outstanding-remain-tenor-rmb"
+  },
+  "hk-hkma-t05-t050704cmu-outstanding-remain-tenor-usd": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/cmu-outstanding-remain-tenor-usd",
+    "fmt": "json",
+    "slug": "cmu-outstanding-remain-tenor-usd"
+  },
+  "hk-hkma-t05-t0505cmu-service": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/cmu-service",
+    "fmt": "json",
+    "slug": "cmu-service"
+  },
+  "hk-hkma-t05-t050601cmu-turnover-sec-mkt-remain-tenor-all-currencies": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/cmu-turnover-sec-mkt-remain-tenor-all-currencies",
+    "fmt": "json",
+    "slug": "cmu-turnover-sec-mkt-remain-tenor-all-currencies"
+  },
+  "hk-hkma-t05-t050602cmu-turnover-sec-mkt-remain-tenor-hkd": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/cmu-turnover-sec-mkt-remain-tenor-hkd",
+    "fmt": "json",
+    "slug": "cmu-turnover-sec-mkt-remain-tenor-hkd"
+  },
+  "hk-hkma-t05-t050605cmu-turnover-sec-mkt-remain-tenor-other-fc": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/cmu-turnover-sec-mkt-remain-tenor-other-fc",
+    "fmt": "json",
+    "slug": "cmu-turnover-sec-mkt-remain-tenor-other-fc"
+  },
+  "hk-hkma-t05-t050603cmu-turnover-sec-mkt-remain-tenor-rmb": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/cmu-turnover-sec-mkt-remain-tenor-rmb",
+    "fmt": "json",
+    "slug": "cmu-turnover-sec-mkt-remain-tenor-rmb"
+  },
+  "hk-hkma-t05-t050604cmu-turnover-sec-mkt-remain-tenor-usd": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/cmu-turnover-sec-mkt-remain-tenor-usd",
+    "fmt": "json",
+    "slug": "cmu-turnover-sec-mkt-remain-tenor-usd"
+  },
+  "hk-hkma-t05-t050201efbn-oustanding-original-maturity": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/efbn-oustanding-original-maturity",
+    "fmt": "json",
+    "slug": "efbn-oustanding-original-maturity"
+  },
+  "hk-hkma-t05-t050202efbn-outstanding-remaining-tenor": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/efbn-outstanding-remaining-tenor",
+    "fmt": "json",
+    "slug": "efbn-outstanding-remaining-tenor"
+  },
+  "hk-hkma-t05-t050101efbn-turnover-sec-mkt-original-maturity": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/efbn-turnover-sec-mkt-original-maturity",
+    "fmt": "json",
+    "slug": "efbn-turnover-sec-mkt-original-maturity"
+  },
+  "hk-hkma-t05-t050102efbn-turnover-sec-mkt-remaining-tenor": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/efbn-turnover-sec-mkt-remaining-tenor",
+    "fmt": "json",
+    "slug": "efbn-turnover-sec-mkt-remaining-tenor"
+  },
+  "hk-hkma-t05-t050303efbn-yield-daily": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/efbn-yield-daily",
+    "fmt": "json",
+    "slug": "efbn-yield-daily"
+  },
+  "hk-hkma-t05-t050301efbn-yield-endperiod": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/efbn-yield-endperiod",
+    "fmt": "json",
+    "slug": "efbn-yield-endperiod"
+  },
+  "hk-hkma-t05-t050302efbn-yield-periodaverage": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/efbn/efbn-yield-periodaverage",
+    "fmt": "json",
+    "slug": "efbn-yield-periodaverage"
+  },
+  "hk-hkma-t06-t0605composite-ir": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/composite-ir",
+    "fmt": "json",
+    "slug": "composite-ir"
+  },
+  "hk-hkma-t06-t060103er-eeri-daily": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/er-eeri-daily",
+    "fmt": "json",
+    "slug": "er-eeri-daily"
+  },
+  "hk-hkma-t06-t060101er-eeri-endperiod": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/er-eeri-endperiod",
+    "fmt": "json",
+    "slug": "er-eeri-endperiod"
+  },
+  "hk-hkma-t06-t060102er-eeri-periodaverage": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/er-eeri-periodaverage",
+    "fmt": "json",
+    "slug": "er-eeri-periodaverage"
+  },
+  "hk-hkma-t06-t060303hk-interbank-ir-daily": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily",
+    "fmt": "json",
+    "slug": "hk-interbank-ir-daily"
+  },
+  "hk-hkma-t06-t060301hk-interbank-ir-endperiod": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-endperiod",
+    "fmt": "json",
+    "slug": "hk-interbank-ir-endperiod"
+  },
+  "hk-hkma-t06-t060302hk-interbank-ir-periodaverage": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-periodaverage",
+    "fmt": "json",
+    "slug": "hk-interbank-ir-periodaverage"
+  },
+  "hk-hkma-t06-t060203hkd-fer-daily": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hkd-fer-daily",
+    "fmt": "json",
+    "slug": "hkd-fer-daily"
+  },
+  "hk-hkma-t06-t060201hkd-fer-endperiod": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hkd-fer-endperiod",
+    "fmt": "json",
+    "slug": "hkd-fer-endperiod"
+  },
+  "hk-hkma-t06-t060202hkd-fer-periodaverage": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hkd-fer-periodaverage",
+    "fmt": "json",
+    "slug": "hkd-fer-periodaverage"
+  },
+  "hk-hkma-t06-t060401hkd-ir-effdates": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hkd-ir-effdates",
+    "fmt": "json",
+    "slug": "hkd-ir-effdates"
+  },
+  "hk-hkma-t06-t060402hkd-ir-periodaverage": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hkd-ir-periodaverage",
+    "fmt": "json",
+    "slug": "hkd-ir-periodaverage"
+  },
+  "hk-hkma-t06-t0606renminbi-dr": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/renminbi-dr",
+    "fmt": "json",
+    "slug": "renminbi-dr"
+  },
+  "hk-hkma-t01-t0102banking-statistics": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/financial/banking-statistics",
+    "fmt": "json",
+    "slug": "banking-statistics"
+  },
+  "hk-hkma-t01-t0103capital-market-statistics": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/financial/capital-market-statistics",
+    "fmt": "json",
+    "slug": "capital-market-statistics"
+  },
+  "hk-hkma-t01-t0104economic-statistics": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics",
+    "fmt": "json",
+    "slug": "economic-statistics"
+  },
+  "hk-hkma-t01-t0101monetary-statistics": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/financial/monetary-statistics",
+    "fmt": "json",
+    "slug": "monetary-statistics"
+  },
+  "hk-hkma-t09-t0906list-outstanding-govbonds": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/gov-bond/list-outstanding-govbonds",
+    "fmt": "json",
+    "slug": "list-outstanding-govbonds"
+  },
+  "hk-hkma-t09-t0902new-issuance-amt-gov-bonds": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/gov-bond/new-issuance-amt-gov-bonds",
+    "fmt": "json",
+    "slug": "new-issuance-amt-gov-bonds"
+  },
+  "hk-hkma-t09-t090301out-amt-gov-bonds-original-maturity": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/gov-bond/out-amt-gov-bonds-original-maturity",
+    "fmt": "json",
+    "slug": "out-amt-gov-bonds-original-maturity"
+  },
+  "hk-hkma-t09-t090302out-amt-gov-bonds-remaining-tenor": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/gov-bond/out-amt-gov-bonds-remaining-tenor",
+    "fmt": "json",
+    "slug": "out-amt-gov-bonds-remaining-tenor"
+  },
+  "hk-hkma-t09-t090101sec-mar-turnover-govbonds-ibip-original-maturity": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/gov-bond/sec-mar-turnover-govbonds-ibip-original-maturity",
+    "fmt": "json",
+    "slug": "sec-mar-turnover-govbonds-ibip-original-maturity"
+  },
+  "hk-hkma-t09-t090102sec-mar-turnover-govbonds-ibip-remain-tenor": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/gov-bond/sec-mar-turnover-govbonds-ibip-remain-tenor",
+    "fmt": "json",
+    "slug": "sec-mar-turnover-govbonds-ibip-remain-tenor"
+  },
+  "hk-hkma-t07-t070303disc-win-liquid-adj-win-rates-daily": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/monetary-operation/disc-win-liquid-adj-win-rates-daily",
+    "fmt": "json",
+    "slug": "disc-win-liquid-adj-win-rates-daily"
+  },
+  "hk-hkma-t07-t070301disc-win-liquid-adj-win-rates-endperiod": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/monetary-operation/disc-win-liquid-adj-win-rates-endperiod",
+    "fmt": "json",
+    "slug": "disc-win-liquid-adj-win-rates-endperiod"
+  },
+  "hk-hkma-t07-t070302disc-win-liquid-adj-win-rates-periodaverage": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/monetary-operation/disc-win-liquid-adj-win-rates-periodaverage",
+    "fmt": "json",
+    "slug": "disc-win-liquid-adj-win-rates-periodaverage"
+  },
+  "hk-hkma-t07-t070102market-operation-daily": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/monetary-operation/market-operation-daily",
+    "fmt": "json",
+    "slug": "market-operation-daily"
+  },
+  "hk-hkma-t07-t070101market-operation-periodaverage": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/monetary-operation/market-operation-periodaverage",
+    "fmt": "json",
+    "slug": "market-operation-periodaverage"
+  },
+  "hk-hkma-t07-t070202monetary-base-daily": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/monetary-operation/monetary-base-daily",
+    "fmt": "json",
+    "slug": "monetary-base-daily"
+  },
+  "hk-hkma-t07-t070201monetary-base-endperiod": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/monetary-operation/monetary-base-endperiod",
+    "fmt": "json",
+    "slug": "monetary-base-endperiod"
+  },
+  "hk-hkma-t04-t0401hkd-interbank-trans": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/money-markets/hkd-interbank-trans",
+    "fmt": "json",
+    "slug": "hkd-interbank-trans"
+  },
+  "hk-hkma-t04-t0402liab-dt-other-ais": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/money-markets/liab-dt-other-ais",
+    "fmt": "json",
+    "slug": "liab-dt-other-ais"
+  },
+  "hk-hkma-t04-t0403ncds-issued-in-hk": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/money-markets/ncds-issued-in-hk",
+    "fmt": "json",
+    "slug": "ncds-issued-in-hk"
+  },
+  "hk-hkma-t04-t0406ni-hkd-debt-inst-oth-efbn": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/money-markets/ni-hkd-debt-inst-oth-efbn",
+    "fmt": "json",
+    "slug": "ni-hkd-debt-inst-oth-efbn"
+  },
+  "hk-hkma-t04-t0405osamt-hkd-debtinst-otherthan-efbn": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/money-markets/osamt-hkd-debtinst-otherthan-efbn",
+    "fmt": "json",
+    "slug": "osamt-hkd-debtinst-otherthan-efbn"
+  },
+  "hk-hkma-t04-t0404turnover-ncds-sec-mar-hk-ais": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/money-markets/turnover-ncds-sec-mar-hk-ais",
+    "fmt": "json",
+    "slug": "turnover-ncds-sec-mar-hk-ais"
+  },
+  "hk-hkma-t02-t0204components-seasonally-adjusted-hkd": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/money/components-seasonally-adjusted-hkd",
+    "fmt": "json",
+    "slug": "components-seasonally-adjusted-hkd"
+  },
+  "hk-hkma-t02-t0201currency": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/money/currency",
+    "fmt": "json",
+    "slug": "currency"
+  },
+  "hk-hkma-t02-t020201supply-adjusted": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/money/supply-adjusted",
+    "fmt": "json",
+    "slug": "supply-adjusted"
+  },
+  "hk-hkma-t02-t020303supply-components-all": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/money/supply-components-all",
+    "fmt": "json",
+    "slug": "supply-components-all"
+  },
+  "hk-hkma-t02-t020302supply-components-fc": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/money/supply-components-fc",
+    "fmt": "json",
+    "slug": "supply-components-fc"
+  },
+  "hk-hkma-t02-t020301supply-components-hkd": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/money/supply-components-hkd",
+    "fmt": "json",
+    "slug": "supply-components-hkd"
+  },
+  "hk-hkma-t02-t020202supply-unadjusted-fc": {
+    "endpoint": "/public/market-data-and-statistics/monthly-statistical-bulletin/money/supply-unadjusted-fc",
+    "fmt": "json",
+    "slug": "supply-unadjusted-fc"
+  }
+}

@@ -1,0 +1,53 @@
+"""build_close_panel_futu.py — pull daily close via Futu OpenD (port 11111) for universe codes missing from ohlcv_5y.
+Output: data/new_sources/close_futu_full.csv (date, code, close) appended per stock.
+Thesis tpim needs close for ~580 extra stocks with analyst target prices.
+"""
+import sys, time, csv
+import pandas as pd
+from pathlib import Path
+from futu import OpenQuoteContext, KLType, AuType, SubType, RET_OK
+
+BASE = Path(__file__).resolve().parent.parent
+NS = BASE / "data" / "new_sources"
+OUT = NS / "close_futu_full.csv"
+CODES = [l.strip().zfill(5) for l in (NS / "universe_codes.csv").read_text(encoding="utf-8").splitlines()[1:] if l.strip()]
+
+have = set(p.stem.replace("HK_", "") for p in (BASE / "data" / "ohlcv_5y").glob("HK_*.csv"))
+# also skip already-fetched
+done = set()
+if OUT.exists():
+    done = set(r["code"].split(".")[1] for r in csv.DictReader(open(OUT, encoding="utf-8")))
+todo = [c for c in CODES if c not in have and c not in done]
+print("todo:", len(todo), flush=True)
+
+q = OpenQuoteContext(host="127.0.0.1", port=11111)
+exists = OUT.exists()
+f = open(OUT, "a", newline="", encoding="utf-8")
+w = csv.writer(f)
+if not exists:
+    w.writerow(["date", "code", "close"])
+n = 0
+for c in todo:
+    try:
+        ret, df = q.request_history_kline(f"HK.{c}", ktype=KLType.K_DAY, autype=AuType.QFQ,
+                                          start="2019-01-01", end="2026-12-31", max_count=1000)
+        if ret != RET_OK:
+            print(c, "skip:", str(df)[:60], flush=True)
+            time.sleep(0.1)
+            continue
+        if len(df) == 0:
+            print(c, "empty", flush=True)
+            continue
+        for _, r in df.iterrows():
+            w.writerow([str(r["time_key"])[:10], f"HK.{c}", r["close"]])
+        n += 1
+        if n % 25 == 0:
+            f.flush()
+            print(n, c, len(df), "bars", flush=True)
+        time.sleep(0.15)
+    except Exception as e:
+        print(c, "ERR", str(e)[:80], flush=True)
+        time.sleep(1)
+f.flush(); f.close()
+q.close()
+print("DONE", n, "stocks", flush=True)

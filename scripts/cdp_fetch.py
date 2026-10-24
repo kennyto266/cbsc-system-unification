@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+"""cdp_fetch.py — Chrome CDP 9333 (headless 專用, 2026-08-25 用戶指示): open blank tab, Page.navigate, wait load, dump innerText.
+
+優先級: Chrome 9333 (launch_chrome_cdp.py 起) → Comet 9223 (fallback).
+兼容舊 caller: 自動 probe 9333, 唔通先試 9223."""
+import json
+import urllib.parse
+import urllib.request
+
+
+def _pick_cdp():
+    for port in (9333, 9223):
+        try:
+            urllib.request.urlopen(f"http://127.0.0.1:{port}/json/version", timeout=4).read()
+            return f"http://127.0.0.1:{port}"
+        except Exception:
+            continue
+    return "http://127.0.0.1:9223"  # 預設舊行為
+import json, sys, time, urllib.request, urllib.parse
+import websocket
+
+def send(w, i, method, **params):
+    w.send(json.dumps({"id": i, "method": method, "params": params}))
+    while True:
+        m = json.loads(w.recv())
+        if m.get("id") == i:
+            return m
+
+def fetch_text(url, wait_s=8):
+    cdp = _pick_cdp()  # Chrome 9333 優先, Comet 9223 fallback
+    req = urllib.request.Request(f"{cdp}/json/new", method="PUT")
+    tab = json.load(urllib.request.urlopen(req))
+    w = None
+    try:
+        w = websocket.create_connection(tab["webSocketDebuggerUrl"], timeout=60,
+                                        suppress_origin=True)
+        send(w, 1, "Page.enable")
+        send(w, 2, "Page.navigate", url=url)
+        time.sleep(wait_s)
+        r = send(w, 3, "Runtime.evaluate",
+                 expression="document.body ? document.body.innerText : document.readyState",
+                 returnByValue=True)
+        r2 = send(w, 4, "Runtime.evaluate",
+                  expression="location.href + ' | len=' + document.documentElement.outerHTML.length",
+                  returnByValue=True)
+        txt = r.get("result", {}).get("result", {}).get("value", "")
+        info = r2.get("result", {}).get("result", {}).get("value", "")
+    finally:
+        # [G51743 10-02] 例外路徑漏閂 tab 係分頁洩漏主源 (40 tab/5.4GB 實錄)
+        # — 用完必閂, happy path 同炸路都一樣
+        if w is not None:
+            try:
+                w.close()
+            except Exception:
+                pass
+        try:
+            urllib.request.urlopen(f"{cdp}/json/close/{tab['id']}")
+        except Exception:
+            pass
+    return txt, info
+
+if __name__ == "__main__":
+    url = sys.argv[1]
+    txt, info = fetch_text(url)
+    print("INFO", info)
+    print(txt[:8000])

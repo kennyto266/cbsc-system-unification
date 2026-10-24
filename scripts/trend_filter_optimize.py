@@ -1,0 +1,197 @@
+"""Trend Filter 優化分析 — 搵出比純 120d market return 更好嘅 regime detection"""
+import sys
+sys.path = [p for p in sys.path if 'CODEX' not in p]
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\backtests')
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts')
+import warnings
+warnings.filterwarnings('ignore')
+import numpy as np, pandas as pd
+from pathlib import Path
+from vbt_data import FACTOR_STOCKS
+
+DATA_5Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y')
+SPLIT = pd.Timestamp('2024-01-01')
+FAC = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors')
+
+# Load OHLCV
+ohlcv_cache = {}
+for s in FACTOR_STOCKS:
+    fname = s.replace('.', '_')
+    p = DATA_5Y / f'{fname}.csv'
+    if p.exists():
+        ohlcv_cache[s] = pd.read_csv(p, parse_dates=['time_key']).set_index('time_key').sort_index()
+
+close_panel = pd.DataFrame({s: ohlcv_cache[s]['close'].astype(float) for s in ohlcv_cache})
+ret_panel = close_panel.pct_change()
+market_ret = ret_panel.mean(axis=1, skipna=True).dropna()
+
+# Load VIX
+df_vix = pd.read_csv(FAC / 'vix.csv').set_index(pd.to_datetime(pd.read_csv(FAC/'vix.csv')['date'])).sort_index()
+vix = df_vix['close'].astype(float)
+
+# Compute Union strategy returns (reuse the 5 alpha signals)
+vix_aligned = vix.reindex(close_panel.index).ffill()
+
+def compute_union_returns():
+    all_rets = {}
+    for stock, df in ohlcv_cache.items():
+        close = df['close'].astype(float)
+        vol = df['volume'].astype(float)
+        high = df['high'].astype(float)
+        low = df['low'].astype(float)
+        ret1 = close.pct_change()
+        # A159
+        ef = close.ewm(span=12,adjust=False).mean(); es = close.ewm(span=26,adjust=False).mean()
+        m=ef-es; sg=m.ewm(span=9,adjust=False).mean(); h=m-sg
+        e1=((h>0)&(h>h.shift(1))).shift(1).fillna(False)
+        vs=(vol-vol.rolling(20).mean())/vol.rolling(20).std().replace(0,np.nan)
+        e2=((vs>1.5)&(close.pct_change(5)>0)).shift(1).fillna(False)
+        # A160
+        sma100=close.rolling(100).mean(); dev=(close-sma100)/sma100
+        z160=(dev-dev.rolling(120).mean())/dev.rolling(120).std().replace(0,np.nan)
+        # A161
+        tr=pd.concat([(high-low),(high-close.shift()).abs(),(low-close.shift()).abs()],axis=1).max(axis=1)
+        atr=tr.rolling(14).mean(); ap=atr/close
+        la=ap.rolling(60).rank(pct=True)<0.15; sma50=close.rolling(50).mean()
+        # A162
+        va=vix.reindex(close.index).ffill()
+        z162=(va-va.rolling(90).mean())/va.rolling(90).std().replace(0,np.nan)
+        # A163
+        typical=(high+low+close)/3
+        vwap=(typical*vol).rolling(10).sum()/vol.rolling(10).sum().replace(0,np.nan)
+        dev2=(close-vwap)/vwap
+        z163=(dev2-dev2.rolling(60).mean())/dev2.rolling(60).std().replace(0,np.nan)
+        # Union position
+        pos = pd.Series(False, index=close.index)
+        for entries, hold in [
+            ((e1&e2).fillna(False), 3),
+            ((z160<-1.5).shift(1).fillna(False), 10),
+            ((la&(close>sma50)).shift(1).fillna(False), 3),
+            ((z162>2.0).shift(1).fillna(False), 5),
+            ((z163<-2.0).shift(1).fillna(False), 5),
+        ]:
+            p2 = pd.Series(False, index=close.index)
+            in_p=False; dl=0
+            for i in range(len(close)):
+                if entries.iloc[i] and not in_p: in_p=True; dl=hold
+                p2.iloc[i]=in_p
+                if in_p: dl-=1
+                if dl<=0: in_p=False
+            pos = pos | p2
+        all_rets[stock] = pos.astype(float).shift(1) * ret1
+    return pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+
+print('Computing Union returns...')
+union_daily = compute_union_returns()
+
+def calc_stats(rets, split=SPLIT):
+    oos = rets[rets.index >= split].dropna()
+    if len(oos) < 20 or oos.std() == 0: return 0, 0, 0
+    sr = oos.mean()/oos.std()*np.sqrt(252)
+    ret = (1+oos).cumprod().iloc[-1]-1
+    dd = ((1+oos).cumprod()/(1+oos).cumprod().cummax()-1).min()
+    return sr, ret, dd
+
+def apply_filter(union_ret, filter_series):
+    """Apply boolean filter (True=trade, False=cash). shift(1) to avoid look-ahead."""
+    return union_ret * filter_series.shift(1).fillna(True).astype(float)
+
+# ===== Baseline (current) =====
+print('\n' + '='*70)
+print('TREND FILTER 優化分析')
+print('='*70)
+
+market_120d = market_ret.rolling(120).sum()
+# Current: BULL→BEAR at -2%, BEAR→BULL at 0%
+current_bull = market_120d > -0.02  # simplified (no hysteresis for backtest)
+current_filtered = apply_filter(union_daily, current_bull)
+sr_c, ret_c, dd_c = calc_stats(current_filtered)
+sr_raw, ret_raw, dd_raw = calc_stats(union_daily)
+print(f'\nBaseline:')
+print(f'  No filter:           SR={sr_raw:+.2f} ret={ret_raw:+.1%} DD={dd_raw:.1%}')
+print(f'  Current (120d<-2%):  SR={sr_c:+.2f} ret={ret_c:+.1%} DD={dd_c:.1%}')
+
+# ===== Approach 1: Different thresholds =====
+print('\n--- Approach 1: 調整 threshold ---')
+for bear_thresh in [-0.02, -0.05, -0.08, -0.10, -0.15]:
+    bull_signal = market_120d > bear_thresh
+    filtered = apply_filter(union_daily, bull_signal)
+    sr, ret, dd = calc_stats(filtered)
+    tag = '🏆' if sr > sr_c and abs(dd) < abs(dd_c) + 0.02 else '✅' if sr > sr_raw else ''
+    print(f'  {tag} 120d > {bear_thresh:+.0%}: SR={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')
+
+# ===== Approach 2: Shorter window (faster re-entry) =====
+print('\n--- Approach 2: 短 window (更快反應) ---')
+for window in [40, 60, 90, 120]:
+    mkt_w = market_ret.rolling(window).sum()
+    for thresh in [-0.02, -0.05]:
+        bull = mkt_w > thresh
+        filtered = apply_filter(union_daily, bull)
+        sr, ret, dd = calc_stats(filtered)
+        tag = '🏆' if sr > sr_c + 0.1 else ''
+        print(f'  {tag} {window}d > {thresh:+.0%}: SR={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')
+
+# ===== Approach 3: VIX-based regime =====
+print('\n--- Approach 3: VIX regime (高 VIX = BEAR) ---')
+for vix_thresh in [20, 25, 30, 35]:
+    vix_a = vix.reindex(union_daily.index).ffill()
+    bull = vix_a < vix_thresh
+    filtered = apply_filter(union_daily, bull)
+    sr, ret, dd = calc_stats(filtered)
+    tag = '🏆' if sr > sr_c + 0.1 else ''
+    print(f'  {tag} VIX < {vix_thresh}: SR={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')
+
+# ===== Approach 4: Dual signal (market return AND VIX) =====
+print('\n--- Approach 4: Dual (market return OR VIX recovery) ---')
+vix_a = vix.reindex(union_daily.index).ffill()
+mkt60 = market_ret.rolling(60).sum()
+for mkt_t in [-0.03, -0.05]:
+    for vix_t in [25, 30]:
+        mkt_ok = mkt60 > mkt_t
+        vix_ok = vix_a < vix_t
+        # Trade when EITHER market is OK OR VIX is low (faster re-entry)
+        bull = mkt_ok | vix_ok
+        filtered = apply_filter(union_daily, bull)
+        sr, ret, dd = calc_stats(filtered)
+        tag = '🏆' if sr > sr_c + 0.1 else ''
+        print(f'  {tag} (60d>{mkt_t:+.0%} OR VIX<{vix_t}): SR={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')
+
+# ===== Approach 5: Momentum recovery (market turning up = early BULL) =====
+print('\n--- Approach 5: Momentum recovery (market 20d > 0 = fast re-entry) ---')
+mkt120 = market_ret.rolling(120).sum()
+mkt20 = market_ret.rolling(20).sum()
+for bear_t in [-0.05, -0.08, -0.10]:
+    for fast_t in [0.0, 0.01]:
+        # BEAR only when deep drawdown AND no short-term recovery
+        deep = mkt120 < bear_t
+        no_recovery = mkt20 < fast_t
+        bear = deep & no_recovery
+        bull = ~bear
+        filtered = apply_filter(union_daily, bull)
+        sr, ret, dd = calc_stats(filtered)
+        tag = '🏆' if sr > sr_c + 0.1 else ''
+        print(f'  {tag} BEAR=(120d<{bear_t:+.0%} AND 20d<{fast_t:+.0%}): SR={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')
+
+# ===== Walk-forward for top candidates =====
+print('\n' + '='*70)
+print('Walk-Forward: Top candidates vs current')
+print('='*70)
+
+candidates = {
+    'No filter': pd.Series(True, index=union_daily.index),
+    'Current (120d>-2%)': market_120d > -0.02,
+    '120d>-8%': market_120d > -0.08,
+    '60d>-3% OR VIX<25': (mkt60 > -0.03) | (vix_a < 25),
+    'BEAR=(120d<-8% AND 20d<0%)': ~((mkt120 < -0.08) & (mkt20 < 0.0)),
+}
+
+for year in range(2022, 2027):
+    print(f'\n  {year}:')
+    for name, filt in candidates.items():
+        filtered = apply_filter(union_daily, filt)
+        yr = filtered[filtered.index.year == year].dropna()
+        if len(yr) < 20: continue
+        sr = yr.mean()/yr.std()*np.sqrt(252) if yr.std() > 0 else 0
+        ret = (1+yr).cumprod().iloc[-1]-1
+        dd = ((1+yr).cumprod()/(1+yr).cumprod().cummax()-1).min()
+        print(f'    {name:>35}: SR={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')

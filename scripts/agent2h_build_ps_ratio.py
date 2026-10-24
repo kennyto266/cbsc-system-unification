@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""agent2h_build_ps_ratio.py — thesis psrb (PS rebase × 沽空退潮) ps_ratio panel.
+
+目標 (crawl_spec): PS-TTM 日頻 ≥4 年 × ≥45 股, 1173 同 universe 口徑。
+來源: 東財 RPT_HKF10_FN_MAININDICATOR 既有 raw (em_fundamentals/mainindicator.csv,
+50 股 1998~2026-06 季度, agent2-H 08-25 cell7 同源) — 東財港股冇現成日頻 PS_TTM
+(RPT_VALUEANALYSIS_DET 只覆 A 股, 00700.HK 空返回 — 0907 實測), 由季度原料自算:
+
+    ps_ratio(t) = close(t) × ISSUED_COMMON_SHARES(PIT t) / OPERATE_INCOME_TTM(PIT t)
+
+PIT 照 build_cell7_panels.py: 業績公布日 (results_calendar_raw.csv) +1,
+冇就 REPORT_DATE+60 日 fallback (00066/03690/09888 冇 calendar — 同 cell7 先例)。
+TTM = 4 期季度滾動和 (min_periods=4)。
+
+貨幣口徑: OPERATE_INCOME 部分股 CNY 計 (IS_CNY_CODE), close×shares 係 HKD —
+per-stock 常數倍數 (HKD/CNY ≈1.08), ranking_metric ps/ps.rolling(252).mean()
+自己 rebase → 常數完全消去, 唔影響排序。
+
+輸出: data/new_sources/ps_ratio_panel.csv (long: date,code,value — pe_ttm_futu
+同款 _load_new_source 慣例)。
+"""
+import sys
+import os
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+BASE = Path(r"C:/Users/Penguin8n/ZCodeProject/cbsc-system-unification")
+BT = Path(r"C:/Users/Penguin8n/ZCodeProject/backtests")
+sys.path.insert(0, str(BT))
+os.chdir(str(BT))
+
+
+def main():
+    from llm_cs_adapter import _load_prices_and_rets
+    prices, _ = _load_prices_and_rets()
+    idx = prices.index
+    print(f"eval prices: {prices.shape} {idx.min().date()}~{idx.max().date()}")
+
+    raw = pd.read_csv(BASE / "data/new_sources/em_fundamentals/mainindicator.csv",
+                      dtype={"SECURITY_CODE": str}, encoding="utf-8-sig")
+    raw["report_date"] = pd.to_datetime(raw["REPORT_DATE"])
+    raw["code5"] = raw["SECURITY_CODE"].str.zfill(5)
+    for c in ["OPERATE_INCOME", "ISSUED_COMMON_SHARES"]:
+        raw[c] = pd.to_numeric(raw[c], errors="coerce")
+
+    # PIT 公布日 (cell7 同款)
+    cal = pd.read_csv(BASE / "data/new_sources/results_calendar_raw.csv",
+                      dtype={"stock_code": str})
+    cal["d"] = pd.to_datetime(cal["doc_date"], dayfirst=True)
+    ann = {code: sorted(g["d"].tolist()) for code, g in cal.groupby("stock_code")}
+
+    def eff_date(code, rd):
+        for d in ann.get(code, []):
+            if rd <= d <= rd + pd.Timedelta(days=170):
+                return d + pd.Timedelta(days=1)
+        return rd + pd.Timedelta(days=60)
+
+    raw["eff_date"] = [eff_date(r.code5, r.report_date) for r in raw.itertuples()]
+
+    raw = raw.sort_values(["code5", "report_date"])
+    g = raw.groupby("code5", group_keys=False)
+    raw["oi_ttm"] = (g["OPERATE_INCOME"].rolling(4, min_periods=4).sum()
+                     .reset_index(level=0, drop=True))
+
+    def to_daily(colname):
+        panel = pd.DataFrame(np.nan, index=idx, columns=prices.columns)
+        for code, gg in raw.dropna(subset=[colname]).groupby("code5"):
+            col = f"HK.{code}"
+            if col not in panel.columns:
+                continue
+            gg = gg.sort_values("eff_date")
+            s = pd.Series(gg[colname].values, index=gg["eff_date"].values)
+            s = s[~s.index.duplicated(keep="last")]
+            daily = s.reindex(panel.index, method="ffill")
+            mask = pd.Series(False, index=panel.index)
+            for vf in s.index:
+                mask |= panel.index >= vf
+            panel[col] = daily.where(mask)
+        return panel
+
+    oi_ttm = to_daily("oi_ttm")
+    shares = to_daily("ISSUED_COMMON_SHARES")
+    ps = (prices * shares).div(oi_ttm.where(oi_ttm > 0))
+    ps = ps.where(shares > 0)
+
+    # long format panel
+    out = (ps.stack().rename("value").reset_index()
+           .rename(columns={"level_1": "code"}))
+    out.columns = ["date", "code", "value"]
+    out["date"] = out["date"].dt.strftime("%Y-%m-%d")
+    out = out.sort_values(["code", "date"])
+    fp = BASE / "data/new_sources/ps_ratio_panel.csv"
+    out.to_csv(fp, index=False, encoding="utf-8")
+
+    good = ps.notna().sum() > 0
+    cov = ps.loc[:, good]
+    span = cov.dropna(how="all")
+    print(f"PANEL {fp.name}: rows={len(out)} wide={ps.shape} "
+          f"stocks_nonzero={int(good.sum())} "
+          f"days={span.index.min().date()}~{span.index.max().date()}")
+    per = ps.notna().sum()
+    print("per-stock days: min", int(per[per > 0].min()), "median",
+          int(per[per > 0].median()), "max", int(per.max()))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

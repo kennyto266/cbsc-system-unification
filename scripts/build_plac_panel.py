@@ -1,0 +1,63 @@
+"""Build plac_shr_pct_63d factor panel: 過去63日配售/增發新發股數 / 總股本.
+
+源: hk_equity_changes.json (東财 RPT_HKF10_INFO_EQUITY, 984股股本變動史)
+判定「配售/增發」: CHANGE_REASON 含 配售|增发|增發|发行|發行|公開發售|先舊後新
+  (剔: 股份期权/购回/注销/拆合股 — 拆合股無攤薄)
+plac_shr_pct_63d[date, stock] = Σ(窗內配售股數增量) / 當時總股本; 冇事件=0
+產出: factor_store/plac_shr_pct_63d.parquet (wide date × HK.XXXXX, 0-filled)
+"""
+import json, re, sys
+from pathlib import Path
+import pandas as pd
+
+NEW_SRC = Path(__file__).resolve().parents[1] / "data" / "new_sources"
+FACTOR_STORE = NEW_SRC.parent / "factor_store"
+
+PLAC_RE = re.compile(r"配售|增发|增發|发行|發行|公開發售|先舊後新|供股")
+EXCL_RE = re.compile(r"期权|期權|购回|購回|注销|註銷|拆股|并股|合股|分拆")
+
+raw = json.load(open(NEW_SRC / "hk_equity_changes.json", encoding="utf-8"))
+rows = raw["rows"]
+df = pd.DataFrame(rows)
+df["CHANGE_DATE"] = pd.to_datetime(df["CHANGE_DATE"])
+df["code"] = df["SECUCODE"].str.replace(".HK", "", regex=False)
+df = df.sort_values(["code", "CHANGE_DATE"])
+
+# 每股: 逐事件股數變化 (配售性質先計入)
+placed = []
+for code, g in df.groupby("code"):
+    g = g.drop_duplicates(subset="CHANGE_DATE", keep="last")
+    delta = g["HK_SHARES"].diff()
+    for dt, d, reason in zip(g["CHANGE_DATE"], delta, g["CHANGE_REASON"]):
+        if pd.isna(d) or d <= 0:
+            continue
+        r = str(reason)
+        if PLAC_RE.search(r) and not EXCL_RE.search(r):
+            placed.append((code, dt, d, r))
+pl = pd.DataFrame(placed, columns=["code", "date", "new_shares", "reason"])
+print(f"placement events: {len(pl)} stocks: {pl['code'].nunique()}")
+
+# panel 日期軸: 用 di 既有 panel 嘅交易日曆? 用 sdw_hold_pct panel 軸最廣
+sdw = pd.read_parquet(FACTOR_STORE / "sdw_hold_pct.parquet")
+sdw.index = pd.to_datetime(sdw.index)
+dates = sdw.index.sort_values()
+
+# 總股本 (每 code 每日 ffill 自變動史)
+total = df.pivot_table(index="CHANGE_DATE", columns="code", values="HK_SHARES").sort_index()
+total = total.reindex(total.index.union(dates)).ffill()
+total = total.loc[dates]
+
+# 事件 → 每日 63 日滾動累計配售股數 (統一 HK. 前綴欄名)
+total.columns = ["HK." + c for c in total.columns]
+ev = pl.copy(); ev["code"] = "HK." + ev["code"]
+ev_long = ev.groupby(["date", "code"])["new_shares"].sum().unstack(fill_value=0)
+ev_long = ev_long.reindex(index=dates, columns=total.columns, fill_value=0).sort_index()
+roll = ev_long.rolling("63D", min_periods=1).sum()
+
+panel = (roll / total).fillna(0.0).astype(float)
+panel = panel[panel.index <= pd.Timestamp.today()]
+out = FACTOR_STORE / "plac_shr_pct_63d.parquet"
+panel.to_parquet(out)
+pos = (panel > 0).sum().sum()
+print(f"saved {out} shape={panel.shape} cells>0={pos} stocks_with_events={(panel>0).any(axis=0).sum()}")
+print(panel.max(axis=1).tail(3))

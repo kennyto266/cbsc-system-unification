@@ -1,0 +1,80 @@
+import React, { useState, useEffect } from 'react'
+import { Card, Table, Tag, Spin, Tabs } from 'antd'
+
+interface HkexRecord {
+  date: string
+  hsi_close?: number
+  hsi_change_pct?: number
+  turnover_hkd?: number
+  deals?: number
+  advanced_stocks?: number
+  declined_stocks?: number
+}
+
+interface SentimentRecord {
+  date: string
+  sentiment_score?: number
+  bull_pct?: number
+  bear_pct?: number
+  bull_bear_ratio?: number
+}
+
+const ReportsPage: React.FC = () => {
+  const [hkex, setHkex] = useState<HkexRecord[]>([])
+  const [sentiment, setSentiment] = useState<SentimentRecord[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/data/hkex_daily.json').then(r => r.json()).catch(() => []),
+      fetch('/api/cbsc/historical-data?days=30').then(r => r.json()).catch(() => ({})),
+    ]).then(([hk, sent]) => {
+      setHkex(hk || [])
+      setSentiment(sent.data?.history || [])
+      setLoading(false)
+    })
+  }, [])
+
+  const hkexCols = [
+    { title: '日期', dataIndex: 'date', key: 'date', width: 110, render: (v: string) => v?.slice(0, 10) },
+    { title: '恆指收市', dataIndex: 'hsi_close', key: 'hsi', align: 'right' as const, render: (v: number) => v?.toLocaleString(undefined, { maximumFractionDigits: 2 }) },
+    { title: '漲跌%', dataIndex: 'hsi_change_pct', key: 'chg', align: 'right' as const,
+      render: (v: number) => <span style={{ color: v >= 0 ? '#52c41a' : '#ff4d4f' }}>{v >= 0 ? '+' : ''}{v?.toFixed(2)}%</span> },
+    { title: '成交額', dataIndex: 'turnover_hkd', key: 'to', align: 'right' as const,
+      render: (v: number) => v ? (v / 1e8).toFixed(0) + ' 億' : '-' },
+    { title: '成交宗數', dataIndex: 'deals', key: 'deals', align: 'right' as const, render: (v: number) => v?.toLocaleString() },
+    { title: '升/跌', key: 'ad',
+      render: (_: any, r: HkexRecord) => <span><Tag color="green">↑{r.advanced_stocks || 0}</Tag><Tag color="red">↓{r.declined_stocks || 0}</Tag></span> },
+  ]
+
+  const sentCols = [
+    { title: '日期', dataIndex: 'date', key: 'date', width: 110 },
+    { title: '情緒分', dataIndex: 'sentiment_score', key: 'ss', align: 'right' as const,
+      render: (v: number) => <Tag color={v && v > 60 ? 'green' : v && v < 40 ? 'red' : 'orange'}>{v?.toFixed(1)}</Tag> },
+    { title: '牛%', dataIndex: 'bull_pct', key: 'bp', align: 'right' as const, render: (v: number) => v?.toFixed(1) + '%' },
+    { title: '熊%', dataIndex: 'bear_pct', key: 'bp2', align: 'right' as const, render: (v: number) => v?.toFixed(1) + '%' },
+    { title: '牛熊比', dataIndex: 'bull_bear_ratio', key: 'bbr', align: 'right' as const, render: (v: number) => v?.toFixed(2) },
+  ]
+
+  return (
+    <div style={{ padding: 24 }}>
+      <h2 style={{ marginBottom: 16 }}>📋 報告中心</h2>
+      {loading ? <Spin /> : (
+        <Tabs items={[
+          { key: 'hkex', label: '📈 HKEX 每日報告', children: (
+            <Card title={`HKEX 每日成交統計（${hkex.length} 日）`} size="small">
+              <Table dataSource={hkex} columns={hkexCols} rowKey="date" size="small" pagination={{ pageSize: 15 }} />
+            </Card>
+          )},
+          { key: 'sentiment', label: '🐂 牛熊證情緒歷史', children: (
+            <Card title={`CBSC 牛熊證情緒（${sentiment.length} 日）`} size="small">
+              <Table dataSource={sentiment} columns={sentCols} rowKey="date" size="small" pagination={{ pageSize: 15 }} />
+            </Card>
+          )},
+        ]} />
+      )}
+    </div>
+  )
+}
+
+export default ReportsPage

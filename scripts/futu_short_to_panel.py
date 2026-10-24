@@ -1,0 +1,38 @@
+"""Futu short-selling CSVs → factor_store wide panel (short_ratio_5y)。
+
+讀 futu_short_history/*.csv → short_ratio = short_sell_shares_traded / shares_traded
+→ wide DataFrame (date × HK.XXXXX) → 存 parquet + 註冊入 factor_panels。
+"""
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+ROOT = Path(r'C:/Users/Penguin8n/ZCodeProject')
+SRC = ROOT / 'cbsc-system-unification/data/raw_hkex/futu_short_history'
+OUT = ROOT / 'cbsc-system-unification/data/factor_store/short_ratio_5y.parquet'
+OUT.parent.mkdir(parents=True, exist_ok=True)
+
+
+def main():
+    frames = []
+    for fp in sorted(SRC.glob('HK_*.csv')):
+        code = fp.stem.replace('_', '.')          # HK_00005 → HK.00005
+        df = pd.read_csv(fp, usecols=['timestamp_str', 'shares_traded', 'short_sell_shares_traded'])
+        df['date'] = pd.to_datetime(df['timestamp_str'].str[:10])
+        df = df[(df['shares_traded'] > 0)].copy()
+        df['short_ratio'] = df['short_sell_shares_traded'] / df['shares_traded']
+        s = df.set_index('date')['short_ratio'].rename(code)
+        frames.append(s)
+
+    panel = pd.concat(frames, axis=1).sort_index()
+    # trim 到 universe 窗口 (2021-08 起) — 淨 5 年,亦可全保留
+    panel = panel[panel.index >= '2021-01-01']
+    OUT.write_bytes(panel.to_parquet())
+    print(f'panel: {panel.shape} | {panel.index.min():%Y-%m-%d} ~ {panel.index.max():%Y-%m-%d}')
+    print(f'coverage: {panel.notna().mean().mean():.1%} | stocks: {panel.shape[1]}')
+    print(f'saved → {OUT}')
+
+
+if __name__ == '__main__':
+    main()

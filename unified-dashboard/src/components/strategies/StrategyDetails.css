@@ -1,0 +1,456 @@
+/* Strategy Details Styles */
+.strategy-details {
+  padding: 16px;
+}
+
+.strategy-details.embedded {
+  padding: 0;
+}
+
+/* Header Styles */
+.strategy-header {
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.strategy-name {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #262626;
+}
+
+/* Metrics Row */
+.metrics-row {
+  margin-bottom: 24px;
+}
+
+.metrics-row .ant-card {
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.metrics-row .ant-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.metrics-row .ant-statistic-title {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin-bottom: 8px;
+}
+
+.metrics-row .ant-statistic-content {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* Tabs Styling */
+.strategy-details .ant-tabs {
+  margin-top: 24px;
+}
+
+.strategy-details .ant-tabs-tab {
+  font-weight: 500;
+  padding: 12px 16px;
+}
+
+.strategy-details .ant-tabs-tab-active {
+  color: #1890ff;
+}
+
+.strategy-details .ant-tabs-ink-bar {
+  background-color: #1890ff;
+}
+
+.strategy-details .ant-tabs-content-holder {
+  padding-top: 16px;
+}
+
+.strategy-details .ant-tabs-tabpane {
+  min-height: 400px;
+}
+
+/* Performance Chart */
+.performance-chart {
+  height: 300px;
+  margin-bottom: 24px;
+}
+
+.performance-chart .ant-card-body {
+  padding: 16px;
+}
+
+/* Strategy Info Card */
+.strategy-info-card {
+  height: 100%;
+}
+
+.strategy-info-card .ant-descriptions-item-label {
+  font-weight: 500;
+  color: #595959;
+}
+
+.strategy-info-card .ant-descriptions-item-content {
+  color: #262626;
+}
+
+/* Execution Status Card */
+.execution-status-card {
+  height: 100%;
+}
+
+.execution-status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.execution-status-item:last-child {
+  border-bottom: none;
+}
+
+.execution-status-label {
+  font-size: 13px;
+  color: #595959;
+}
+
+.execution-status-value {
+  font-weight: 500;
+  color: #262626;
+}
+
+/* Performance Metrics Grid */
+.performance-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.performance-metric-card {
+  text-align: center;
+  padding: 16px;
+  background-color: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.performance-metric-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1890ff;
+  margin-bottom: 4px;
+}
+
+.performance-metric-label {
+  font-size: 12px;
+  color: #8c8c8c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Tables */
+.trades-table,
+.orders-table,
+.logs-table {
+  background-color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.trades-table .ant-table-thead > tr > th,
+.orders-table .ant-table-thead > tr > th,
+.logs-table .ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+  color: #262626;
+}
+
+.trades-table .ant-table-tbody > tr:hover,
+.orders-table .ant-table-tbody > tr:hover,
+.logs-table .ant-table-tbody > tr:hover {
+  background-color: #f5f5f5;
+}
+
+/* Trade status tags */
+.trade-status-tag {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.trade-status-tag.filled {
+  background-color: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+.trade-status-tag.partial {
+  background-color: #fff7e6;
+  color: #fa8c16;
+  border: 1px solid #ffd591;
+}
+
+.trade-status-tag.cancelled {
+  background-color: #f5f5f5;
+  color: #8c8c8c;
+  border: 1px solid #d9d9d9;
+}
+
+/* Log levels */
+.log-level-tag {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.log-level-tag.error {
+  background-color: #fff2f0;
+  color: #ff4d4f;
+  border: 1px solid #ffb3b3;
+}
+
+.log-level-tag.warn {
+  background-color: #fff7e6;
+  color: #fa8c16;
+  border: 1px solid #ffd591;
+}
+
+.log-level-tag.info {
+  background-color: #e6f7ff;
+  color: #1890ff;
+  border: 1px solid #91d5ff;
+}
+
+.log-level-tag.debug {
+  background-color: #f5f5f5;
+  color: #8c8c8c;
+  border: 1px solid #d9d9d9;
+}
+
+/* Real-time indicators */
+.real-time-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.real-time-indicator.active {
+  background-color: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+.real-time-indicator.inactive {
+  background-color: #f5f5f5;
+  color: #8c8c8c;
+  border: 1px solid #d9d9d9;
+}
+
+.real-time-indicator .ant-badge {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Loading states */
+.strategy-details-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  color: #8c8c8c;
+}
+
+.strategy-details-loading .ant-spin {
+  margin-bottom: 16px;
+}
+
+/* Empty states */
+.strategy-details-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: #8c8c8c;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .performance-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .strategy-details {
+    padding: 12px;
+  }
+
+  .strategy-header {
+    margin-bottom: 16px;
+  }
+
+  .strategy-name {
+    font-size: 20px;
+  }
+
+  .metrics-row {
+    margin-bottom: 16px;
+  }
+
+  .strategy-header .ant-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .strategy-header .ant-space {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .performance-metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .strategy-details .ant-tabs-tab {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 576px) {
+  .metrics-row .ant-col {
+    margin-bottom: 12px;
+  }
+
+  .strategy-details .ant-tabs-nav {
+    overflow-x: auto;
+  }
+
+  .trades-table,
+  .orders-table,
+  .logs-table {
+    font-size: 12px;
+  }
+
+  .trades-table .ant-table-thead > tr > th,
+  .orders-table .ant-table-thead > tr > th,
+  .logs-table .ant-table-thead > tr > th {
+    padding: 8px 4px;
+  }
+
+  .trades-table .ant-table-tbody > tr > td,
+  .orders-table .ant-table-tbody > tr > td,
+  .logs-table .ant-table-tbody > tr > td {
+    padding: 8px 4px;
+  }
+}
+
+/* Chart containers */
+.chart-container {
+  width: 100%;
+  height: 300px;
+  position: relative;
+}
+
+.chart-container .ant-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Action buttons */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-buttons .ant-btn {
+  font-weight: 500;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.active {
+  background-color: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+.status-badge.inactive {
+  background-color: #f5f5f5;
+  color: #8c8c8c;
+  border: 1px solid #d9d9d9;
+}
+
+.status-badge.testing {
+  background-color: #e6f7ff;
+  color: #1890ff;
+  border: 1px solid #91d5ff;
+}
+
+.status-badge.archived {
+  background-color: #fff7e6;
+  color: #fa8c16;
+  border: 1px solid #ffd591;
+}
+
+/* Error states */
+.error-state {
+  padding: 16px;
+  background-color: #fff2f0;
+  border: 1px solid #ffb3b3;
+  border-radius: 8px;
+  color: #ff4d4f;
+}
+
+.error-state h4 {
+  margin-bottom: 8px;
+  color: #ff4d4f;
+}
+
+.error-state p {
+  margin: 0;
+  color: #a8071a;
+}

@@ -1,0 +1,131 @@
+# CBSC Strategy Workflow - Data Science Development Environment
+# Multi-stage Dockerfile optimized for Jupyter Lab development
+
+# Stage 1: Base Python environment with system dependencies
+FROM python:3.11-slim as base
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    TZ=Asia/Hong_Kong \
+    JUPYTER_ENABLE_LAB=yes
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Build tools
+    gcc \
+    g++ \
+    make \
+    cmake \
+    build-essential \
+    # Math libraries
+    libopenblas-dev \
+    liblapack-dev \
+    libgomp1 \
+    # Version control
+    git \
+    # Utilities
+    curl \
+    wget \
+    unzip \
+    vim \
+    less \
+    # Timezone
+    tzdata \
+    # System monitoring
+    procps \
+    htop \
+    iotop \
+    net-tools \
+    # Clean up
+    && rm -rf /var/lib/apt/lists/*
+
+# Set timezone
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Install TA-Lib from source
+WORKDIR /tmp
+RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
+    tar -xzf ta-lib-0.4.0-src.tar.gz && \
+    cd ta-lib/ && \
+    ./configure --prefix=/usr && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf ta-lib ta-lib-0.4.0-src.tar.gz
+
+# Stage 2: Builder stage for dependencies
+FROM base as builder
+
+# Upgrade pip and install build tools
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Copy requirements files
+COPY requirements.txt requirements-dev.txt ./
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r requirements-dev.txt
+
+# Install additional data science packages
+RUN pip install --no-cache-dir \
+    jupyterlab>=4.0.0 \
+    jupyterlab-git>=0.50.0 \
+    ipywidgets>=8.1.0 \
+    nodejs>=0.1.1
+
+# Download and install common Jupyter extensions
+RUN jupyter labextension install @jupyter-widgets/jupyterlab-manager jupyterlab-plotly && \
+    jupyter contrib nbextension install --user
+
+# Stage 3: Development environment
+FROM base as development
+
+# Copy Python packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Create non-root user for development
+RUN groupadd -r cbsc && useradd -r -g cbsc -m -s /bin/bash cbsc
+
+# Create working directory structure
+WORKDIR /workspace
+
+# Create necessary directories
+RUN mkdir -p \
+    /workspace/data/{cache,raw,processed,exports} \
+    /workspace/notebooks/{research,strategies,backtests} \
+    /workspace/results/{backtests,optimizations,analysis} \
+    /workspace/logs \
+    /workspace/config \
+    && chown -R cbsc:cbsc /workspace
+
+# Copy application files (will be mounted as volumes in production)
+# COPY --chown=cbsc:cbsc config/ ./config/
+# COPY --chown=cbsc:cbsc cbsc_strategy/ ./cbsc_strategy/
+# COPY --chown=cbsc:cbsc scripts/ ./scripts/
+
+# Switch to non-root user
+USER cbsc
+
+# Set working directory
+WORKDIR /workspace
+
+# Expose Jupyter port
+EXPOSE 8888
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8888/api || exit 1
+
+# Default command - start Jupyter Lab
+CMD ["jupyter", "lab", \
+     "--ip=0.0.0.0", \
+     "--port=8888", \
+     "--no-browser", \
+     "--allow-root", \
+     "--NotebookApp.token=''", \
+     "--NotebookApp.password=''", \
+     "--NotebookApp.allow_origin='*'", \
+     "--NotebookApp.base_url=/"]

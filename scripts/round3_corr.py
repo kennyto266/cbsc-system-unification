@@ -1,0 +1,179 @@
+"""Test correlation of factor-based candidates with A159-161."""
+import sys
+sys.path = [p for p in sys.path if 'CODEX' not in p]
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\backtests')
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts')
+import warnings
+warnings.filterwarnings('ignore')
+import numpy as np, pandas as pd
+from pathlib import Path
+from vbt_data import FACTOR_STOCKS
+
+DATA_5Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y')
+DATA_10Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr')
+SPLIT = pd.Timestamp('2024-01-01')
+FAC = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors')
+
+ohlcv_cache = {}
+for s in FACTOR_STOCKS:
+    fname = s.replace('.', '_')
+    for d in [DATA_10Y, DATA_5Y]:
+        p = d / f'{fname}.csv'
+        if p.exists():
+            ohlcv_cache[s] = pd.read_csv(p, parse_dates=['time_key']).set_index('time_key').sort_index()
+            break
+
+
+def load_factor(csv_name):
+    p = FAC / csv_name
+    if not p.exists():
+        return None
+    df = pd.read_csv(p)
+    date_col = [c for c in df.columns if 'date' in c.lower() or c.lower() in ['time', 'ds']][0]
+    df = df.set_index(pd.to_datetime(df[date_col])).sort_index()
+    for c in df.columns:
+        if c != date_col and df[c].dtype in [np.float64, np.int64, float, int]:
+            return df[c].astype(float)
+    return df.iloc[:, 0].astype(float)
+
+
+factors = {f.replace('.csv', ''): load_factor(f + '.csv') for f in
+           ['gold', 'vix', 'fred_t10yie']}
+factors = {k: v for k, v in factors.items() if v is not None}
+
+
+def compute_portfolio(entry_func, hold=5):
+    all_rets = {}
+    for stock, df in ohlcv_cache.items():
+        if len(df) < 400:
+            continue
+        close = df['close'].astype(float)
+        try:
+            entries = entry_func(close, df)
+            if entries is None:
+                continue
+            ret1 = close.pct_change()
+            pos = pd.Series(0, index=close.index)
+            in_pos = False
+            dl = 0
+            for i in range(len(close)):
+                if entries.iloc[i] and not in_pos:
+                    in_pos = True
+                    dl = hold
+                pos.iloc[i] = 1 if in_pos else 0
+                if in_pos:
+                    dl -= 1
+                    if dl <= 0:
+                        in_pos = False
+            all_rets[stock] = (pos.shift(1) * ret1).dropna()
+        except Exception:
+            pass
+    if not all_rets:
+        return None
+    return pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+
+
+# A159
+def a159(close, df, hold=3):
+    vol = df['volume'].astype(float)
+    ema_f = close.ewm(span=12, adjust=False).mean()
+    ema_s = close.ewm(span=26, adjust=False).mean()
+    macd = ema_f - ema_s
+    sig = macd.ewm(span=9, adjust=False).mean()
+    hist = macd - sig
+    e1 = ((hist > 0) & (hist > hist.shift(1))).shift(1).fillna(False)
+    vs = (vol - vol.rolling(20).mean()) / vol.rolling(20).std().replace(0, np.nan)
+    e2 = ((vs > 1.5) & (close.pct_change(5) > 0)).shift(1).fillna(False)
+    return (e1 & e2).fillna(False)
+
+# A160
+def a160(close, df):
+    sma = close.rolling(100).mean()
+    dev = (close - sma) / sma
+    z = (dev - dev.rolling(120).mean()) / dev.rolling(120).std().replace(0, np.nan)
+    return (z < -1.5).shift(1).fillna(False)
+
+# A161
+def a161(close, df):
+    high, low = df['high'].astype(float), df['low'].astype(float)
+    tr = pd.concat([(high - low), (high - close.shift()).abs(), (low - close.shift()).abs()], axis=1).max(axis=1)
+    atr = tr.rolling(14).mean()
+    atr_pct = atr / close
+    low_atr = atr_pct.rolling(60).rank(pct=True) < 0.15
+    sma = close.rolling(50).mean()
+    return (low_atr & (close > sma)).shift(1).fillna(False)
+
+# Candidates
+def t10yie_regime(close, df, hold=5):
+    fac = factors['fred_t10yie']
+    fac_a = fac.reindex(close.index).ffill()
+    regime = fac_a > fac_a.rolling(60).mean()
+    mom = close.pct_change(5) > 0
+    return (regime & mom).shift(1).fillna(False)
+
+def gold_regime(close, df, hold=5):
+    fac = factors['gold']
+    fac_a = fac.reindex(close.index).ffill()
+    regime = fac_a > fac_a.rolling(60).mean()
+    mom = close.pct_change(5) > 0
+    return (regime & mom).shift(1).fillna(False)
+
+def vix_spike(close, df, hold=5):
+    fac = factors['vix']
+    fac_a = fac.reindex(close.index).ffill()
+    z = (fac_a - fac_a.rolling(60).mean()) / fac_a.rolling(60).std().replace(0, np.nan)
+    return (z > 1.5).shift(1).fillna(False)
+
+
+print('Computing all portfolio returns...')
+results = {
+    'A159': compute_portfolio(a159, hold=3),
+    'A160': compute_portfolio(a160, hold=10),
+    'A161': compute_portfolio(a161, hold=3),
+    't10yie': compute_portfolio(t10yie_regime, hold=5),
+    'gold': compute_portfolio(gold_regime, hold=5),
+    'vix_spike': compute_portfolio(vix_spike, hold=5),
+}
+
+df_all = pd.DataFrame(results).dropna()
+oos = df_all[df_all.index >= SPLIT]
+
+print('\n=== Individual OOS SR ===')
+for col in df_all.columns:
+    s = oos[col]
+    sr = s.mean() / s.std() * np.sqrt(252) if s.std() > 0 else 0
+    ret = (1 + s).cumprod().iloc[-1] - 1
+    print(f'  {col}: SR={sr:+.2f} ret={ret:+.1%}')
+
+print('\n=== Correlation Matrix (OOS) ===')
+corr = oos.corr()
+print('          ' + '  '.join(f'{c:>8s}' for c in df_all.columns))
+for r in df_all.columns:
+    row = '  '.join(f'{corr.loc[r,c]:>+8.3f}' for c in df_all.columns)
+    print(f'  {r:>8s}: {row}')
+
+print('\n=== Factor candidate correlations with A159-161 ===')
+for col in ['t10yie', 'gold', 'vix_spike']:
+    c159 = oos[col].corr(oos['A159'])
+    c160 = oos[col].corr(oos['A160'])
+    c161 = oos[col].corr(oos['A161'])
+    avg = (abs(c159) + abs(c160) + abs(c161)) / 3
+    print(f'  {col}: corr(A159)={c159:+.3f} corr(A160)={c160:+.3f} corr(A161)={c161:+.3f} avg={avg:.3f}')
+
+# Test 4-way combos
+print('\n=== 4-way Combinations ===')
+combos = [
+    ('4-equal (1/4 each)', {'A159': 0.25, 'A160': 0.25, 'A161': 0.25, 't10yie': 0.25}),
+    ('A159(30)+A160(20)+A161(30)+t10yie(20)', {'A159': 0.3, 'A160': 0.2, 'A161': 0.3, 't10yie': 0.2}),
+    ('4-equal with gold', {'A159': 0.25, 'A160': 0.25, 'A161': 0.25, 'gold': 0.25}),
+    ('4-equal with vix', {'A159': 0.25, 'A160': 0.25, 'A161': 0.25, 'vix_spike': 0.25}),
+]
+for name, weights in combos:
+    if not all(w in oos.columns for w in weights):
+        continue
+    combo = sum(oos[c] * w for c, w in weights.items())
+    sr = combo.mean() / combo.std() * np.sqrt(252) if combo.std() > 0 else 0
+    ret = (1 + combo).cumprod().iloc[-1] - 1
+    dd = ((1 + combo).cumprod() / (1 + combo).cumprod().cummax() - 1).min()
+    tag = '🏆' if sr > 1.7 else '🟢' if sr > 1.0 else '✨'
+    print(f'  {tag} {name}: SR={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')

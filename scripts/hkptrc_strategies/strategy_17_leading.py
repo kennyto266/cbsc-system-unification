@@ -1,0 +1,122 @@
+"""
+hkptrc #17 策略：藍籌領先股指（日線近似版）
+
+原本用 intraday 分鐘線（匯豐 vs 期貨），但富途 intraday 歷史有限。
+改用日線近似：匯豐日回報 vs 恆指日回報嘅 spread。
+
+邏輯：
+- spread = 匯豐%change - 恆指%change
+- spread Z-Score > 0.01 → 匯豐領先 → 做恆指成分股淡倉（領先股回落）
+- 反之亦然
+
+出處：[SAxzDUawNVQ](https://www.youtube.com/watch?v=SAxzDUawNVQ)
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, __file__.rsplit("\\", 1)[0])
+
+from common import *
+import numpy as np
+import pandas as pd
+
+
+def load_hsi_index():
+    """載入恆指本身嘅價格（用作基準）。"""
+    cache = DATA_DIR / "hsi_index.pkl"
+    if cache.exists():
+        return pd.read_pickle(cache)
+
+    import futu
+    ctx = futu.OpenQuoteContext(host=FUTU_HOST, port=FUTU_PORT)
+    try:
+        result = ctx.request_history_kline(
+            "HK.800000", ktype=futu.KLType.K_DAY,
+            autype=futu.AuType.QFQ, max_count=500)
+        if len(result) == 3:
+            ret, df, _ = result
+        else:
+            ret, df = result
+        if ret == futu.RET_OK and not df.empty:
+            ts = pd.to_datetime(df["time_key"])
+            series = pd.Series(df["close"].values, index=ts, name="HSI")
+            series.to_pickle(cache)
+            return series
+    finally:
+        ctx.close()
+    return None
+
+
+def strategy_17_leading_stock(prices, stock, leading="HK.00005", window=60, threshold=1.5, lead_lag=1):
+    """#17 藍籌領先股指。
+
+    用匯豐（00005）做領先股：
+    - spread = 匯豐%change(t-lead_lag) - 目標股%change(t)  ← 領先股用滯後值, 捕捉 lead-lag
+    - Z-Score > threshold → 匯豐之前領先 → 買入目標股（跟隨）
+    - Z-Score < -threshold → 匯豐之前落後 → 沽出目標股
+    threshold 改為 1.5 (Z-score 標準, 原版 0.01 退化為幾乎永遠觸發)
+    """
+    if stock == leading:
+        return None
+
+    close = prices[stock].dropna()
+    leading_close = prices[leading].dropna()
+
+    if len(close) < window * 3 or len(leading_close) < window * 3:
+        return None
+
+    # 對齊
+    common_idx = close.index.intersection(leading_close.index)
+    close = close.reindex(common_idx)
+    leading_close = leading_close.reindex(common_idx)
+
+    # spread = 領先股%change (延遲 lead_lag 日) - 目標股%change — 捕捉領先結構
+    stock_ret = close.pct_change()
+    leading_ret = leading_close.pct_change().shift(lead_lag)  # 領先股延遲, 佢既過去預測目標股未來
+    spread = leading_ret - stock_ret
+
+    z = compute_zscore(spread, window)
+
+    entries = (z > threshold).fillna(False)        # 匯豐領先 → 目標股會跟升
+    exits = (z < 0).fillna(False)
+    short_entries = (z < -threshold).fillna(False)  # 匯豐落後 → 目標股會跟跌
+    short_exits = (z > 0).fillna(False)
+
+    if not entries.any() and not short_entries.any():
+        return None
+
+    pf = backtest_signals(close, entries, exits, short_entries, short_exits)
+    return extract_metrics(pf, "17_LeadingStock", stock)
+
+
+def run_strategy_17(prices, stocks=None):
+    stocks = stocks or [s for s in TEST_STOCKS if s != "HK.00005"]
+    results = []
+
+    print("\n運行 #17 藍籌領先股指策略 ...")
+    print("  領先股: HK.00005（匯豐）")
+
+    for stock in stocks:
+        if stock not in prices.columns:
+            continue
+        try:
+            r = strategy_17_leading_stock(prices, stock)
+            if r:
+                results.append(r)
+                print("  {} ✓ Sharpe={:.2f}".format(stock, r["sharpe"]))
+        except Exception as e:
+            print("  {} ✗ {}".format(stock, str(e)[:50]))
+
+    return results
+
+
+if __name__ == "__main__":
+    print("=" * 95)
+    print("📊 hkptrc #17: 藍籌領先股指策略（匯豐領先）")
+    print("=" * 95)
+
+    prices = load_prices(250)
+    print("數據: {} 日 × {} 股".format(len(prices), prices.shape[1]))
+
+    results = run_strategy_17(prices)
+    print_results_table(results, "#17 藍籌領先股指")
+    save_results(results, "strategy_17_leading.csv")

@@ -1,0 +1,189 @@
+"""
+終極 Dashboard 全面檢查
+
+檢查每個頁面：
+1. HTTP 狀態碼（唔可以有 404/500）
+2. 實質內容（唔可以空白或「開發中」）
+3. 截圖（視覺確認比例正確）
+4. 所有 API 調用（唔可以有 404）
+5. 所有資源（JS/CSS/圖片 唔可以有 404）
+6. Console errors
+7. 頁面比例（寬度填滿、唔好太窄）
+"""
+import asyncio
+import json
+from datetime import datetime
+from pathlib import Path
+from playwright.async_api import async_playwright
+
+OUTPUT = Path("dashboard_check/final")
+OUTPUT.mkdir(parents=True, exist_ok=True)
+
+PAGES = [
+    ("/", "首頁"),
+    ("/dashboard", "儀表板"),
+    ("/cbsc", "CBSC牛熊證"),
+    ("/market-data", "市場數據"),
+    ("/strategies", "策略管理"),
+    ("/monitoring", "監控中心"),
+    ("/analytics", "數據分析"),
+    ("/reports", "報告中心"),
+    ("/settings", "系統設置"),
+    ("/profile", "個人資料"),
+    ("/indicators", "技術指標"),
+]
+
+
+async def deep_check():
+    report = {"timestamp": datetime.now().isoformat(), "pages": [], "issues": []}
+    total_errors = 0
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+
+        for path, name in PAGES:
+            context = await browser.new_context(
+                viewport={"width": 1440, "height": 900},
+                ignore_https_errors=True,
+            )
+            page = await context.new_page()
+
+            # 收集所有 response
+            api_calls = []
+            resource_loads = []
+            page_errors = []
+
+            async def on_response(resp):
+                url = resp.url
+                status = resp.status
+                if status >= 400:
+                    if "/api/" in url:
+                        api_calls.append({"url": url.split("3000")[-1][:80], "status": status})
+                    elif any(url.endswith(ext) for ext in [".js", ".css", ".woff2", ".png", ".svg", ".json", ".ico"]):
+                        resource_loads.append({"url": url.split("3000")[-1][:80], "status": status})
+
+            def on_page_error(err):
+                page_errors.append(str(err)[:100])
+
+            page.on("response", on_response)
+            page.on("pageerror", on_page_error)
+
+            try:
+                resp = await page.goto(f"http://localhost:3000{path}", wait_until="networkidle", timeout=20000)
+                await page.wait_for_timeout(6000)
+
+                http_status = resp.status if resp else 0
+                body = await page.inner_text("body")
+                body_len = len(body.strip())
+
+                # 檢查內容質素
+                has_placeholder = any(kw in body for kw in ["开发中", "開發中", "敬请期待", "Coming Soon", "placeholder"])
+                has_real_content = body_len > 300 and not has_placeholder
+
+                # 檢查 UI 元素
+                cards = await page.locator(".ant-card").count()
+                tables = await page.locator("table, .ant-table").count()
+                stats = await page.locator(".ant-statistic").count()
+                tabs = await page.locator(".ant-tabs-tab").count()
+                empty_states = await page.locator(".ant-empty").count()
+                spinners = await page.locator(".ant-spin").count()
+
+                # 檢查頁面比例（主內容區寬度）
+                main_width = await page.evaluate("""() => {
+                    const main = document.querySelector('.ant-layout-content, main, #root > div > div:last-child');
+                    return main ? main.offsetWidth : document.body.offsetWidth;
+                }""")
+                viewport_width = 1440
+                width_ratio = main_width / viewport_width if main_width else 0
+
+                # 截圖
+                safe_name = name.replace(" ", "_")
+                screenshot = f"{safe_name}.png"
+                await page.screenshot(path=str(OUTPUT / screenshot), full_page=False)
+
+                # 綜合評分
+                issues = []
+                if http_status >= 400:
+                    issues.append(f"HTTP {http_status}")
+                if body_len < 200:
+                    issues.append("內容太少")
+                if has_placeholder:
+                    issues.append("顯示「開發中」")
+                if api_calls:
+                    issues.append(f"{len(api_calls)} 個 API 404")
+                if resource_loads:
+                    issues.append(f"{len(resource_loads)} 個資源 404")
+                if width_ratio < 0.6:
+                    issues.append(f"頁面太窄 ({width_ratio*100:.0f}%)")
+                if spinners > 0:
+                    issues.append("仍在載入")
+
+                status_icon = "✅" if not issues else "❌"
+                total_errors += len(issues)
+
+                page_report = {
+                    "page": name,
+                    "path": path,
+                    "http_status": http_status,
+                    "body_length": body_len,
+                    "has_real_content": has_real_content,
+                    "has_placeholder": has_placeholder,
+                    "cards": cards,
+                    "tables": tables,
+                    "stats": stats,
+                    "tabs": tabs,
+                    "empty_states": empty_states,
+                    "spinners": spinners,
+                    "width_ratio": round(width_ratio, 2),
+                    "api_404s": api_calls,
+                    "resource_404s": resource_loads,
+                    "page_errors": page_errors[:3],
+                    "issues": issues,
+                    "screenshot": screenshot,
+                }
+                report["pages"].append(page_report)
+
+                issue_str = " | ".join(issues) if issues else "OK"
+                print(f"{status_icon} [{name:<8}] {path:<14} HTTP {http_status} | {body_len:>5}字 | {cards}卡 {tables}表 | 寬{width_ratio*100:.0f}% | {issue_str}")
+
+            except Exception as e:
+                report["issues"].append({"page": name, "error": str(e)[:100]})
+                print(f"💥 [{name:<8}] {path} 載入失敗: {str(e)[:60]}")
+
+            await context.close()
+
+        await browser.close()
+
+    # 總結
+    report["total_errors"] = total_errors
+    report["summary"] = {
+        "pages_checked": len(PAGES),
+        "pages_ok": sum(1 for p in report["pages"] if not p["issues"]),
+        "pages_with_issues": sum(1 for p in report["pages"] if p["issues"]),
+        "total_api_404": sum(len(p["api_404s"]) for p in report["pages"]),
+        "total_resource_404": sum(len(p["resource_404s"]) for p in report["pages"]),
+    }
+
+    with open(OUTPUT / "final_report.json", "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2, ensure_ascii=False)
+
+    print(f"\n{'='*70}")
+    print(f"📊 終極檢查總結")
+    print(f"{'='*70}")
+    print(f"  頁面檢查:    {report['summary']['pages_checked']}")
+    print(f"  完全正常:    {report['summary']['pages_ok']}")
+    print(f"  有問題:      {report['summary']['pages_with_issues']}")
+    print(f"  API 404:    {report['summary']['total_api_404']}")
+    print(f"  資源 404:   {report['summary']['total_resource_404']}")
+
+    if report["summary"]["pages_with_issues"] > 0:
+        print(f"\n⚠️ 問題清單:")
+        for p in report["pages"]:
+            if p["issues"]:
+                print(f"  [{p['page']}] {' | '.join(p['issues'])}")
+
+    return report
+
+
+if __name__ == "__main__":
+    asyncio.run(deep_check())

@@ -1,0 +1,104 @@
+"""SQLite 數據庫:連線、schema、UPSERT helpers."""
+import json
+import sqlite3
+from pathlib import Path
+
+# datagov_hk/scripts/datagov_hk/  ->  cbsc-system-unification/data
+DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = DATA_DIR / "datagov_hk.db"
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS dataset_catalog (
+  id            TEXT PRIMARY KEY,
+  provider      TEXT NOT NULL,
+  category      TEXT,
+  name_tc       TEXT, name_sc TEXT, name_en TEXT,
+  formats       TEXT,
+  is_api_avail  INTEGER DEFAULT 0,
+  score         REAL,
+  last_fetched  TEXT,
+  fetch_status  TEXT DEFAULT 'pending',
+  UNIQUE(id)
+);
+CREATE TABLE IF NOT EXISTS dataset_resources (
+  dataset_id    TEXT NOT NULL,
+  endpoint      TEXT NOT NULL,
+  fmt           TEXT,
+  is_api        INTEGER DEFAULT 0,
+  PRIMARY KEY (dataset_id, endpoint),
+  FOREIGN KEY (dataset_id) REFERENCES dataset_catalog(id)
+);
+CREATE TABLE IF NOT EXISTS raw_data (
+  dataset_id    TEXT NOT NULL,
+  obs_date      TEXT NOT NULL,
+  field         TEXT NOT NULL,
+  value         REAL,
+  unit          TEXT,
+  PRIMARY KEY (dataset_id, obs_date, field)
+);
+CREATE INDEX IF NOT EXISTS idx_raw_date ON raw_data(obs_date);
+CREATE INDEX IF NOT EXISTS idx_raw_ds   ON raw_data(dataset_id);
+"""
+
+
+def get_conn(db_path: Path = DB_PATH) -> sqlite3.Connection:
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    return conn
+
+
+def init_schema(conn: sqlite3.Connection):
+    conn.executescript(SCHEMA)
+    conn.commit()
+
+
+def upsert_catalog(conn, rows: list):
+    """rows: dict with keys id,provider,category,name_tc,name_sc,name_en,
+    formats,is_api_avail,score"""
+    conn.executemany(
+        """INSERT OR REPLACE INTO dataset_catalog
+           (id,provider,category,name_tc,name_sc,name_en,formats,is_api_avail,score)
+           VALUES (:id,:provider,:category,:name_tc,:name_sc,:name_en,:formats,
+                   :is_api_avail,:score)""",
+        rows,
+    )
+    conn.commit()
+
+
+def upsert_resources(conn, rows: list):
+    conn.executemany(
+        """INSERT OR REPLACE INTO dataset_resources (dataset_id,endpoint,fmt,is_api)
+           VALUES (:dataset_id,:endpoint,:fmt,:is_api)""",
+        rows,
+    )
+    conn.commit()
+
+
+def upsert_raw(conn, rows: list):
+    """rows: tuples (dataset_id, obs_date, field, value, unit)"""
+    conn.executemany(
+        """INSERT OR REPLACE INTO raw_data (dataset_id,obs_date,field,value,unit)
+           VALUES (?,?,?,?,?)""",
+        rows,
+    )
+    conn.commit()
+
+
+def set_status(conn, dataset_id, status, last_fetched=None):
+    conn.execute(
+        "UPDATE dataset_catalog SET fetch_status=?, last_fetched=? WHERE id=?",
+        (status, last_fetched, dataset_id),
+    )
+    conn.commit()
+
+
+def load_catalog_ids(conn) -> list:
+    return [r[0] for r in conn.execute("SELECT id FROM dataset_catalog")]
+
+
+def last_obs_date(conn, dataset_id):
+    row = conn.execute(
+        "SELECT MAX(obs_date) FROM raw_data WHERE dataset_id=?", (dataset_id,)
+    ).fetchone()
+    return row[0] if row else None

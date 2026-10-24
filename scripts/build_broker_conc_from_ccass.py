@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+"""build_broker_conc_from_ccass.py — 由 ccass_parts participant-level 數據
+起日度 broker_conc panel (top-10 participant 持股 / 總 CCASS 持股)。
+
+源頭: data/new_sources/ccass_parts/part_*.csv (HKEX SDW, 12個月窗口)
+輸出: data/new_sources/ccass_broker_conc_panel.csv  (date, code, value)
+"""
+import glob
+import pandas as pd
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+SRC = BASE / "data" / "new_sources" / "ccass_parts"
+OUT = BASE / "data" / "new_sources" / "ccass_broker_conc_panel.csv"
+
+frames = [pd.read_csv(f, dtype={"stock": str}) for f in sorted(glob.glob(str(SRC / "part_*.csv")))]
+df = pd.concat(frames, ignore_index=True)
+df["shares"] = pd.to_numeric(df["shares"], errors="coerce")
+df = df.dropna(subset=["shares"])
+df = df.drop_duplicates(subset=["shown_date", "stock", "participant_id"], keep="last")
+df["date"] = pd.to_datetime(df["shown_date"], format="%Y/%m/%d")
+
+g = df.groupby(["date", "stock"])["shares"]
+total = g.sum()
+top10 = df.sort_values("shares", ascending=False).groupby(["date", "stock"]).head(10)\
+          .groupby(["date", "stock"])["shares"].sum()
+conc = (top10 / total).rename("value").reset_index().rename(columns={"stock": "code"})
+conc.to_csv(OUT, index=False)
+
+# [09-15 補] NS csv 之外同步落 factor_store parquet — 舊鏈淨寫 CSV, store 冇人寫
+# (broker_conc_sdw.parquet 停 8/21 嘅直接原因); 用共用 panel_store_merge 邏輯。
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent))
+from panel_store_merge import merge_wide
+import pandas as _pd
+parquet = BASE / "data" / "factor_store" / "broker_conc_sdw.parquet"
+fresh = conc.pivot_table(index="date", columns="code", values="value", aggfunc="last").sort_index()
+fresh.index = _pd.to_datetime(fresh.index)
+fresh.index.name = "date"
+old_df = _pd.read_parquet(parquet) if parquet.exists() else None
+merged = merge_wide(old_df, fresh) if old_df is not None else fresh
+merged.to_parquet(parquet)
+print(f"store parquet → {parquet.name} {merged.shape} max={merged.index.max().date()}")
+print(f"panel rows={len(conc)} stocks={conc['code'].nunique()} "
+      f"dates={conc['date'].min().date()}->{conc['date'].max().date()} "
+      f"conc range=({conc['value'].min():.3f},{conc['value'].max():.3f}) mean={conc['value'].mean():.3f}")

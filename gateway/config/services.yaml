@@ -1,0 +1,399 @@
+# CBSC System Service Configuration
+# 系统服务配置文件
+
+# 全局配置
+global:
+  environment: development
+  version: "2.0.0"
+  timeout: 30
+  retries: 3
+
+# Redis配置
+redis:
+  host: redis
+  port: 6379
+  db: 0
+  password: ""
+  max_connections: 100
+  socket_timeout: 5
+  socket_connect_timeout: 5
+  retry_on_timeout: true
+
+# 数据库配置
+database:
+  host: postgres
+  port: 5432
+  name: cbsc_system
+  user: cbsc_admin
+  password: "${POSTGRES_PASSWORD}"
+  pool_size: 20
+  max_overflow: 30
+  pool_timeout: 30
+  pool_recycle: 3600
+
+# 服务发现配置
+services:
+  # 量化分析系统
+  quant-system:
+    name: "量化分析系统"
+    description: "CBSC策略分析、回测引擎和数据处理"
+    url: "http://quant-system:8001"
+    health_path: "/api/health"
+    prefix: "/api/quant"
+    timeout: 30
+    retries: 3
+    auth_required: true
+    rate_limit: 1000  # requests per minute
+    load_balancer:
+      - "http://quant-system-1:8001"
+      - "http://quant-system-2:8001"
+    circuit_breaker:
+      failure_threshold: 5
+      recovery_timeout: 30
+      expected_exception: "Exception"
+    endpoints:
+      - path: "/strategies"
+        methods: ["GET", "POST"]
+        auth_required: true
+        rate_limit: 100
+      - path: "/backtest"
+        methods: ["POST"]
+        auth_required: true
+        rate_limit: 50
+      - path: "/optimize"
+        methods: ["POST"]
+        auth_required: true
+        rate_limit: 30
+      - path: "/data/*"
+        methods: ["GET"]
+        auth_required: false
+        rate_limit: 200
+
+  # 用户管理系统
+  user-management:
+    name: "用户管理系统"
+    description: "认证授权、用户资料管理、权限控制"
+    url: "http://user-management:3004"
+    health_path: "/health"
+    prefix: "/api/users"
+    timeout: 15
+    retries: 2
+    auth_required: true
+    rate_limit: 500
+    circuit_breaker:
+      failure_threshold: 3
+      recovery_timeout: 20
+      expected_exception: "HTTPException"
+    endpoints:
+      - path: "/auth/*"
+        methods: ["POST", "GET"]
+        auth_required: false
+        rate_limit: 200
+      - path: "/profile"
+        methods: ["GET", "PUT"]
+        auth_required: true
+        rate_limit: 100
+      - path: "/admin/*"
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        auth_required: true
+        rate_limit: 50
+        permissions: ["admin", "user_management"]
+
+  # 策略管理Dashboard
+  strategy-dashboard:
+    name: "策略管理Dashboard"
+    description: "策略监控、参数优化、实时数据展示"
+    url: "http://strategy-dashboard:3003"
+    health_path: "/health"
+    prefix: "/api/strategies"
+    timeout: 20
+    retries: 3
+    auth_required: true
+    rate_limit: 800
+    circuit_breaker:
+      failure_threshold: 4
+      recovery_timeout: 25
+    endpoints:
+      - path: "/list"
+        methods: ["GET"]
+        auth_required: true
+        rate_limit: 200
+      - path: "/{strategy_id}"
+        methods: ["GET", "PUT", "DELETE"]
+        auth_required: true
+        rate_limit: 100
+      - path: "/performance"
+        methods: ["GET"]
+        auth_required: true
+        rate_limit: 150
+      - path: "/optimize"
+        methods: ["POST"]
+        auth_required: true
+        rate_limit: 50
+
+  # 配置管理服务
+  config-service:
+    name: "配置管理服务"
+    description: "系统配置、参数管理、环境变量"
+    url: "http://config-service:3005"
+    health_path: "/health"
+    prefix: "/api/config"
+    timeout: 10
+    retries: 2
+    auth_required: false
+    rate_limit: 200
+    circuit_breaker:
+      failure_threshold: 2
+      recovery_timeout: 15
+    endpoints:
+      - path: "/system/*"
+        methods: ["GET"]
+        auth_required: false
+        rate_limit: 100
+      - path: "/user/*"
+        methods: ["GET", "PUT"]
+        auth_required: true
+        rate_limit: 50
+      - path: "/admin/*"
+        methods: ["GET", "PUT", "POST"]
+        auth_required: true
+        rate_limit: 20
+        permissions: ["admin"]
+
+  # 监控服务
+  monitoring-service:
+    name: "监控服务"
+    description: "系统监控、健康检查、指标收集"
+    url: "http://monitoring:3005"
+    health_path: "/health"
+    prefix: "/api/monitoring"
+    timeout: 10
+    retries: 2
+    auth_required: true
+    rate_limit: 300
+    circuit_breaker:
+      failure_threshold: 3
+      recovery_timeout: 20
+    endpoints:
+      - path: "/metrics"
+        methods: ["GET"]
+        auth_required: true
+        rate_limit: 100
+      - path: "/health"
+        methods: ["GET"]
+        auth_required: false
+        rate_limit: 200
+      - path: "/alerts"
+        methods: ["GET", "POST"]
+        auth_required: true
+        rate_limit: 50
+
+# 路由规则配置
+routing:
+  # 路径重写规则
+  rewrites:
+    - from: "/api/v1/strategies/*"
+      to: "/api/strategies/$1"
+    - from: "/api/v1/users/*"
+      to: "/api/users/$1"
+    - from: "/api/v1/quant/*"
+      to: "/api/quant/$1"
+
+  # 重定向规则
+  redirects:
+    - from: "/old-api/*"
+      to: "/api/$1"
+      permanent: true
+    - from: "/dashboard"
+      to: "http://localhost:3000"
+      permanent: false
+
+  # 限流规则
+  rate_limiting:
+    global:
+      requests_per_minute: 10000
+      burst_size: 1000
+    per_ip:
+      requests_per_minute: 1000
+      burst_size: 100
+    per_user:
+      requests_per_minute: 500
+      burst_size: 50
+
+# 认证配置
+authentication:
+  jwt:
+    secret_key: "${JWT_SECRET}"
+    algorithm: "HS256"
+    access_token_expire_minutes: 60
+    refresh_token_expire_days: 7
+    issuer: "cbsc-gateway"
+    audience: "cbsc-services"
+
+  oauth2:
+    providers:
+      - name: "google"
+        client_id: "${GOOGLE_CLIENT_ID}"
+        client_secret: "${GOOGLE_CLIENT_SECRET}"
+        authorize_url: "https://accounts.google.com/o/oauth2/v2/auth"
+        token_url: "https://oauth2.googleapis.com/token"
+        userinfo_url: "https://www.googleapis.com/oauth2/v2/userinfo"
+        scope: "openid email profile"
+
+      - name: "github"
+        client_id: "${GITHUB_CLIENT_ID}"
+        client_secret: "${GITHUB_CLIENT_SECRET}"
+        authorize_url: "https://github.com/login/oauth/authorize"
+        token_url: "https://github.com/login/oauth/access_token"
+        userinfo_url: "https://api.github.com/user"
+        scope: "user:email"
+
+# 权限配置
+authorization:
+  roles:
+    admin:
+      description: "系统管理员"
+      permissions: ["*"]
+
+    analyst:
+      description: "量化分析师"
+      permissions: [
+        "strategies:read",
+        "strategies:write",
+        "backtest:execute",
+        "data:read",
+        "reports:read"
+      ]
+
+    user:
+      description: "普通用户"
+      permissions: [
+        "profile:read",
+        "profile:write",
+        "strategies:read_own",
+        "dashboard:access"
+      ]
+
+    viewer:
+      description: "只读用户"
+      permissions: [
+        "dashboard:access",
+        "reports:read"
+      ]
+
+# 缓存配置
+cache:
+  redis:
+    ttl: 300  # 5 minutes
+    key_prefix: "cbsc:gateway:"
+    serialize: true
+
+  memory:
+    max_size: 1000
+    ttl: 60  # 1 minute
+
+  routes:
+    - path: "/api/config/system/*"
+      ttl: 1800  # 30 minutes
+    - path: "/api/users/public/*"
+      ttl: 300  # 5 minutes
+    - path: "/api/strategies/list"
+      ttl: 120  # 2 minutes
+
+# 监控配置
+monitoring:
+  metrics:
+    enabled: true
+    path: "/metrics"
+    prefix: "cbsc_gateway_"
+    labels:
+      service: "api-gateway"
+      version: "2.0.0"
+
+  tracing:
+    enabled: true
+    jaeger:
+      endpoint: "http://jaeger:14268/api/traces"
+      service_name: "cbsc-gateway"
+
+  logging:
+    level: "INFO"
+    format: "json"
+    output: "stdout"
+    fields:
+      service: "api-gateway"
+      version: "2.0.0"
+      environment: "${ENVIRONMENT}"
+
+# 安全配置
+security:
+  cors:
+    allow_origins: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"]
+    allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_headers: ["*"]
+    allow_credentials: true
+    max_age: 86400
+
+  csrf:
+    enabled: true
+    secret_key: "${CSRF_SECRET}"
+    cookie_name: "csrf_token"
+    header_name: "X-CSRF-Token"
+
+  rate_limit:
+    enabled: true
+    storage: "redis"
+    key_prefix: "rate_limit:"
+
+  ip_whitelist:
+    enabled: false
+    ips: []
+
+# 服务发现配置
+service_discovery:
+  enabled: true
+  type: "consul"  # or "eureka"
+  consul:
+    host: "consul"
+    port: 8500
+    datacenter: "dc1"
+    service_prefix: "cbsc-"
+    health_check_interval: 10
+    deregister_critical_service_after: 30
+
+# 负载均衡配置
+load_balancing:
+  algorithm: "round_robin"  # round_robin, weighted_round_robin, least_connections, ip_hash
+  health_check:
+    enabled: true
+    interval: 30
+    timeout: 5
+    unhealthy_threshold: 3
+    healthy_threshold: 2
+
+# 熔断器配置
+circuit_breaker:
+  enabled: true
+  failure_threshold: 5
+  recovery_timeout: 30
+  expected_exception: "Exception"
+  metrics_window: 60
+  buckets: 10
+
+# 压缩配置
+compression:
+  enabled: true
+  min_size: 1024
+  types: ["application/json", "text/html", "text/css", "application/javascript"]
+
+# 响应时间限制
+response_limits:
+  default: 30
+  upload: 60
+  streaming: 300
+
+# 文件上传配置
+file_upload:
+  max_size: "100MB"
+  allowed_types: ["image/jpeg", "image/png", "application/pdf", "text/csv"]
+  storage_path: "/uploads"

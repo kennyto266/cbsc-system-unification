@@ -1,0 +1,158 @@
+"""Final 4-way combo test: A159+A160+A161+A162."""
+import sys
+sys.path = [p for p in sys.path if 'CODEX' not in p]
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\backtests')
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts')
+import warnings
+warnings.filterwarnings('ignore')
+import numpy as np, pandas as pd
+from pathlib import Path
+from vbt_data import FACTOR_STOCKS
+import kol_alpha_strategies as kol
+
+DATA_5Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y')
+DATA_10Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr')
+SPLIT = pd.Timestamp('2024-01-01')
+
+ohlcv_cache = {}
+prices = {}
+for s in FACTOR_STOCKS:
+    fname = s.replace('.', '_')
+    for d in [DATA_10Y, DATA_5Y]:
+        p = d / f'{fname}.csv'
+        if p.exists():
+            df = pd.read_csv(p, parse_dates=['time_key']).set_index('time_key').sort_index()
+            ohlcv_cache[s] = df
+            prices[s] = df['close'].astype(float)
+            break
+prices = pd.DataFrame(prices)
+
+# Verify A162 works
+print('=== A162 Signal Test ===')
+for stock in ['HK.00700', 'HK.09988', 'HK.00005']:
+    result = kol.alpha_162(prices, stock)
+    if result:
+        print(f'  {stock}: SR={result["sharpe"]:+.2f} trades={result["n_trades"]}')
+    else:
+        print(f'  {stock}: no signal')
+
+# Compute portfolio returns for all 4
+def compute_portfolio(signal_func, hold=5):
+    all_rets = {}
+    for stock, df in ohlcv_cache.items():
+        if len(df) < 400:
+            continue
+        close = df['close'].astype(float)
+        try:
+            entries = signal_func(close, df)
+            if entries is None:
+                continue
+            ret1 = close.pct_change()
+            pos = pd.Series(0, index=close.index)
+            in_pos = False
+            dl = 0
+            for i in range(len(close)):
+                if entries.iloc[i] and not in_pos:
+                    in_pos = True
+                    dl = hold
+                pos.iloc[i] = 1 if in_pos else 0
+                if in_pos:
+                    dl -= 1
+                    if dl <= 0:
+                        in_pos = False
+            all_rets[stock] = (pos.shift(1) * ret1).dropna()
+        except Exception:
+            pass
+    return pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+
+
+def a159(close, df):
+    vol = df['volume'].astype(float)
+    ema_f = close.ewm(span=12, adjust=False).mean()
+    ema_s = close.ewm(span=26, adjust=False).mean()
+    macd = ema_f - ema_s
+    sig = macd.ewm(span=9, adjust=False).mean()
+    hist = macd - sig
+    e1 = ((hist > 0) & (hist > hist.shift(1))).shift(1).fillna(False)
+    vs = (vol - vol.rolling(20).mean()) / vol.rolling(20).std().replace(0, np.nan)
+    e2 = ((vs > 1.5) & (close.pct_change(5) > 0)).shift(1).fillna(False)
+    return (e1 & e2).fillna(False)
+
+def a160(close, df):
+    sma = close.rolling(100).mean()
+    dev = (close - sma) / sma
+    z = (dev - dev.rolling(120).mean()) / dev.rolling(120).std().replace(0, np.nan)
+    return (z < -1.5).shift(1).fillna(False)
+
+def a161(close, df):
+    high, low = df['high'].astype(float), df['low'].astype(float)
+    tr = pd.concat([(high - low), (high - close.shift()).abs(), (low - close.shift()).abs()], axis=1).max(axis=1)
+    atr = tr.rolling(14).mean()
+    atr_pct = atr / close
+    low_atr = atr_pct.rolling(60).rank(pct=True) < 0.15
+    sma = close.rolling(50).mean()
+    return (low_atr & (close > sma)).shift(1).fillna(False)
+
+# Load VIX for A162
+FAC = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors')
+df_vix = pd.read_csv(FAC / 'vix.csv')
+df_vix = df_vix.set_index(pd.to_datetime(df_vix['date'])).sort_index()
+vix = df_vix['close'].astype(float)
+
+def a162(close, df):
+    vix_a = vix.reindex(close.index).ffill()
+    z = (vix_a - vix_a.rolling(90).mean()) / vix_a.rolling(90).std().replace(0, np.nan)
+    return (z > 2.0).shift(1).fillna(False)
+
+
+print('\nComputing all 4 portfolio returns...')
+results = {
+    'A159': compute_portfolio(a159, hold=3),
+    'A160': compute_portfolio(a160, hold=10),
+    'A161': compute_portfolio(a161, hold=3),
+    'A162': compute_portfolio(a162, hold=5),
+}
+
+df_all = pd.DataFrame(results).dropna()
+oos = df_all[df_all.index >= SPLIT]
+
+print('\n=== Individual OOS SR ===')
+for col in df_all.columns:
+    s = oos[col]
+    sr = s.mean() / s.std() * np.sqrt(252) if s.std() > 0 else 0
+    ret = (1 + s).cumprod().iloc[-1] - 1
+    dd = ((1 + s).cumprod() / (1 + s).cumprod().cummax() - 1).min()
+    print(f'  {col}: SR={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')
+
+print('\n=== Correlation Matrix ===')
+corr = oos.corr()
+print('          ' + '  '.join(f'{c:>6s}' for c in df_all.columns))
+for r in df_all.columns:
+    row = '  '.join(f'{corr.loc[r,c]:>+6.3f}' for c in df_all.columns)
+    print(f'  {r:>6s}: {row}')
+
+print('\n=== 4-way Combinations ===')
+combos = [
+    ('Equal (25% each)', {c: 0.25 for c in df_all.columns}),
+    ('A159(30)+A160(20)+A161(25)+A162(25)', {'A159': 0.3, 'A160': 0.2, 'A161': 0.25, 'A162': 0.25}),
+    ('A159(25)+A160(25)+A161(25)+A162(25) v2', {'A159': 0.25, 'A160': 0.25, 'A161': 0.25, 'A162': 0.25}),
+]
+for name, weights in combos:
+    combo = sum(oos[c] * w for c, w in weights.items())
+    sr = combo.mean() / combo.std() * np.sqrt(252) if combo.std() > 0 else 0
+    ret = (1 + combo).cumprod().iloc[-1] - 1
+    dd = ((1 + combo).cumprod() / (1 + combo).cumprod().cummax() - 1).min()
+    tag = '🏆' if sr > 1.7 else '🟢' if sr > 1.0 else '✨'
+    print(f'  {tag} {name}: SR={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')
+
+# Walk-forward for equal 4-way
+print('\n=== Walk-Forward (equal 4-way) ===')
+combo_all = sum(df_all[c] * 0.25 for c in df_all.columns)
+for year in range(2019, 2027):
+    yr = combo_all[combo_all.index.year == year].dropna()
+    if len(yr) < 20:
+        continue
+    sr = yr.mean() / yr.std() * np.sqrt(252) if yr.std() > 0 else 0
+    ret = (1 + yr).cumprod().iloc[-1] - 1
+    tag = '✅' if sr > 0.5 else '⚠️' if sr > 0 else '❌'
+    print(f'  {year}: SR={sr:+.2f} ret={ret:+.1%} {tag}')

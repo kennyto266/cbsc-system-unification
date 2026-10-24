@@ -1,0 +1,177 @@
+"""ccass_history_crawler.py — Crawl CCASS historical data for alpha research.
+
+Crawls top 20 HK blue chips' CCASS participant holdings for past N days.
+HKEX CCASS keeps ~1 year of history via date-specific search.
+
+Strategy: crawl 1 date at a time per stock, build time series of:
+  - Total shares in CCASS
+  - Top participant concentration (Herfindahl index)
+  - Net change vs previous day (大戶增持/減持)
+"""
+import sys, os, asyncio, time, json
+from datetime import datetime, timedelta
+from pathlib import Path
+import pandas as pd
+import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+CCASS_HIST_DIR = DATA_DIR / "ccass_history"
+CCASS_HIST_DIR.mkdir(parents=True, exist_ok=True)
+
+CCASS_URL = "https://www3.hkexnews.hk/sdw/search/searchsdw.aspx"
+
+# Top 20 liquid stocks (matching panel_10yr)
+STOCKS = [
+    "00700", "00005", "00939", "00388", "00941",
+    "01288", "02318", "00016", "01211", "09988",
+    "03690", "01810", "02601", "00656", "01336",
+    "02018", "01299", "00762", "02313", "06862",
+]
+
+
+async def fetch_one_date(page, stock_code, date_str):
+    """Fetch CCASS holdings for one stock on one date."""
+    await page.goto(CCASS_URL, wait_until="domcontentloaded", timeout=30000)
+    try:
+        await page.wait_for_selector("#txtStockCode", timeout=10000)
+    except:
+        return None
+
+    await page.fill("#txtStockCode", stock_code)
+
+    # Set date (ASP.NET requires specific format)
+    await page.evaluate(f"""() => {{
+        const el = document.getElementById('txtShareholdingDate');
+        if (el) {{
+            el.value = '{date_str}';
+            el.removeAttribute('readonly');
+            el.dispatchEvent(new Event('change', {{bubbles: true}}));
+        }}
+    }}""")
+
+    # Submit
+    try:
+        async with page.expect_navigation(wait_until="domcontentloaded", timeout=15000):
+            await page.click("#btnSearch")
+    except:
+        pass
+
+    await page.wait_for_timeout(1500)
+
+    rows = await page.evaluate('''() => {
+        const table = document.querySelector('table.table-mobile-list');
+        if (!table) return [];
+        return Array.from(table.querySelectorAll('tr')).map(r =>
+            Array.from(r.querySelectorAll('td,th')).map(c => c.innerText.trim())
+        );
+    }''')
+
+    if not rows or len(rows) < 3:
+        return None
+
+    # Parse: skip header row
+    holdings = []
+    for cells in rows[1:]:
+        if len(cells) >= 5:
+            pid = cells[0].strip()
+            name = cells[1].strip()
+            shares_str = cells[3].replace(",", "").strip()
+            pct_str = cells[4].replace("%", "").strip()
+            try:
+                shares = int(shares_str)
+                pct = float(pct_str)
+                holdings.append({"participant_id": pid, "name": name, "shares": shares, "pct": pct})
+            except:
+                continue
+
+    if not holdings:
+        return None
+
+    total_shares = sum(h["shares"] for h in holdings)
+    # Herfindahl index (concentration)
+    herfindahl = sum((h["pct"]/100)**2 for h in holdings) if holdings else 0
+    # Top 5 concentration
+    sorted_h = sorted(holdings, key=lambda x: -x["shares"])
+    top5_pct = sum(h["pct"] for h in sorted_h[:5])
+    n_participants = len(holdings)
+
+    return {
+        "date": date_str,
+        "stock": f"HK.{stock_code}",
+        "total_shares": total_shares,
+        "n_participants": n_participants,
+        "herfindahl": herfindahl,
+        "top5_pct": top5_pct,
+        "holdings": holdings,
+    }
+
+
+async def crawl_stock(page, stock_code, dates):
+    """Crawl one stock across multiple dates."""
+    results = []
+    for i, date_str in enumerate(dates):
+        if i % 10 == 0:
+            print(f"  {stock_code}: {i}/{len(dates)} dates...", flush=True)
+        data = await fetch_one_date(page, stock_code, date_str)
+        if data:
+            results.append(data)
+        await asyncio.sleep(0.5)  # rate limit
+    return results
+
+
+async def main():
+    from playwright.async_api import async_playwright
+
+    # Generate dates: past 365 days, business days only
+    end_date = datetime(2026, 7, 3)
+    start_date = end_date - timedelta(days=365)
+    all_dates = pd.bdate_range(start_date, end_date)
+    date_strs = [d.strftime("%Y/%m/%d") for d in all_dates]
+    print(f"Crawling {len(STOCKS)} stocks × {len(date_strs)} dates = {len(STOCKS)*len(date_strs)} requests")
+    print(f"Period: {date_strs[0]} to {date_strs[-1]}")
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+
+        all_data = {}
+        for stock in STOCKS:
+            print(f"\nCrawling {stock}...", flush=True)
+            results = await crawl_stock(page, stock, date_strs)
+            all_data[f"HK.{stock}"] = results
+            print(f"  {stock}: {len(results)}/{len(date_strs)} dates successful")
+
+            # Save incrementally
+            out_file = CCASS_HIST_DIR / f"HK_{stock}_ccass_hist.csv"
+            if results:
+                # Flatten to daily summary
+                summary = []
+                for r in results:
+                    summary.append({
+                        "date": r["date"],
+                        "stock": r["stock"],
+                        "total_shares": r["total_shares"],
+                        "n_participants": r["n_participants"],
+                        "herfindahl": r["herfindahl"],
+                        "top5_pct": r["top5_pct"],
+                    })
+                pd.DataFrame(summary).to_csv(out_file, index=False)
+
+            # Also save full holdings as JSON
+            json_file = CCASS_HIST_DIR / f"HK_{stock}_ccass_full.json"
+            json_file.write_text(json.dumps(results, ensure_ascii=False))
+
+        await browser.close()
+
+    # Summary
+    total = sum(len(v) for v in all_data.values())
+    print(f"\n=== CRAWL COMPLETE ===")
+    print(f"Total records: {total}")
+    print(f"Stocks: {len(all_data)}")
+    for stock, records in all_data.items():
+        print(f"  {stock}: {len(records)} dates")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

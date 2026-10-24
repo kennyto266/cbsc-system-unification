@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+"""
+CBSC 量化交易系統 — 統一 CLI
+
+用法:
+    python cbsc.py update                    # 更新 HKEX + 北水 + 牛熊情緒
+    python cbsc.py update --factors          # 更新所有因子數據
+    python cbsc.py discover                  # 自動篩選有效因子
+    python cbsc.py backtest --strategy all   # 回測所有策略
+    python cbsc.py backtest --factor usdcnh  # 回測特定因子
+    python cbsc.py backtest --sweep          # 參數掃描
+    python cbsc.py signals                   # 即時因子信號
+    python cbsc.py risk                      # 風險監控
+    python cbsc.py report                    # 生成報告
+    python cbsc.py pipeline                  # 一鍵流水線
+"""
+from __future__ import annotations
+import argparse, os, subprocess, sys, time, atexit
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+SCRIPTS = ROOT / "scripts"
+PYTHON = sys.executable
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+_USE_COLOR = sys.stdout.isatty() and os.environ.get("NO_COLOR") is None
+class _C:
+    RESET="\033[0m"; BOLD="\033[1m"; RED="\033[91m"; GREEN="\033[92m"
+    YELLOW="\033[93m"; BLUE="\033[94m"; MAGENTA="\033[95m"; CYAN="\033[96m"; GREY="\033[90m"
+def _paint(text, *codes):
+    return "".join(codes)+text+_C.RESET if _USE_COLOR else text
+def ok(msg): print(_paint("✅ "+msg, _C.GREEN))
+def warn(msg): print(_paint("⚠  "+msg, _C.YELLOW))
+def err(msg): print(_paint("✗  "+msg, _C.RED), file=sys.stderr)
+def info(msg): print(_paint("ℹ  "+msg, _C.CYAN))
+def header(title):
+    print(); print(_paint("═"*60, _C.GREY))
+    print(_paint(f"  {title}".center(60), _C.BOLD, _C.MAGENTA))
+    print(_paint("═"*60, _C.GREY))
+def step(n, title): print(_paint(f"\n▶ [{n}] {title}", _C.BLUE))
+
+LOCK_FILE = ROOT / ".cbsc.lock"
+def _pid_alive(pid):
+    if pid<=0: return False
+    if sys.platform=="win32":
+        import ctypes; k=ctypes.windll.kernel32
+        h=k.OpenProcess(0x1000,False,pid)
+        if not h: return False
+        try:
+            ec=ctypes.c_ulong(); k.GetExitCodeProcess(h,ctypes.byref(ec)); return ec.value==259
+        finally: k.CloseHandle(h)
+    else:
+        try: os.kill(pid,0)
+        except ProcessLookupError: return False
+        except PermissionError: return True
+        return True
+def acquire_lock():
+    try: fd=os.open(str(LOCK_FILE),os.O_CREAT|os.O_EXCL|os.O_WRONLY)
+    except FileExistsError:
+        try:
+            with open(LOCK_FILE,"r") as f: old_pid=int(f.read().strip())
+        except: err(f"無法讀取鎖檔 {LOCK_FILE}"); return False
+        if _pid_alive(old_pid): err(f"已有另一個 CBSC 實例正在執行（PID={old_pid}）。"); return False
+        warn(f"偵測到過時鎖檔（PID={old_pid}），自動清理。")
+        try: os.remove(str(LOCK_FILE))
+        except: return False
+        try: fd=os.open(str(LOCK_FILE),os.O_CREAT|os.O_EXCL|os.O_WRONLY)
+        except: return False
+    except OSError: return False
+    os.write(fd,str(os.getpid()).encode()); os.close(fd)
+    atexit.register(release_lock); return True
+def release_lock():
+    try:
+        if LOCK_FILE.exists(): os.remove(str(LOCK_FILE))
+    except: pass
+
+def dispatch(module_name, args, func="main"):
+    full=f"src.cbsc_cli.{module_name}"
+    try: mod=__import__(full, fromlist=[func])
+    except ImportError as e:
+        if "No module named" in str(e) or module_name in str(e):
+            warn(f"模組開發中：src/cbsc_cli/{module_name}.py"); return 0
+        err(f"匯入 {full} 錯誤：{e}"); raise
+    except Exception as e:
+        err(f"載入 {full} 例外：{e}"); raise
+    target=getattr(mod,func,None)
+    if target is None or not callable(target):
+        warn(f"模組開發中：{full} 尚未提供 {func}()"); return 0
+    try: result=target(args)
+    except Exception as e: err(f"{full}.{func}() 失敗：{e}"); raise
+    return int(result) if isinstance(result,int) else 0
+
+def cmd_update(args):
+    if getattr(args,"factors",False):
+        header("更新因子數據 (factor_collector)")
+        rc=dispatch("factor_collector",args)
+        ok("因子數據更新完成。") if rc==0 else None; return rc
+    header("更新市場數據 (data_updater)")
+    try:
+        __import__("src.cbsc_cli.data_updater",fromlist=["main"])
+        rc=dispatch("data_updater",args)
+    except ImportError:
+        info("data_updater 開發中，退回 daily_scheduler。")
+        sched=SCRIPTS/"daily_scheduler.py"
+        if sched.exists():
+            proc=subprocess.run([PYTHON,str(sched),"--run-now"],cwd=str(ROOT))
+            ok("每日更新完成。") if proc.returncode==0 else err("更新失敗。")
+            return proc.returncode
+        err(f"找不到 {sched}"); return 1
+    ok("市場數據更新完成。") if rc==0 else None; return rc
+
+def cmd_discover(args):
+    header("因子篩選 (factor_screener)")
+    rc=dispatch("factor_screener",args)
+    ok("因子篩選完成。") if rc==0 else None; return rc
+
+def cmd_backtest(args):
+    header("回測引擎 (backtest_engine)")
+    n_cpu=args.parallel if args.parallel else (os.cpu_count() or 1)
+    info(f"CPU 核心：{n_cpu}")
+    if getattr(args,"sweep",False): info("參數掃描模式 (--sweep)")
+    if getattr(args,"strategy",None): info(f"策略：{args.strategy}")
+    if getattr(args,"factor",None): info(f"因子：{args.factor}")
+    rc=dispatch("backtest_engine",args)
+    ok("回測完成。") if rc==0 else None; return rc
+
+def cmd_signals(args):
+    header("即時信號 (signal_scanner)")
+    rc=dispatch("signal_scanner",args)
+    ok("信號掃描完成。") if rc==0 else None; return rc
+
+def cmd_risk(args):
+    header("風險監控 (risk_monitor)")
+    rc=dispatch("risk_monitor",args)
+    ok("風險監控完成。") if rc==0 else None; return rc
+
+def cmd_report(args):
+    header("報告生成 (report_generator)")
+    rc=dispatch("report_generator",args)
+    ok("報告生成完成。") if rc==0 else None; return rc
+
+def cmd_pipeline(args):
+    header("一鍵流水線 pipeline")
+    info("依序：update → discover → backtest → signals → report")
+    stages=[("update",cmd_update,{"factors":False}),("discover",cmd_discover,{}),
+            ("backtest",cmd_backtest,{}),("signals",cmd_signals,{}),("report",cmd_report,{})]
+    t0=time.time()
+    for idx,(name,handler,extra) in enumerate(stages,1):
+        step(idx,name)
+        ns=argparse.Namespace(**vars(args))
+        for k,v in extra.items(): setattr(ns,k,v)
+        ns.no_lock=True
+        try: rc=handler(ns)
+        except Exception as e: err(f"階段 [{name}] 例外：{e}"); return 1
+        if rc!=0: err(f"階段 [{name}] 失敗（{rc}）。"); return rc
+        ok(f"階段 [{name}] 完成。")
+    header("流水線全部完成")
+    info(f"總耗時：{time.time()-t0:.1f} 秒"); return 0
+
+def build_parser():
+    parser=argparse.ArgumentParser(prog="cbsc",description="CBSC 量化交易系統 — 統一 CLI",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="範例:\n  python cbsc.py update\n  python cbsc.py update --factors\n  python cbsc.py discover\n  python cbsc.py backtest --sweep --parallel 8\n  python cbsc.py pipeline\n")
+    parser.add_argument("--days",type=int,default=None,help="數據範圍天數")
+    parser.add_argument("--no-lock",action="store_true",help="不使用檔案鎖")
+    parser.add_argument("--no-color",action="store_true",help="關閉彩色輸出")
+    parser.add_argument("-V","--version",action="version",version="CBSC CLI 1.0.0")
+    sub=parser.add_subparsers(dest="command",metavar="<command>")
+    p_up=sub.add_parser("update",help="更新 HKEX + 北水 + 牛熊情緒"); p_up.add_argument("--factors",action="store_true",help="更新因子數據"); p_up.set_defaults(func=cmd_update)
+    p_dis=sub.add_parser("discover",help="自動篩選有效因子"); p_dis.add_argument("--min-ic",type=float,default=0.03); p_dis.set_defaults(func=cmd_discover)
+    p_bt=sub.add_parser("backtest",help="回測策略/因子")
+    p_bt.add_argument("--strategy",type=str,default=None); p_bt.add_argument("--factor",type=str,default=None)
+    p_bt.add_argument("--sweep",action="store_true"); p_bt.add_argument("--parallel",type=int,default=None)
+    p_bt.set_defaults(func=cmd_backtest)
+    p_sig=sub.add_parser("signals",help="即時因子信號"); p_sig.set_defaults(func=cmd_signals)
+    p_risk=sub.add_parser("risk",help="風險監控"); p_risk.set_defaults(func=cmd_risk)
+    p_rep=sub.add_parser("report",help="生成報告"); p_rep.add_argument("--format",choices=["html","excel","json","pdf"],default="html"); p_rep.set_defaults(func=cmd_report)
+    p_pipe=sub.add_parser("pipeline",help="一鍵流水線"); p_pipe.add_argument("--parallel",type=int,default=None); p_pipe.set_defaults(func=cmd_pipeline)
+    return parser
+
+def main(argv=None):
+    parser=build_parser(); args=parser.parse_args(argv)
+    if getattr(args,"no_color",False): global _USE_COLOR; _USE_COLOR=False
+    if not getattr(args,"command",None): parser.print_help(); return 0
+    use_lock=not getattr(args,"no_lock",False)
+    if use_lock and not acquire_lock(): err("無法取得鎖。"); return 2
+    try:
+        func=getattr(args,"func",None)
+        return int(func(args) or 0) if func else (parser.print_help() or 0)
+    except KeyboardInterrupt: warn("使用者中斷。"); return 130
+    except Exception as e: err(f"例外：{e}"); return 1
+    finally:
+        if use_lock: release_lock()
+
+if __name__=="__main__":
+    sys.exit(main())

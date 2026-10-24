@@ -1,0 +1,59 @@
+# -*- coding: utf-8 -*-
+"""build_ah_premium_store.py — NS panel csv → factor_store parquet (09-15 G50843).
+
+舊鏈嘅 parquet builder 藏喺 .scratch 一次性 thesis script; 而家補返做常設
+builder: 讀 new_sources/ah_premium_panel.csv (collector 交貨, 10 股新鮮),
+merge 入 factor_store/ah_premium.parquet 現有 wide 表 — union 日期軸,
+新鮮嗰 10 欄覆蓋舊值, 其餘欄保留 (舊日期值照舊, 新日期 NaN 係 wide panel
+正常語義)。 冪等: 重跑結果一樣。
+
+[09-15 agent2-H] 加入 full panel: ah_premium_full_panel.csv (202 股, 全窗口)
+都 merge 埋 — 舊鏈只併 10 股增量, 令 192 股斷流喺 08-21 體檢先發現;
+而家 full collector 日更後full panel 係主糧, 10 股增量係兜底。
+欄名經 merge_wide._norm_cols 統一 HK. 前綴 (斬同股雙欄)。
+"""
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling helper
+from panel_store_merge import merge_wide  # noqa: E402
+
+BASE = Path(__file__).resolve().parent.parent
+NS = BASE / "data" / "new_sources"
+STORE = BASE / "data" / "factor_store"
+PANEL_CSVS = [NS / "ah_premium_full_panel.csv",   # 202 股全窗口 (主糧)
+              NS / "ah_premium_panel.csv"]        # 10 股增量 (兜底)
+PARQUET = STORE / "ah_premium.parquet"
+
+
+def main() -> int:
+    fresh_frames = []
+    for csv in PANEL_CSVS:
+        if csv.exists():
+            df = pd.read_csv(csv, index_col=0)
+            df.index = pd.to_datetime(df.index)
+            if len(df):
+                fresh_frames.append(df)
+    if not fresh_frames:
+        print("兩個 panel csv 都空 — collector 未交貨")
+        return 1
+    old = None
+    if PARQUET.exists():
+        old = pd.read_parquet(PARQUET)
+        old.index = pd.to_datetime(old.index)
+    merged = merge_wide(old, fresh_frames[0])
+    for extra in fresh_frames[1:]:  # 後到嘅 (兜底 csv) 再覆一層
+        merged = merge_wide(merged, extra)
+    merged.index.name = "date"
+    PARQUET.parent.mkdir(parents=True, exist_ok=True)
+    merged.to_parquet(PARQUET)
+    dup = int(merged.columns.duplicated().sum())
+    print(f"ah_premium.parquet: {merged.shape[0]}日 x {merged.shape[1]}股, "
+          f"max={merged.index.max().date()}, dup_cols={dup}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

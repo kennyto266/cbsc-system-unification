@@ -1,0 +1,69 @@
+{
+  "trading": {
+    "default_symbol": "0700.HK",
+    "default_duration": 252,
+    "favorite_symbols": [
+      "0700.HK",
+      "0941.HK",
+      "1398.HK"
+    ],
+    "auto_refresh": true,
+    "refresh_interval": 60
+  },
+  "indicators": {
+    "rsi": {
+      "period": 14,
+      "oversold": 30,
+      "overbought": 70
+    },
+    "macd": {
+      "fast": 12,
+      "slow": 26,
+      "signal": 9
+    },
+    "sma": {
+      "short_period": 20,
+      "long_period": 50
+    },
+    "bollinger": {
+      "period": 20,
+      "std_dev": 2
+    },
+    "kdj": {
+      "k_period": 9,
+      "d_period": 3,
+      "j_period": 3
+    }
+  },
+  "strategies": {
+    "enabled": [
+      "RSI_MEAN_REVERSION",
+      "DUAL_MOVING_AVERAGE",
+      "MACD_CROSSOVER"
+    ],
+    "default_strategy": "RSI_MEAN_REVERSION",
+    "risk_management": {
+      "max_position_size": 0.1,
+      "stop_loss": 0.05,
+      "take_profit": 0.15
+    }
+  },
+  "export": {
+    "default_format": "json",
+    "auto_save_results": true,
+    "output_directory": "results",
+    "include_charts": true
+  },
+  "notifications": {
+    "enable_telegram": false,
+    "telegram_bot_token": "",
+    "telegram_chat_id": "",
+    "alert_threshold": 0.02
+  },
+  "ui_preferences": {
+    "show_advanced_options": false,
+    "compact_mode": false,
+    "sound_enabled": true,
+    "animation_enabled": true
+  }
+}

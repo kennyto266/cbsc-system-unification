@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+"""build_buyback_full_panel.py — rbex thesis: 東財回購 raw → buyback_yield_full panel.
+
+輸入: data/new_sources/buyback_em_raw.csv (agent2-H 2026-08-24 爬,
+  RPT_HKCH_COMPANYREPO 逐股日度; 243股有回購紀錄, 393股宇宙全掃)
+輸出: data/factor_store/buyback_yield_full.parquet — wide (date × HK.XXXXX)
+  值 = rolling 252d 回購金額 / close (同 buyback_yield proxy 口徑, 方便對照)
+  無回購日 = 0 (非 NaN): 冇回購紀錄本身係信息 (回購斷絕)
+  2022-01 前數據都有但先用全量, W 窗自行裁剪
+"""
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "buyback_em_raw.csv"
+OUT = BASE / "data" / "factor_store" / "buyback_yield_full.parquet"
+
+BT = BASE.parent / "backtests"
+sys.path.insert(0, str(BT))
+
+
+def main() -> int:
+    df = pd.read_csv(RAW, dtype={"SECURITY_CODE": str})
+    df["td"] = pd.to_datetime(df["TRADE_DATE"], errors="coerce")
+    df = df[df["td"].notna()]
+    df["amt"] = pd.to_numeric(df["REPO_AMT"], errors="coerce")
+    df["code5"] = df["SECURITY_CODE"].str.zfill(5)
+    print(f"raw {len(df)} 行, {df['code5'].nunique()} 股, "
+          f"{df['td'].min().date()} → {df['td'].max().date()}")
+
+    daily = df.groupby(["td", "code5"])["amt"].sum().reset_index()
+    amt = daily.pivot(index="td", columns="code5", values="amt").sort_index()
+    amt = amt[~amt.index.duplicated(keep="last")]
+
+    from llm_cs_adapter import _load_prices_and_rets
+    prices, _ = _load_prices_and_rets()
+    prices.index = pd.to_datetime(prices.index)
+
+    cols = {}
+    for c in amt.columns:
+        hk = "HK." + c
+        if hk not in prices.columns:
+            continue
+        a = amt[c].reindex(prices.index).fillna(0.0)
+        cl = prices[hk]
+        with np.errstate(divide="ignore", invalid="ignore"):
+            y = a.rolling(252, min_periods=21).sum() / cl
+        cols[hk] = y
+    panel = pd.DataFrame(cols)
+    # 限制 2022-01 起 (採集規格 coverage_target), 之前東財紀錄稀疏
+    panel = panel[panel.index >= "2022-01-01"]
+    n_nonzero = (panel.tail(500) > 0).sum().sum()
+    print(f"buyback_yield_full panel: {panel.shape}, cells={int(panel.notna().sum().sum())}")
+    recent = (panel.tail(500) > 0).any(axis=0).sum()
+    print(f"  近500日有非零回購 yield 股數: {recent}")
+    panel.to_parquet(OUT)
+    print(f"→ {OUT}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

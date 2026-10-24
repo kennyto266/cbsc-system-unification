@@ -1,0 +1,37 @@
+"""載入 endpoint_map.json(seed 映射)→ 寫 dataset_resources。"""
+import json
+from pathlib import Path
+
+from . import db
+
+MAP_PATH = Path(__file__).resolve().parent / "endpoint_map.json"
+
+
+def load_map() -> dict:
+    return json.loads(MAP_PATH.read_text(encoding="utf-8"))
+
+
+def apply_endpoint_map(conn) -> int:
+    m = load_map()
+    rows = [
+        {"dataset_id": did,
+         "endpoint": v["endpoint"],
+         "fmt": v.get("fmt", "json"),
+         "is_api": 1}
+        for did, v in m.items()
+    ]
+    db.upsert_resources(conn, rows)
+    return len(rows)
+
+
+def slug_for(conn, dataset_id: str):
+    m = load_map()
+    return m.get(dataset_id, {}).get("slug")
+
+
+if __name__ == "__main__":
+    conn = db.get_conn()
+    db.init_schema(conn)
+    n = apply_endpoint_map(conn)
+    conn.close()
+    print(f"endpoint_map: {n} mappings written to dataset_resources")

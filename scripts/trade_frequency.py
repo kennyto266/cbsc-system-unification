@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+"""trade_frequency.py — 計每個策略 + 整體月均交易次數.
+
+分兩層計:
+  1. backtest 理論頻率 (全期 trades / 月數)
+  2. live 實際估算 (考慮 MAX_POSITIONS=10, SR 排序, 持倉重疊)
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings; warnings.filterwarnings("ignore")
+import numpy as np, pandas as pd
+import kol_alpha_strategies as kol
+from vbt_data import load_stock_close, FACTOR_STOCKS
+
+STOCKS = sorted(FACTOR_STOCKS)
+HEAVY = ["HK.00005","HK.00883","HK.02888","HK.01088","HK.02018","HK.01211","HK.01810","HK.09999","HK.00700","HK.00016"]
+ALPHA_IDS = [27, 74, 131, 132, 136, 137, 139, 140, 141, 142, 144]
+
+# 估算 backtest 涵蓋嘅月數 (用第一隻股嘅數據範圍)
+def est_months():
+    c = load_stock_close(STOCKS[0])
+    if c is None or len(c) < 2: return 60  # fallback
+    days = (c.index[-1] - c.index[0]).days
+    return max(1, days / 30.44)
+
+
+def main():
+    N_MONTHS = est_months()
+    print("=" * 72)
+    print(f"📅 交易頻率分析 (backtest 覆蓋 ~{N_MONTHS:.0f} 個月)")
+    print("=" * 72)
+
+    # === 1. 每個策略嘅 backtest 月均交易 ===
+    print(f"\n{'─'*72}")
+    print(f"  (1) 各策略 backtest 月均交易次數")
+    print(f"{'─'*72}")
+    print(f"{'ID':>4} {'策略':<22} {'測試股':>5} {'總交易':>6} {'月均/股':>8} "
+          f"{'月均總':>7} {'持倉期':>5}")
+    print("-" * 72)
+
+    HOLDING = {27:21, 74:10, 131:21, 132:14, 136:10, 137:10, 139:10,
+               140:7, 141:10, 142:10, 144:10}
+
+    total_monthly = 0
+    for aid in ALPHA_IDS:
+        name, _, func, _ = kol.KOL_REGISTRY[aid]
+        test_stocks = HEAVY if aid == 144 else STOCKS
+        trades_per_stock = []
+        n_stocks = 0
+        for stk in test_stocks:
+            c = load_stock_close(stk)
+            if c is None or len(c) < 300: continue
+            prices = pd.DataFrame({stk: c})
+            try:
+                res = func(prices, stk)
+                if res:
+                    trades_per_stock.append(res.get("n_trades", 0))
+                    n_stocks += 1
+            except: pass
+        if not trades_per_stock:
+            print(f"{aid:>4} {name[:22]:<22} {'N/A':>5} ---"); continue
+        total_trades = sum(trades_per_stock)
+        med_trades = np.median(trades_per_stock)
+        monthly_per_stock = med_trades / N_MONTHS
+        # live 只監控 watchlist (10 股), 唔係全部 100 股
+        monthly_total = monthly_per_stock * 10  # watchlist 10 股
+        total_monthly += monthly_total
+        hold = HOLDING.get(aid, 7)
+        print(f"{aid:>4} {name[:22]:<22} {n_stocks:>5} {total_trades:>6} "
+              f"{monthly_per_stock:>7.2f} {monthly_total:>6.1f} {hold:>4}d")
+
+    print(f"\n  理論月均總交易 (11 策略 × 10 watchlist 股): {total_monthly:.1f} 次")
+
+    # === 2. Live 實際開倉估算 (MAX_POSITIONS 約束) ===
+    print(f"\n{'─'*72}")
+    print(f"  (2) Live 實際開倉頻率估算")
+    print(f"{'─'*72}")
+    print(f"""
+  約束條件:
+    • MAX_POSITIONS = 10 (最多同時持倉 10 隻)
+    • 每隻股同一時間只持 1 倉 (get_position guard)
+    • 信號按 SR 排序, 高 SR 優先填 slot
+    • 平均持倉期 ~10 交易日 (~2 週)
+
+  估算邏輯:
+    一個 slot 嘅週轉 = 21 交易日 / ~10 日持倉 = ~2 次/月
+    10 個 slot × 2 次/月 = ~20 次開倉/月
+
+  但實際會少過理論, 因為:
+    • 信號唔係日日有 (regime 類月均 0.1-0.3 次/股)
+    • 止損會提早平倉再開 (-8% trailing)
+    • 收盤掃描 → 翌日開盤先落單 (有 lag)
+""")
+
+    # === 3. 期貨層 ===
+    print(f"{'─'*72}")
+    print(f"  (3) 期貨層月均交易")
+    print(f"{'─'*72}")
+    print(f"""
+  200 A-shares short: A股>SMA70 + HSIF當日跌
+     → regime 持續型, 觸發後持 14td. 月均 ~1-2 次開倉
+  201 Quarter-end long: 季末 5 交易日
+     → 每季 1 次 = 月均 ~0.33 次
+  202 DiscWin short: dw rising-edge
+     → 事件型, 月均 ~0.5-1 次
+
+  期貨層月均合計: ~2-3 次開倉
+""")
+
+    # === 4. 總計 ===
+    print(f"{'='*72}")
+    print(f"  📊 整體月均交易估算")
+    print(f"{'='*72}")
+    print(f"""
+  股票層 (理論):    ~{total_monthly:.0f} 次信號觸發
+  股票層 (實際):    ~12-20 次開倉 (受 MAX_POSITIONS + SR 篩選限制)
+  期貨層:           ~2-3 次開倉
+
+  整體月均:         ~15-23 次交易
+                   (即大約每 1-2 個交易日有 1 次開倉/平倉)
+""")
+
+
+if __name__ == "__main__":
+    main()

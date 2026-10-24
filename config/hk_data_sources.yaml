@@ -1,0 +1,361 @@
+# 香港市場數據源配置 - Hong Kong Market Data Sources Configuration
+# 專注於香港股票市場的數據源配置
+# Focused on Hong Kong Stock Market Data Sources
+
+# 系統配置
+system:
+  name: "香港專用量化交易系統"
+  version: "1.0.0"
+  market_focus: "Hong Kong Stock Exchange (HKEX)"
+  environment: "production"
+
+# 香港金管局數據源配置
+hkma_sources:
+  hibor:
+    name: "香港銀行同業拆息率"
+    description: "HIBOR - Hong Kong Interbank Offered Rate"
+    api_endpoint: "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily"
+    data_type: "economic"
+    update_frequency: "daily"
+    priority: 1
+    enabled: true
+    timeout: 30
+    rate_limit: 60
+    fields:
+      - "end_of_day"
+      - "value"
+      - "tenor"
+
+  monetary_base:
+    name: "貨幣基礎"
+    description: "Hong Kong Monetary Base Statistics"
+    api_endpoint: "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-monetary-base"
+    data_type: "economic"
+    update_frequency: "daily"
+    priority: 1
+    enabled: true
+    timeout: 30
+    rate_limit: 60
+    fields:
+      - "end_of_day"
+      - "value"
+      - "designation"
+
+  exchange_rate:
+    name: "匯率數據"
+    description: "Exchange Rate - Effective Exchange Rate Index"
+    api_endpoint: "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/er-eeri-daily"
+    data_type: "economic"
+    update_frequency: "daily"
+    priority: 1
+    enabled: true
+    timeout: 30
+    rate_limit: 60
+    fields:
+      - "end_of_day"
+      - "value"
+      - "index_type"
+
+  interbank_liquidity:
+    name: "銀行同業流動資金"
+    description: "Interbank Liquidity Statistics"
+    api_endpoint: "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-interbank-liquidity"
+    data_type: "economic"
+    update_frequency: "daily"
+    priority: 1
+    enabled: true
+    timeout: 30
+    rate_limit: 60
+    fields:
+      - "end_of_day"
+      - "value"
+      - "type"
+
+  efbn:
+    name: "外匯基金票據及債券"
+    description: "Exchange Fund Bills and Notes"
+    api_endpoint: "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/efbn-indicative-price"
+    data_type: "economic"
+    update_frequency: "daily"
+    priority: 2
+    enabled: true
+    timeout: 30
+    rate_limit: 60
+    fields:
+      - "end_of_day"
+      - "indicative_yield"
+      - "tenor"
+
+  rmb_liquidity:
+    name: "人民幣流動資金安排"
+    description: "RMB Liquidity Facility"
+    api_endpoint: "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/usage-rmb-liquidity-fac"
+    data_type: "economic"
+    update_frequency: "daily"
+    priority: 2
+    enabled: true
+    timeout: 30
+    rate_limit: 60
+    fields:
+      - "end_of_day"
+      - "value"
+      - "facility_type"
+
+# 股票數據源配置
+stock_sources:
+  yahoo_finance_hk:
+    name: "Yahoo Finance香港"
+    description: "Yahoo Finance API for Hong Kong stocks"
+    api_endpoint: "https://query1.finance.yahoo.com/v8/finance/chart/"
+    data_type: "stock"
+    update_frequency: "real-time"
+    priority: 2
+    enabled: true
+    timeout: 15
+    rate_limit: 100
+    headers:
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    parameters:
+      interval: "1d"
+      range: "5d"
+    fields:
+      - "timestamp"
+      - "open"
+      - "high"
+      - "low"
+      - "close"
+      - "volume"
+
+  alpha_vantage:
+    name: "Alpha Vantage"
+    description: "Alpha Vantage API for global stock data"
+    api_endpoint: "https://www.alphavantage.co/query"
+    data_type: "stock"
+    update_frequency: "daily"
+    priority: 3
+    enabled: false  # 需要API key
+    timeout: 30
+    rate_limit: 5  # 免費版限制
+    api_key_required: true
+    functions:
+      daily: "TIME_SERIES_DAILY"
+      weekly: "TIME_SERIES_WEEKLY"
+      monthly: "TIME_SERIES_MONTHLY"
+    symbol_suffix: ".HKG"  # Alpha Vantage使用.HKG格式
+    fields:
+      - "1. open"
+      - "2. high"
+      - "3. low"
+      - "4. close"
+      - "5. volume"
+
+# 本地數據源配置
+local_sources:
+  hsi_constituents:
+    name: "恆生指數成分股"
+    description: "Hang Seng Index Constituents List"
+    data_type: "reference"
+    file_path: "data/cache/hsi_constituents.json"
+    update_frequency: "quarterly"
+    priority: 1
+    enabled: true
+
+  historical_data:
+    name: "歷史數據緩存"
+    description: "Cached historical market data"
+    data_type: "historical"
+    base_path: "data/historical_cache"
+    file_format: "parquet"
+    update_frequency: "daily"
+    priority: 1
+    enabled: true
+
+# 數據處理配置
+data_processing:
+  validation:
+    symbol_format:
+      - pattern: "^\\d{4}\\.HK$"
+        description: "4位數字股票代碼"
+      - pattern: "^\\d{5}\\.HK$"
+        description: "5位數字股票代碼"
+      - pattern: "^\\d{4}$"
+        description: "4位數字代碼(無.HK後綴)"
+      - pattern: "^\\d{5}$"
+        description: "5位數字代碼(無.HK後綴)"
+
+  quality_checks:
+    price_validation:
+      min_price: 0.01
+      max_price: 10000
+      check_extreme_changes: true
+      max_change_percent: 50
+
+    volume_validation:
+      min_volume: 0
+      max_volume: 1000000000
+
+    timestamp_validation:
+      check_future_dates: true
+      timezone: "Asia/Hong_Kong"
+
+# 緩存配置
+cache:
+  memory_cache:
+    enabled: true
+    ttl: 300  # 5分鐘
+    max_size: 1000
+
+  disk_cache:
+    enabled: true
+    ttl: 3600  # 1小時
+    base_path: "cache/hk_market_data"
+    max_size_gb: 10
+
+  redis_cache:
+    enabled: false
+    url: null
+    ttl: 1800  # 30分鐘
+
+# API配置
+api_config:
+  server:
+    host: "0.0.0.0"
+    port: 8000
+    workers: 1
+
+  endpoints:
+    health:
+      path: "/health"
+      method: "GET"
+
+    market_status:
+      path: "/market/status"
+      method: "GET"
+
+    stocks:
+      single:
+        path: "/stocks/{symbol}"
+        method: "GET"
+      batch:
+        path: "/stocks/batch"
+        method: "GET"
+        max_symbols: 20
+
+    economic:
+      hibor:
+        path: "/economic/hibor"
+        method: "GET"
+      monetary_base:
+        path: "/economic/monetary-base"
+        method: "GET"
+      exchange_rate:
+        path: "/economic/exchange-rate"
+        method: "GET"
+
+    indices:
+      hsi:
+        path: "/indices/hsi"
+        method: "GET"
+      constituents:
+        path: "/hsi/constituents"
+        method: "GET"
+
+# 監控配置
+monitoring:
+  health_checks:
+    enabled: true
+    interval: 60  # 秒
+
+  alerts:
+    enabled: true
+    thresholds:
+      response_time: 5.0
+      error_rate: 0.05
+      cache_hit_rate: 0.8
+
+  metrics:
+    enabled: true
+    collection_interval: 30
+
+  logging:
+    level: "INFO"
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    file: "logs/hk_market_api.log"
+    max_size_mb: 100
+    backup_count: 5
+
+# 安全配置
+security:
+  authentication:
+    enabled: false
+    api_key_header: "X-API-Key"
+
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 120
+    burst_limit: 20
+
+  cors:
+    enabled: true
+    origins:
+      - "*"
+    methods:
+      - "GET"
+      - "POST"
+    headers:
+      - "*"
+
+# 恆生指數成分股配置
+hsi_indices:
+  hsi:
+    name: "恆生指數"
+    symbol: "HSI"
+    constituents_count: 82
+    update_frequency: "quarterly"
+    base_date: "1964-07-31"
+
+  hscei:
+    name: "恆生中國企業指數"
+    symbol: "HSCEI"
+    constituents_count: 50
+    update_frequency: "quarterly"
+    base_date: "1994-08-08"
+
+  hstechnology:
+    name: "恆生科技指數"
+    symbol: "HSTECH"
+    constituents_count: 30
+    update_frequency: "quarterly"
+    base_date: "2014-12-31"
+
+# 交易時間配置
+trading_hours:
+  regular_session:
+    open: "09:30"
+    close: "12:00"
+    timezone: "Asia/Hong_Kong"
+
+  afternoon_session:
+    open: "13:00"
+    close: "16:00"
+    timezone: "Asia/Hong_Kong"
+
+  trading_days:
+    - "Monday"
+    - "Tuesday"
+    - "Wednesday"
+    - "Thursday"
+    - "Friday"
+
+  holidays:
+    - "New Year's Day"
+    - "Lunar New Year"
+    - "Ching Ming Festival"
+    - "Easter"
+    - "Labour Day"
+    - "Buddha's Birthday"
+    - "Tuen Ng Festival"
+    - "Hong Kong Special Administrative Region Establishment Day"
+    - "Mid-Autumn Festival"
+    - "National Day"
+    - "Christmas Day"

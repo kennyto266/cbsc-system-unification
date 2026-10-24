@@ -1,0 +1,252 @@
+# CBSC Production Prometheus Configuration
+# CBSC生產環境Prometheus配置
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'cbsc-production'
+    environment: 'production'
+    region: 'hongkong'
+
+# 告警管理器配置
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+      api_version: v2
+      timeout: 10s
+      http_config:
+        basic_auth:
+          username: admin
+          password: cbsc_prometheus_2025
+
+# 規則文件
+rule_files:
+  - "rules/*.yml"
+  - "alerts/*.yml"
+  - "recording_rules/*.yml"
+
+# 遠程寫入配置 (長期存儲)
+remote_write:
+  - url: "http://thanos-receive:19291/api/v1/receive"
+    queue_config:
+      max_samples_per_send: 2000
+      max_shards: 200
+      capacity: 10000
+      max_retries: 3
+    metadata_config:
+      send: true
+      send_interval: 30s
+
+# 數據採集配置
+scrape_configs:
+  # Prometheus自身監控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 5s
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'prometheus-server'
+
+  # CBSC FastAPI服務監控
+  - job_name: 'cbsc-api'
+    static_configs:
+      - targets: ['host.docker.internal:3004']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cbsc-api-main'
+    basic_auth:
+      username: prometheus
+      password: cbsc_metrics_2025
+    metric_relabel_configs:
+      # 只保留CBSC相關指標
+      - source_labels: [__name__]
+        regex: 'cbsc_.*|http_.*|websocket_.*|cache_.*|db_.*'
+        action: keep
+
+  # CBSC WebSocket監控
+  - job_name: 'cbsc-websocket'
+    static_configs:
+      - targets: ['host.docker.internal:3004']
+    metrics_path: '/api/v1/metrics/websocket'
+    scrape_interval: 5s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cbsc-websocket-server'
+
+  # 477技術指標專用監控
+  - job_name: 'cbsc-indicators'
+    static_configs:
+      - targets: ['host.docker.internal:3004']
+    metrics_path: '/api/v1/metrics/indicators'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cbsc-indicators-engine'
+
+  # 策略執行引擎監控
+  - job_name: 'cbsc-strategy-execution'
+    static_configs:
+      - targets: ['host.docker.internal:3004']
+    metrics_path: '/api/v1/metrics/strategy-execution'
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cbsc-strategy-engine'
+
+  # React前端監控
+  - job_name: 'cbsc-frontend'
+    static_configs:
+      - targets: ['host.docker.internal:3000']
+    metrics_path: '/api/metrics'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cbsc-frontend'
+
+  # PostgreSQL監控
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cbsc-postgres'
+
+  # Redis監控
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cbsc-redis'
+
+  # 系統監控
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'docker-host'
+
+  # 容器監控
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'docker-containers'
+
+  # 外部服務監控 (Blackbox)
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - http://host.docker.internal:3004/health
+        - http://host.docker.internal:3000
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # WebSocket連接監控
+  - job_name: 'blackbox-websocket'
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets:
+        - host.docker.internal:3004
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+        target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Grafana監控
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'grafana-server'
+
+  # Nginx監控
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'nginx-proxy'
+
+  # 自定義業務指標
+  - job_name: 'business-metrics'
+    static_configs:
+      - targets: ['host.docker.internal:3004']
+    metrics_path: '/api/v1/metrics/business'
+    scrape_interval: 60s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cbsc-business'
+
+  # 健康檢查聚合
+  - job_name: 'health-checks'
+    static_configs:
+      - targets:
+        - 'host.docker.internal:3004'
+    metrics_path: '/health/metrics'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cbsc-health'
+
+# 遠程讀取配置 (用於長期數據查詢)
+remote_read:
+  - url: "http://thanos-query:9090/api/v1/query"
+    required_matchers:
+      cluster: "cbsc-production"
+    read_recent: true
+
+# 存儲配置
+storage:
+  tsdb:
+    path: /prometheus
+    retention.time: 30d
+    retention.size: 50GB
+    wal.compression: true

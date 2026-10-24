@@ -1,0 +1,63 @@
+# Manifest file for CBSC Strategy Workflow package
+# Specifies which files to include in the distribution
+
+# Include package data
+include cbsc_strategy/config/*.yaml
+include cbsc_strategy/config/*.json
+include cbsc_strategy/indicators/*.yaml
+
+# Include configuration templates
+include config/config.template.yaml
+include .env.template
+
+# Include documentation
+include README.md
+include LICENSE
+include INSTALL.md
+include CHANGELOG.md
+
+# Include requirements files
+include requirements.txt
+include requirements-dev.txt
+
+# Include scripts
+recursive-include scripts *.py *.sh *.bat
+
+# Include examples and notebooks
+recursive-include examples *.py *.ipynb
+recursive-include notebooks *.ipynb
+
+# Include tests
+recursive-include tests *.py
+
+# Exclude unnecessary files
+exclude .gitignore
+exclude .dockerignore
+exclude *.pyc
+exclude __pycache__
+exclude .pytest_cache
+exclude .mypy_cache
+exclude .ruff_cache
+exclude .coverage
+exclude *.so
+exclude *.dylib
+exclude *.dll
+
+# Exclude development and build files
+exclude .tox
+exclude .venv
+exclude venv
+exclude build
+exclude dist
+exclude *.egg-info
+
+# Exclude IDE files
+exclude .vscode
+exclude .idea
+exclude *.swp
+exclude *.swo
+exclude *~
+
+# Exclude OS files
+exclude .DS_Store
+exclude Thumbs.db

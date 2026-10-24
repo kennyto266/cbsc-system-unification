@@ -1,0 +1,137 @@
+"""Futu 歷史數據 → factor_store panels (4 個新 modality)。
+
+數據源 (futu_all_backfill.py 已寫低):
+  data/raw_hkex/futu_short_history/HK_XXXXX.csv   → short_ratio_5y (1225日+)
+  data/futu_history/short_interest/HK_XXXXX.csv   → si_days_cover (10年)
+  data/futu_history/brokers/HK_XXXXX.parquet      → broker_conc (569日)
+  data/futu_history/iv_hv/HK_XXXXX.csv            → iv_hv_spread (774日)
+
+呢個 script:
+  1. 逐 source 讀晒所有股票 → wide panel (date × HK.XXXXX)
+  2. 存 parquet 落 data/factor_store/
+  3. 顯示每個 panel 嘅深度/覆蓋 (即係 agent2 審計嘅前置數)
+用法: .venv/Scripts/python.exe futu_panels_build.py [source ...]
+"""
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+ROOT = Path(r'C:/Users/Penguin8n/ZCodeProject')
+DATA = ROOT / 'cbsc-system-unification/data'
+FS = DATA / 'factor_store'
+FS.mkdir(parents=True, exist_ok=True)
+
+
+def _code(fp: Path) -> str:
+    # HK_00700 → HK.00700
+    return fp.stem.replace('_', '.', 1)
+
+
+def build_short_ratio_5y():
+    src = DATA / 'raw_hkex/futu_short_history'
+    frames = {}
+    for fp in sorted(src.glob('HK_*.csv')):
+        df = pd.read_csv(fp, usecols=['timestamp_str', 'shares_traded', 'short_sell_shares_traded'])
+        df['date'] = pd.to_datetime(df['timestamp_str'].str[:10])
+        df = df[df['shares_traded'] > 0]
+        frames[_code(fp)] = df.set_index('date')['short_sell_shares_traded'] / df.set_index('date')['shares_traded']
+    if not frames:
+        return None
+    panel = pd.DataFrame(frames).sort_index()
+    panel = panel[panel.index >= '2021-01-01']
+    return panel
+
+
+def build_si_days_cover():
+    """short_interest: aggregated_short_ratio + 自製 days_to_cover proxy。"""
+    src = DATA / 'futu_history/short_interest'
+    frames = {}
+    for fp in sorted(src.glob('HK_*.csv')):
+        df = pd.read_csv(fp, usecols=['timestamp_str', 'aggregated_short_ratio'])
+        df['date'] = pd.to_datetime(df['timestamp_str'].str[:10])
+        s = pd.to_numeric(df['aggregated_short_ratio'], errors='coerce')
+        frames[_code(fp)] = s.groupby(df['date']).last()
+    if not frames:
+        return None
+    panel = pd.DataFrame(frames).sort_index()
+    return panel[panel.index >= '2021-01-01']
+
+
+def build_broker_conc():
+    """十大經紀商 → 每日買方集中度 (top3 buy net_vol / total buy net_vol)。
+
+    高集中 = 少數大行掃貨 (機構); 低集中 = 散戶行分佈。
+    """
+    src = DATA / 'futu_history/brokers'
+    frames = {}
+    for fp in sorted(src.glob('HK_*.parquet')):
+        df = pd.read_parquet(fp)
+        if df is None or not len(df) or 'days_before' not in df:
+            continue
+        # days_before=0 係今日; 轉做 approx date (跑嗰日 - d)
+        import datetime as dt
+        run_day = pd.Timestamp(dt.date.today())
+        df['date'] = run_day - pd.to_timedelta(df['days_before'], unit='D')
+        buys = df[df['buy_sell_type'] == 1].copy()
+        if not len(buys):
+            continue
+        buys['net_vol'] = pd.to_numeric(buys['net_vol'], errors='coerce')
+        g = buys.groupby('date')['net_vol'].apply(
+            lambda s: s.nlargest(3).sum() / s.sum() if s.sum() > 0 else None)
+        frames[_code(fp)] = g
+    if not frames:
+        return None
+    panel = pd.DataFrame(frames).sort_index()
+    return panel
+
+
+def build_iv_hv_spread():
+    """IV − HV spread (%): 隱含波幅溢價 = 市場對未來風險嘅定價 vs 已實現。"""
+    src = DATA / 'futu_history/iv_hv'
+    frames = {}
+    for fp in sorted(src.glob('HK_*.csv')):
+        df = pd.read_csv(fp)
+        if 'time' not in df or 'iv' not in df:
+            continue
+        df['date'] = pd.to_datetime(df['time'])
+        df = df.drop_duplicates(subset='date').set_index('date')
+        frames[_code(fp)] = pd.to_numeric(df['iv'], errors='coerce') - pd.to_numeric(df['hv'], errors='coerce')
+    if not frames:
+        return None
+    panel = pd.DataFrame(frames).sort_index()
+    return panel
+
+
+BUILDERS = {
+    'short_ratio_5y': build_short_ratio_5y,
+    'si_ratio': build_si_days_cover,
+    'broker_conc': build_broker_conc,
+    'iv_hv_spread': build_iv_hv_spread,
+}
+
+
+def main():
+    which = sys.argv[1:] or list(BUILDERS)
+    for name in which:
+        fn = BUILDERS.get(name)
+        if not fn:
+            print(f'? unknown source {name}')
+            continue
+        try:
+            panel = fn()
+        except Exception as e:
+            print(f'{name}: BUILD ERROR — {str(e)[:100]}')
+            continue
+        if panel is None or not len(panel):
+            print(f'{name}: 冇數據 (backfill 未完成?)')
+            continue
+        out = FS / f'{name}.parquet'
+        panel.to_parquet(out)
+        cov = panel.notna().mean().mean()
+        print(f'{name}: {panel.shape} | {panel.index.min():%Y-%m-%d}~{panel.index.max():%Y-%m-%d} '
+              f'| cov {cov:.0%} | stocks {panel.shape[1]} → {out.name}')
+
+
+if __name__ == '__main__':
+    main()

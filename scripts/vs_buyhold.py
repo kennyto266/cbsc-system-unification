@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+"""vs_buyhold.py — 組合 vs Buy & Hold 終極對決.
+
+同一批股票 (40 股, 同 portfolio_sim 一致), 計:
+  1. B&H Sharpe (每隻股 full + OOS)
+  2. 組合 SR (SR-weighted, from portfolio_sim)
+  3. 超額 Sharpe + 超額年化回報
+  4. 成本調整 (0.227% roundtrip × 交易次數)
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings
+warnings.filterwarnings("ignore")
+import numpy as np, pandas as pd
+from pathlib import Path
+import kol_alpha_strategies as kol
+from kol_alpha_strategies import KOL_REGISTRY
+from vbt_data import load_stock_close, FACTOR_STOCKS
+
+SPLIT = "2024-01-01"
+REAL_ALPHAS = [27, 74, 131, 132, 136, 137, 139, 140, 141, 142]
+RF_RATE = 0.0  # 同 extract_metrics 一致
+COST_PER_TRADE = 0.001135  # 單邊 0.1135% (Longbridge)
+
+
+def sharpe(returns, rf=RF_RATE):
+    if returns is None or len(returns) < 30: return 0.0
+    ar = returns.mean() * 252
+    av = returns.std() * np.sqrt(252)
+    return (ar - rf) / av if av > 0 else 0.0
+
+
+def capture_pf(close_full, alpha_id, stock):
+    prices = pd.DataFrame({stock: close_full})
+    func = KOL_REGISTRY[alpha_id][2]
+    orig_bs = kol.backtest_signals
+    cap = {"pf": None}
+    def spy(close, entries, exits, se=None, sx=None):
+        pf = orig_bs(close, entries, exits, se, sx)
+        if pf is not None: cap["pf"] = pf
+        return pf
+    try:
+        import common as _cm; _cm_o = _cm.backtest_signals; _cm.backtest_signals = spy
+    except: _cm_o = None
+    kol.backtest_signals = spy
+    try: m = func(prices, stock)
+    except: m = None
+    finally:
+        kol.backtest_signals = orig_bs
+        if _cm_o is not None: _cm.backtest_signals = _cm_o
+    return cap["pf"], m
+
+
+def main():
+    stocks = sorted(FACTOR_STOCKS)[:40]
+    print("="*70)
+    print("⚔️  組合 vs Buy & Hold 終極對決")
+    print(f"  股票: {len(stocks)} 隻  Full + OOS split")
+    print("="*70, flush=True)
+
+    # 1. B&H baseline: 每隻股 buy & hold
+    print("\n1️⃣ Buy & Hold baseline...", flush=True)
+    bh_full, bh_oos = [], []
+    bh_rets_full, bh_rets_oos = [], []
+    for s in stocks:
+        c = load_stock_close(s)
+        if c is None or len(c) < 400: continue
+        rf = c.pct_change().dropna()
+        if getattr(rf.index, 'tz', None) is not None: rf.index = rf.index.tz_localize(None)
+        rfull = rf[rf.index < SPLIT] if False else rf  # full
+        roos = rf[rf.index >= SPLIT]
+        ris = rf[rf.index < SPLIT]
+        bh_full.append(sharpe(rfull))
+        bh_oos.append(sharpe(roos))
+        bh_rets_full.append(rfull)
+        bh_rets_oos.append(roos)
+    print(f"   B&H Full:  mean Sharpe={np.mean(bh_full):.2f}  median={np.median(bh_full):.2f}")
+    print(f"   B&H OOS:   mean Sharpe={np.mean(bh_oos):.2f}  median={np.median(bh_oos):.2f}")
+
+    # 2. 組合 (SR-weighted, 同 portfolio_sim)
+    print(f"\n2️⃣ 組合 (10 alpha, SR-weighted)...", flush=True)
+    def simulate(period):
+        all_sh = []
+        all_ret = []  # 組合年化回報
+        all_cost = []
+        for s in stocks:
+            c = load_stock_close(s)
+            if c is None or len(c) < 400: continue
+            cp = c[c.index >= SPLIT] if period == "oos" else c
+            rets_by_a = {}
+            trades_by_a = {}
+            for aid in REAL_ALPHAS:
+                pf, m = capture_pf(cp, aid, s)
+                if pf is None or m is None: continue
+                try:
+                    r = pf.returns()
+                    r = r.iloc[:,0] if isinstance(r, pd.DataFrame) else r
+                    if getattr(r.index, 'tz', None) is not None: r.index = r.index.tz_localize(None)
+                    if len(r) >= 30:
+                        rets_by_a[aid] = r
+                        trades_by_a[aid] = int(m.get("n_trades", 0))
+                except: pass
+            if len(rets_by_a) < 2: continue
+            df = pd.DataFrame(rets_by_a).fillna(0)
+            srs = np.array([sharpe(df[col]) for col in df.columns])
+            srs = np.clip(srs, 0, None)
+            w = srs / srs.sum() if srs.sum() > 0 else np.ones(len(df.columns))/len(df.columns)
+            port_ret = (df.values * w).sum(axis=1)
+            all_sh.append(sharpe(pd.Series(port_ret, index=df.index)))
+            all_ret.append(port_ret.mean() * 252)
+            # 成本: 每筆交易 roundtrip 0.227% (買+賣)
+            avg_trades = np.mean([trades_by_a[a] for a in df.columns if a in trades_by_a])
+            years = len(cp) / 252
+            cost_annual = avg_trades * 0.00227 / years if years > 0 else 0
+            all_cost.append(cost_annual)
+        return (np.mean(all_sh) if all_sh else 0,
+                np.mean(all_ret) if all_ret else 0,
+                np.mean(all_cost) if all_cost else 0)
+
+    full_sh, full_ret, full_cost = simulate("full")
+    oos_sh, oos_ret, oos_cost = simulate("oos")
+    print(f"   組合 Full:  Sharpe={full_sh:.2f}  ann_ret={full_ret*100:.1f}%  cost={full_cost*100:.2f}%/yr")
+    print(f"   組合 OOS:   Sharpe={oos_sh:.2f}  ann_ret={oos_ret*100:.1f}%  cost={oos_cost*100:.2f}%/yr")
+
+    # 3. 對決
+    print(f"\n{'='*70}")
+    print(f"⚔️  對決結果")
+    print(f"{'='*70}")
+    # B&H 年化回報
+    bh_ann_full = np.mean([r.mean()*252 for r in bh_rets_full])
+    bh_ann_oos = np.mean([r.mean()*252 for r in bh_rets_oos])
+    print(f"\n{'指標':<16} {'B&H':>10} {'組合(毛)':>10} {'組合(扣成本)':>12} {'超額':>8}")
+    for label, bs, cr, cc in [
+        ("Full Sharpe", np.mean(bh_full), full_sh, None),
+        ("OOS Sharpe", np.mean(bh_oos), oos_sh, None),
+        ("Full 年化回報", bh_ann_full, full_ret, full_cost),
+        ("OOS 年化回報", bh_ann_oos, oos_ret, oos_cost),
+    ]:
+        if "Sharpe" in label:
+            delta = cr - bs
+            win = "✅贏" if delta > 0.05 else ("❌輸" if delta < -0.05 else "🟡平手")
+            print(f"  {label:<14} {bs:>10.2f} {'':>10} {cr:>12.2f} {delta:>+8.2f} {win}")
+        else:
+            net = cr - cc
+            delta = net - bs
+            win = "✅贏" if delta > 0.01 else ("❌輸" if delta < -0.01 else "🟡平手")
+            print(f"  {label:<14} {bs*100:>9.1f}% {'':>10} {net*100:>11.1f}% {delta*100:>+7.1f}% {win}")
+
+    print(f"\n=== 判斷 ===")
+    oos_sr_delta = oos_sh - np.mean(bh_oos)
+    if oos_sr_delta > 0.1:
+        print(f"  組合 OOS Sharpe ({oos_sh:.2f}) 跑贏 B&H ({np.mean(bh_oos):.2f}) {oos_sr_delta:+.2f}")
+        print(f"  → ✅ 交易策略有意義")
+    elif oos_sr_delta > -0.1:
+        print(f"  組合 OOS Sharpe ({oos_sh:.2f}) ≈ B&H ({np.mean(bh_oos):.2f})")
+        print(f"  → 🟡 平手, 交易成本可能食晒超額")
+    else:
+        print(f"  組合 OOS Sharpe ({oos_sh:.2f}) 輸畀 B&H ({np.mean(bh_oos):.2f}) {oos_sr_delta:+.2f}")
+        print(f"  → ❌ B&H 更好, 交易無價值")
+
+
+if __name__ == "__main__":
+    main()

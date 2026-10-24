@@ -1,0 +1,268 @@
+#!/usr/bin/env python3
+"""cbsc_wiki_feeder.py — CBSC 流水線 → claude-obsidian vault 自動餵料 (2026-08-25).
+
+設計 (用戶批准):
+  單 writer 直寫 wiki/ 目錄 — 唔行 claude-obsidian transaction 協議
+  (嗰個係多 agent 並發設計, 我哋單 feeder 冇 race, 直寫快好多).
+
+三類頁面 + wikilink 網:
+  wiki/strategies/<id>-<factor>.md   每條活躍/TWIN策略一頁
+  wiki/dead-ends/<axis>-<name>.md    ledger 每條死軸一頁
+  wiki/data/<panel>.md               factor_store 每個 panel 一頁
+  wiki/index.md                      總目錄 (重生成)
+
+wikilink 網:
+  策略頁 → [[<panel>]] (佢用嘅數據), [[<axis>-...]] (同軸死路提醒)
+  panel 頁 → 反向連晒用緊佢嘅策略
+  死軸頁 → 提及嘅 panels
+
+狀態機: 每頁 frontmatter 有 updated_at + source_id; feeder 冪等
+  (source 冇變就唔重寫,避免 git噪音). --full 強制全量重寫.
+"""
+import json
+import re
+import sys
+from datetime import datetime
+from pathlib import Path
+
+ROOT = Path(r"C:/Users/Penguin8n/ZCodeProject")
+BT = ROOT / "backtests"
+VAULT = Path(r"C:/Users/Penguin8n/CBSC-KnowledgeVault")
+WIKI = VAULT / "wiki"
+
+
+def _slug(s: str) -> str:
+    s = re.sub(r"[^0-9A-Za-z\u4e00-\u9fff_-]+", "-", str(s)).strip("-")
+    return s[:60] or "unnamed"
+
+
+def _frontmatter(d: dict) -> str:
+    lines = ["---"]
+    for k, v in d.items():
+        if isinstance(v, str) and ("\n" in v or '"' in v):
+            v = v.replace('"', "'")
+        lines.append(f'{k}: "{v}"' if isinstance(v, str) else f"{k}: {v}")
+    lines.append("---")
+    return "\n".join(lines)
+
+
+def _write_page(path: Path, body: str, fm: dict) -> bool:
+    """冪等寫: frontmatter source_sig 冇變 + 檔存在 → skip."""
+    sig = fm.get("source_sig", "")
+    if path.exists():
+        try:
+            old = path.read_text(encoding="utf-8")
+            m = re.search(r'source_sig: "([^"]*)"', old)
+            if m and m.group(1) == sig and "updated_at" not in fm:
+                return False  # 冇變
+        except Exception:
+            pass
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_frontmatter(fm) + "\n\n" + body + "\n", encoding="utf-8")
+    return True
+
+
+def _load_thesis_bank() -> dict:
+    """[08-25] 掃晒所有 thesis 檔 → {factor_prefix: thesis dict} — 策略頁引原文."""
+    import glob as _g
+    bank = {}
+    for f in _g.glob(str(BT / "_theses_*.json")) + _g.glob(str(BT / "hermes_theses*.json")):
+        try:
+            d = json.loads(Path(f).read_text(encoding="utf-8"))
+            if isinstance(d, list):
+                for t in d:
+                    p = t.get("factor_prefix") or ""
+                    if p and p not in bank:
+                        bank[p] = t
+        except Exception:
+            pass
+    return bank
+
+
+_THESIS_BANK = None  # lazy
+
+
+def feed_strategies(st: dict) -> int:
+    """活躍 + TWIN_SUPERSEDED 策略頁 (含 thesis 原文 + Mermaid 鄰居圖)."""
+    global _THESIS_BANK
+    if _THESIS_BANK is None:
+        _THESIS_BANK = _load_thesis_bank()
+    n = 0
+    for sid, v in sorted(st["strategies"].items(), key=lambda x: int(x[0])):
+        if not isinstance(v, dict) or v.get("status") not in (
+            "ALIVE", "REGIME_ADAPTED", "TWIN_SUPERSEDED"
+        ):
+            continue
+        try:
+            from strategy_names import plain_name
+            name = plain_name(sid, v.get("factor", ""))
+        except Exception:
+            name = v.get("name") or sid
+        rm = v.get("ranking_metric") or ""
+        panels = sorted(set(re.findall(r"[a-z][a-z0-9_]{3,}", rm)) &
+                        {"ocf_oi_ttm", "ta_tdays_yoy", "shares_yoy", "dps_yoy",
+                         "dar_yoy", "evx_oi", "evx_op", "anrev_eps", "anrev_n",
+                         "prean_dte", "sdw_south", "csdw_south", "csdw_south_mkt",
+                         "buyback_yield", "div_yield_pit", "perm_entropy"})
+        body = [f"# {sid} — {name}", ""]
+        body.append(f"- 狀態: **{v.get('status')}**")
+        body.append(f"- W3: {v.get('w3_sr', '?')} | Fwd: {v.get('forward_oos_sr', '?')} | MC: {v.get('mc_p_value', '?')}")
+        if v.get("note"):
+            body.append(f"- 備註: {v.get('note', '')[:120]}")
+        if rm:
+            body.append(f"- ranking_metric: `{rm[:180]}`")
+        if panels:
+            body.append("- 數據: " + " ".join(f"[[data/{p}|{p}]]" for p in panels))
+        # [08-25] thesis 原文 (factor 開頭 = thesis prefix 命中)
+        fac = (v.get("factor") or "").lower()
+        th = next((t for p, t in _THESIS_BANK.items()
+                   if p and (fac.startswith(p.lower()) or p.lower() in fac[:40])), None)
+        if th:
+            body += ["", "## 🧠 Thesis 原文", ""]
+            body.append(f"**{th.get('angle', '?')}**")
+            if th.get("sentence"):
+                body.append(f"\n> {str(th['sentence'])[:400]}")
+            if th.get("rationale"):
+                body.append(f"\n**點解得**: {str(th['rationale'])[:600]}")
+            if th.get("invalidation"):
+                body.append(f"\n**點樣會死**: {str(th['invalidation'])[:300]}")
+            body.append(f"\n*(出自 thesis 檔, prefix: `{th.get('factor_prefix','?')}`)*")
+        # [08-25] Mermaid 鄰居圖 — 策略 ↔ panels ↔ 數據來源
+        if panels or th:
+            body += ["", "## 🗺️ 鄰居圖", "", "```mermaid", "graph LR"]
+            body.append(f'  S["{sid}<br/>{name[:20]}"]')
+            for p in panels[:6]:
+                body.append(f'  P{p[:8]}["{p}"]:::panel')
+                body.append(f'  S --> P{p[:8]}')
+            if th:
+                body.append(f'  T["🎯 {str(th.get("angle","thesis"))[:24]}"]:::thesis')
+                body.append(f'  T --> S')
+            body.append("  classDef panel fill:#2d5b88,color:#fff;")
+            body.append("  classDef thesis fill:#5b872d,color:#fff;")
+            body.append("```")
+        if v.get("status") == "TWIN_SUPERSEDED":
+            body.append("")
+            body.append("> [!warning] 孿生被降級 — 同族留咗最強嗰條, 呢頁係歷史紀錄")
+        sig = f"{sid}|{v.get('status')}|{v.get('w3_sr')}|{v.get('last_validated', '')[:10]}|{(th or {}).get('factor_prefix', '')}"
+        today = datetime.now().strftime("%Y-%m-%d")
+        if _write_page(WIKI / "strategies" / f"{sid}-{_slug(v.get('factor') or sid)}.md",
+                       "\n".join(body),
+                       {"title": f"{sid} {name}",
+                        "type": "strategy",
+                        "status": v.get("status"),
+                        "tags": [v.get("status", "UNKNOWN").lower(), "strategy"],
+                        "created": today, "updated": today,
+                        "source_sig": sig}):
+            n += 1
+    return n
+
+
+def feed_dead_ends(ledger: dict) -> int:
+    n = 0
+    for d in ledger.get("dead_directions", []):
+        name = d.get("name") or "?"
+        axis = d.get("axis") or "uncategorized"
+        body = [f"# 〔{axis}〕{name}", ""]
+        body.append(f"**死因**: {d.get('why_dead', '?')[:400]}")
+        if d.get("retry_when"):
+            body.append("")
+            body.append(f"**重試條件**: {d.get('retry_when', '')[:200]}")
+        if d.get("ts"):
+            body.append(f"記錄於 {str(d.get('ts'))[:10]}")
+        sig = f"{name}|{axis}|{str(d.get('why_dead', ''))[:80]}"
+        today = datetime.now().strftime("%Y-%m-%d")
+        if _write_page(WIKI / "dead-ends" / f"{_slug(axis)}-{_slug(name)}.md",
+                       "\n".join(body),
+                       {"title": f"〔{axis}〕{name}",
+                        "type": "dead-end",
+                        "status": "dead",
+                        "tags": ["dead", "axis-" + _slug(axis)],
+                        "created": today, "updated": today,
+                        "source_sig": sig}):
+            n += 1
+    return n
+
+
+def feed_panels() -> int:
+    store = ROOT / "cbsc-system-unification" / "data" / "factor_store"
+    n = 0
+    for pq in sorted(store.glob("*.parquet")):
+        pname = pq.stem
+        try:
+            import pandas as pd
+            df = pd.read_parquet(pq)
+            nn = int(df.notna().sum().sum())
+            shape = f"{df.shape[0]}日 × {df.shape[1]}股, 非NaN {nn}"
+        except Exception:
+            shape = "(讀取失敗)"
+        body = [f"# panel: {pname}", "", f"- 數據面: {shape}",
+                f"- 檔案: `factor_store/{pq.name}`"]
+        # 反向連結: 邊啲策略用緊
+        try:
+            st = json.loads((BT / "strategy_state.json").read_text(encoding="utf-8"))
+            users = [sid for sid, v in st["strategies"].items()
+                     if isinstance(v, dict) and v.get("status") in ("ALIVE", "REGIME_ADAPTED")
+                     and pname in (v.get("ranking_metric") or "")]
+            if users:
+                body.append("- 用緊嘅策略: " + " ".join(
+                    f"[[strategies/{u}-{_slug(st['strategies'][u].get('factor') or u)}|{u}]]"
+                    for u in sorted(users, key=int)[:10]))
+        except Exception:
+            pass
+        sig = f"{pname}|{pq.stat().st_mtime_ns}"
+        today = datetime.now().strftime("%Y-%m-%d")
+        if _write_page(WIKI / "data" / f"{pname}.md", "\n".join(body),
+                       {"title": f"panel {pname}",
+                        "type": "data-panel",
+                        "status": "active",
+                        "tags": ["panel", "data"],
+                        "created": today, "updated": today,
+                        "source_sig": sig}):
+            n += 1
+    return n
+
+
+def rebuild_index() -> int:
+    """總目錄重生成 + wiki/hot.md 最近大事."""
+    st = json.loads((BT / "strategy_state.json").read_text(encoding="utf-8"))
+    alive = [(sid, v) for sid, v in st["strategies"].items()
+             if isinstance(v, dict) and v.get("status") in ("ALIVE", "REGIME_ADAPTED")]
+    body = ["# CBSC Alpha 知識庫", "",
+            f"> 流水線自動餵料 · 更新 {datetime.now():%Y-%m-%d %H:%M}", "",
+            f"活躍策略 **{len(alive)}** 條 | 死軸 | 數據 panels", "",
+            "## 六大獨立格 (代表)", ""]
+    for sid in ["603", "649", "968", "1011", "1183", "1184", "1196"]:
+        v = st["strategies"].get(sid)
+        if v and isinstance(v, dict):
+            body.append(f"- [[strategies/{sid}-{_slug(v.get('factor') or sid)}|{sid} {v.get('factor','')}]]")
+    body += ["", "## 最新部署 (ID 前 12)", ""]
+    for sid, v in sorted(alive, key=lambda x: -int(x[0]))[:12]:
+        body.append(f"- [[strategies/{sid}-{_slug(v.get('factor') or sid)}|{sid}]] {v.get('status')} W3={v.get('w3_sr', '?')}")
+    body += ["", "## 架構 & Skills", "",
+             "- [[architecture/overview-系統總覽|🏗️ 系統架構]] (流水線/live/數據/看門狗/通知/知識)",
+             "- [[skills/caveman|🛠️ Skills 庫]] (26 個: caveman 系 / agent 用 / CBSC 專用)"]
+    today = datetime.now().strftime("%Y-%m-%d")
+    fm = ('---\ntitle: "CBSC Alpha 知識庫"\ntype: "index"\nstatus: "active"\n'
+          f'tags: ["index", "moc"]\ncreated: "{today}"\nupdated: "{today}"\n---\n\n')
+    (WIKI / "index.md").write_text(fm + "\n".join(body) + "\n", encoding="utf-8")
+    return 1
+
+
+def main() -> int:
+    full = "--full" in sys.argv
+    if full:
+        import shutil
+        for sub in ("strategies", "dead-ends", "data"):
+            shutil.rmtree(WIKI / sub, ignore_errors=True)
+    st = json.loads((BT / "strategy_state.json").read_text(encoding="utf-8"))
+    ledger = json.loads((ROOT / "trading_graph" / "research_ledger.json").read_text(encoding="utf-8"))
+    n1 = feed_strategies(st)
+    n2 = feed_dead_ends(ledger)
+    n3 = feed_panels()
+    n4 = rebuild_index()
+    print(f"feeder: {n1} 策略頁 + {n2} 死軸頁 + {n3} panel頁 {'(全量)' if full else '(增量)'} | index 重建")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""agent2h_backfill_southbound_monthly.py — 東财 RPT_MUTUAL_HOLD_DET 全 984 股月度採樣日 backfill.
+
+2026-08-23 agent2-H (thesis sbhd): HOLD_DET 每股只有 69 個月度採樣日 (2022-04→),
+係 2024-08 (EM HOLDRANKS 日度起點) 之前唯一嘅 per-stock 南向持股源.
+HKEX mutualmarket 12個月牆 + 舊日期 0 行已實證, 呢個係最盡嘅歷史深度.
+
+Output: data/new_sources/em_hold_det_monthly.csv  (date, stock_code, hold_shares_ratio, hold_num)
+Resume-safe: skips stocks already fully in CSV.
+"""
+import time
+from pathlib import Path
+
+import pandas as pd
+import requests
+
+BASE = Path(__file__).resolve().parent.parent
+ROOT = BASE.parent
+OUT = BASE / "data" / "new_sources" / "em_hold_det_monthly.csv"
+OHLCV_DIR = BASE / "data" / "ohlcv_5y"
+
+API = "https://datacenter-web.eastmoney.com/api/data/v1/get"
+H = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+     "Referer": "https://data.eastmoney.com/"}
+
+if OUT.exists():
+    old = pd.read_csv(OUT, dtype={"stock_code": str})
+else:
+    old = pd.DataFrame(columns=["date", "stock_code"])
+done = set(zip(old["stock_code"], old["date"]))
+print(f"resume: {len(old)} rows, {old.stock_code.nunique() if len(old) else 0} stocks", flush=True)
+
+stocks = sorted(p.stem.replace("HK_", "") for p in OHLCV_DIR.glob("HK_*.csv"))
+print(f"universe: {len(stocks)} stocks", flush=True)
+
+rows = []
+for i, sc in enumerate(stocks):
+    sc5 = sc.zfill(5)
+    have_dates = set(old.loc[old.stock_code == sc5, "date"]) if len(old) else set()
+    u = (f"{API}?reportName=RPT_MUTUAL_HOLD_DET&columns=ALL&pageNumber=1&pageSize=500"
+         f"&sortColumns=HOLD_DATE&sortTypes=-1&filter=(SECUCODE%3D%22{sc5}.HK%22)")
+    data = None
+    for attempt in range(3):
+        try:
+            r = requests.get(u, headers=H, timeout=20).json()
+            data = (r.get("result") or {}).get("data") or []
+            break
+        except Exception as e:
+            if attempt == 2:
+                print(f"[{i+1}/{len(stocks)}] {sc5} FAIL {e}", flush=True)
+            time.sleep(2)
+    if not data:
+        continue
+    n = 0
+    for d in data:
+        dt = d["HOLD_DATE"][:10]
+        if dt in have_dates:
+            continue
+        rows.append({"date": dt, "stock_code": sc5,
+                     "org_code": d.get("ORG_CODE"),
+                     "participant": d.get("PARTICIPANT_CODE", ""),
+                     "market": d.get("MARKET_CODE", ""),
+                     "hold_num": d["HOLD_NUM"],
+                     "hold_shares_ratio": d["HOLD_SHARES_RATIO"]})
+        n += 1
+    if (i + 1) % 50 == 0:
+        print(f"[{i+1}/{len(stocks)}] buffered +{len(rows)} new rows", flush=True)
+        df_new = pd.DataFrame(rows).drop_duplicates(subset=["date", "stock_code", "participant"])
+        old = (pd.concat([old, df_new], ignore_index=True)
+                 .drop_duplicates(subset=["date", "stock_code", "participant"], keep="last")
+                 .sort_values(["date", "stock_code"]))
+        old.to_csv(OUT, index=False)
+        rows = []
+    time.sleep(0.25)
+
+if rows:
+    df_new = pd.DataFrame(rows).drop_duplicates(subset=["date", "stock_code", "participant"])
+    old = (pd.concat([old, df_new], ignore_index=True)
+             .drop_duplicates(subset=["date", "stock_code", "participant"], keep="last")
+             .sort_values(["date", "stock_code"]))
+    old.to_csv(OUT, index=False)
+
+print(f"DONE: {len(old)} rows, {old.stock_code.nunique()} stocks, "
+      f"{old.date.min()} -> {old.date.max()}, {old.date.nunique()} dates", flush=True)

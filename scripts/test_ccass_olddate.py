@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+"""test: HKEX CCASS per-stock searchsdw.aspx 舊日期 (2021) 有冇數據 —
+判斷 thesis sdw_south_full backfill 係咪可行."""
+import re, urllib.parse, urllib.request, http.cookiejar, sys
+
+URL = "https://www3.hkexnews.hk/sdw/search/searchsdw_c.aspx"
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+
+date = sys.argv[1] if len(sys.argv) > 1 else "20220103"
+stock = sys.argv[2] if len(sys.argv) > 2 else "00700"
+
+cj = http.cookiejar.CookieJar()
+opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+opener.addheaders = list(UA.items())
+html = opener.open(URL, timeout=40).read().decode("utf-8", "ignore")
+
+def hid(name):
+    m = re.search(r'<input type="hidden" name="%s"[^>]*value="([^"]*)"' % name, html)
+    return m.group(1) if m else ""
+
+form = {
+    "__EVENTTARGET": "", "__EVENTARGUMENT": "",
+    "__VIEWSTATE": hid("__VIEWSTATE"),
+    "__VIEWSTATEGENERATOR": hid("__VIEWSTATEGENERATOR"),
+    "today": hid("today"),
+    "sortBy": "shareholding", "sortDirection": "desc",
+    "alertMsg": "",
+    "txtShareholdingDate": date,
+    "txtStockCode": stock,
+    "btnSearch": "Search",
+}
+out = opener.open(urllib.request.Request(URL, data=urllib.parse.urlencode(form).encode()), timeout=60).read().decode("utf-8", "ignore")
+rows = re.findall(r'<td class="col-participant-name">.*?mobile-list-body">([^<]*)</div>.*?mobile-list-body">([0-9,]+)</div>.*?mobile-list-body">([0-9.]+)%', out, re.S)
+shown = re.search(r"Shareholding Date:\s*([0-9/]+)", out)
+print(f"date={date} stock={stock} shown={shown.group(1) if shown else '?'} participants={len(rows)}")
+for r in rows[:3]:
+    print("  ", r)
+if not rows:
+    print("--- no rows; page snippet:")
+    m = re.search(r'(No result|alertMsg[^>]*value="[^"]*")', out)
+    print(m.group(0) if m else out[:600])

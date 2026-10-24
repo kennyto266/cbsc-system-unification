@@ -1,0 +1,55 @@
+"""Build iplu_days_to_unlock factor panel: 距 IPO 基石/控股股東 6個月禁售解禁日嘅交易日數.
+
+源: hk_orgprofile_listing.csv (東财 RPT_HKF10_INFO_ORGPROFILE, 6894股 LISTING_DATE)
+解禁日 = 上市日 + 126 個交易日 (港股 6 個月禁售慣例)
+iplu_days_to_unlock[date, stock]:
+  <0  解禁前交易日數 (負數 = 仲有幾多日, -20 = 前 20 日窗口)
+  >0  已解禁日數; >60 → 999
+  未上市/超過一年 → NaN (用家 fillna(999))
+產出: factor_store/iplu_days_to_unlock.parquet (wide date × HK.XXXXX)
+"""
+import pandas as pd
+from pathlib import Path
+
+NEW_SRC = Path(__file__).resolve().parents[1] / "data" / "new_sources"
+FACTOR_STORE = NEW_SRC.parent / "factor_store"
+
+org = pd.read_csv(NEW_SRC / "hk_orgprofile_listing.csv", dtype={"SECURITY_CODE": str})
+org["LISTING_DATE"] = pd.to_datetime(org["LISTING_DATE"], errors="coerce")
+org = org.dropna(subset=["LISTING_DATE"])
+org["code"] = org["SECURITY_CODE"].str.zfill(5)
+
+sdw = pd.read_parquet(FACTOR_STORE / "sdw_hold_pct.parquet")
+sdw.index = pd.to_datetime(sdw.index)
+dates = sdw.index.sort_values()
+n = len(dates)
+pos_idx = {d: i for i, d in enumerate(dates)}
+
+# 覆蓋: sdw universe + 2024 後上市嘅新股 (sdw 未有嘅都加, 俾 sweep 見到解禁壓力)
+codes = set(sdw.columns)
+recent = org[org["LISTING_DATE"] >= "2024-01-01"]["code"]
+cols = sorted(codes | {f"HK.{c}" for c in recent})
+
+panel = pd.DataFrame(index=dates, columns=cols, dtype=float)
+for _, r in org.iterrows():
+    col = f"HK.{r['code']}"
+    if col not in panel.columns:
+        continue
+    ld = r["LISTING_DATE"]
+    if ld < dates[0] - pd.Timedelta(days=400):
+        continue
+    # 上市日之後第一個交易日 index
+    after = dates.searchsorted(ld)
+    unlock_i = after + 126
+    if unlock_i >= n:
+        continue
+    lo, hi = after, min(unlock_i + 61, n)
+    panel.iloc[lo:unlock_i, panel.columns.get_loc(col)] = -(unlock_i - pd.Series(range(lo, unlock_i))).values
+    seg = pd.Series(range(unlock_i, hi), index=dates[unlock_i:hi])
+    panel.loc[dates[unlock_i:hi], col] = (seg - unlock_i).values
+
+out = FACTOR_STORE / "iplu_days_to_unlock.parquet"
+panel.to_parquet(out)
+active = panel.notna().sum().sum()
+pre20 = ((panel < 0) & (panel >= -20)).sum().sum()
+print(f"saved {out} shape={panel.shape} non-NaN cells={active} cells in [-20,0) window={pre20} stocks_covered={panel.notna().any(axis=0).sum()}")

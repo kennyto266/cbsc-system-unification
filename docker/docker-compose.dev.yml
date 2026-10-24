@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # Development backtesting service
+  backtesting-dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: base
+    container_name: cbsc-backtesting-dev
+    restart: "no"
+    ports:
+      - "8000:8000"
+      - "8080:8080"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://backtest:backtest123@postgres:5432/backtest
+      - LOG_LEVEL=DEBUG
+      - MAX_WORKERS=2
+      - GPU_ENABLED=false
+      - DEVELOPMENT_MODE=true
+    volumes:
+      - ..:/app
+      - dev_cache_volume:/app/cache
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - backtesting-network
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+  # Development GPU service
+  backtesting-gpu-dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.gpu
+    container_name: cbsc-backtesting-gpu-dev
+    restart: "no"
+    ports:
+      - "8001:8000"
+      - "8081:8080"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://backtest:backtest123@postgres:5432/backtest
+      - LOG_LEVEL=DEBUG
+      - MAX_WORKERS=4
+      - GPU_ENABLED=true
+      - DEVELOPMENT_MODE=true
+      - CUDA_VISIBLE_DEVICES=0
+    volumes:
+      - ..:/app
+      - dev_gpu_cache_volume:/app/cache
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - backtesting-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    profiles:
+      - gpu
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+  # Redis for development
+  redis:
+    image: redis:7-alpine
+    container_name: cbsc-redis-dev
+    restart: "no"
+    ports:
+      - "6379:6379"
+    volumes:
+      - dev_redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - backtesting-network
+
+  # PostgreSQL for development
+  postgres:
+    image: postgres:15-alpine
+    container_name: cbsc-postgres-dev
+    restart: "no"
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=backtest
+      - POSTGRES_USER=backtest
+      - POSTGRES_PASSWORD=backtest123
+    volumes:
+      - dev_postgres_data:/var/lib/postgresql/data
+    networks:
+      - backtesting-network
+
+networks:
+  backtesting-network:
+    driver: bridge
+
+volumes:
+  dev_redis_data:
+    driver: local
+  dev_postgres_data:
+    driver: local
+  dev_cache_volume:
+    driver: local
+  dev_gpu_cache_volume:
+    driver: local

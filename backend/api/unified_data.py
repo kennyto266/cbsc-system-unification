@@ -1,0 +1,324 @@
+"""
+統一數據層 API Router
+
+暴露 unified data layer 嘅功能到 dashboard：
+- OHLCV 完整歷史數據（含 volume/turnover/pe_ratio）
+- 資金流向（大戶手影）
+- Intraday 分鐘線
+- 數據目錄（邊度有咩數據）
+- 批次抓取 + 存儲
+
+整合 src/data/unified 模組到 FastAPI。
+"""
+import sys
+import os
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import List, Optional
+
+from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
+
+logger = logging.getLogger(__name__)
+router = APIRouter(tags=["統一數據層"])
+
+# 確保可以 import unified 模組
+ROOT = Path(__file__).parent.parent.parent  # cbsc-system-unification/
+sys.path.insert(0, str(ROOT / "src"))
+sys.path = [p for p in sys.path if "CODEX" not in p]
+
+from data.unified import (
+    FutuAdapter, CCASSFetcher, IntradayFetcher, store, IncrementalUpdater
+)
+
+# 全域 adapter 實例（延遲初始化）
+_futu_adapter = None
+_ccass_fetcher = None
+_intraday_fetcher = None
+
+
+def _get_futu():
+    global _futu_adapter
+    if _futu_adapter is None:
+        _futu_adapter = FutuAdapter()
+    return _futu_adapter
+
+
+def _get_ccass():
+    global _ccass_fetcher
+    if _ccass_fetcher is None:
+        _ccass_fetcher = CCASSFetcher()
+    return _ccass_fetcher
+
+
+def _get_intraday():
+    global _intraday_fetcher
+    if _intraday_fetcher is None:
+        _intraday_fetcher = IntradayFetcher()
+    return _intraday_fetcher
+
+
+def _normalize_code(symbol: str) -> str:
+    """正規化股票代碼為 HK.XXXXX 格式。"""
+    s = symbol.strip().upper()
+    if s.startswith("HK."):
+        return s
+    if s.endswith(".HK"):
+        s = s[:-3]
+    try:
+        num = int(s)
+        return f"HK.{num:05d}"
+    except ValueError:
+        return s if "." in s else f"HK.{s}"
+
+
+# ============================================================
+# 健康檢查
+# ============================================================
+
+@router.get("/health")
+async def unified_health():
+    """統一數據層健康檢查。"""
+    return {
+        "success": True,
+        "data": {
+            "futu_connected": _futu_adapter is not None,
+            "parquet_store": str(ROOT / "data" / "market_data"),
+        },
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+# ============================================================
+# OHLCV（完整歷史數據）
+# ============================================================
+
+@router.get("/ohlcv/{symbol}")
+async def get_ohlcv(
+    symbol: str,
+    days: int = Query(250, ge=1, le=1000),
+    freq: str = Query("1d", description="1d/5m/15m/30m/60m/1m"),
+):
+    """取得完整 OHLCV 歷史數據（含 volume/turnover/pe_ratio）。
+
+    解決之前只有 close 嘅問題。
+    先查 Parquet cache，冇就從富途攞。
+    """
+    code = _normalize_code(symbol)
+    freq_map = {"1d": "daily", "1m": "1min", "5m": "5min",
+                "15m": "15min", "30m": "30m", "60m": "60min"}
+    store_freq = freq_map.get(freq, "daily")
+
+    # 先查 Parquet cache
+    cached = store.load("market_data", code, store_freq)
+    if cached is not None and not cached.empty:
+        # 檢查是否最新
+        last_date = cached["date"].max()
+        days_old = (datetime.now() - last_date.to_pydatetime()).days
+        if days_old <= 3:  # 3 日內視為最新
+            return {
+                "success": True,
+                "source": "parquet_cache",
+                "data": cached.tail(days).to_dict("records"),
+                "count": len(cached.tail(days)),
+                "last_update": str(last_date.date()),
+                "timestamp": datetime.now().isoformat(),
+            }
+
+    # 從富途攞
+    try:
+        futu = _get_futu()
+        df = futu.get_ohlcv(code, days=days, freq=freq)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"無法取得 {code} 嘅 OHLCV 數據")
+
+        # 存入 Parquet
+        futu.fetch_and_store(code, days=days, freq=freq)
+
+        records = df.to_dict("records")
+        # 清理 NaN
+        for r in records:
+            for k, v in r.items():
+                if hasattr(v, "isoformat"):
+                    r[k] = v.isoformat()
+                elif v != v:  # NaN
+                    r[k] = None
+
+        return {
+            "success": True,
+            "source": "futu_api",
+            "data": records,
+            "count": len(records),
+            "columns": list(df.columns),
+            "timestamp": datetime.now().isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("get_ohlcv error")
+        raise HTTPException(status_code=500, detail=f"OHLCV 查詢失敗: {e}")
+
+
+# ============================================================
+# 資金流向（大戶手影）
+# ============================================================
+
+@router.get("/capital-flow/{symbol}")
+async def get_capital_flow(
+    symbol: str,
+    days: int = Query(60, ge=1, le=332),
+):
+    """取得資金流向（大戶手影）。
+
+    含超大單/大單/中單/細單流入流出。
+    """
+    code = _normalize_code(symbol)
+    try:
+        futu = _get_futu()
+        df = futu.get_capital_flow(code, days=days)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"無資金流向數據: {code}")
+
+        records = df.to_dict("records")
+        for r in records:
+            for k, v in r.items():
+                if hasattr(v, "isoformat"):
+                    r[k] = v.isoformat()
+                elif v != v:
+                    r[k] = None
+
+        return {
+            "success": True,
+            "data": records,
+            "count": len(records),
+            "columns": list(df.columns),
+            "timestamp": datetime.now().isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"資金流向查詢失敗: {e}")
+
+
+# ============================================================
+# 數據目錄
+# ============================================================
+
+@router.get("/catalog")
+async def data_catalog():
+    """數據目錄 — 顯示 Parquet 存儲中已有嘅數據。"""
+    catalog = {}
+    for category in ["market_data", "alternative_data", "fundamental"]:
+        for freq in ["daily", "1min", "5min", "15min", "30min", "60min"]:
+            symbols = store.list_symbols(category, freq)
+            if symbols:
+                key = f"{category}/{freq}"
+                catalog[key] = {
+                    "symbols": symbols,
+                    "count": len(symbols),
+                }
+
+    return {
+        "success": True,
+        "data": catalog,
+        "total_datasets": sum(v["count"] for v in catalog.values()),
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+@router.get("/info/{symbol}")
+async def data_info(symbol: str, freq: str = Query("daily")):
+    """取得某 symbol 嘅數據資訊（範圍、行數、欄位）。"""
+    code = _normalize_code(symbol)
+    freq_map = {"daily": "daily", "1min": "1min", "5min": "5min",
+                "15min": "15min", "30min": "30min", "60min": "60min"}
+    store_freq = freq_map.get(freq, freq)
+
+    info = store.get_info("market_data", code, store_freq)
+    return {
+        "success": True,
+        "data": info,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+# ============================================================
+# 批次抓取（背景任務）
+# ============================================================
+
+@router.post("/fetch/batch")
+async def fetch_batch(
+    background_tasks: BackgroundTasks,
+    index: str = Query("HSI", description="HSI/HSCEI"),
+    days: int = Query(250, ge=1, le=1000),
+    limit: int = Query(20, ge=1, le=100, description="最多幾多隻"),
+):
+    """批次抓取成分股 OHLCV 並存入 Parquet（背景任務）。"""
+    try:
+        futu = _get_futu()
+        stocks = futu.get_constituents(index)[:limit]
+        codes = [s["code"] for s in stocks]
+
+        # 背景執行
+        background_tasks.add_task(_batch_fetch_task, codes, days)
+
+        return {
+            "success": True,
+            "message": f"開始批次抓取 {len(codes)} 隻股票",
+            "symbols": codes,
+            "status": "running_in_background",
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"批次抓取啟動失敗: {e}")
+
+
+def _batch_fetch_task(codes: List[str], days: int):
+    """背景任務：批次抓取 + 存儲。"""
+    logger.info("開始批次抓取 {} 隻股票".format(len(codes)))
+    try:
+        futu = _get_futu()
+        results = futu.fetch_and_store_batch(codes, days=days)
+        success = sum(1 for r in results.values() if r.get("success"))
+        logger.info("批次抓取完成: {}/{} 成功".format(success, len(codes)))
+    except Exception as e:
+        logger.error("批次抓取失敗: {}".format(e))
+
+
+# ============================================================
+# Intraday 分鐘線
+# ============================================================
+
+@router.get("/intraday/{symbol}")
+async def get_intraday(
+    symbol: str,
+    freq: str = Query("5min", description="1min/5min/15min/30min/60min"),
+    max_count: int = Query(500, ge=1, le=5000),
+):
+    """取得 intraday 分鐘線。"""
+    code = _normalize_code(symbol)
+    try:
+        intraday = _get_intraday()
+        df = intraday.get_intraday(code, freq=freq, max_count=max_count)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"無 intraday 數據: {code}")
+
+        records = df.to_dict("records")
+        for r in records:
+            for k, v in r.items():
+                if hasattr(v, "isoformat"):
+                    r[k] = v.isoformat()
+                elif v != v:
+                    r[k] = None
+
+        return {
+            "success": True,
+            "data": records,
+            "count": len(records),
+            "freq": freq,
+            "timestamp": datetime.now().isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Intraday 查詢失敗: {e}")

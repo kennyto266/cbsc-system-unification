@@ -1,0 +1,111 @@
+# Docker Compose for Building Production Images
+# Used by CI/CD pipeline for consistent image builds
+
+version: '3.8'
+
+services:
+  # API Gateway Build
+  api-gateway:
+    build:
+      context: ../gateway
+      dockerfile: ../docker/Dockerfile.api-gateway
+      target: production
+      cache_from:
+        - type=gha
+      args:
+        - NODE_ENV=production
+    image: ghcr.io/${REPO}/cbsc-api-gateway:${TAG}
+    platform:
+      - linux/amd64
+      - linux/arm64
+
+  # Frontend Build
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../docker/Dockerfile.frontend
+      target: production
+      cache_from:
+        - type=gha
+      args:
+        - REACT_APP_API_BASE_URL=${API_BASE_URL}
+        - REACT_APP_WS_URL=${WS_URL}
+        - REACT_APP_ENV=production
+    image: ghcr.io/${REPO}/cbsc-frontend:${TAG}
+    platform:
+      - linux/amd64
+      - linux/arm64
+
+  # User Management Service Build
+  user-management:
+    build:
+      context: ../src/api
+      dockerfile: ../docker/Dockerfile.backend
+      target: production
+      cache_from:
+        - type=gha
+    image: ghcr.io/${REPO}/cbsc-user-management:${TAG}
+    platform:
+      - linux/amd64
+      - linux/arm64
+
+  # Strategy Dashboard Service Build
+  strategy-dashboard:
+    build:
+      context: ../src/dashboard
+      dockerfile: ../docker/Dockerfile.backend
+      target: production
+      cache_from:
+        - type=gha
+    image: ghcr.io/${REPO}/cbsc-strategy-dashboard:${TAG}
+    platform:
+      - linux/amd64
+      - linux/arm64
+
+  # Quant System Service Build
+  quant-system:
+    build:
+      context: ../src/quant
+      dockerfile: ../docker/Dockerfile.backend
+      target: production
+      cache_from:
+        - type=gha
+    image: ghcr.io/${REPO}/cbsc-quant-system:${TAG}
+    platform:
+      - linux/amd64
+      - linux/arm64
+
+  # Configuration Service Build
+  config-service:
+    build:
+      context: ../src/config
+      dockerfile: ../docker/Dockerfile.backend
+      target: production
+      cache_from:
+        - type=gha
+    image: ghcr.io/${REPO}/cbsc-config-service:${TAG}
+    platform:
+      - linux/amd64
+      - linux/arm64
+
+  # Unified Dashboard Build
+  unified-dashboard:
+    build:
+      context: ../unified-dashboard
+      dockerfile: ../docker/Dockerfile.frontend
+      target: production
+      cache_from:
+        - type=gha
+      args:
+        - REACT_APP_API_BASE_URL=${API_BASE_URL}
+        - REACT_APP_WS_URL=${WS_URL}
+        - REACT_APP_ENV=production
+    image: ghcr.io/${REPO}/cbsc-unified-dashboard:${TAG}
+    platform:
+      - linux/amd64
+      - linux/arm64
+
+# Network configuration
+networks:
+  build-network:
+    driver: bridge

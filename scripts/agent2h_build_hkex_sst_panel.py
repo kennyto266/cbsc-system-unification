@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+"""agent2-H 2026-09-25 [thesis hkss] futu_short_history CSVs -> hkex_sst_daily panel.
+
+hkex_sst_daily = short_sell_turnover / turnover (金額口徑日頻沽空佔比, 0-1).
+源: raw_hkex/futu_short_history/HK_XXXXX.csv (Futu OpenD get_daily_short_volume
+背頁 backfill, 51 股 2017-04-10 → 2026-09-22; Futu 數據源頭 = HKEx 官方
+Designated Securities Eligible for Short Selling 日報)。
+輸出 long format: cbsc-system-unification/data/new_sources/hkex_sst_daily_panel.csv
+(date,code,value) — factor_panels._load_new_source 標準面。
+
+增量規則: 本 builder 由 raw_hkex/futu_short_history 全量重建 (呢個目錄由
+futu_daily_incremental.py upd_short_volume 日更 append), 唔另設狀態。
+"""
+from pathlib import Path
+
+import pandas as pd
+
+ROOT = Path(r"C:/Users/Penguin8n/ZCodeProject")
+SRC = ROOT / "cbsc-system-unification/data/raw_hkex/futu_short_history"
+OUT = ROOT / "cbsc-system-unification/data/new_sources/hkex_sst_daily_panel.csv"
+
+frames = []
+for fp in sorted(SRC.glob("HK_*.csv")):
+    code = fp.stem.replace("_", ".")
+    df = pd.read_csv(fp, usecols=["timestamp_str", "turnover", "short_sell_turnover"])
+    df["date"] = pd.to_datetime(df["timestamp_str"].str[:10])
+    # 分母 0 (停牌/冇成交) → NaN 唔係 inf
+    df["value"] = df["short_sell_turnover"] / df["turnover"].where(df["turnover"] > 0)
+    frames.append(df.set_index("date")["value"].rename(code))
+
+panel = pd.concat(frames, axis=1).sort_index()
+# 佔比物理範圍 [0, 1] — 溢出即數據異常, 唔靜靜雞收貨
+n_bad = int(((panel < 0) | (panel > 1)).sum().sum())
+out = panel.stack().rename_axis(["date", "code"]).reset_index(name="value")
+OUT.parent.mkdir(parents=True, exist_ok=True)
+out.to_csv(OUT, index=False, date_format="%Y-%m-%d")
+print(f"panel {panel.shape} {panel.index.min():%Y-%m-%d} ~ {panel.index.max():%Y-%m-%d} "
+      f"non-NaN {int(panel.notna().sum().sum())} out-of-range {n_bad} -> {OUT}")

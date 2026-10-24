@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+"""train_vol_regime.py — 波動率 regime 分類 (A152).
+
+預測未來21日實現波動率 > 滾動80百分位 → 高波 regime.
+用途: sizing gate (高波減倉, 低波加倉).
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings; warnings.filterwarnings("ignore")
+import numpy as np, pandas as pd
+from pathlib import Path
+from ml_transformer_v2 import build_features, STOCKS, LOOKBACK, TRAIN_END, TEST_START
+from vbt_data import load_stock_close
+
+MODEL_PATH = Path(r"C:\Users\Penguin8n\ZCodeProject\backtests\vol_regime_model.json")
+
+
+def features_to_tabular(features, lookback=LOOKBACK):
+    rows = []
+    for i in range(lookback, len(features)):
+        window = features.iloc[i - lookback:i]
+        last = window.iloc[-1]; agg = window.agg(["mean", "std"])
+        row = {}
+        for col in features.columns:
+            row[f"{col}_last"] = last[col]
+            row[f"{col}_mean5"] = agg.loc["mean", col]
+            row[f"{col}_std5"] = agg.loc["std", col]
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def build_vol_label(stock, forward=21):
+    """Label: 21日前瞻實現波動率 > 滾動80百分位 → 1 (高波)."""
+    from vbt_data import load_stock_close
+    close = load_stock_close(stock)
+    if close is None or len(close) < 500: return None
+    fwd_ret = close.pct_change()
+    realized_vol_fwd = fwd_ret.rolling(forward).std().shift(-forward)
+    threshold = realized_vol_fwd.rolling(252).quantile(0.8)
+    label = (realized_vol_fwd > threshold).astype(float)
+    return label
+
+
+def main():
+    import xgboost as xgb
+    print("=" * 70)
+    print("📊 Volatility Regime Classifier — A152")
+    print("=" * 70)
+
+    print("\n1️⃣ 構建特徵 + vol label...", flush=True)
+    all_X_train, all_y_train, all_X_test, all_y_test = [], [], [], []
+    for stock in STOCKS:
+        features, _ = build_features(stock)
+        if features is None: continue
+        vol_label = build_vol_label(stock)
+        if vol_label is None: continue
+        tab = features_to_tabular(features)
+        dates = features.index[LOOKBACK:]
+        tab.index = dates
+        lab = vol_label.reindex(dates).fillna(0)
+        dates_arr = dates.values if hasattr(dates, 'values') else np.array(dates)
+        train_mask = dates_arr < np.datetime64(TRAIN_END)
+        test_mask = dates_arr >= np.datetime64(TEST_START)
+        if train_mask.sum() > 100:
+            all_X_train.append(tab[train_mask]); all_y_train.append(lab[train_mask])
+        if test_mask.sum() > 50:
+            all_X_test.append(tab[test_mask]); all_y_test.append(lab[test_mask])
+        print(f"  {stock}: train={train_mask.sum()} test={test_mask.sum()}", flush=True)
+
+    X_train = pd.concat(all_X_train); y_train = pd.concat(all_y_train)
+    X_test = pd.concat(all_X_test); y_test = pd.concat(all_y_test)
+    print(f"\n  訓練: {len(X_train)} | 測試: {len(X_test)} | high-vol rate: train={y_train.mean():.2f} test={y_test.mean():.2f}")
+
+    print(f"\n2️⃣ 訓練 XGBoost vol regime...", flush=True)
+    model = xgb.XGBClassifier(
+        n_estimators=150, max_depth=5, learning_rate=0.1,
+        subsample=0.8, colsample_bytree=0.8,
+        eval_metric="logloss", random_state=42, n_jobs=-1,
+    )
+    model.fit(X_train, y_train)
+    model.save_model(str(MODEL_PATH))
+    print(f"💾 Model saved: {MODEL_PATH}", flush=True)
+    print(f"  Train acc: {model.score(X_train, y_train):.3f} | Test acc: {model.score(X_test, y_test):.3f}")
+
+    # Feature importance top 10
+    imp = pd.Series(model.feature_importances_, index=X_train.columns).sort_values(ascending=False)
+    print(f"\n  Top 10 features:")
+    for name, val in imp.head(10).items():
+        print(f"    {name}: {val:.4f}")
+
+
+if __name__ == "__main__":
+    main()

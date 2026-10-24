@@ -1,0 +1,277 @@
+#!/usr/bin/env python3
+"""ML 因子模型 — 用 GPU 學 macro factor → 港股的非線性關係.
+
+目標: 發現線性策略 miss 了的 alpha
+方法:
+  1. 構建特徵矩陣: 8 個 macro factor 的 rolling Z-score + 技術指標
+  2. 標籤: 未來 5 日 forward return > 0 = 1, else 0
+  3. 訓練: LSTM (時序模型) on GPU
+  4. 評估: OOS Sharpe (2023-2026 test set)
+  5. 輸出: 每日預測 → 買賣信號
+
+重要: 防止 look-ahead bias
+  - 所有特徵用 rolling window (唔用 future data)
+  - train/test split: 2016-2022 train, 2023-2026 test
+  - label 用 shift(-5) forward return
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from datetime import datetime
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
+
+from vbt_data import load_stock_close, load_factor_close, TOTAL_COST, SLIPPAGE, INIT_CASH_FACTOR
+import vectorbt as vbt
+
+DATA_10YR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr")
+OUT = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports")
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"🖥️ Device: {DEVICE}" + (f" ({torch.cuda.get_device_name(0)})" if DEVICE == "cuda" else ""))
+
+# 配置
+FACTORS = ["dxy", "usdcnh", "vix", "gold", "copper", "sp500", "us_10y_yield", "hibor"]
+STOCKS = ["HK.00700", "HK.09988", "HK.03690", "HK.01810", "HK.01211",
+          "HK.00005", "HK.00939", "HK.00388", "HK.00941", "HK.01299",
+          "HK.02313", "HK.02018", "HK.06862", "HK.02688", "HK.01093"]
+LOOKBACK = 20        # 特徵窗口 (20 日)
+FORWARD = 5          # 標籤: 未來 5 日 return
+TRAIN_END = "2022-12-31"
+TEST_START = "2023-01-01"
+BATCH_SIZE = 256
+EPOCHS = 50
+
+
+def build_features(stock):
+    """構建特徵矩陣: factor Z-scores + 技術指標."""
+    close = None
+    # 讀 10 年數據
+    fname = stock.replace(".", "_")
+    p = DATA_10YR / f"{fname}.csv"
+    if p.exists():
+        df = pd.read_csv(p, parse_dates=["time_key"]).set_index("time_key").sort_index()
+        close = df["close"].astype(float)
+    else:
+        close = load_stock_close(stock)
+    if close is None or len(close) < 500:
+        return None, None
+
+    features = pd.DataFrame(index=close.index)
+
+    # Factor Z-scores (rolling 120 日)
+    for f_name in FACTORS:
+        factor = load_factor_close(f_name)
+        if factor is None:
+            continue
+        factor = factor.reindex(close.index).ffill()
+        z = (factor - factor.rolling(120).mean()) / factor.rolling(120).std().replace(0, np.nan)
+        features[f"{f_name}_z"] = z
+
+    # 技術指標
+    features["ret_1d"] = close.pct_change(1)
+    features["ret_5d"] = close.pct_change(5)
+    features["ret_20d"] = close.pct_change(20)
+    features["vol_20d"] = close.pct_change().rolling(20).std()
+    features["sma_ratio"] = close / close.rolling(50).mean() - 1
+    features["high_low_ratio"] = (close.rolling(20).max() - close.rolling(20).min()) / close
+
+    # Label: forward 5 日 return > median = 1
+    fwd = close.pct_change(FORWARD).shift(-FORWARD)
+    label = (fwd > fwd.rolling(252).median()).astype(float)
+
+    # 去掉 NaN
+    valid = features.dropna().index.intersection(label.dropna().index)
+    features = features.loc[valid]
+    label = label.loc[valid]
+
+    return features, label
+
+
+def create_sequences(features, label, lookback=LOOKBACK):
+    """將時序數據轉為 (samples, lookback, features) 格式."""
+    X, y = [], []
+    cols = features.columns.tolist()
+    for i in range(lookback, len(features)):
+        X.append(features.iloc[i - lookback:i].values)
+        y.append(label.iloc[i])
+    return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32)
+
+
+class LSTMModel(nn.Module):
+    """簡單 LSTM: input → LSTM(64) → Linear → sigmoid."""
+    def __init__(self, input_dim, hidden=64):
+        super().__init__()
+        self.lstm = nn.LSTM(input_dim, hidden, batch_first=True, num_layers=2, dropout=0.2)
+        self.fc = nn.Sequential(
+            nn.Linear(hidden, 32),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(32, 1),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, x):
+        out, _ = self.lstm(x)
+        return self.fc(out[:, -1, :]).squeeze(-1)
+
+
+def train_model(X_train, y_train):
+    """訓練 LSTM."""
+    model = LSTMModel(X_train.shape[2]).to(DEVICE)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
+    criterion = nn.BCELoss()
+
+    dataset = TensorDataset(torch.FloatTensor(X_train), torch.FloatTensor(y_train))
+    loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
+
+    for epoch in range(EPOCHS):
+        model.train()
+        total_loss = 0
+        for xb, yb in loader:
+            xb, yb = xb.to(DEVICE), yb.to(DEVICE)
+            optimizer.zero_grad()
+            pred = model(xb)
+            loss = criterion(pred, yb)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+        if (epoch + 1) % 10 == 0:
+            print(f"  Epoch {epoch+1}/{EPOCHS}: loss={total_loss/len(loader):.4f}")
+
+    return model
+
+
+def backtest_predictions(close, predictions, dates):
+    """用 ML 預測做回測."""
+    entries = pd.Series(predictions > 0.5, index=dates).shift(1).fillna(False)  # shift 防 look-ahead
+    exits = pd.Series(predictions < 0.3, index=dates).shift(1).fillna(False)
+    if not entries.any():
+        return None
+    pf = vbt.Portfolio.from_signals(
+        close=close, entries=entries, exits=exits,
+        fees=TOTAL_COST / 2, slippage=SLIPPAGE,
+        freq="1D", init_cash=INIT_CASH_FACTOR)
+    return pf
+
+
+def main():
+    print("=" * 70)
+    print(f"🧠 ML 因子模型 (LSTM on {DEVICE})")
+    print(f"   特徵: 8 factors Z-score + 6 technicals = 14 dims")
+    print(f"   Lookback: {LOOKBACK}日 | Forward: {FORWARD}日")
+    print(f"   Train: ~{TRAIN_END} | Test: {TEST_START}~")
+    print("=" * 70)
+
+    # 1. 構建全部股票的特徵
+    print("\n1️⃣ 構建特徵矩陣...", flush=True)
+    all_X_train, all_y_train = [], []
+    all_X_test, all_y_test = [], []
+    test_data = {}  # stock → (close, dates, features)
+
+    for stock in STOCKS:
+        features, label = build_features(stock)
+        if features is None:
+            continue
+        X, y = create_sequences(features, label)
+        dates = features.index[LOOKBACK:]
+        close = load_stock_close(stock)
+        if close is None:
+            continue
+
+        # Train/Test split — dates 係 DatetimeIndex, 用 np 直接比較
+        train_end = np.datetime64(TRAIN_END)
+        test_start = np.datetime64(TEST_START)
+        dates_arr = dates.values if hasattr(dates, 'values') else np.array(dates)
+        train_mask = dates_arr < train_end
+        test_mask = dates_arr >= test_start
+
+        if train_mask.sum() > 100:
+            all_X_train.append(X[train_mask])
+            all_y_train.append(y[train_mask])
+        if test_mask.sum() > 50:
+            all_X_test.append(X[test_mask])
+            all_y_test.append(y[test_mask])
+            test_data[stock] = (close, dates[test_mask])
+
+        print(f"  {stock}: train={train_mask.sum()} test={test_mask.sum()}", flush=True)
+
+    X_train = np.concatenate(all_X_train)
+    y_train = np.concatenate(all_y_train)
+    X_test = np.concatenate(all_X_test)
+    y_test = np.concatenate(all_y_test)
+
+    print(f"\n  總訓練樣本: {len(X_train)} | 測試樣本: {len(X_test)}")
+    print(f"  正樣本比例: train={y_train.mean():.2f} test={y_test.mean():.2f}")
+
+    # 2. 訓練
+    print(f"\n2️⃣ 訓練 LSTM ({EPOCHS} epochs)...", flush=True)
+    model = train_model(X_train, y_train)
+
+    # 3. 預測 + 回測
+    print(f"\n3️⃣ OOS 預測 + 回測...", flush=True)
+    model.eval()
+    results = []
+    with torch.no_grad():
+        for stock, (close, dates) in test_data.items():
+            features, label = build_features(stock)
+            if features is None:
+                continue
+            X, y = create_sequences(features, label)
+            idx = features.index[LOOKBACK:]
+            idx_arr = idx.values if hasattr(idx, 'values') else np.array(idx)
+            test_mask = idx_arr >= np.datetime64(TEST_START)
+            X_test_stock = X[test_mask]
+            dates_stock = idx[test_mask]
+
+            if len(X_test_stock) == 0:
+                continue
+
+            preds = model(torch.FloatTensor(X_test_stock).to(DEVICE)).cpu().numpy()
+            # 只用 test 期的 close (對齊 dates_stock)
+            close_test = close.reindex(dates_stock).dropna()
+            valid_idx = close_test.index
+            preds_aligned = preds[:len(valid_idx)]
+            pf = backtest_predictions(close_test, preds_aligned, valid_idx)
+            if pf is None:
+                continue
+            sharpe = float(pf.sharpe_ratio())
+            ret = float(pf.total_return())
+            n_trades = pf.trades.count()
+            print(f"  {stock}: Sharpe={sharpe:.3f} ret={ret*100:.1f}% trades={n_trades}")
+            results.append({"stock": stock, "sharpe": sharpe, "return": ret, "trades": n_trades})
+
+    # 4. 結果
+    print(f"\n{'='*70}")
+    print(f"📊 ML 因子模型 OOS 結果 (2023-2026)")
+    print(f"{'='*70}")
+    df = pd.DataFrame(results)
+    if len(df) > 0:
+        n_pos = (df["sharpe"] > 0).sum()
+        n_sr1 = (df["sharpe"] > 1.0).sum()
+        print(f"  正 Sharpe: {n_pos}/{len(df)}")
+        print(f"  Sharpe > 1.0: {n_sr1}/{len(df)}")
+        print(f"  平均 Sharpe: {df['sharpe'].mean():.3f}")
+        print(f"  平均回報: {df['return'].mean()*100:.1f}%")
+        print()
+        print(df.sort_values("sharpe", ascending=False).to_string(index=False))
+        csv_path = OUT / "ml_factor_oos.csv"
+        df.to_csv(csv_path, index=False)
+        print(f"\n報告: {csv_path}")
+
+        if n_pos / len(df) > 0.6:
+            print(f"\n✅ ML 模型喺 {n_pos}/{len(df)} 隻股票 OOS 有效")
+        else:
+            print(f"\n⚠️ ML 模型 OOS 表現一般 — 可能需要更多特徵/調參")
+    else:
+        print("⚠️ 無有效結果")
+
+
+if __name__ == "__main__":
+    main()

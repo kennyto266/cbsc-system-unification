@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+"""build_di_buy_prem_panel.py — [agent2-H 2026-09-15] dipx thesis: di_buy_prem panel.
+
+增持價格信心折讓: 大股東/董事最近增持均價相對現價 — 價維度 (有別於 idpe 量維度).
+
+輸入:
+  data/new_sources/didx_di_raw_*.csv   HKEX DION 3A 全市場日榜 (2021-01→今, 11 檔合併)
+  data/new_sources/prem_px.csv         東財 push2his fqt=0 不復權日 close (curl 爬)
+  data/new_sources/di_corp2code*.csv   corp_name → stock_code 映射
+
+轉換 (crawl_spec construct 條款):
+  只計現金增持: reason ∈ {1101 purchase, 1301 事後補報購買} 且 (L) 好倉
+  每股每日加權平均增持價 = Σ(shares×avg_price) / Σ(shares) (avg_price 缺嗰行唔計)
+  di_buy_prem_raw = 加權增持均價 / 當日不復權 close
+  訊號日 = event_date 下一個交易日 (DI 3 個營業日死線, t+1 保守 — 同 di_buy_net)
+  panel = di_buy_prem_raw 喺交易日曆上 126 日 EWM (halflife 42) 記憶,
+          缺口 (無增持日) 沿用衰減後最後值 — 呢個就係 spec 講嘅 EWM 記憶;
+          全期冇增持嘅股 = 全 NaN (唔係 0 — 0 會亂 rank)
+
+輸出:
+  data/new_sources/di_buy_prem_panel.csv  (date,code,value 長表 — _load_new_source 格式)
+  data/factor_store/di_buy_prem.parquet   (wide date × stock, factor_store 用)
+"""
+import csv
+import glob
+import re
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+NS = BASE / "data" / "new_sources"
+BUY_CODES = {"1101", "1301"}
+EWM_HALFLIFE = 42
+
+
+def prune_zombie_cols(prem: pd.DataFrame, min_nunique: int = 2,
+                      min_obs: int = 4) -> tuple[pd.DataFrame, list]:
+    """[09-24 G27337] C3 殭屍欄剔除 — 全期一個值嘅欄對溢價截面零信息.
+
+    實錄 00001/00002/00021/00050/00057: raw 逐股核實全期各淨係一宗 1101
+    現金增持, EWM 對事件後 NaN 永遠沿用最後值 → 常數欄 (唔係死 join —
+    數據事實 + 語義後果)。口徑同 _data_verify_dept.check_zombie 對齊
+    (nunique<2, notna≥4); 疏樣本欄 (<4 obs) C3 本身唔 flag, 呢度照舊保留.
+    """
+    zombie = [c for c in prem.columns
+              if prem[c].notna().sum() >= min_obs
+              and prem[c].nunique(dropna=True) < min_nunique]
+    return prem.drop(columns=zombie), zombie
+
+
+def num(s: str) -> float:
+    m = re.search(r"[\d,]+\.?\d*", str(s))
+    if not m:
+        return float("nan")
+    return float(m.group(0).replace(",", ""))
+
+
+def reason_code(s: str) -> str:
+    m = re.match(r"\s*(\d+)", str(s))
+    return m.group(1) if m else ""
+
+
+def main() -> int:
+    # ---- corp → code 映射 (主表 + fix 表) ----
+    c2c = {}
+    for fn in ("di_corp2code.csv", "di_corp2code_fix.csv"):
+        fp = NS / fn
+        if not fp.exists():
+            continue
+        with open(fp, encoding="utf-8") as f:
+            for r in csv.DictReader(f):
+                if r.get("stock_code"):
+                    c2c[r["corp_name"]] = r["stock_code"]
+
+    # ---- DI 現金增持事件 ----
+    # [2026-09-17 agent2-H] A/H 污染修正: A+H 兩地上市公司喺 DION 有兩個 corp 名
+    # ("X Ltd. - A Shares" / "X Ltd. - H Shares"), 舊版兩個名都映去同一個港股 code,
+    # A 股增持 (CNY 價) 同 H 股 close (HKD) 溝埋 → ratio 支離破碎 (03288 實錄:
+    # CNY 34.25 增持價 ÷ HKD 27 close = 1.27 假溢價; 全倉 4,768 行/5.6% 受污染,
+    # 139 隻 A+H code, 02359 最傷 1,720 行)。淨 H 腿 (HKD 對 HKD) 先計。
+    ev_rows = []
+    for fn in sorted(glob.glob(str(NS / "didx_di_raw_*.csv"))):
+        with open(fn, encoding="utf-8") as f:
+            for r in csv.DictReader(f):
+                if reason_code(r.get("reason") or "") not in BUY_CODES:
+                    continue
+                if "(L)" not in (r.get("shares_bought_sold") or ""):
+                    continue
+                corp = r.get("corp_name") or ""
+                if re.search(r"\b[AB] Shares$", corp):
+                    continue  # A股/B股增持 — 貨幣腿唔對, 剔走
+                code = c2c.get(corp)
+                if not code:
+                    continue
+                sh = num(r["shares_bought_sold"])
+                px = num(r["avg_price"])
+                if not (sh == sh and px == px) or sh <= 0 or px <= 0:
+                    continue
+                dd, mm, yy = r["event_date"].split("/")
+                ev_rows.append((f"{yy}-{mm}-{dd}", code, sh, px, r["form_serial"]))
+    ev = pd.DataFrame(ev_rows, columns=["date", "code", "shares", "px", "form_serial"])
+    ev["date"] = pd.to_datetime(ev["date"])
+    n_dup = len(ev) - len(ev.drop_duplicates(subset="form_serial"))
+    ev = ev.drop_duplicates(subset="form_serial")  # 11 檔重疊窗 dedupe
+    print(f"現金 L 增持事件 (有價有量): {len(ev)} rows, {ev['code'].nunique()} 股 "
+          f"(form_serial dedupe 走 {n_dup})")
+
+    # ---- 每股每日加權增持均價 ----
+    ev["val"] = ev["shares"] * ev["px"]
+    daily = ev.groupby(["date", "code"]).agg(val=("val", "sum"), sh=("shares", "sum"))
+    daily["wavg_px"] = daily["val"] / daily["sh"]
+
+    # ---- 不復權 close ----
+    px_df = pd.read_csv(NS / "prem_px.csv", dtype={"code": str}, parse_dates=["date"])
+    close = px_df.pivot(index="date", columns="code", values="close")
+    close.columns = [c.zfill(5) for c in close.columns]
+    print(f"prem_px: {close.shape[0]}日 × {close.shape[1]}股 "
+          f"({close.index.min().date()} → {close.index.max().date()})")
+
+    # ---- 訊號日 = event_date 下一個交易日 (可用性) ----
+    days = pd.DatetimeIndex(sorted(set(close.index)))
+    daily = daily.reset_index()
+    daily["sig_date"] = daily["date"].map(
+        lambda d: days[days.searchsorted(d, side="right")]
+        if days.searchsorted(d, side="right") < len(days) else None)
+    daily = daily.dropna(subset=["sig_date"])
+
+    # ---- raw ratio = 加權增持價 / 增持當日 close (t, 唔係 t+1: 價維度要乾淨量度) ----
+    daily = daily[daily["date"].isin(close.index)]
+    daily["close"] = [close.at[d, c] if c in close.columns else float("nan")
+                      for d, c in zip(daily["date"], daily["code"])]
+    daily = daily.dropna(subset=["close"])
+    daily["ratio"] = daily["wavg_px"] / daily["close"]
+    # 合理範圍閘: 增持價偏離收市 0.2~5 倍以外 = 數據噪音 (老股細價股跳/單位錯)
+    n_before = len(daily)
+    daily = daily[(daily["ratio"] >= 0.2) & (daily["ratio"] <= 5.0)]
+    print(f"ratio rows: {len(daily)} (閘走 {n_before - len(daily)} 行極端值), "
+          f"ratio median={daily['ratio'].median():.3f}")
+
+    # ---- wide + 126日 EWM (halflife 42) 缺口衰減記憶 ----
+    raw = daily.pivot(index="sig_date", columns="code", values="ratio").sort_index()
+    full = pd.DataFrame(index=days)
+    joined = full.join(raw)  # 無增持日 = NaN, EWM ignore_na 沿用衰減值
+    prem = joined.ewm(halflife=EWM_HALFLIFE, min_periods=1, ignore_na=True).mean()
+    # 頭 63 日 (min_periods 语义) 唔夠記憶 → NaN
+    prem[raw.notna().cumsum() < 1] = float("nan")  # 全期冇增持股 = NaN
+
+    # [09-24 G27337] C3 殭屍欄 (單事件股常數欄) 剔除 — 見 prune_zombie_cols
+    prem, zombie = prune_zombie_cols(prem)
+    if zombie:
+        print(f"殭屍欄剔除 {len(zombie)}: {', '.join(zombie[:8])}")
+
+    # ---- 輸出 ----
+    OUT_PARQ = BASE / "data" / "factor_store" / "di_buy_prem.parquet"
+    OUT_PARQ.parent.mkdir(parents=True, exist_ok=True)
+    cols = [c for c in prem.columns if prem[c].notna().any()]
+    prem = prem[cols]
+    prem.columns = ["HK." + c for c in prem.columns]
+    prem.to_parquet(OUT_PARQ)
+
+    OUT_CSV = NS / "di_buy_prem_panel.csv"
+    stacked = prem.stack().rename("value").reset_index()
+    stacked.columns = ["date", "code", "value"]
+    stacked["date"] = stacked["date"].dt.strftime("%Y-%m-%d")
+    stacked.to_csv(OUT_CSV, index=False)
+
+    cover = 100.0 * prem.notna().sum().sum() / (prem.shape[0] * prem.shape[1])
+    print(f"di_buy_prem: {prem.shape[0]}日 × {prem.shape[1]}股 "
+          f"({prem.index.min().date()} → {prem.index.max().date()}) "
+          f"cover{cover:.1f}% cells{int(prem.notna().sum().sum())}")
+    # 分佈 sanity: median 應該接近 1 (增持價≈市價)
+    med = prem.median(axis=1).dropna()
+    print(f"截面 median 分佈: p10={med.quantile(0.1):.3f} p50={med.quantile(0.5):.3f} "
+          f"p90={med.quantile(0.9):.3f} (應該圍繞 1.0)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

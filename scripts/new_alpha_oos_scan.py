@@ -1,0 +1,242 @@
+#!/usr/bin/env python3
+"""new_alpha_oos_scan.py — 新 alpha 探索, 帶 OOS 紀律.
+
+鐵律 (吸取 B 計劃教訓): 任何新 factor 信號, 必須同時過 IS + OOS.
+  IS  (2021-2023): 用黎「發現」(邊個 threshold 有信號)
+  OOS (2024-2026): 用黎「驗證」(同一 threshold 係未見過數據上 work 唔 work)
+  只留 OOS Sharpe > 0.3 既候選 (真 generalize).
+
+新數據源 (未開發, 高維):
+  - efbn-yield-daily: Exchange Fund Bills/Notes yield curve (7d~10y) → 期限結構
+  - hkd-fer-daily: HKD forward exchange (1w~12m + spot) → 遠期點數/貨幣壓力
+  - er-eeri-daily: 35 貨幣 EERI + NEER → 相對強弱
+  - monetary-base / market-operation: HKMA 流動性操作
+  - discount_window: 貼現窗使用率 → 銀行壓力
+
+策略原型 (每個 factor 試多個經濟 logic):
+  A) Z-score 反轉: factor z > +2 → 反向做股 (極端後回歸)
+  B) Trend regime: factor 上破 SMA → 順勢; 下破 → 避險
+  C) Yield curve slope: 短期-長期息差 → 經濟預期
+  D) Liquidity stress: 貼現窗使用率飆升 → 做淡/避險
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from datetime import datetime
+
+import kol_alpha_strategies as kol
+from vbt_data import load_stock_close, FACTOR_STOCKS
+
+OUT = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports")
+SPLIT = "2024-01-01"
+FACT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors")
+
+
+def _load_factor_series(file, col):
+    """load factor CSV 既指定 col, 返 Series (date-indexed)."""
+    df = pd.read_csv(FACT_DIR / file)
+    dc = None
+    for c in df.columns:
+        if c.lower() in ("date", "end_of_day", "datetime", "time"):
+            dc = c; break
+    if dc is None:
+        dc = df.columns[0]
+    df[dc] = pd.to_datetime(df[dc], errors="coerce")
+    df = df.dropna(subset=[dc, col]).sort_values(dc).drop_duplicates(subset=dc, keep="last")
+    return pd.Series(df[col].values, index=df[dc].values, name=col)
+
+
+def _run_signal(close_stock, factor, entry_cond, exit_cond, holding=7):
+    """跑 factor-driven signal 喺指定 stock close + factor 上, 返 Sharpe (None=無交易).
+    同 _build_factor_signal 一致, 但返純 Sharpe (快)."""
+    common = factor.index.intersection(close_stock.index)
+    if len(common) < 200:
+        return None
+    fc = factor.reindex(common).fillna(method="ffill").fillna(0)
+    cl = close_stock.reindex(common)
+    ec = entry_cond.reindex(common).fillna(False).values
+    xc = exit_cond.reindex(common).fillna(False).values
+    n = len(fc)
+    entries = np.zeros(n, dtype=bool)
+    exits = np.zeros(n, dtype=bool)
+    for i in range(n - 1):
+        if ec[i]:
+            ei = min(i + 1 + holding, n - 1)
+            for j in range(i + 2, ei):
+                if j < n and xc[j]:
+                    ei = j; break
+            entries[i + 1] = True; exits[ei] = True
+    if not entries.any():
+        return None
+    pf = kol.backtest_signals(cl, pd.Series(entries, index=common),
+                              pd.Series(exits, index=common), None, None)
+    if pf is None or pf.trades.count() == 0:
+        return None
+    try:
+        s = pf.sharpe_ratio()
+        return float(s) if not np.isnan(s) else 0.0
+    except Exception:
+        return 0.0
+
+
+def make_signals(factor, logic, **kw):
+    """根據 logic 產生 (entry_cond, exit_cond) Series. 返 (entry, exit) 或 None."""
+    f = factor.dropna()
+    if len(f) < 200:
+        return None
+    if logic == "z_reversal":
+        # factor z-score > threshold → 反向 (期待回歸). z 用滾動 (唔 look-ahead)
+        z_win = kw.get("z_win", 60)
+        z = (f - f.rolling(z_win).mean()) / f.rolling(z_win).std()
+        th = kw.get("th", 2.0)
+        entry = z > th       # factor 極端高 → 做淡 (反向 entry 已喺 _run_signal? 唔)
+        exit = z < 0         # 回歸到中位平倉
+        return entry, exit
+    elif logic == "trend":
+        # factor 上破 SMA → 順勢做多 (risk-on)
+        sma = kw.get("sma", 50)
+        fa = f.rolling(sma).mean()
+        entry = (f > fa) & (f.shift(1) <= fa.shift(1))   # 上穿
+        exit = (f < fa) & (f.shift(1) >= fa.shift(1))    # 下穿
+        return entry, exit
+    elif logic == "regime":
+        # factor > SMA → risk-on regime (全程做多傾向), entry = 上, exit = 下
+        sma = kw.get("sma", 70)
+        fa = f.rolling(sma).mean()
+        entry = f > fa
+        exit = f < fa
+        return entry, exit
+    elif logic == "slope":
+        # 需要兩個 factor (短-長), 喺 calling 處理. 呢度返 None.
+        return None
+    return None
+
+
+def scan_factor_on_stock(factor_series, stock_close, stock):
+    """對一個 factor × 一隻股, 試所有 logic + 參數, 返 list of {logic, params, sharpe}."""
+    results = []
+    configs = [
+        ("z_reversal", {"z_win": 60, "th": 2.0}, 7),
+        ("z_reversal", {"z_win": 60, "th": 1.5}, 7),
+        ("z_reversal", {"z_win": 90, "th": 2.0}, 10),
+        ("trend", {"sma": 50}, 7),
+        ("trend", {"sma": 100}, 14),
+        ("regime", {"sma": 70}, 10),
+        ("regime", {"sma": 120}, 14),
+    ]
+    for logic, params, holding in configs:
+        sig = make_signals(factor_series, logic, **params)
+        if sig is None:
+            continue
+        entry, exit = sig
+        sh = _run_signal(stock_close, factor_series, entry, exit, holding=holding)
+        if sh is not None:
+            results.append({"logic": logic, "params": str(params), "holding": holding,
+                            "sharpe": sh})
+    return results
+
+
+def main():
+    # 候選 factor (file, col, 經濟意義) — top-5 從 40 股掃描勝出
+    candidates = [
+        ("discount_window.csv", "discount_window_usage", "Discount window usage"),
+        ("er-eeri-daily.csv", "neeri_2020_trade_wgt", "NEER 2020"),
+        ("er-eeri-daily.csv", "cny", "CNY EERI"),
+        ("hkd-fer-daily.csv", "hkd_fer_12m", "HKD 12m forward"),
+        ("market-operation-daily.csv", "closing_balance", "HKMA closing balance"),
+    ]
+    stocks = sorted(FACTOR_STOCKS)  # 全部 100 股 — universality 終極確認
+    print("=" * 70)
+    print("🔬 新 Alpha OOS 掃描 (帶紀律)")
+    print(f"  Factor 候選: {len(candidates)} 個 (yield curve / FX / liquidity)")
+    print(f"  股票: {len(stocks)} 隻 (代表性子集)")
+    print(f"  IS < {SPLIT}, OOS >= {SPLIT}")
+    print(f"  Logic: z_reversal / trend / regime × 多參數")
+    print("=" * 70, flush=True)
+
+    # 預 load 所有 stock close (IS + OOS split)
+    print("\n1️⃣ Load + split stock data...", flush=True)
+    stock_data = {}
+    for s in stocks:
+        c = load_stock_close(s)
+        if c is None or len(c) < 400:
+            continue
+        stock_data[s] = {"is": c[c.index < SPLIT], "oos": c[c.index >= SPLIT]}
+    print(f"   {len(stock_data)} 隻有足夠數據", flush=True)
+
+    # 掃描: 每個 (factor, logic) × 股票, 同時計 IS + OOS Sharpe
+    print("\n2️⃣ 掃描 factor × stock (IS + OOS)...", flush=True)
+    all_rows = []
+    for fi, (file, col, meaning) in enumerate(candidates):
+        try:
+            factor = _load_factor_series(file, col)
+        except Exception as e:
+            print(f"   [{fi+1}/{len(candidates)}] {col}: load 失敗 {e}", flush=True)
+            continue
+        factor_is = factor[factor.index < SPLIT]
+        factor_oos = factor[factor.index >= SPLIT]
+        cnt_pass = 0
+        for s, parts in stock_data.items():
+            # IS
+            r_is = scan_factor_on_stock(factor_is, parts["is"], s)
+            if not r_is:
+                continue
+            # 取 IS best logic/params
+            best_is = max(r_is, key=lambda x: x["sharpe"])
+            if best_is["sharpe"] < 0.3:
+                continue
+            # 用 SAME logic/params 跑 OOS
+            sig_oos = make_signals(factor_oos, best_is["logic"],
+                                   **eval(best_is["params"]))
+            if sig_oos is None:
+                continue
+            sh_oos = _run_signal(parts["oos"], factor_oos, sig_oos[0], sig_oos[1],
+                                 holding=best_is["holding"])
+            sh_oos = sh_oos if sh_oos is not None else -99.0
+            all_rows.append({
+                "factor": col, "meaning": meaning, "stock": s,
+                "logic": best_is["logic"], "params": best_is["params"],
+                "holding": best_is["holding"],
+                "is_sharpe": best_is["sharpe"], "oos_sharpe": sh_oos,
+                "decay": (1 - sh_oos / best_is["sharpe"]) * 100 if best_is["sharpe"] != 0 else -99,
+            })
+            if sh_oos > 0.3:
+                cnt_pass += 1
+        print(f"   [{fi+1}/{len(candidates)}] {col} ({meaning}): "
+              f"{cnt_pass} 隻股 OOS Sharpe>0.3", flush=True)
+
+    # 3. 結果
+    df = pd.DataFrame(all_rows)
+    if len(df) == 0:
+        print("\n❌ 無任何 factor 產生足夠交易. 試更多參數.")
+        return
+    OUT.mkdir(parents=True, exist_ok=True)
+    df.to_csv(OUT / "new_alpha_oos_scan.csv", index=False)
+
+    print(f"\n{'='*70}")
+    print(f"📊 新 Alpha OOS 掃描結果")
+    print(f"{'='*70}")
+    # OOS 通過 (Sharpe > 0.3)
+    passed = df[df["oos_sharpe"] > 0.3].sort_values("oos_sharpe", ascending=False)
+    print(f"\n✅ OOS 通過 (Sharpe>0.3): {len(passed)} 個 (factor×stock×logic)")
+    if len(passed) > 0:
+        print(passed[["factor", "stock", "logic", "is_sharpe", "oos_sharpe", "decay"]].head(25).to_string(index=False))
+    # Per-factor 勝率
+    print(f"\n=== Per-factor OOS 勝率 (oos_sharpe>0.3 比例) ===")
+    for fcol in df["factor"].unique():
+        sub = df[df["factor"] == fcol]
+        wr = (sub["oos_sharpe"] > 0.3).mean() * 100
+        oos_med = sub["oos_sharpe"].median()
+        print(f"  {fcol:28s}: {wr:5.1f}% pass  OOS median={oos_med:.2f}  (n={len(sub)})")
+    print(f"\n報告: {OUT / 'new_alpha_oos_scan.csv'}")
+
+
+if __name__ == "__main__":
+    main()

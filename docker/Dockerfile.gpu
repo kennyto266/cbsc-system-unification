@@ -1,0 +1,84 @@
+# GPU-enabled Dockerfile for Unified Backtesting Framework
+FROM nvidia/cuda:11.8-runtime-ubuntu20.04
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    TZ=Asia/Hong_Kong \
+    CUDA_VISIBLE_DEVICES=0 \
+    NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3.10-dev \
+    python3-pip \
+    python3.10-venv \
+    gcc \
+    g++ \
+    make \
+    cmake \
+    build-essential \
+    libopenblas-dev \
+    liblapack-dev \
+    gfortran \
+    git \
+    curl \
+    wget \
+    unzip \
+    tzdata \
+    procps \
+    htop \
+    iotop \
+    net-tools \
+    redis-tools \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create symbolic links for Python
+RUN ln -s /usr/bin/python3.10 /usr/bin/python && \
+    ln -s /usr/bin/pip3 /usr/bin/pip
+
+# Set timezone
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Create non-root user
+RUN groupadd -r backtest && useradd -r -g backtest backtest
+
+# Create app directory
+WORKDIR /app
+
+# Upgrade pip and install wheel
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Copy requirements
+COPY requirements.txt requirements-gpu.txt ./
+
+# Install Python dependencies including GPU libraries
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r requirements-gpu.txt
+
+# Copy application code
+COPY src/ ./src/
+COPY config/ ./config/
+COPY scripts/ ./scripts/
+COPY *.py ./
+
+# Create necessary directories
+RUN mkdir -p logs data cache results temp && \
+    chown -R backtest:backtest /app
+
+# Switch to non-root user
+USER backtest
+
+# Expose ports
+EXPOSE 8000 8080
+
+# Health check (GPU version)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD python -c "import cupy; import requests; cupy.cuda.Device(0).use(); requests.get('http://localhost:8000/health')" || exit 1
+
+# Default command
+CMD ["python", "main.py"]

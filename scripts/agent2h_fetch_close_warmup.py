@@ -1,0 +1,76 @@
+"""agent2h_fetch_close_warmup.py — Futu close 2020-06~2021-09 (PS panel warmup 前置)
+
+照 agent2h_crawl_pe_ttm_futu.py 同款 request_history_kline (AuType.NONE),
+淨取 close 欄, 目的: ps_ratio panel 由 2020-06 起有值 → 252d rolling rebase
+喺 eval W1 開始 (2021-09) 已過 warmup (pe panel 同一理由前置 6.3y)。
+splice 驗證: futu close 2021-09-06+ 對 eval prices 同日逐股對比。
+"""
+import sys, time, json
+from pathlib import Path
+import pandas as pd
+
+BT = Path(r"C:/Users/Penguin8n/ZCodeProject/backtests")
+sys.path.insert(0, str(BT))
+import os
+os.chdir(str(BT))
+
+from llm_cs_adapter import _load_prices_and_rets
+prices, _ = _load_prices_and_rets()
+codes = list(prices.columns)
+
+from futu import OpenQuoteContext, KLType, AuType
+
+def fetch_page(q, code, start, end):
+    res = q.request_history_kline(code, ktype=KLType.K_DAY, autype=AuType.NONE,
+                                  start=start, end=end, max_count=1000)
+    for item in (res if isinstance(res, tuple) else (res,)):
+        if isinstance(item, pd.DataFrame) and "time_key" in item.columns:
+            return item
+    return None
+
+out = {}
+q = OpenQuoteContext(host="127.0.0.1", port=11111)
+try:
+    for code in codes:
+        df = fetch_page(q, code, "2020-06-01", "2021-09-03")
+        if df is None or len(df) == 0:
+            print(f"{code}: NO DATA")
+            continue
+        out[code] = {str(pd.to_datetime(r.time_key).date()): float(r.close)
+                     for r in df.itertuples()}
+        time.sleep(0.3)
+finally:
+    q.close()
+
+Path(BT / "_agent2h_close_warmup.json").write_text(json.dumps(out))
+ncode = len(out)
+print(f"fetched {ncode}/{len(codes)} stocks")
+
+# splice check: futu 2021-09-03 close vs eval first-day 2021-09-06 (gap = weekend, no adj expected)
+mismatch = []
+for code, d in out.items():
+    if "2021-09-03" in d and code in prices.columns:
+        pass  # compare vs previous eval day not possible; compare overlap later
+# direct: re-fetch few bars around eval start for overlap comparison
+q = OpenQuoteContext(host="127.0.0.1", port=11111)
+try:
+    ovl = {}
+    for code in codes[:60]:
+        df = fetch_page(q, code, "2021-09-06", "2021-09-10")
+        if df is not None and len(df):
+            ovl[code] = {str(pd.to_datetime(r.time_key).date()): float(r.close)
+                         for r in df.itertuples()}
+        time.sleep(0.25)
+finally:
+    q.close()
+Path(BT / "_agent2h_close_overlap.json").write_text(json.dumps(ovl))
+mism = []
+for code, d in ovl.items():
+    for dt, c in d.items():
+        if dt in prices.index.strftime("%Y-%m-%d"):
+            ev = float(prices.loc[dt, code]) if code in prices.columns else None
+            if ev is not None and abs(ev - c) / c > 1e-6:
+                mism.append((code, dt, c, ev))
+print(f"overlap stocks {len(ovl)}, mismatches {len(mism)}")
+for m in mism[:10]:
+    print("  MISMATCH", m)

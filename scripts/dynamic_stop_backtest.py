@@ -1,0 +1,285 @@
+#!/usr/bin/env python3
+"""
+完整 Pair Trade 回測 — 對比 動態相關性止損 vs 無止損
+
+策略 A（原本）：純 z-score mean-reversion
+  z<-2 買spread, z>-0.5 平倉, z>+2 沽spread, z<0.5 平倉
+
+策略 B（動態止損）：z-score + 相關性監控
+  - 同 A 嘅進出場
+  - 加：rolling corr < 0.3 → 強制平倉（相關性崩潰）
+  - 加：rolling corr 5日跌 > 0.2 → 收緊止損
+  - 加：全市場 corr > median+1.5σ → 減倉/唔開新倉
+
+用 VectorBT, rf=4%, 成本 0.23%
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+import os
+import json
+import argparse
+from pathlib import Path
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
+import vectorbt as vbt
+from scipy import stats
+
+ROOT = Path(__file__).parent.parent
+DATA_DIR = ROOT / "data"
+OUTPUT_DIR = DATA_DIR / "pair_trade_vbt"
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "backtests"))
+from vbt_data import STAMP_DUTY, COMMISSION, PER_SIDE_FEES as FEE_PER_SIDE, RF_RATE
+ENTRY_Z = 2.0
+EXIT_Z = 0.5
+LOOKBACK = 20
+CORR_WINDOW = 30           # rolling 相關性窗口
+DANGER_CORR = 0.3          # 相關性低於此 → 強制平倉
+CORR_BREAKDOWN = 0.2       # 5日相關性跌幅超過此 → 警告
+
+
+def fetch_prices(days=500):
+    cache = DATA_DIR / "hsi_prices.pkl"
+    if cache.exists():
+        p = pd.read_pickle(cache)
+        return p.tail(days)
+    raise FileNotFoundError("請先運行 pair_trade_vbt.py")
+
+
+def compute_market_corr(returns, window=CORR_WINDOW):
+    """全市場平均相關性時間序列。"""
+    dates = returns.index[window:]
+    avg_corrs = []
+    for i in range(window, len(returns)):
+        wr = returns.iloc[i-window:i]
+        cm = wr.corr()
+        mask = ~np.eye(len(cm), dtype=bool)
+        avg_corrs.append(cm.values[mask].mean())
+    return pd.Series(avg_corrs, index=dates)
+
+
+def backtest_pair(prices, code_a, code_b, use_dynamic_stop=True):
+    """回測單個 pair，可選擇是否用動態相關性止損。"""
+    a = np.log(prices[code_a])
+    b = np.log(prices[code_b])
+    common = pd.concat([a, b], axis=1, join="inner").dropna()
+    n = len(common)
+    if n < CORR_WINDOW + 20:
+        return None
+
+    lb = min(LOOKBACK, n - 5)
+    slope, intercept, _, _, _ = stats.linregress(common.iloc[:,1].values, common.iloc[:,0].values)
+    spread = common.iloc[:,0] - (intercept + slope * common.iloc[:,1])
+
+    roll_mean = spread.rolling(lb).mean()
+    roll_std = spread.rolling(lb).std().replace(0, np.nan)
+    z = (spread - roll_mean) / roll_std
+
+    # 基本信號
+    long_entries = z < -ENTRY_Z
+    long_exits = z > -EXIT_Z
+    short_entries = z > ENTRY_Z
+    short_exits = z < EXIT_Z
+
+    if use_dynamic_stop:
+        # 計算 rolling 相關性
+        returns = prices.pct_change()
+        ra = returns[code_a].reindex(common.index)
+        rb = returns[code_b].reindex(common.index)
+        pair_corr = ra.rolling(CORR_WINDOW).corr(rb)
+
+        # 相關性崩潰 → 強制平倉（覆蓋 exits）
+        corr_crash = pair_corr < DANGER_CORR
+
+        # 相關性急跌（5日前 vs 現在）
+        corr_breakdown = pair_corr.shift(5) - pair_corr > CORR_BREAKDOWN
+
+        # 全市場系統性風險
+        market_ret = returns.reindex(common.index)
+        # 簡化：用呢個 pair 兩隻嘅 corr 近似（真正全市場太慢）
+        # 實際上用 dynamic_correlation.py 嘅 market_corr 更準
+
+        # 強制平倉條件
+        force_close = corr_crash | corr_breakdown
+
+        long_exits = long_exits | force_close
+        short_exits = short_exits | force_close
+
+        # 系統性風險高時唔開新倉
+        # 用 pair_corr 做近似（如果呢對都跌，其他更差）
+        no_new_entry = corr_crash
+
+        long_entries = long_entries & ~no_new_entry
+        short_entries = short_entries & ~no_new_entry
+
+    spread_ret = spread.diff().fillna(0)
+    spread_price = (1 + spread_ret).cumprod()
+
+    try:
+        pf = vbt.Portfolio.from_signals(
+            close=spread_price,
+            entries=long_entries, exits=long_exits,
+            short_entries=short_entries, short_exits=short_exits,
+            fees=FEE_PER_SIDE, freq="1D", init_cash=1_000_000)
+    except Exception:
+        return None
+
+    try:
+        total_ret = float(pf.total_return())
+        ann_ret = float(pf.annualized_return())
+        sharpe = float(pf.sharpe_ratio())
+        sortino = float(pf.sortino_ratio())
+        max_dd = float(pf.max_drawdown())
+        calmar = float(pf.calmar_ratio())
+        trades = pf.trades.records_readable
+        n_trades = len(trades)
+        if n_trades > 0 and "PnL" in trades.columns:
+            wins = (trades["PnL"] > 0).sum()
+            win_rate = float(wins / n_trades)
+            gp = float(trades[trades["PnL"] > 0]["PnL"].sum())
+            gl = abs(float(trades[trades["PnL"] < 0]["PnL"].sum()))
+            pf_ratio = gp / gl if gl > 0 else 99.0
+        else:
+            win_rate = 0; pf_ratio = 0
+    except Exception:
+        return None
+
+    # Sharpe 扣 rf
+    if sharpe != 0 and ann_ret != 0:
+        vol = ann_ret / sharpe
+        sharpe_adj = (ann_ret - RF_RATE) / vol if vol > 0 else sharpe
+    else:
+        sharpe_adj = sharpe
+
+    label = "動態止損" if use_dynamic_stop else "無止損"
+    return {
+        "code_a": code_a, "code_b": code_b,
+        "strategy": label,
+        "total_return_pct": round(total_ret * 100, 2),
+        "annual_return_pct": round(ann_ret * 100, 2),
+        "sharpe": round(sharpe_adj, 3),
+        "sortino": round(sortino, 3),
+        "max_drawdown_pct": round(max_dd * 100, 2),
+        "calmar": round(calmar, 3),
+        "n_trades": n_trades,
+        "win_rate_pct": round(win_rate * 100, 1),
+        "profit_factor": round(pf_ratio, 2),
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description="動態相關性止損 vs 無止損 回測對比")
+    parser.add_argument("--days", type=int, default=500)
+    parser.add_argument("--max-pairs", type=int, default=21)
+    args = parser.parse_args()
+
+    print("=" * 85)
+    print("📊 動態相關性止損 vs 無止損 — 完整 Pair Trade 對比")
+    print("=" * 85)
+    print("時間: {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    print("rf: {}%, 成本: {}%/來回".format(RF_RATE*100, (STAMP_DUTY+COMMISSION*2)*100))
+    print("止損規則: corr<{} 強制平倉 | corr 5日跌>{} 收緊".format(DANGER_CORR, CORR_BREAKDOWN))
+
+    prices = fetch_prices(days=args.days)
+    print("數據: {} 日 × {} 股\n".format(len(prices), prices.shape[1]))
+
+    high_corr = pd.read_csv(OUTPUT_DIR / "correlation_high_pairs.csv")
+    candidates = high_corr.head(args.max_pairs)
+
+    results = []
+    for i, (_, row) in enumerate(candidates.iterrows()):
+        a, b = row["stock_a"], row["stock_b"]
+        if a not in prices.columns or b not in prices.columns:
+            continue
+
+        r_no_stop = backtest_pair(prices, a, b, use_dynamic_stop=False)
+        r_dyn_stop = backtest_pair(prices, a, b, use_dynamic_stop=True)
+
+        if r_no_stop:
+            r_no_stop["correlation"] = round(float(row["correlation"]), 3)
+            results.append(r_no_stop)
+        if r_dyn_stop:
+            r_dyn_stop["correlation"] = round(float(row["correlation"]), 3)
+            results.append(r_dyn_stop)
+
+        if (i+1) % 5 == 0:
+            print("  進度: {}/{}".format(i+1, len(candidates)))
+
+    if not results:
+        print("❌ 冇結果")
+        return
+
+    df = pd.DataFrame(results)
+
+    # 對比表 — 每個 pair 顯示兩個版本
+    print("\n" + "=" * 85)
+    print("📋 逐 pair 對比")
+    print("=" * 85)
+    print("{:<22} {:<10} {:>7} {:>8} {:>7} {:>5} {:>6} {:>5}".format(
+        "Pair", "策略", "Sharpe", "AnnRet%", "MaxDD%", "Trd", "Win%", "PF"))
+    print("-" * 85)
+
+    for pair_key in df["code_a"] + "-" + df["code_b"]:
+        sub = df[(df["code_a"] + "-" + df["code_b"]) == pair_key]
+        if sub.empty:
+            continue
+        for _, r in sub.iterrows():
+            pair = "{}-{}".format(r["code_a"], r["code_b"])
+            print("{:<22} {:<10} {:>7.2f} {:>7.1f}% {:>6.1f}% {:>5} {:>5.0f}% {:>5.2f}".format(
+                pair, r["strategy"], r["sharpe"], r["annual_return_pct"],
+                r["max_drawdown_pct"], r["n_trades"], r["win_rate_pct"], r["profit_factor"]))
+        # 只打印每組一次
+        # 用 seen set 避免 repeat
+
+    # 匯總
+    print("\n" + "=" * 85)
+    print("📊 匯總統計")
+    print("=" * 85)
+    print("{:<14} {:>8} {:>8} {:>8} {:>8} {:>8} {:>8}".format(
+        "策略", "Sharpe", "AnnRet%", "MaxDD%", "Sortino", "Win%", "PF"))
+    print("-" * 70)
+
+    for strat in ["無止損", "動態止損"]:
+        sub = df[df["strategy"] == strat]
+        if sub.empty:
+            continue
+        print("{:<14} {:>8.2f} {:>7.1f}% {:>7.1f}% {:>8.2f} {:>7.0f}% {:>8.2f}".format(
+            strat,
+            sub["sharpe"].median(),
+            sub["annual_return_pct"].median(),
+            sub["max_drawdown_pct"].median(),
+            sub["sortino"].median(),
+            sub["win_rate_pct"].median(),
+            sub["profit_factor"].median()))
+
+    # 正面結果對比
+    no_stop = df[df["strategy"] == "無止損"]
+    dyn_stop = df[df["strategy"] == "動態止損"]
+
+    print("\n💡 關鍵指標對比:")
+    print("   Sharpe > 0 嘅 pair 數:")
+    print("     無止損:    {}/{}".format((no_stop["sharpe"] > 0).sum(), len(no_stop)))
+    print("     動態止損:  {}/{}".format((dyn_stop["sharpe"] > 0).sum(), len(dyn_stop)))
+    print("   平均 Max DD:")
+    print("     無止損:    {:.1f}%".format(no_stop["max_drawdown_pct"].mean()))
+    print("     動態止損:  {:.1f}%".format(dyn_stop["max_drawdown_pct"].mean()))
+
+    # 改善幅度
+    if not no_stop.empty and not dyn_stop.empty:
+        ns_med = no_stop["sharpe"].median()
+        ds_med = dyn_stop["sharpe"].median()
+        dd_improve = no_stop["max_drawdown_pct"].mean() - dyn_stop["max_drawdown_pct"].mean()
+        print("\n   動態止損改善:")
+        print("     Sharpe: {:.2f} → {:.2f} ({:+.2f})".format(ns_med, ds_med, ds_med - ns_med))
+        print("     Max DD 改善: {:.1f}% → {:.1f}% (減少 {:.1f}個百分點)".format(
+            no_stop["max_drawdown_pct"].mean(), dyn_stop["max_drawdown_pct"].mean(), dd_improve))
+
+    # 儲存
+    df.to_csv(OUTPUT_DIR / "dynamic_stop_vs_nostop.csv", index=False)
+    print("\n✓ 儲存: dynamic_stop_vs_nostop.csv")
+
+
+if __name__ == "__main__":
+    main()

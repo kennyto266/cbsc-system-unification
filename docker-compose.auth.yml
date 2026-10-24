@@ -1,0 +1,211 @@
+# Docker Compose for Authentication Service
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: cbsc-postgres
+    environment:
+      POSTGRES_DB: cbsc
+      POSTGRES_USER: cbsc
+      POSTGRES_PASSWORD: cbsc_password_2024
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/migrations/scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - cbsc-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cbsc"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cbsc-redis
+    command: redis-server --appendonly yes --requirepass redis_password_2024
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - cbsc-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Authentication Service
+  auth-service:
+    build:
+      context: .
+      dockerfile: docker/auth/Dockerfile
+    container_name: cbsc-auth
+    environment:
+      # Database
+      DATABASE_URL: postgresql://cbsc:cbsc_password_2024@postgres:5432/cbsc
+
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password_2024
+
+      # Service
+      PORT: 3006
+      CONFIG_PROFILE: production
+      LOG_LEVEL: info
+      WORKERS: 4
+
+      # JWT
+      JWT_PRIVATE_KEY_PATH: /app/keys/jwt_private.pem
+      JWT_PUBLIC_KEY_PATH: /app/keys/jwt_public.pem
+
+      # Email (configure as needed)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@cbsc.com}
+
+      # Security
+      MFA_REQUIRED: false
+      RATE_LIMIT_ENABLED: true
+      SECURITY_HEADERS_ENABLED: true
+
+      # CORS
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:8080,https://cbsc.com"
+
+    volumes:
+      - ./docker/auth/keys:/app/keys:ro
+    ports:
+      - "3006:3006"
+    networks:
+      - cbsc-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: cbsc-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - cbsc-network
+    depends_on:
+      - auth-service
+      - api-gateway
+    restart: unless-stopped
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: docker/gateway/Dockerfile
+    container_name: cbsc-gateway
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:3006
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "8000:8000"
+    networks:
+      - cbsc-network
+    depends_on:
+      - auth-service
+      - redis
+    restart: unless-stopped
+
+  # Jaeger Tracing (optional)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: cbsc-jaeger
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: 9411
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14250:14250"
+      - "14268:14268"
+      - "14269:14269"
+      - "9411:9411"
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+
+  # Prometheus Monitoring (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cbsc-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+
+  # Grafana Dashboard (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cbsc-grafana
+    ports:
+      - "3007:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: grafana_admin_2024
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - cbsc-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  cbsc-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

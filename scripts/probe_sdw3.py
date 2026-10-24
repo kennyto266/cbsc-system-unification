@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+"""probe3 — per-stock SDW 12個月窗口邊界探測 (00700)."""
+import requests, re
+
+URL = "https://www3.hkexnews.hk/sdw/search/searchsdw.aspx"
+s = requests.Session()
+s.headers["User-Agent"] = "Mozilla/5.0"
+r = s.get(URL, timeout=15)
+vs = re.search(r'name="__VIEWSTATE"[^>]*value="([^"]*)"', r.text).group(1)
+vg = re.search(r'name="__VIEWSTATEGENERATOR"[^>]*value="([^"]*)"', r.text).group(1)
+for date in ["2026/08/22", "2026/06/15", "2026/03/01", "2026/01/05",
+             "2025/10/01", "2025/09/15", "2025/09/01", "2025/08/25"]:
+    data = {"__EVENTTARGET": "btnSearch", "__EVENTARGUMENT": "", "__VIEWSTATE": vs,
+            "__VIEWSTATEGENERATOR": vg, "txtStockCode": "00700",
+            "txtShareholdingDate": date, "today": "20260823",
+            "sortBy": "shareholding", "sortDirection": "desc",
+            "originalShareholdingDate": "", "alertMsg": ""}
+    t = s.post(URL, data=data, timeout=20).text
+    n = len(re.findall(r'(<td class="col-participant-name"|mobile-list-body)', t))
+    print(f"  {date}: rowmark={n} {'OK' if n > 50 else 'EMPTY'}")

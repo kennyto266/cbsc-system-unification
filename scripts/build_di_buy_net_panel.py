@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""build_di_buy_net_panel.py — 董事增持淨額日度 panel (thesis: insider_cluster_buying / dide).
+
+輸入: data/new_sources/di_notices_raw.csv (HKEX DION 3A notices, 51股, 2021→今)
+輸出: data/factor_store/di_buy_net.parquet  (date × code, HKD 淨現金增持額)
+      data/factor_store/di_n_notices.parquet (notice 計數, 審計用)
+
+轉換 (crawl_spec transform 規定):
+  只計現金交易 reason code: buy ∈ {1101 purchase, 1301 事後補報購買}, sell = {1201 completed sale}
+  排除 grant/award/exercise/gift/placing/derivatives/SBL 等非現金: 1102,1105,1110,1111,11031..11035,
+    1303,1304,1202,1203,12041..12045,1311..1314 等 (即「唔喺 buy/sell 白名單」一律排除)
+  只計 Long position (L); (S)/(P) 唔係持股.
+  金額 = shares × avg_price (avg_price 缺 = 冇成交價, 唔計入金額但計 notice 數).
+  event_date → 下一個交易日先入 panel (訊號可用性: DI 申報有 3 個營業日死線, 用 t+1 保守).
+
+日曆: close_unadj 51 股交易日 union; 訊號 forward-fill 冇限 (rolling 63 自然衰減).
+"""
+import re
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "di_notices_raw.csv"
+CLOSE_DIR = BASE / "data" / "futu_history" / "close_unadj"
+OUT_NET = BASE / "data" / "factor_store" / "di_buy_net.parquet"
+OUT_CNT = BASE / "data" / "factor_store" / "di_n_notices.parquet"
+
+BUY_CODES = {"1101", "1301"}
+SELL_CODES = {"1201"}
+
+
+def num(s: str) -> float:
+    m = re.search(r"[\d,]+\.?\d*", str(s))
+    if not m:
+        return float("nan")
+    return float(m.group(0).replace(",", ""))
+
+
+def reason_code(s: str) -> str:
+    m = re.match(r"\s*(\d+)", str(s))
+    return m.group(1) if m else ""
+
+
+def main() -> int:
+    df = pd.read_csv(RAW, dtype={"code": str})
+    df["date"] = pd.to_datetime(df["event_date"], format="%d/%m/%Y", errors="coerce")
+    df = df.dropna(subset=["date"])
+    df["rc"] = df["reason"].map(reason_code)
+    df["shares"] = df["shares_bought_sold"].map(num)
+    df["is_long"] = df["shares_bought_sold"].astype(str).str.contains(r"\(L\)")
+    df["px"] = df["avg_price"].map(num)
+    df["value"] = df["shares"] * df["px"]
+
+    cash = df[df["is_long"] & df["rc"].isin(BUY_CODES | SELL_CODES)].copy()
+    cash["signed"] = cash["value"].where(cash["rc"].isin(BUY_CODES), -cash["value"])
+    excluded = len(df) - len(cash)
+    print(f"notices {len(df)} | 現金 L 買賣 {len(cash)} | 排除非現金 {excluded}")
+
+    # 訊號日 = event_date + 1 個營業日 (保守: 申報死線內可能未公開)
+    cal = None
+    for f in sorted(CLOSE_DIR.glob("*.csv")):
+        s = pd.read_csv(f, index_col=0, parse_dates=True).iloc[:, 0]
+        cal = pd.concat([cal, s]) if cal is not None else s
+    cal = cal.dropna()
+    cal.index = cal.index.normalize()
+    days = sorted(set(cal.index))
+    days = pd.DatetimeIndex(days)
+    cash["sig_date"] = cash["date"].map(
+        lambda d: days[days.searchsorted(d, side="right")] if days.searchsorted(d, side="right") < len(days) else None
+    )
+    cash = cash.dropna(subset=["sig_date"])
+
+    net = cash.pivot_table(index="sig_date", columns="code", values="signed", aggfunc="sum")
+    cnt = cash.pivot_table(index="sig_date", columns="code", values="signed", aggfunc="count")
+
+    full = pd.DataFrame(index=days)
+    panel_net = full.join(net).fillna(0.0)
+    panel_cnt = full.join(cnt).fillna(0).astype(int)
+    # 只有現金交易日有料, 其餘日 = 0 (無申報 = 無增持) — 冇 ffill, rolling 自行累積
+
+    OUT_NET.parent.mkdir(parents=True, exist_ok=True)
+    panel_net.to_parquet(OUT_NET)
+    panel_cnt.to_parquet(OUT_CNT)
+    active = (panel_net != 0).sum().sort_values(ascending=False)
+    print(f"di_buy_net: {panel_net.shape[0]}日 × {panel_net.shape[1]}股, 範圍 {panel_net.index.min().date()} → {panel_net.index.max().date()}")
+    print(f"non-zero 日總數: {int((panel_net != 0).sum().sum())} (≈ {(panel_net!=0).sum().sum()/panel_net.shape[0]:.1f}/日)")
+    print("active days top8:", active.head(8).to_dict())
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

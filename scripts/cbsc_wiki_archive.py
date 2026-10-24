@@ -1,0 +1,250 @@
+#!/usr/bin/env python3
+"""cbsc_wiki_archive.py — 一次性: 項目架構 + skills archive 入 CBSC-KnowledgeVault.
+
+生成:
+  wiki/architecture/*.md   — 系統分層架構 (live/pipeline/data/watch/通知/知識)
+  wiki/skills/*.md         — 三個來源嘅 skills 檔案牆:
+                              ZCodeProject/.agents (caveman 系 ×7)
+                              ~/.claude/skills (agent 用 ×11)
+                              hermes skills 入面 CBSC 專用 (alpha-discovery-loop 等)
+  每頁 frontmatter 齊 + wikilink 返回 [[index]]
+"""
+import re
+import sys
+from datetime import datetime
+from pathlib import Path
+
+VAULT = Path(r"C:/Users/Penguin8n/CBSC-KnowledgeVault")
+WIKI = VAULT / "wiki"
+ROOT = Path(r"C:/Users/Penguin8n/ZCodeProject")
+TODAY = datetime.now().strftime("%Y-%m-%d")
+
+FM_BASE = {'type': "architecture", 'status': "active", 'tags': ["arch", "moc"], 'created': TODAY, 'updated': TODAY}
+FM_SKILL = {'type': "skill", 'status': "active", 'tags': ["skill"], 'created': TODAY, 'updated': TODAY}
+
+
+def _fm(extra: dict) -> str:
+    d = {**extra}
+    lines = ["---"]
+    for k, v in d.items():
+        if isinstance(v, list):
+            lines.append(f"{k}: [{', '.join(str(x) for x in v)}]")
+        elif isinstance(v, str) and (" " in v or '"' in v):
+            lines.append(f'{k}: "{v}"')
+        else:
+            lines.append(f"{k}: {v}")
+    lines.append("---")
+    return "\n".join(lines)
+
+
+def write(path: Path, fm: dict, body: str):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_fm(fm) + "\n\n" + body.strip() + "\n", encoding="utf-8")
+
+
+def arch_pages():
+    n = 0
+    pages = {
+        "overview-系統總覽": """# 系統總覽
+
+> 上游文檔: [[架構-html|repo 架構.md]] (repo 根目錄, 有互動圖)
+
+CBSC = 港股 51 股 + BTC ETF 算法交易系統, 全鏈 Hermes agent 自動化.
+
+## 兩大循環
+- **研究循環** ([[architecture-research-pipeline|流水線]]): think_loop 每 30min
+  Agent 1-H 生橋 → prescan → grill → 2-H 爬數據 → bridge sweep → 4-H 判官
+  → 部署入 [[architecture-live-engine|live 引擎]]
+- **交易循環** ([[architecture-live-engine|live]]): live_algotrade 24h,
+  每 60s 掃, 收盤計信號, 翌日開市落單 (Futu OpenD)
+
+## 核心數字 (2026-08-25)
+- 活躍策略 ~69 條 (ALIVE 26 + RA 43), 6 個獨立格
+- GOAL-PORT SR 1.67 → 目標 2.0 (缺 0.33 = 要新格)
+- 北極星: [[architecture-goals|GOAL-PORT 詳情]]
+
+## 目錄
+- [[architecture-research-pipeline|研究流水線 (全 Hermes 化)]]
+- [[architecture-live-engine|Live 交易引擎]]
+- [[architecture-data-layer|數據層 (panels/collectors)]]
+- [[architecture-watchdogs|看門狗 + 容錯]]
+- [[architecture-notifications|通知系統 (DC/TG)]]
+- [[architecture-knowledge|知識系統 (ledger/wiki)]]
+- [[architecture-goals|目標與策略池現況]]
+""",
+        "research-pipeline-研究流水線": """# 研究流水線 (全 Hermes 化 2026-08-23)
+
+```
+think_loop (auto_scheduler, 每 30min)
+  ├─ prompt_evolver (讀上輪改 agent1 prompt)
+  ├─ discovery_pipeline:
+  │   0. test_gates 前置閘 (74 測試紅=跳過, 08-25)
+  │   1. Agent 1-H hermes -z 生 5 條 thesis (讀 ledger digest)
+  │   1.7 prescan gate (30s 快篩 + 7日重複殺黑名單)
+  │   1.5 grill (invalidation gate)
+  │   2. Agent 2-H 爬蟲(8min時間盒+crawling異步) + have 體檢
+  │   3. bridge 直跑 (python sweep 162 configs × 9 grid + G6 + deploy)
+  │      └─ ≥2 條 have 先開 agent3-H 判讀 session (near-miss 迭代)
+  │   4. Agent 4 機械 deploy (G5b dedup / factor-overlap / G6 0.95)
+  │   4-H hermes -z 判官 (分離 process, 唔阻 DONE) → DC 摘要
+  │      + 消費 [[architecture-knowledge|_corr_alerts]] 裁決孿生
+  └─ goal_monitor (Fwd衰退自動降級 + corr監控 + 垃圾檔守衛)
+      └─ wiki feeder (餵本 vault)
+```
+
+關鍵檔案: `trading_graph/run_pipeline.py` (1956行) / `agent{1,2,3,4}_hermes.py`
+一輪實測 13.8min (優化前 35min)。
+
+教訓史: 血洗案(mc=0.5指紋) / 幽靈config(交接位必驗下游欄位) / 殭屍process(taskkill /T)
+""",
+        "live-engine-Live交易引擎": """# Live 交易引擎
+
+`backtests/live_algotrade.py` 24h 運行:
+- 每 60s 掃 strategy_state.json 變化
+- 收盤 16:00 計信號: [[cross_sectional_engine|CS engine]] (ranking→cs_select)
+  + [[live_signal_engine|event engine]] (per-stock pickle 策略)
+- 翌日開市落單 → Futu OpenD → FutuTrader
+- RiskManager (BEAR regime 豁免第二層: ALIVE 級照開倉)
+- FuturesEngine: HSIF 對沖腿 (max 1 倉)
+
+config: hold_pct/vol_filter 由 state 讀入 cs_select — None 會炸
+(幽靈config案, test_gates 有回歸測試)
+
+事件流: event_bus → dashboard (FastAPI+Next.js) + TG
+""",
+        "data-layer-數據層": """# 數據層
+
+## Collectors (cbsc-system-unification/scripts/)
+- 東財 datacenter API (28年季度基本面 90欄) — [[data-evx-oi|evx]] / [[data-ocf-oi-ttm|cell7]] 族來源
+- HKEX 官方 (南向 SDW, 只留12個月) — csdw_south 日更累積
+- AAStocks (short selling, 經 Comet CDP 爬)
+- Futu OpenD (OHLCV/snapshot)
+- 業績日曆 (PIT 對齊用)
+
+## Panels (factor_store/, [[wiki/data|54 個]])
+寬表 date × stock, parquet, PIT (業績公布日+1)
+panel 頁由 feeder 自動生成, 見 [[index|總目錄]]
+
+## 備份
+每日 Step 5: panels+raw+state → repo外 zip ×14份
+""",
+        "watchdogs-看門狗容錯": """# 看門狗 + 容錯
+
+`backtests/watchdog.py`:
+- live_algotrade 心跳監察 + 重啟 (計數上限)
+- check_opend_blocking: OpenD 死+11111唔通 → 唔盲重啟, 出 TG 警報
+  (OpenD crash 卡 login 要人手)
+- check_comet_cdp: Comet 9223 確認 (CDP 爬蟲前置)
+- auto_scheduler 監察 (第二 client)
+
+單例鎖: .discovery_pipeline.lock (Windows 用 OpenProcess+STILL_ACTIVE 驗屍)
+殭屍根因已修: os._exit(0) 跳 BLAS shutdown hang + taskkill /T 樹殺 timeout 殘留
+
+test_gates 前置閘 (08-25): think_loop 開波 74 測試, 紅=停部署
+""",
+        "notifications-通知系統": """# 通知系統
+
+- Discord bot GLM#7829 (guild 企鵝伺服器):
+  #live-status 戰報 / #five-gate / #g0-spikes 等 14 頻道
+  pusher: python urllib+UA header (curl 過 Cloudflare 1010)
+  Gateway: background `hermes gateway run` (死咗就重啟)
+- Telegram: 白話名精簡通知 (goal_monitor 164字版)
+- agent4-H 每輪自動 post #live-status 部署判讀
+
+接力模式: 「出街/返屋企」= CLI↔DC 無縫交接
+""",
+        "knowledge-知識系統": """# 知識系統
+
+- research_ledger.json: 146+ 死軸 (axis-tagged)
+  - digest 版 (_ledger_digest.json) 俾 agent1 讀 (慳 token)
+- [[wiki/index|本 wiki]] (claude-obsidian vault):
+  - feeder 每 think_loop 增量餵 (冪等 source_sig)
+  - 策略↔panel↔死軸 wikilink 網, graph view 四色
+  - lint 每日 (daily Step 6, WSL)
+- alpha_graph/edges.jsonl: 流水線 verdict 流
+- Bilevel-Autoresearch: 外層 meta-research (自己研究自己)
+""",
+        "goals-目標與策略池": """# 目標與策略池現況
+
+## 北極星: GOAL-PORT SR 2.0
+現 1.67 (6 獨立格 max_sharpe), 缺 0.33.
+路線: 組合工程三槓桿全否決 (vol targeting/滾動重估/CVWG)
+→ 唯一路 = 新獨立格 (攻 2.0 = 加第 7/8/9 格)
+
+## 6 獨立格 (dedup 基準)
+603 南向gate / 649+656+968 event confluence / 1011 range contraction /
+1183 sqx unwind / 1184 dvst 派息穩定 / (1193 pegv 死咗, 位懸空)
+
+## 第 7 隊進攻 (08-25)
+東財 90 欄未用 → 5 panels → 1278 [[strategies/1278-eqcf_eqcf_現金流質素_盈利含金|eqcf 現金流質素]]
+ALIVE W3 1.93 + 1277 optr ALIVE — 待 corr<0.6 確認新格
+
+## 孿生治理
+G6 0.95 閘門 + corr監控→agent4-H 裁決→我每朝執行
+""",
+    }
+    for name, body in pages.items():
+        slug = name.split("-", 1)[0]
+        write(WIKI / "architecture" / f"{name}.md",
+              {**FM_BASE, 'title': name.replace("-", " ")}, body)
+        n += 1
+    return n
+
+
+def skills_pages():
+    """掃三個來源嘅 SKILL.md → wiki/skills/."""
+    n = 0
+    sources = [
+        ("zcode-agents", ROOT / ".agents" / "skills"),
+        ("claude-user", Path(r"C:/Users/Penguin8n/.claude/skills")),
+    ]
+    # hermes CBSC 相關 skills
+    hermes = Path(r"C:/Users/Penguin8n/AppData/Local/hermes/skills")
+    cbsc_names = ["alpha-discovery-loop", "alpha-thesis-thinker", "futu-data-backfill",
+                  "hk-stock-data-scraping", "multi-agent-alpha-graph", "quant-alpha-validation",
+                  "alpha-discovery-looper", "futuapi", "install-futu-opend", "quant-trading",
+                  "research"]
+    seen = set()
+    for src_name, base in sources:
+        if not base.exists():
+            continue
+        for d in sorted(base.iterdir()):
+            sk = d / "SKILL.md"
+            if not sk.exists() or d.name in seen:
+                continue
+            seen.add(d.name)
+            raw = sk.read_text(encoding="utf-8", errors="replace")[:4000]
+            m = re.search(r"description:\s*>?-\s*\n?\s*([^#]{10,300})", raw)
+            desc = (m.group(1).strip() if m else "")[:280]
+            body = f"# skill: {d.name}\n\n**來源**: {src_name}\n\n**描述**: {desc}\n\n**用途場合**: 睇 SKILL.md 原檔\n\n<details><summary>SKILL.md 原文 (頭 3500 字)</summary>\n\n```markdown\n{raw[:3500]}\n```\n\n</details>\n\n← [[index]]"
+            write(WIKI / "skills" / f"{d.name}.md",
+                  {**FM_SKILL, 'title': d.name, 'tags': ["skill", src_name], 'source': src_name}, body)
+            n += 1
+    # hermes cbsc skills
+    for nm in cbsc_names:
+        hit = None
+        for sub in hermes.rglob(nm):
+            if (sub / "SKILL.md").exists():
+                hit = sub / "SKILL.md"
+                break
+        if hit and nm not in seen:
+            seen.add(nm)
+            raw = hit.read_text(encoding="utf-8", errors="replace")[:4000]
+            m = re.search(r"description:\s*>?-\s*\n?\s*([^#]{10,300})", raw)
+            desc = (m.group(1).strip() if m else "")[:280]
+            body = f"# skill: {nm}\n\n**來源**: hermes (CBSC 專用)\n\n**描述**: {desc}\n\n<details><summary>SKILL.md 原文 (頭 3500 字)</summary>\n\n```markdown\n{raw[:3500]}\n```\n\n</details>\n\n← [[index]]"
+            write(WIKI / "skills" / f"{nm}.md",
+                  {**FM_SKILL, 'title': nm, 'tags': ["skill", "hermes-cbsc"], 'source': "hermes"}, body)
+            n += 1
+    return n
+
+
+def main():
+    n1 = arch_pages()
+    n2 = skills_pages()
+    print(f"archive: {n1} 架構頁 + {n2} skill頁")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

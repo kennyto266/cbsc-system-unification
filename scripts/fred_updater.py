@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""fred_updater.py — 從 FRED (Federal Reserve Economic Data) 更新宏觀因子.
+
+數據源: https://fred.stlouisfed.org (免費 API)
+用法: python fred_updater.py              # 更新全部
+      python fred_updater.py DGS2 DGS10   # 指定 series
+"""
+import warnings
+warnings.filterwarnings("ignore")
+import sys
+from pathlib import Path
+from datetime import datetime
+
+FACT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors")
+API_KEY = "e29eb3f8ab43ec007dc1673c0da2e061"
+
+# FRED series → CSV filename + 中文名
+FRED_SERIES = {
+    "DGS2":      {"file": "fred_dgs2.csv",       "name": "2年國債息"},
+    "DGS10":     {"file": "fred_dgs10.csv",      "name": "10年國債息"},
+    "FEDFUNDS":  {"file": "fred_fedfunds.csv",   "name": "聯邦基金利率"},
+    "WALCL":     {"file": "fred_walcl.csv",      "name": "Fed資產負債表"},
+    "T10YIE":    {"file": "fred_t10yie.csv",     "name": "10年通脹預期"},
+    "BAA10Y":    {"file": "fred_baa10y.csv",     "name": "BAA信用利差"},
+    "NFCI":      {"file": "fred_nfci.csv",       "name": "金融狀況指數"},
+}
+
+
+def update_fred(series_ids=None):
+    """更新 FRED series 到 factors/ CSV. 格式: date,close."""
+    import pandas as pd
+    from fredapi import Fred
+
+    fred = Fred(api_key=API_KEY)
+    targets = series_ids or list(FRED_SERIES.keys())
+    results = {}
+
+    for sid in targets:
+        cfg = FRED_SERIES.get(sid)
+        if cfg is None:
+            print(f"  ⚠️ 未知 series: {sid}"); continue
+        filepath = FACT_DIR / cfg["file"]
+        try:
+            s = fred.get_series(sid)
+            if s is None or len(s) == 0:
+                print(f"  ⚠️ {cfg['name']} ({sid}): 冇數據")
+                results[sid] = False
+                continue
+            s = s.dropna()
+            # 格式: date,close (同 yfinance factors 一致)
+            new_df = pd.DataFrame({"date": s.index.strftime("%Y-%m-%d"), "close": s.values})
+            filepath.parent.mkdir(parents=True, exist_ok=True)
+            # Fix: 增量合併 (唔全覆蓋, 保護歷史數據 — 同 yfinance updater 一致)
+            if filepath.exists():
+                old_df = pd.read_csv(filepath)
+                old_df["date"] = pd.to_datetime(old_df["date"], errors="coerce")
+                new_df["date"] = pd.to_datetime(new_df["date"], errors="coerce")
+                combined = pd.concat([old_df, new_df], ignore_index=True)
+                combined = combined.drop_duplicates(subset="date", keep="last").sort_values("date")
+                combined["date"] = combined["date"].dt.strftime("%Y-%m-%d")
+                combined.to_csv(filepath, index=False)
+                last_date = combined["date"].iloc[-1]
+                total = len(combined)
+            else:
+                new_df.to_csv(filepath, index=False)
+                last_date = new_df["date"].iloc[-1]
+                total = len(new_df)
+            print(f"  ✅ {cfg['name']} ({sid}): {total} 行, 最新={last_date}")
+            results[sid] = True
+        except Exception as e:
+            print(f"  ❌ {cfg['name']} ({sid}): {e}")
+            results[sid] = False
+    return results
+
+
+if __name__ == "__main__":
+    targets = sys.argv[1:] if len(sys.argv) > 1 else None
+    print(f"📥 FRED Updater — {datetime.now():%Y-%m-%d %H:%M}")
+    results = update_fred(targets)
+    ok = sum(1 for v in results.values() if v)
+    print(f"\n更新結果: {ok}/{len(results)} 成功")

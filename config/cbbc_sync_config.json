@@ -1,0 +1,35 @@
+{
+  "data_sources": ["file"],
+  "sync_interval_minutes": 60,
+  "data_directory": "acquired_data",
+  "hkex": {
+    "base_url": "https://www.hkex.com.hk",
+    "endpoints": {
+      "cbbc_daily": "/Market-Data/Securities-Prices/Equities/Callable-Bulls-Bears-and-Structured-Products?sc_lang=en",
+      "cbbc_search": "/eng/market/securitie/secur/prod/datas/daily/derivatives/index.htm"
+    },
+    "headers": {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    }
+  },
+  "file": {
+    "path_pattern": "acquired_data/cbsc_real_data_*.csv",
+    "backup_enabled": true,
+    "max_backups": 10
+  },
+  "validation": {
+    "required_columns": ["Date", "HSIF_Close", "Bull_Price", "Bear_Price", "Bull_Bear_Ratio"],
+    "numeric_columns": ["HSIF_Close", "Bull_Price", "Bear_Price", "Bull_Bear_Ratio"],
+    "date_format": "%Y-%m-%d"
+  },
+  "notifications": {
+    "email": {
+      "enabled": false,
+      "recipients": []
+    },
+    "webhook": {
+      "enabled": false,
+      "url": ""
+    }
+  }
+}

@@ -1,0 +1,115 @@
+# 一次性: 建 div_yield_pit panel (date x stock wide parquet → factor_store/)
+# 語義: 每日 TTM (最近365日已除淨) 每股派息總和 / 當日未復權 close
+#   - 派息只喺 ex_date 之後先計 (PIT, 避免 lookahead: 唔用 pub_date)
+#   - 匯率: statement 內「相当于X港元」優先; 冇先至用原始金額
+#   - process 欄「未实施终止」嘅取消派息剔除 (e.g. 2020 HSBC 取消第四次息)
+# 輸入: data/new_sources/dividends_futu_raw.csv (futu_dividends_backfill.py 產出)
+#       data/futu_history/close_unadj/HK.XXXXX.csv (build_pb_panel.py 已拉)
+# 輸出: data/factor_store/div_yield_pit.parquet
+import os, sys, re
+from datetime import datetime
+import numpy as np
+import pandas as pd
+
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RAW = os.path.join(BASE, "data", "new_sources", "dividends_futu_raw.csv")
+CLOSE_DIR = os.path.join(BASE, "data", "futu_history", "close_unadj")
+OUT = os.path.join(BASE, "data", "factor_store", "div_yield_pit.parquet")
+
+log = lambda *a: print(datetime.now().strftime("%H:%M:%S"), *a, flush=True)
+
+
+def parse_hkd_amount(statement: str):
+    """由 statement 抽每股派息 (港元)。
+    優先「相当于X港元」; 退而求其次 N派X / 每股X / 息X / bare 數字。
+    匯豐呢類美元派息股冇「相当于」嘅舊記錄 (2014 前) 會 fall through 用美元數 —
+    可接受 (USD≈HKD 7.8x, 只影響 2014 前歷史, 唔影響 2021+ panel)。
+    """
+    if not statement:
+        return None
+    s = str(statement)
+    # 優先: 相当于X港元 / 相當於X港元 (可能有多段, 取第一段)
+    m = re.search(r"相当于\s*(\d+(?:\.\d+)?)\s*港元", s)
+    if m:
+        return float(m.group(1))
+    m = re.search(r"相當於\s*(\d+(?:\.\d+)?)\s*港元", s)
+    if m != None:
+        return float(m.group(1))
+    # N派X (10派2.34 → 0.234)
+    m = re.search(r"(\d+)\s*派.*?(\d+(?:\.\d+)?)", s)
+    if m:
+        base = float(m.group(1))
+        if base > 0:
+            return float(m.group(2)) / base
+    # 每股X
+    m = re.search(r"每股\s*(\d+(?:\.\d+)?)", s)
+    if m:
+        return float(m.group(1))
+    # 息X (末期息0.45美元 → 0.45)
+    m = re.search(r"(?:股息|息)\s*(\d+(?:\.\d+)?)", s)
+    if m:
+        return float(m.group(1))
+    # bare
+    m = re.search(r"(\d+\.\d+)", s)
+    if m:
+        return float(m.group(1))
+    return None
+
+
+def main():
+    div = pd.read_csv(RAW)
+    log("raw rows", len(div), "stocks", div["code"].nunique())
+    div = div[div["process"] != "未实施终止"] if "process" in div.columns else div
+    # 解析金額
+    amounts = div["statement"].map(parse_hkd_amount)
+    div = div.assign(amount_per_share=amounts)
+    n_parsed = div["amount_per_share"].notna().sum()
+    log(f"parsed {n_parsed}/{len(div)} statements")
+    div = div.dropna(subset=["amount_per_share"])
+    div = div[div["amount_per_share"] > 0]
+    div["ex_date"] = pd.to_datetime(div["ex_date"])
+    div = div.drop_duplicates(subset=["code", "ex_date"], keep="last")
+    log("usable dividend events", len(div))
+
+    frames = []
+    skipped = []
+    for code in sorted(div["code"].unique()):
+        fp = os.path.join(CLOSE_DIR, f"{code}.csv")
+        if not os.path.exists(fp):
+            skipped.append(code)
+            continue
+        px = pd.read_csv(fp, parse_dates=["time_key"]).set_index("time_key").sort_index()
+        px = px[~px.index.duplicated(keep="last")]
+        d = div[div["code"] == code].set_index("ex_date")["amount_per_share"].sort_index()
+        # TTM sum: ex_date 喺 [t-365, t] 窗口內嘅總和 — 已除淨先計 (PIT)
+        div_daily = d.reindex(pd.date_range(px.index.min(), px.index.max()), fill_value=0.0)
+        ttm = div_daily.rolling(window=365, min_periods=1).sum()
+        dy = (ttm.reindex(px.index, method="ffill") / px["close"]).where(px["close"] > 0)
+        dy.name = code
+        frames.append(dy)
+
+    if skipped:
+        log("no close file, skipped:", skipped)
+    panel = pd.concat(frames, axis=1).sort_index()
+    panel = panel[~panel.index.duplicated(keep="last")]
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    panel.to_parquet(OUT)
+    nn = int(panel.notna().sum().sum())
+    log(f"SAVED {OUT} shape={panel.shape} non-nan={nn}")
+    log("date range", panel.index.min().date(), "→", panel.index.max().date())
+    # 驗證: 匯豐 2024 股息率應該 ~6-8%
+    for probe in ["HK.00005", "HK.00388", "HK.00939"]:
+        if probe in panel.columns:
+            s = panel[probe].dropna()
+            if len(s):
+                y24 = s[str(pd.Timestamp(s.index.max()).year - 1)] if False else None
+                m24 = s[(s.index >= "2024-01-01") & (s.index <= "2024-12-31")]
+                if len(m24):
+                    log(f"{probe} 2024 div_yield mean={m24.mean():.4f} min={m24.min():.4f} max={m24.max():.4f}")
+    per = panel.notna().sum()
+    log("coverage stocks:", (per > 0).sum(), "/ min-days:", int(per[per > 0].min()))
+    log("DONE")
+
+
+if __name__ == "__main__":
+    main()

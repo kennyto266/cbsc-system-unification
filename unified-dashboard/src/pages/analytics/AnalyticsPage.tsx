@@ -1,0 +1,54 @@
+import React, { useState, useEffect } from 'react'
+import { Card, Table, Tag, Spin, Row, Col, Statistic } from 'antd'
+
+const AnalyticsPage: React.FC = () => {
+  const [data, setData] = useState<any>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/analytics/correlation?limit=20').then(r => r.json()).then(d => {
+      setData(d.data || {})
+      setLoading(false)
+    }).catch(() => setLoading(false))
+  }, [])
+
+  const pairs = data.top_pairs || []
+  const stats = data.matrix_stats || {}
+
+  const columns = [
+    { title: '#', key: 'rank', width: 40, render: (_: any, __: any, i: number) => i + 1 },
+    { title: 'Pair', dataIndex: 'pair', key: 'pair' },
+    { title: '相關性', dataIndex: 'correlation', key: 'corr', align: 'right' as const,
+      render: (v: number) => <Tag color={v > 0.7 ? 'green' : v > 0.5 ? 'blue' : 'default'}>{v?.toFixed(3)}</Tag> },
+    { title: 'Sharpe', dataIndex: 'sharpe', key: 'sr', align: 'right' as const,
+      sorter: (a: any, b: any) => a.sharpe - b.sharpe,
+      render: (v: number) => <span style={{ color: v > 1 ? '#52c41a' : v > 0 ? '#faad14' : '#ff4d4f', fontWeight: 600 }}>{v?.toFixed(2)}</span> },
+    { title: '年回報%', dataIndex: 'annual_return', key: 'ret', align: 'right' as const,
+      render: (v: number) => <span style={{ color: v >= 0 ? '#52c41a' : '#ff4d4f' }}>{v?.toFixed(1)}%</span> },
+    { title: 'MaxDD%', dataIndex: 'max_drawdown', key: 'dd', align: 'right' as const, render: (v: number) => v?.toFixed(1) + '%' },
+    { title: '勝率%', dataIndex: 'win_rate', key: 'wr', align: 'right' as const, render: (v: number) => v?.toFixed(0) + '%' },
+    { title: '跑贏B&H', dataIndex: 'beat_bh', key: 'bh',
+      render: (v: boolean) => v ? <Tag color="green">✓</Tag> : <Tag>✗</Tag> },
+  ]
+
+  return (
+    <div style={{ padding: 24 }}>
+      <h2 style={{ marginBottom: 16 }}>📊 數據分析 — 恆指相關性 + Pair Trade</h2>
+      {loading ? <Spin /> : (
+        <>
+          <Row gutter={16} style={{ marginBottom: 16 }}>
+            <Col span={6}><Card><Statistic title="總 Pair 數" value={stats.total_pairs || 0} /></Card></Col>
+            <Col span={6}><Card><Statistic title="高相關性 (≥0.6)" value={stats.high_corr || 0} valueStyle={{ color: '#52c41a' }} /></Card></Col>
+            <Col span={6}><Card><Statistic title="平均相關性" value={stats.avg_corr || 0} precision={3} /></Card></Col>
+            <Col span={6}><Card><Statistic title="跑贏B&H" value={pairs.filter((p: any) => p.beat_bh).length} suffix={`/ ${pairs.length}`} /></Card></Col>
+          </Row>
+          <Card title="🏆 Pair Trade 排名（VectorBT, 動態 Rolling, rf=4%）" size="small">
+            <Table dataSource={pairs} columns={columns} rowKey="pair" size="small" pagination={{ pageSize: 15 }} />
+          </Card>
+        </>
+      )}
+    </div>
+  )
+}
+
+export default AnalyticsPage

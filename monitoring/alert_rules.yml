@@ -1,0 +1,210 @@
+# CBSC系統告警規則
+# 定義系統監控告警閾值和規則
+
+groups:
+  - name: cbsc_system_alerts
+    rules:
+      # 服務可用性告警
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "服務 {{ $labels.job }} 已停止運行"
+          description: "服務 {{ $labels.instance }} 已超過1分鐘無響應"
+          runbook_url: "https://wiki.cbsc.com/runbook/service-down"
+
+      # API響應時間告警
+      - alert: HighResponseTime
+        expr: http_request_duration_seconds{quantile="0.95"} > 1
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "API響應時間過長"
+          description: "服務 {{ $labels.job }} 的95%響應時間超過1秒，當前值: {{ $value }}s"
+
+      # API錯誤率告警
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          category: quality
+        annotations:
+          summary: "API錯誤率過高"
+          description: "服務 {{ $labels.job }} 的錯誤率超過5%，當前值: {{ $value | humanizePercentage }}"
+
+      # CPU使用率告警
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "CPU使用率過高"
+          description: "服務器 {{ $labels.instance }} CPU使用率超過80%，當前值: {{ $value }}%"
+
+      # 內存使用率告警
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "內存使用率過高"
+          description: "服務器 {{ $labels.instance }} 內存使用率超過85%，當前值: {{ $value }}%"
+
+      # 磁盤使用率告警
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          category: resource
+        annotations:
+          summary: "磁盤使用率過高"
+          description: "服務器 {{ $labels.instance }} 磁盤 {{ $labels.mountpoint }} 使用率超過90%，當前值: {{ $value }}%"
+
+      # 數據庫連接告警
+      - alert: DatabaseConnectionFailure
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "數據庫連接失敗"
+          description: "無法連接到PostgreSQL數據庫 {{ $labels.instance }}"
+
+      # Redis連接告警
+      - alert: RedisConnectionFailure
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "Redis連接失敗"
+          description: "無法連接到Redis實例 {{ $labels.instance }}"
+
+  - name: cbsc_business_alerts
+    rules:
+      # 策略執行失敗告警
+      - alert: StrategyExecutionFailure
+        expr: rate(strategy_executions_failed_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "策略執行失敗率過高"
+          description: "策略執行失敗率超過10%，需要檢查策略配置和市場數據"
+
+      # 市場數據更新延遲告警
+      - alert: MarketDataStale
+        expr: time() - market_data_last_update_timestamp > 300
+        for: 1m
+        labels:
+          severity: warning
+          category: data
+        annotations:
+          summary: "市場數據更新延遲"
+          description: "市場數據已超過5分鐘未更新，可能影響策略執行"
+
+      # 用戶認證失敗率告警
+      - alert: HighAuthenticationFailureRate
+        expr: rate(authentication_failures_total[5m]) / rate(authentication_attempts_total[5m]) > 0.2
+        for: 3m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "用戶認證失敗率過高"
+          description: "認證失敗率超過20%，可能存在安全風險"
+
+      # 異常請求量告警
+      - alert: UnusualTrafficPattern
+        expr: rate(http_requests_total[5m]) > 100
+        for: 2m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "異常流量模式"
+          description: "服務 {{ $labels.job }} 請求量異常增加，可能遭受DDoS攻擊"
+
+  - name: cbsc_capacity_alerts
+    rules:
+      # 請求隊列積壓告警
+      - alert: RequestQueueBacklog
+        expr: http_requests_queue_length > 100
+        for: 2m
+        labels:
+          severity: warning
+          category: capacity
+        annotations:
+          summary: "請求隊列積壓"
+          description: "服務 {{ $labels.job }} 請求隊列積壓超過100個請求"
+
+      # 連接數過高告警
+      - alert: HighConnectionCount
+        expr: http_connections_active > 1000
+        for: 3m
+        labels:
+          severity: warning
+          category: capacity
+        annotations:
+          summary: "活躍連接數過高"
+          description: "服務 {{ $labels.job }} 活躍連接數超過1000，可能影響性能"
+
+      # 緩存命中率低告警
+      - alert: LowCacheHitRate
+        expr: cache_hit_rate < 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "緩存命中率過低"
+          description: "服務 {{ $labels.job }} 緩存命中率低於80%，影響性能"
+
+  - name: cbsc_security_alerts
+    rules:
+      # 異常登錄告警
+      - alert: SuspiciousLoginActivity
+        expr: rate(login_attempts_total{status="failed"}[1m]) > 10
+        for: 1m
+        labels:
+          severity: high
+          category: security
+        annotations:
+          summary: "可疑登錄活動"
+          description: "1分鐘內登錄失敗次數超過10次，可能存在暴力破解攻擊"
+
+      # 權限提升告警
+      - alert: PrivilegeEscalationAttempt
+        expr: increase(privilege_escalation_attempts_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "權限提升嘗試"
+          description: "檢測到權限提升嘗試，需要立即調查"
+
+      # 數據異常訪問告警
+      - alert: UnusualDataAccess
+        expr: rate(data_access_requests_total[5m]) > 1000
+        for: 2m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "數據訪問異常"
+          description: "數據訪問請求量異常增加，可能存在數據洩露風險"

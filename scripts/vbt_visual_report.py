@@ -1,0 +1,379 @@
+#!/usr/bin/env python3
+"""
+VectorBT 專業視覺化報告
+
+生成同 vectorbt 官網一樣嘅圖表：
+1. 📊 N × Holding 熱力圖（Plotly 互動）
+2. 📈 Portfolio 淨值曲線 + 回撤圖
+3. 📋 完整 Stats 報告
+4. 🔥 Threshold × Holding 熱力圖
+5. 📉 個別交易盈虧分佈
+
+用法:
+    python scripts/vbt_visual_report.py
+    python scripts/vbt_visual_report.py --factor dxy --stock HK.00016
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, ".")
+
+import argparse
+import numpy as np
+import pandas as pd
+import vectorbt as vbt
+from pathlib import Path
+from datetime import datetime
+
+ROOT = Path(__file__).parent.parent
+DATA = ROOT / "data"
+OHLCV_DIR = DATA / "ohlcv_5y"
+FACTORS_DIR = DATA / "factors"
+OUTPUT_DIR = DATA / "vbt_reports"
+OUTPUT_DIR.mkdir(exist_ok=True)
+
+# 成本由 backtests/vbt_data.py 統一管理 (Longbridge 港股實際口徑)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "backtests"))
+from vbt_data import (STAMP_DUTY, COMMISSION, SETTLEMENT_FEE, TRADING_FEE, SFC_LEVY, FRC_LEVY,
+                      SLIPPAGE, TOTAL_COST, RF_RATE)
+
+N_DAYS_LIST = [2, 3, 4, 5, 7]
+THRESHOLD_LIST = [0.002, 0.004, 0.006, 0.008]
+HOLDING_LIST = [3, 5, 7, 10, 14]
+
+
+def load_stock_close(stock_code):
+    path = OHLCV_DIR / f"{stock_code.replace('.', '_')}.csv"
+    if not path.exists():
+        return None
+    df = pd.read_csv(path, parse_dates=["time_key"]).set_index("time_key").sort_index()
+    return df["close"]
+
+
+def load_factor_close(name):
+    path = FACTORS_DIR / f"{name}.csv"
+    if not path.exists():
+        return None
+    df = pd.read_csv(path, index_col="date", parse_dates=True)
+    return df["close"].sort_index()
+
+
+def compute_signals(factor_close, stock_close, n_days, threshold, holding, direction="contrarian"):
+    """計算信號 → 返回 entries/exits Series"""
+    factor_ret = factor_close.pct_change()
+    cum_ret = factor_close / factor_close.shift(n_days - 1) - 1
+    common = factor_ret.index.intersection(stock_close.index)
+    if len(common) < n_days + holding + 20:
+        return None, None, None, None, None
+
+    fr = factor_ret.reindex(common).fillna(0).values
+    cr = cum_ret.reindex(common).fillna(0).values
+    close = stock_close.reindex(common)
+    n = len(fr)
+
+    entries = np.zeros(n, dtype=bool)
+    exits = np.zeros(n, dtype=bool)
+    se = np.zeros(n, dtype=bool)
+    sx = np.zeros(n, dtype=bool)
+
+    for i in range(n_days, n - holding - 1):
+        w = fr[i - n_days + 1:i + 1]
+        c = cr[i]
+        if np.isnan(c):
+            continue
+        if bool(np.all(w > 0)) and c > threshold:
+            ei = min(i + 1 + holding, n - 1)
+            if direction == "contrarian":
+                se[i + 1] = True; sx[ei] = True
+            else:
+                entries[i + 1] = True; exits[ei] = True
+        elif bool(np.all(w < 0)) and c < -threshold:
+            ei = min(i + 1 + holding, n - 1)
+            if direction == "contrarian":
+                entries[i + 1] = True; exits[ei] = True
+            else:
+                se[i + 1] = True; sx[ei] = True
+
+    idx = common
+    return (pd.Series(entries, index=idx), pd.Series(exits, index=idx),
+            pd.Series(se, index=idx), pd.Series(sx, index=idx), close)
+
+
+def generate_heatmap(factor_name, stock_code, direction="contrarian"):
+    """生成 N × Holding 熱力圖（用 Plotly）"""
+    import plotly.graph_objects as go
+
+    factor = load_factor_close(factor_name)
+    stock = load_stock_close(stock_code)
+    if factor is None or stock is None:
+        return None
+
+    # 計算所有 N × Holding × threshold 組合
+    results = []
+    for nd in N_DAYS_LIST:
+        for th in THRESHOLD_LIST:
+            for hd in HOLDING_LIST:
+                e, x, se, sx, close = compute_signals(factor, stock, nd, th, hd, direction)
+                if e is None or (not e.any() and not se.any()):
+                    continue
+                try:
+                    pf = vbt.Portfolio.from_signals(
+                        close=close, entries=e, exits=x,
+                        short_entries=se, short_exits=sx,
+                        fees=TOTAL_COST / 2, slippage=SLIPPAGE,
+                        freq="1D", init_cash=100_000)
+                    sharpe = float(pf.sharpe_ratio())
+                    ann_ret = float(pf.annualized_return())
+                    if sharpe != 0 and ann_ret != 0:
+                        vol = ann_ret / sharpe
+                        sharpe = (ann_ret - RF_RATE) / vol if vol > 0 else sharpe
+                    results.append({"N": nd, "threshold": th, "holding": hd, "sharpe": sharpe,
+                                    "return": float(pf.total_return()) * 100})
+                except Exception:
+                    pass
+
+    if not results:
+        return None
+
+    df = pd.DataFrame(results)
+
+    # 創建多個子圖
+    fig = go.Figure()
+
+    # 找最佳 threshold
+    best_th = df.loc[df["sharpe"].idxmax(), "threshold"]
+    df_best = df[df["threshold"] == best_th]
+
+    # N × Holding heatmap（固定最佳 threshold）
+    pivot_sharpe = df_best.pivot_table(index="N", columns="holding", values="sharpe")
+    pivot_return = df_best.pivot_table(index="N", columns="holding", values="return")
+
+    from plotly.subplots import make_subplots
+    fig = make_subplots(rows=1, cols=2, subplot_titles=(
+        f"Sharpe Ratio（threshold={best_th*100:.1f}%）", f"總回報%（threshold={best_th*100:.1f}%）"),
+        horizontal_spacing=0.15)
+
+    fig.add_trace(go.Heatmap(
+        z=pivot_sharpe.values, x=pivot_sharpe.columns.astype(str), y=pivot_sharpe.index.astype(str),
+        colorscale="RdYlGn", zmid=0, text=[[f"{v:.2f}" for v in row] for row in pivot_sharpe.values],
+        texttemplate="%{text}", name="Sharpe", colorbar=dict(title="Sharpe", x=0.45)
+    ), row=1, col=1)
+
+    fig.add_trace(go.Heatmap(
+        z=pivot_return.values, x=pivot_return.columns.astype(str), y=pivot_return.index.astype(str),
+        colorscale="RdYlGn", zmid=0, text=[[f"{v:.0f}%" for v in row] for row in pivot_return.values],
+        texttemplate="%{text}", name="Return", colorbar=dict(title="Return%")
+    ), row=1, col=2)
+
+    fig.update_layout(
+        title=f"🔥 {factor_name.upper()} → {stock_code}（{direction}）| N × Holding 參數掃描",
+        title_font_size=16, width=1200, height=500,
+        xaxis_title="Holding（持倉日數）", yaxis_title="N（連續日數）",
+        xaxis2_title="Holding", yaxis2_title="N"
+    )
+
+    return fig, df, best_th
+
+
+def generate_portfolio_plot(factor_name, stock_code, n_days, threshold, holding, direction):
+    """生成 Portfolio 圖（淨值曲線 + 回撤 + 交易點）"""
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+
+    factor = load_factor_close(factor_name)
+    stock = load_stock_close(stock_code)
+    if factor is None or stock is None:
+        return None
+
+    e, x, se, sx, close = compute_signals(factor, stock, n_days, threshold, holding, direction)
+    if e is None or (not e.any() and not se.any()):
+        return None
+
+    pf = vbt.Portfolio.from_signals(
+        close=close, entries=e, exits=x,
+        short_entries=se, short_exits=sx,
+        fees=TOTAL_COST / 2, slippage=SLIPPAGE,
+        freq="1D", init_cash=100_000)
+
+    # B&H 對比
+    pf_bh = vbt.Portfolio.from_holding(close, init_cash=100_000, fees=TOTAL_COST / 2, freq="1D")
+
+    # 創建子圖
+    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.08,
+                        subplot_titles=("💼 Portfolio 淨值", "📉 回撤", "📊 持倉"),
+                        row_heights=[0.5, 0.25, 0.25])
+
+    # 淨值曲線
+    strategy_value = pf.value()
+    bh_value = pf_bh.value()
+    fig.add_trace(go.Scatter(x=strategy_value.index, y=strategy_value.values,
+                            mode="lines", name="策略", line=dict(color="#00d4ff", width=2)), row=1, col=1)
+    fig.add_trace(go.Scatter(x=bh_value.index, y=bh_value.values,
+                            mode="lines", name="Buy & Hold", line=dict(color="#666", width=1, dash="dash")), row=1, col=1)
+
+    # 回撤（vectorbt 1.0 用 drawdown()，非 depth()；回傳負值小數）
+    dd = pf.drawdown()
+    fig.add_trace(go.Scatter(x=dd.index, y=dd.values * 100,
+                            mode="lines", name="回撤%", line=dict(color="#ff3366", width=1),
+                            fill="tozeroy", fillcolor="rgba(255,51,102,0.2)"), row=2, col=1)
+
+    # 持倉
+    pos = pf.asset_value(group_by=False) / pf.value(group_by=False) * 100
+    if hasattr(pos, "values"):
+        pos_data = pos.values if hasattr(pos, "values") else np.array(pos)
+    else:
+        pos_data = np.zeros(len(close))
+
+    fig.add_trace(go.Scatter(x=close.index, y=pos_data if hasattr(pos_data, '__len__') else [0]*len(close),
+                            mode="lines", name="持倉%", line=dict(color="#00ff88", width=1),
+                            fill="tozeroy", fillcolor="rgba(0,255,136,0.15)"), row=3, col=1)
+
+    fig.update_layout(
+        title=f"📈 {factor_name.upper()} → {stock_code} | N={n_days} th={threshold*100:.1f}% h={holding} {direction}",
+        title_font_size=16, width=1200, height=800,
+        template="plotly_dark",
+        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    fig.update_yaxes(title_text="HKD", row=1, col=1)
+    fig.update_yaxes(title_text="回撤%", row=2, col=1)
+    fig.update_yaxes(title_text="持倉%", row=3, col=1)
+
+    return fig, pf
+
+
+def generate_stats_report(pf, factor_name, stock_code, n_days, threshold, holding, direction):
+    """生成完整 stats 報告"""
+    lines = []
+    lines.append(f"# {factor_name.upper()} → {stock_code} 完整報告")
+    lines.append(f"")
+    lines.append(f"**參數**: N={n_days} | threshold={threshold*100:.1f}% | holding={holding}日 | {direction}")
+    lines.append(f"**成本**: {TOTAL_COST*100:.2f}%/來回（含 {SLIPPAGE*100:.1f}% 滑點）")
+    lines.append(f"**無風險利率**: {RF_RATE*100:.0f}%")
+    lines.append(f"")
+
+    try:
+        stats = pf.stats()
+        lines.append(f"## 完整統計")
+        lines.append(f"")
+        lines.append(f"```")
+        lines.append(stats.to_string())
+        lines.append(f"```")
+    except Exception:
+        pass
+
+    lines.append(f"")
+    lines.append(f"## 關鍵指標")
+    lines.append(f"")
+    lines.append(f"| 指標 | 數值 |")
+    lines.append(f"|------|------|")
+
+    for metric, func in [("總回報%", lambda: pf.total_return()*100),
+                         ("年化回報%", lambda: pf.annualized_return()*100),
+                         ("Sharpe", lambda: pf.sharpe_ratio()),
+                         ("Sortino", lambda: pf.sortino_ratio()),
+                         ("Calmar", lambda: pf.calmar_ratio()),
+                         ("Max DD%", lambda: pf.max_drawdown()*100),
+                         ("交易數", lambda: len(pf.trades.records_readable))]:
+        try:
+            val = func()
+            lines.append(f"| {metric} | {val:.2f} |")
+        except Exception:
+            lines.append(f"| {metric} | - |")
+
+    # 交易明細
+    try:
+        trades = pf.trades.records_readable
+        if not trades.empty:
+            lines.append(f"")
+            lines.append(f"## 交易明細（最近 20 筆）")
+            lines.append(f"")
+            lines.append(f"| # | 方向 | 入場 | 出場 | 入場價 | 出場價 | 盈虧 | 回報% |")
+            lines.append(f"|---|------|------|------|--------|--------|------|-------|")
+            for i, (_, t) in enumerate(trades.tail(20).iterrows()):
+                side = "做多" if t.get("Direction", "") == "Long" else "做空" if t.get("Direction", "") == "Short" else "-"
+                pnl = t.get("PnL", 0)
+                ret = t.get("Return", 0)
+                entry_idx = t.get("Entry Index", "")
+                exit_idx = t.get("Exit Index", "")
+                entry_price = t.get("Avg Entry Price", 0)
+                exit_price = t.get("Avg Exit Price", 0)
+                lines.append(f"| {i+1} | {side} | {entry_idx} | {exit_idx} | {entry_price:.2f} | {exit_price:.2f} | {pnl:+.0f} | {ret*100:+.1f}% |")
+    except Exception:
+        pass
+
+    return "\n".join(lines)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="VectorBT 專業視覺化報告")
+    parser.add_argument("--factor", default="dxy")
+    parser.add_argument("--stock", default="HK.00016")
+    parser.add_argument("--n-days", type=int, default=2)
+    parser.add_argument("--threshold", type=float, default=0.008)
+    parser.add_argument("--holding", type=int, default=10)
+    parser.add_argument("--direction", default="contrarian")
+    parser.add_argument("--all", action="store_true", help="為所有 Sharpe>1 組合生成圖")
+    args = parser.parse_args()
+
+    print("=" * 80)
+    print("📊 VectorBT 專業視覺化報告")
+    print("=" * 80)
+    print(f"時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"VectorBT: {vbt.__version__}")
+
+    if args.all:
+        # 為所有 Sharpe > 1 嘅組合生成圖
+        df = pd.read_csv(OUTPUT_DIR.parent / "vbt_factor_reports" / "param_sweep_all_results.csv")
+        df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=["sharpe"])
+        top = df[df["sharpe"] > 1.0].sort_values("sharpe", ascending=False).head(10)
+
+        print(f"\n為 {len(top)} 個 Sharpe > 1 組合生成圖表...\n")
+
+        for _, r in top.iterrows():
+            factor = r["factor"]
+            stock = r["stock"]
+            nd = int(r["n_days"])
+            th = r["threshold"]
+            hd = int(r["holding"])
+            dr = r["direction"]
+            print(f"  📊 {factor} → {stock} N={nd} th={th*100:.1f}% h={hd} {dr} (SR={r['sharpe']:.2f})")
+            generate_single(factor, stock, nd, th, hd, dr)
+
+    else:
+        generate_single(args.factor, args.stock, args.n_days, args.threshold, args.holding, args.direction)
+
+    print(f"\n✓ 全部圖表已儲存至 {OUTPUT_DIR}/")
+
+
+def generate_single(factor_name, stock_code, n_days, threshold, holding, direction):
+    """為單個組合生成所有圖"""
+    safe_name = f"{factor_name}_{stock_code.replace('.','_')}_N{n_days}_th{threshold}_h{holding}"
+
+    # 1. 熱力圖
+    print(f"    📊 熱力圖...")
+    result = generate_heatmap(factor_name, stock_code, direction)
+    if result:
+        fig, df, best_th = result
+        fig.write_html(str(OUTPUT_DIR / f"heatmap_{safe_name}.html"))
+        try: fig.write_image(str(OUTPUT_DIR / f"heatmap_{safe_name}.png"), width=1200, height=500)
+        except: pass
+
+    # 2. Portfolio 圖
+    print(f"    📈 Portfolio 圖...")
+    result = generate_portfolio_plot(factor_name, stock_code, n_days, threshold, holding, direction)
+    if result:
+        fig, pf = result
+        fig.write_html(str(OUTPUT_DIR / f"portfolio_{safe_name}.html"))
+        try: fig.write_image(str(OUTPUT_DIR / f"portfolio_{safe_name}.png"), width=1200, height=800)
+        except: pass
+
+        # 3. Stats 報告
+        print(f"    📋 Stats 報告...")
+        report = generate_stats_report(pf, factor_name, stock_code, n_days, threshold, holding, direction)
+        with open(OUTPUT_DIR / f"report_{safe_name}.md", "w", encoding="utf-8") as f:
+            f.write(report)
+
+    print(f"    ✅ {safe_name} 完成")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,154 @@
+# CBSC Strategy API Alerting Rules
+# CBSC策略API告警规则
+
+groups:
+  - name: cbsc-api-health
+    rules:
+      # API服务不可用告警
+      - alert: APIServiceDown
+        expr: up{job="cbsc-strategy-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: cbsc-strategy-api
+        annotations:
+          summary: "CBSC Strategy API service is down"
+          description: "CBSC Strategy API has been down for more than 1 minute"
+
+      # API响应时间告警
+      - alert: APIHighResponseTime
+        expr: http_request_duration_seconds{quantile="0.95", job="cbsc-strategy-api"} > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: cbsc-strategy-api
+        annotations:
+          summary: "API response time is high"
+          description: "95th percentile response time is {{ $value }}s"
+
+      # API错误率告警
+      - alert: APIHighErrorRate
+        expr: rate(http_requests_total{status=~"5..", job="cbsc-strategy-api"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: cbsc-strategy-api
+        annotations:
+          summary: "API error rate is high"
+          description: "API 5xx error rate is {{ $value | humanizePercentage }}"
+
+      # API请求量突增告警
+      - alert: APIHighRequestRate
+        expr: rate(http_requests_total{job="cbsc-strategy-api"}[5m]) > 100
+        for: 5m
+        labels:
+          severity: info
+          service: cbsc-strategy-api
+        annotations:
+          summary: "API request rate is unusually high"
+          description: "API is receiving {{ $value }} requests per second"
+
+  - name: cbsc-api-resources
+    rules:
+      # 内存使用率告警
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: cbsc-strategy-api
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      # CPU使用率告警
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: cbsc-strategy-api
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%"
+
+      # 磁盘空间告警
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"}) * 100 < 10
+        for: 2m
+        labels:
+          severity: critical
+          service: cbsc-strategy-api
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is {{ $value }}% available"
+
+  - name: cbsc-database-health
+    rules:
+      # PostgreSQL连接数告警
+      - alert: PostgreSQLTooManyConnections
+        expr: pg_stat_database_numbackends / pg_settings_max_connections * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL too many connections"
+          description: "PostgreSQL connection usage is {{ $value }}%"
+
+      # PostgreSQL查询时间告警
+      - alert: PostgreSQLSlowQueries
+        expr: pg_stat_statements_mean_time_seconds > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL slow queries"
+          description: "Average query time is {{ $value }}s"
+
+      # Redis内存使用告警
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}"
+
+  - name: cbsc-business-metrics
+    rules:
+      # 策略执行失败率告警
+      - alert: StrategyExecutionFailureRate
+        expr: rate(strategy_executions_failed_total[5m]) / rate(strategy_executions_total[5m]) > 0.2
+        for: 3m
+        labels:
+          severity: warning
+          service: cbsc-strategy-api
+        annotations:
+          summary: "High strategy execution failure rate"
+          description: "Strategy execution failure rate is {{ $value | humanizePercentage }}"
+
+      # 活跃策略数告警
+      - alert: LowActiveStrategies
+        expr: active_strategies_count < 1
+        for: 10m
+        labels:
+          severity: info
+          service: cbsc-strategy-api
+        annotations:
+          summary: "No active strategies"
+          description: "Number of active strategies is {{ $value }}"
+
+      # WebSocket连接数告警
+      - alert: WebSocketConnectionCount
+        expr: websocket_connections_current > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: cbsc-strategy-api
+        annotations:
+          summary: "High WebSocket connection count"
+          description: "WebSocket connections: {{ $value }}"

@@ -1,0 +1,35 @@
+# -*- coding: utf-8 -*-
+"""build_aas_panels.py — aastocks_short raw → aas_ssm/ssr/ssr5 三塊 parquet (09-15 G50843).
+
+舊 builder 藏喺任務波次 inline code; raw (NS/aastocks_short.csv, agent2h_collect_short_prescan
+日更, 2026-08-03 起累積) 一直有貨 — 補返做常設 builder。合約跟 factor_panels.py:
+  aas_ssm = mkt_share_pct (隻股沽空佔大市沽空%) | aas_ssr = ssr | aas_ssr5 = ssr_5d
+冪等: 重跑一樣。
+"""
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "aastocks_short.csv"
+STORE = BASE / "data" / "factor_store"
+MAP = {"aas_ssm": "mkt_share_pct", "aas_ssr": "ssr", "aas_ssr5": "ssr_5d"}
+
+
+def main() -> int:
+    df = pd.read_csv(RAW)
+    df["date"] = pd.to_datetime(df["date"])
+    for panel, col in MAP.items():
+        if col not in df.columns:
+            print(f"⚠️ raw 冇 {col} 欄 — 契約變咗?")
+            continue
+        wide = df.pivot_table(index="date", columns="code", values=col, aggfunc="last").sort_index()
+        wide.index.name = "date"
+        wide.to_parquet(STORE / f"{panel}.parquet")
+        print(f"{panel}: {wide.shape[0]}日 x {wide.shape[1]}股 → {wide.index.max().date()}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""掃 hkptrc 全部策略 × 全部股票, 存排行榜 CSV."""
+import sys
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+import warnings
+warnings.filterwarnings("ignore")
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from vbt_hkptrc import run_all_hkptrc, HKPTRC_REGISTRY
+from vbt_data import FACTOR_STOCKS
+
+OUT_CSV = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports\hkptrc_leaderboard.csv")
+
+# 只掃純 OHLCV 策略 (資金/SEC 需 API, 跳過)
+ohh_sids = [sid for sid, (n, c, f, d) in HKPTRC_REGISTRY.items()
+            if f is not None and d not in ("skip", "futu_capital", "northbound", "sec_api")]
+print(f"掃 {len(ohh_sids)} 策略 × {len(FACTOR_STOCKS)} 股 = {len(ohh_sids)*len(FACTOR_STOCKS)} combos")
+
+df = run_all_hkptrc(FACTOR_STOCKS, strategy_ids=ohh_sids, verbose=True)
+
+# 清垃圾: 過濾 inf / 0 交易 / NaN
+df = df.replace([np.inf, -np.inf], np.nan)
+df = df.dropna(subset=["Sharpe"])
+df = df[df["交易數"] >= 10]   # 最少 10 筆交易 (排除小樣本僥倖, e.g. 2-3筆100%勝率)
+df = df[df["MDD%"] < 0]  # 正常策略 MDD 係負數
+df = df[df["Sharpe"] < 50]  # 排除異常值
+df = df[df["Sharpe"] > -50]  # 排除異常值
+df = df[df["交易數"] >= 10]   # 最少 10 筆交易
+df = df[df["Alpha值"] > 0]   # 策略 Sharpe 必須 > Buy&Hold Sharpe
+df = df.sort_values("Alpha值", ascending=False).reset_index(drop=True)
+
+OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
+df.to_csv(OUT_CSV, index=False)
+print(f"\n✅ 存到: {OUT_CSV}")
+print(f"有效結果: {len(df)} 行")
+print(f"Sharpe>1: {(df['Sharpe']>1).sum()}")
+print(f"Sharpe>2: {(df['Sharpe']>2).sum()}")
+print(f"Sharpe>3: {(df['Sharpe']>3).sum()}")
+print("\n=== Top 25 ===")
+print(df.head(25).to_string(index=False))
+
+# Telegram 推送 (如果配置咗 token)
+try:
+    sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+    from vbt_telegram import TelegramNotifier
+    tg = TelegramNotifier()
+    if tg.ready:
+        tg.send_leaderboard("🏆 hkptrc 排行榜 (新成本)", df, top_n=5)
+        print("📨 已推送到 Telegram")
+except Exception as e:
+    print(f"(Telegram 推送跳過: {e})")
+

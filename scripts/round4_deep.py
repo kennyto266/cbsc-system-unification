@@ -1,0 +1,172 @@
+"""Deep-dive D31 (Upper Shadow Rejection) + correlation test."""
+import sys
+sys.path = [p for p in sys.path if 'CODEX' not in p]
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\backtests')
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts')
+import warnings
+warnings.filterwarnings('ignore')
+import numpy as np, pandas as pd
+from pathlib import Path
+from vbt_data import FACTOR_STOCKS
+
+DATA_5Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y')
+DATA_10Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr')
+SPLIT = pd.Timestamp('2024-01-01')
+
+ohlcv_cache = {}
+for s in FACTOR_STOCKS:
+    fname = s.replace('.', '_')
+    for d in [DATA_10Y, DATA_5Y]:
+        p = d / f'{fname}.csv'
+        if p.exists():
+            ohlcv_cache[s] = pd.read_csv(p, parse_dates=['time_key']).set_index('time_key').sort_index()
+            break
+
+
+def compute_portfolio(entry_func, hold=3):
+    all_rets = {}
+    for stock, df in ohlcv_cache.items():
+        if len(df) < 400: continue
+        close = df['close'].astype(float)
+        try:
+            entries = entry_func(close, df)
+            if entries is None: continue
+            ret1 = close.pct_change()
+            pos = pd.Series(0, index=close.index)
+            in_pos = False; dl = 0
+            for i in range(len(close)):
+                if entries.iloc[i] and not in_pos: in_pos = True; dl = hold
+                pos.iloc[i] = 1 if in_pos else 0
+                if in_pos:
+                    dl -= 1
+                    if dl <= 0: in_pos = False
+            all_rets[stock] = (pos.shift(1) * ret1).dropna()
+        except Exception: pass
+    if not all_rets: return None
+    return pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+
+
+def uprej_signal(close, df, shadow_mult=2.0, vol_mult=1.5, mom_window=5):
+    opn = df['open'].astype(float)
+    high = df['high'].astype(float)
+    vol = df['volume'].astype(float)
+    body = (close - opn).abs()
+    upper_shadow = (high - opn.clip(lower=close))
+    rejection = upper_shadow > body * shadow_mult
+    vol_spike = vol > vol.rolling(20).mean() * vol_mult
+    mom = close.pct_change(mom_window) > 0
+    return (rejection & vol_spike & mom).shift(1).fillna(False)
+
+
+# ===== Existing 4 alphas for correlation =====
+def a159(close, df):
+    vol = df['volume'].astype(float)
+    ema_f = close.ewm(span=12, adjust=False).mean()
+    ema_s = close.ewm(span=26, adjust=False).mean()
+    macd = ema_f - ema_s; sig = macd.ewm(span=9, adjust=False).mean(); hist = macd - sig
+    e1 = ((hist > 0) & (hist > hist.shift(1))).shift(1).fillna(False)
+    vs = (vol - vol.rolling(20).mean()) / vol.rolling(20).std().replace(0, np.nan)
+    e2 = ((vs > 1.5) & (close.pct_change(5) > 0)).shift(1).fillna(False)
+    return (e1 & e2).fillna(False)
+
+def a160(close, df):
+    sma = close.rolling(100).mean(); dev = (close - sma) / sma
+    z = (dev - dev.rolling(120).mean()) / dev.rolling(120).std().replace(0, np.nan)
+    return (z < -1.5).shift(1).fillna(False)
+
+def a161(close, df):
+    high, low = df['high'].astype(float), df['low'].astype(float)
+    tr = pd.concat([(high-low), (high-close.shift()).abs(), (low-close.shift()).abs()], axis=1).max(axis=1)
+    atr = tr.rolling(14).mean(); atr_pct = atr / close
+    low_atr = atr_pct.rolling(60).rank(pct=True) < 0.15
+    sma = close.rolling(50).mean()
+    return (low_atr & (close > sma)).shift(1).fillna(False)
+
+FAC = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors')
+df_vix = pd.read_csv(FAC / 'vix.csv').set_index(pd.to_datetime(pd.read_csv(FAC/'vix.csv')['date'])).sort_index()
+vix = df_vix['close'].astype(float)
+
+def a162(close, df):
+    vix_a = vix.reindex(close.index).ffill()
+    z = (vix_a - vix_a.rolling(90).mean()) / vix_a.rolling(90).std().replace(0, np.nan)
+    return (z > 2.0).shift(1).fillna(False)
+
+
+print('='*65)
+print('D31 Upper Shadow Rejection — Parameter Sweep')
+print('='*65)
+print(f'{"shad":>5} {"vol":>5} {"mom":>4} {"hold":>4} {"IS":>6} {"OOS":>6} {"ret":>7} {"DD":>7}')
+best = (0, None)
+for sm in [1.5, 2.0, 2.5, 3.0]:
+    for vm in [1.3, 1.5, 2.0]:
+        for mw in [3, 5]:
+            for hold in [3, 5]:
+                def entry(close, df, s=sm, v=vm, m=mw):
+                    return uprej_signal(close, df, shadow_mult=s, vol_mult=v, mom_window=m)
+                result = compute_portfolio(entry, hold=hold)
+                if result is None: continue
+                oos = result[result.index >= SPLIT].dropna()
+                is_ = result[result.index < SPLIT].dropna()
+                if len(oos) < 20: continue
+                oos_sr = oos.mean()/oos.std()*np.sqrt(252) if oos.std() > 0 else 0
+                is_sr = is_.mean()/is_.std()*np.sqrt(252) if is_.std() > 0 else 0
+                ret = (1+oos).cumprod().iloc[-1]-1
+                dd = ((1+oos).cumprod()/(1+oos).cumprod().cummax()-1).min()
+                tag = '🟢' if oos_sr > 1.0 else '✨' if oos_sr > 0.7 else '  ' if oos_sr > 0.4 else '❌'
+                print(f'  {tag} {sm:>4.1f} {vm:>5.1f} {mw:>4} {hold:>4} {is_sr:>+6.2f} {oos_sr:>+6.2f} {ret:>+6.1%} {dd:>6.1%}')
+                if oos_sr > best[0] and abs(dd) < 0.10:
+                    best = (oos_sr, (sm, vm, mw, hold, is_sr, oos_sr, dd, ret))
+
+print(f'\nBest (DD<10%): shadow={best[1][0]} vol={best[1][1]} mom={best[1][2]} hold={best[1][3]} OOS_SR={best[1][5]:.2f} DD={best[1][6]:.1%}')
+
+# Walk-forward
+print('\n=== Walk-Forward (best config) ===')
+sm, vm, mw, hold = best[1][:4]
+all_rets = {}
+for stock, df in ohlcv_cache.items():
+    if len(df) < 400: continue
+    close = df['close'].astype(float)
+    entries = uprej_signal(close, df, shadow_mult=sm, vol_mult=vm, mom_window=mw)
+    ret1 = close.pct_change()
+    pos = pd.Series(0, index=close.index); in_pos=False; dl=0
+    for i in range(len(close)):
+        if entries.iloc[i] and not in_pos: in_pos=True; dl=hold
+        pos.iloc[i]=1 if in_pos else 0
+        if in_pos:
+            dl-=1
+            if dl<=0: in_pos=False
+    all_rets[stock] = (pos.shift(1)*ret1).dropna()
+daily = pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+for year in range(2019, 2027):
+    yr = daily[daily.index.year == year].dropna()
+    if len(yr) < 20: continue
+    sr = yr.mean()/yr.std()*np.sqrt(252) if yr.std() > 0 else 0
+    ret = (1+yr).cumprod().iloc[-1]-1
+    tag = '✅' if sr > 0.5 else '⚠️' if sr > 0 else '❌'
+    print(f'  {year}: SR={sr:+.2f} ret={ret:+.1%} {tag}')
+
+# Correlation with existing 4
+print('\n=== Correlation with A159-162 ===')
+candidates = {
+    'A159': compute_portfolio(a159, hold=3),
+    'A160': compute_portfolio(a160, hold=10),
+    'A161': compute_portfolio(a161, hold=3),
+    'A162': compute_portfolio(a162, hold=5),
+    'D31': compute_portfolio(lambda c,d: uprej_signal(c,d,shadow_mult=best[1][0],vol_mult=best[1][1],mom_window=best[1][2]), hold=best[1][3]),
+}
+df_all = pd.DataFrame(candidates).dropna()
+oos = df_all[df_all.index >= SPLIT]
+corr = oos.corr()
+print('          ' + '  '.join(f'{c:>6s}' for c in df_all.columns))
+for r in df_all.columns:
+    row = '  '.join(f'{corr.loc[r,c]:>+6.3f}' for c in df_all.columns)
+    print(f'  {r:>6s}: {row}')
+
+# 5-way combo
+print('\n=== 5-Way Combinations ===')
+combo5 = sum(oos[c] * 0.2 for c in df_all.columns)
+sr5 = combo5.mean()/combo5.std()*np.sqrt(252) if combo5.std() > 0 else 0
+ret5 = (1+combo5).cumprod().iloc[-1]-1
+dd5 = ((1+combo5).cumprod()/(1+combo5).cumprod().cummax()-1).min()
+tag = '🏆' if sr5 > 2.0 else '🟢'
+print(f'  {tag} 5-equal (20% each): SR={sr5:+.2f} ret={ret5:+.1%} DD={dd5:.1%}')

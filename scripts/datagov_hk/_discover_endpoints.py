@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""_discover_endpoints.py — discover HKMA API endpoints by crawling the doc site.
+
+The apidocs.hkma.gov.hk documentation sub-paths mirror the API endpoint paths:
+  doc  /documentation/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily
+  api  /public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily  (confirmed working)
+
+This crawls all monthly-statistical-bulletin sub-categories, collects dataset
+slugs, verifies each against the live API, and emits endpoint_map candidates.
+"""
+import json
+import re
+import time
+import requests
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
+DOC = "https://apidocs.hkma.gov.hk/documentation/market-data-and-statistics"
+API_BASE = "https://api.hkma.gov.hk/public/market-data-and-statistics"
+
+
+def get_subcategory_links(driver, url):
+    driver.get(url)
+    time.sleep(5)
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
+    time.sleep(2)
+    links = driver.execute_script(
+        "return [...document.querySelectorAll('a[href]')].map(a=>a.href)")
+    out = set()
+    for h in links:
+        m = re.search(r"/documentation/market-data-and-statistics/(monthly-statistical-bulletin/[^#?]+)$", h)
+        if m and m.group(1).count("/") >= 2:
+            out.add(m.group(1).rstrip("/"))
+    return sorted(out)
+
+
+def verify(slugpath):
+    """slugpath e.g. 'monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily'"""
+    url = f"{API_BASE}/{slugpath}"
+    try:
+        r = requests.get(url, params={"pagesize": 1, "offset": 0},
+                         timeout=15, headers={"User-Agent": "Mozilla/5.0"})
+    except Exception:
+        return False, 0
+    if r.status_code != 200:
+        return False, 0
+    try:
+        n = len(r.json().get("result", {}).get("records", []))
+    except Exception:
+        return False, 0
+    return True, n
+
+
+def main():
+    o = Options()
+    o.add_argument("--headless=new"); o.add_argument("--no-sandbox"); o.add_argument("--disable-gpu")
+    d = webdriver.Chrome(options=o)
+
+    # 1. find monthly-statistical-bulletin sub-categories
+    print("finding sub-categories...")
+    subcats = get_subcategory_links(d, DOC + "/monthly-statistical-bulletin/")
+    print(f"  {len(subcats)} sub-category pages")
+
+    # 2. for each subcat, find dataset slugs (one level deeper)
+    all_dataset_paths = set()
+    for sc in subcats:
+        kids = get_subcategory_links(d, f"https://apidocs.hkma.gov.hk/documentation/market-data-and-statistics/{sc}/")
+        for k in kids:
+            if k.count("/") == 2:  # monthly-statistical-bulletin/<subcat>/<dataset>
+                all_dataset_paths.add(k)
+    print(f"  {len(all_dataset_paths)} candidate dataset endpoint paths")
+
+    d.quit()
+
+    # 3. verify each against the live API
+    working = {}
+    for p in sorted(all_dataset_paths):
+        ok, n = verify(p)
+        if ok:
+            working[p] = n
+            print(f"  OK  /public/market-data-and-statistics/{p}  (recs={n})")
+        time.sleep(0.1)
+
+    print(f"\n=== {len(working)} working endpoints ===")
+    out = {f"/public/market-data-and-statistics/{p}": n for p, n in working.items()}
+    with open("_hkma_endpoints_found.json", "w", encoding="utf-8") as f:
+        json.dump(out, f, ensure_ascii=False, indent=2)
+    print("written to _hkma_endpoints_found.json")
+
+
+if __name__ == "__main__":
+    main()

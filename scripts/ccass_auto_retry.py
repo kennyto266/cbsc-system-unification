@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+"""每 30 分鐘自動重試拉 CCASS 剩餘股票. HKEX IP ban 解除後自動拉完."""
+import time, os
+from pathlib import Path
+from glob import glob
+BASE = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification")
+CCASS_DIR = BASE / "data" / "ccass"
+OHLCV_DIR = BASE / "data" / "ohlcv_5y"
+URL = "https://www3.hkexnews.hk/sdw/search/searchsdw.aspx"
+
+def try_fetch():
+    import requests
+    from bs4 import BeautifulSoup
+    import pandas as pd
+    s = requests.Session()
+    s.headers["User-Agent"] = "Mozilla/5.0"
+    try:
+        r = s.get(URL, timeout=8)
+        if r.status_code != 200: return -1
+    except: return -1
+    existing = set(os.path.basename(f).replace("_ccass.csv","") for f in glob(str(CCASS_DIR / "*.csv")))
+    all_s = [os.path.basename(p).replace(".csv","") for p in sorted(OHLCV_DIR.glob("HK_*.csv"))]
+    missing = [x for x in all_s if x not in existing]
+    if not missing: return 0
+    soup = BeautifulSoup(r.text, "html.parser")
+    vs = soup.find("input", {"name": "__VIEWSTATE"})
+    vg = soup.find("input", {"name": "__VIEWSTATEGENERATOR"})
+    if not vs or not vg: return -1
+    ok = 0
+    for sc in missing:
+        cn = sc.replace("HK_","").lstrip("0") or "0"
+        hk = f"{int(cn):05d}"
+        data = {"__EVENTTARGET":"btnSearch","__EVENTARGUMENT":"","__VIEWSTATE":vs["value"],
+                "__VIEWSTATEGENERATOR":vg["value"],"txtStockCode":hk,
+                "txtShareholdingDate":"2026/06/25","today":"20260626",
+                "sortBy":"shareholding","sortDirection":"desc",
+                "originalShareholdingDate":"","alertMsg":""}
+        try:
+            r2 = s.post(URL, data=data, timeout=8)
+            if "Participant ID" not in r2.text: continue
+            soup2 = BeautifulSoup(r2.text, "html.parser")
+            table = soup2.find("table", class_="table-mobile-list")
+            holdings = []
+            for tr in table.find_all("tr")[1:]:
+                cells = tr.find_all("td")
+                if len(cells) >= 5:
+                    try:
+                        holdings.append({"date":"2026-06-25","stock":hk,
+                            "participant_id":cells[0].text.strip(),
+                            "participant_name":cells[1].text.strip(),
+                            "shares":int(cells[3].text.strip().replace(",","")),
+                            "pct_of_total":float(cells[4].text.strip().replace("%",""))})
+                    except: pass
+            if holdings:
+                pd.DataFrame(holdings).to_csv(CCASS_DIR / f"{sc}_ccass.csv", index=False)
+                ok += 1
+                vnew = soup2.find("input", {"name": "__VIEWSTATE"})
+                if vnew: vs["value"] = vnew["value"]
+        except: pass
+    return ok
+
+if __name__ == "__main__":
+    from datetime import datetime
+    while True:
+        total = len(glob(str(CCASS_DIR / "*.csv")))
+        print(f"[{datetime.now():%H:%M}] CCASS: {total}/79", flush=True)
+        if total >= 79:
+            print("✅ 全部完成!", flush=True); break
+        ok = try_fetch()
+        if ok > 0:
+            total = len(glob(str(CCASS_DIR / "*.csv")))
+            print(f"  ✅ 新增 {ok}, 總共 {total}/79", flush=True)
+        else:
+            print(f"  ❌ HKEX 仍未解封, 30 分鐘後重試", flush=True)
+        time.sleep(1800)

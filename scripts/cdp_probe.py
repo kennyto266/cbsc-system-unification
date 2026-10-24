@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+"""probe via local Comet CDP 9223 — fetch a URL inside a real tab, dump text/html."""
+import json, sys, urllib.request, base64, time
+
+def tabs():
+    return json.load(urllib.request.urlopen("http://127.0.0.1:9223/json"))
+
+def new_tab(url):
+    import urllib.parse
+    req = urllib.request.Request(
+        "http://127.0.0.1:9223/json/new?" + urllib.parse.quote(url, safe=":/?&=%"), method="PUT")
+    return json.load(urllib.request.urlopen(req))
+
+def ws(tab):
+    import websocket  # pip install websocket-client
+    w = websocket.create_connection(tab["webSocketDebuggerUrl"], timeout=30, suppress_origin=True)
+    return w
+
+def send(w, i, method, **params):
+    w.send(json.dumps({"id": i, "method": method, "params": params}))
+    while True:
+        m = json.loads(w.recv())
+        if m.get("id") == i:
+            return m
+
+def fetch_text(url, wait=6):
+    t = new_tab(url)
+    time.sleep(wait)
+    w = ws(t)
+    r = send(w, 1, "Runtime.evaluate",
+             expression="document.body ? document.body.innerText.slice(0,200000) : 'EMPTY'",
+             returnByValue=True)
+    r2 = send(w, 2, "Runtime.evaluate",
+              expression="document.documentElement.outerHTML.length",
+              returnByValue=True)
+    html_len = r2.get("result", {}).get("result", {}).get("value")
+    txt = r.get("result", {}).get("result", {}).get("value", "")
+    send(w, 3, "Page.close")  # may fail; ignore
+    w.close()
+    # close tab via http
+    try:
+        tid = t.get("id")
+        urllib.request.urlopen(f"http://127.0.0.1:9223/json/close/{tid}")
+    except Exception:
+        pass
+    return txt, html_len
+
+if __name__ == "__main__":
+    url = sys.argv[1]
+    txt, hl = fetch_text(url)
+    print("HTML_LEN", hl)
+    print(txt[:5000])

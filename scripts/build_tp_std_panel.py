@@ -1,0 +1,87 @@
+"""build_tp_std_panel.py — agent2-H 2026-08-23: thesis cs_target_price_dispersion.
+
+輸入: data/new_sources/analyst_ratings_em_raw.csv (逐筆研報事件, 156股,
+      date/broker/rating/target_price; 由 collect_analyst_ratings_em.py 日更)
+輸出: data/factor_store/target_price_std.parquet (wide date × HK.XXXXX)
+      + data/new_sources/tp_disp_em_panel.csv (long: date, code, tp_mean, tp_std, tp_n)
+
+算法 (同 build_analyst_tp_panel.py 一致嘅 PIT 原則):
+  只用 date <= 該日嘅研報, 90日滾動窗內有 TP 嘅研報;
+  tp_std = 標準差 (ddof=0, 樣本最少2筆先定義分歧度);
+  panel 值 = tp_std / close (分歧度相對化, 同 thesis ranking_metric 需求一致;
+  target_price panel 已有, 呢度只加 std 維度). 窗內冇研報 → NaN (唔 ffill std,
+  因為「冇新信息」唔等於「冇分歧」).
+close 來源: data/futu_history/close_unadj/HK.XXXXX.csv (futu, 51股) —
+  覆蓋唔夠就用 ohlcv_10yr/HK_XXXXX.csv close 欄補.
+"""
+import numpy as np
+import pandas as pd
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+NS = BASE / "data" / "new_sources"
+FUTU = BASE / "data" / "futu_history" / "close_unadj"
+OHLCV = BASE / "data" / "ohlcv_10yr"
+OUT_PARQUET = BASE / "data" / "factor_store" / "target_price_std.parquet"
+OUT_LONG = NS / "tp_disp_em_panel.csv"
+
+raw = pd.read_csv(NS / "analyst_ratings_em_raw.csv", dtype={"stock_code": str})
+raw["stock_code"] = raw["stock_code"].str.zfill(5)
+raw["date"] = pd.to_datetime(raw["date"])
+raw["target_price"] = pd.to_numeric(raw["target_price"], errors="coerce")
+
+
+def load_close(code5):
+    f = FUTU / f"HK.{code5}.csv"
+    if f.exists():
+        s = pd.read_csv(f, parse_dates=["time_key"]).set_index("time_key")["close"]
+        if len(s):
+            return s
+    f = OHLCV / f"HK_{code5}.csv"
+    if f.exists():
+        s = pd.read_csv(f, parse_dates=["time_key"]).set_index("time_key")["close"]
+        return s
+    return None
+
+
+rows = []
+for code, g in raw.groupby("stock_code"):
+    g = g.sort_values("date")
+    ev = g.dropna(subset=["target_price"]).set_index("date")["target_price"]
+    if not len(ev):
+        continue
+    close = load_close(code)
+    if close is None:
+        continue
+    # 日曆由 close 覆蓋同研報期交集決定
+    d0 = max(ev.index.min(), close.index.min())
+    d1 = min(ev.index.max() + pd.Timedelta(days=90), close.index.max())
+    if d0 > d1:
+        continue
+    days = pd.date_range(d0, d1, freq="D")
+    for d in days:
+        win = ev.loc[(ev.index > d - pd.Timedelta(days=90)) & (ev.index <= d)]
+        if len(win) >= 2:
+            rows.append((d, f"HK.{code}", win.mean(), win.std(ddof=0), len(win)))
+    # close join + 相對化之後一次過做
+
+long_df = pd.DataFrame(rows, columns=["date", "code", "tp_mean", "tp_std", "tp_n"])
+codes = long_df["code"].unique()
+closes = {}
+for c in codes:
+    s = load_close(c.split(".")[1])
+    if s is not None:
+        closes[c] = s
+close_df = pd.DataFrame(closes).ffill()
+close_l = close_df.stack().rename("close").reset_index()
+close_l.columns = ["date", "code", "close"]
+long_df = long_df.merge(close_l, on=["date", "code"], how="left")
+long_df["tp_std_rel"] = long_df["tp_std"] / long_df["close"]
+long_df.to_csv(OUT_LONG, index=False)
+
+wide = long_df.pivot(index="date", columns="code", values="tp_std_rel").sort_index()
+wide.index.name = "date"
+wide.to_parquet(OUT_PARQUET)
+print(f"long {len(long_df)} rows {long_df['code'].nunique()} codes; "
+      f"wide {wide.shape} cells_non_na={int(wide.notna().sum().sum())}")
+print(wide.tail(2).iloc[:, :4])

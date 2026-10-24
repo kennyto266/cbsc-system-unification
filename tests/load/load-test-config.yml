@@ -1,0 +1,174 @@
+# Artillery Load Testing Configuration
+# High-performance load testing for CBSC Trading System
+
+config:
+  target: 'http://localhost:3003'
+  phases:
+    # Warmup phase
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm up"
+
+    # Ramp up to normal load
+    - duration: 120
+      arrivalRate: 50
+      rampTo: 100
+      name: "Ramp up load"
+
+    # Sustained normal load
+    - duration: 300
+      arrivalRate: 100
+      name: "Sustained load"
+
+    # Peak load simulation
+    - duration: 120
+      arrivalRate: 200
+      rampTo: 500
+      name: "Peak load ramp"
+
+    # Stress test
+    - duration: 180
+      arrivalRate: 500
+      name: "Stress test"
+
+    # Recovery phase
+    - duration: 120
+      arrivalRate: 100
+      name: "Recovery phase"
+
+  # Processor for custom logic
+  processor: "load-test-processor.js"
+
+  # Variables for the test
+  variables:
+    thinkTime: 1
+    strategyId: 1
+    userId: 1
+
+scenarios:
+  # Strategy Management Scenario
+  - name: "Strategy Management Operations"
+    weight: 40
+    flow:
+      # Get strategies list
+      - get:
+          url: "/api/strategies"
+          capture:
+            - json: "$[0].id"
+              as: "strategyId"
+
+      # Think time
+      - think: "{{ thinkTime }}"
+
+      # Get single strategy
+      - get:
+          url: "/api/strategies/{{ strategyId }}"
+
+      # Create new strategy
+      - post:
+          url: "/api/strategies"
+          json:
+            name: "Load Test Strategy {{ $randomString() }}"
+            description: "Strategy created during load test"
+            type: "momentum"
+            parameters:
+              lookback_period: 20
+              threshold: 0.02
+          capture:
+            - json: "id"
+              as: "newStrategyId"
+
+      # Update strategy
+      - put:
+          url: "/api/strategies/{{ newStrategyId }}"
+          json:
+            name: "Updated Load Test Strategy"
+            description: "Strategy updated during load test"
+            parameters:
+              lookback_period: 25
+              threshold: 0.025
+
+      # Think time
+      - think: "{{ thinkTime }}"
+
+  # Real-time Data Scenario
+  - name: "Real-time Data Operations"
+    weight: 30
+    flow:
+      # Get performance metrics
+      - get:
+          url: "/api/monitoring/performance"
+
+      # Get market data
+      - get:
+          url: "/api/market/data"
+          qs:
+            symbols: "AAPL,GOOGL,MSFT,TSLA"
+
+      # Get strategy performance
+      - get:
+          url: "/api/strategies/{{ strategyId }}/performance"
+
+      # Get active trades
+      - get:
+          url: "/api/trades/active"
+
+      # Think time
+      - think: "{{ thinkTime }}"
+
+  # Backtesting Scenario
+  - name: "Backtesting Operations"
+    weight: 20
+    flow:
+      # Run quick backtest
+      - post:
+          url: "/api/backtest/run"
+          json:
+            strategy_id: "{{ strategyId }}"
+            start_date: "2023-01-01"
+            end_date: "2023-06-30"
+            initial_capital: 100000
+          capture:
+            - json: "job_id"
+              as: "backtestJobId"
+
+      # Think time
+      - think: 2
+
+      # Check backtest status
+      - get:
+          url: "/api/backtest/status/{{ backtestJobId }}"
+
+      # Get backtest results
+      - get:
+          url: "/api/backtest/results/{{ backtestJobId }}"
+
+  # User Management Scenario
+  - name: "User Management Operations"
+    weight: 10
+    flow:
+      # Get current user
+      - get:
+          url: "/api/users/me"
+          capture:
+            - json: "id"
+              as: "currentUserId"
+
+      # Get user preferences
+      - get:
+          url: "/api/users/{{ currentUserId }}/preferences"
+
+      # Update user preferences
+      - put:
+          url: "/api/users/{{ currentUserId }}/preferences"
+          json:
+            theme: "dark"
+            notifications: true
+            auto_refresh: 30
+
+      # Get user activity
+      - get:
+          url: "/api/users/{{ currentUserId }}/activity"
+
+      # Think time
+      - think: "{{ thinkTime }}"

@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cbsc-trading-api"
+version = "1.0.0"
+authors = [
+    {name = "CBSC Trading Platform", email = "api-support@cbsc.com"}
+]
+description = "Python SDK for CBSC Trading Platform API"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Internet :: WWW/HTTP",
+]
+keywords = ["trading", "api", "financial", "cbsc"]
+dependencies = [
+    "requests>=2.25.0",
+    "pydantic>=2.0.0",
+    "python-dateutil>=2.8.0",
+    "typing-extensions>=4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+    "black>=21.0",
+    "flake8>=3.8",
+    "mypy>=0.800",
+]
+
+[project.urls]
+Homepage = "https://github.com/cbsc/trading-api-python-sdk"
+Documentation = "https://docs.cbsc.com/api/python"
+Repository = "https://github.com/cbsc/trading-api-python-sdk"
+"Bug Reports" = "https://github.com/cbsc/trading-api-python-sdk/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cbsc_trading_api*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312', 'py313']
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers"
+testpaths = [
+    "tests",
+]

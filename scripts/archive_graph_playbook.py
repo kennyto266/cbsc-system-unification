@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+"""archive_graph_playbook.py — Graph-Engineering Playbook PDF → wiki (methodology/)."""
+import sys
+from datetime import datetime
+from pathlib import Path
+
+VAULT = Path(r"C:/Users/Penguin8n/CBSC-KnowledgeVault")
+WIKI = VAULT / "wiki" / "methodology"
+WIKI.mkdir(parents=True, exist_ok=True)
+TODAY = datetime.now().strftime("%Y-%m-%d")
+
+FM = """---
+title: "Graph Engineering Playbook (Anthropic 綜合)"
+type: "methodology"
+status: "active"
+tags: [methodology, graph-engineering, loop, knowledge-graph]
+created: "{d}"
+updated: "{d}"
+---
+
+""".format(d=TODAY)
+
+BODY = """# Graph Engineering Playbook — Anthropic 綜合 (2026-07)
+
+> 原始 PDF: `C:/Users/Penguin8n/Downloads/Graph-Engineering-Athropic-Playbook.pdf`
+> 來源: Anthropic Knowledge Graph Cookbook + Building Effective AI Agents
+> **用途: 寫 loop 嘅方法論基礎 — evaluator 靠圖做 fact-check, loop 靠圖做持久記憶**
+
+## 一句總結
+
+> LLM agent 嘅記憶死喺 context window; 知識圖係跨 session 嘅持久 world model。
+> 成條古典 NLP pipeline (NER + 關係分類 + 實體消歧) = 三個 structured-output prompt。
+
+## 核心 Pipeline (四步)
+
+```
+1. Extraction    Haiku · 每文檔一次 call · S-P-O 三元組
+                 「只抽核心實體」= 寧缺勿濫 (precision 優先)
+2. Resolution    Sonnet · 按類型聚類 · 描述做消歧
+                 "Edwin Aldrin" → "Buzz Aldrin" (字串相似度永遠捉唔到)
+3. Assembly      NetworkX MultiDiGraph · 每條邊帶 provenance
+4. Querying      k-hop 子圖序列化做 triples → Sonnet 引邊作答
+```
+
+**Eval feedback loop: 改 prompt → 重跑 scorer → 睇 F1 行邊** — 呢個 loop 本身就係
+agent loop 嘅形狀 (act / observe / learn / repeat)。
+
+## 五大 Agent Pattern × KG 角色 (Table II)
+
+| Pattern | KG 角色 | 點幫 |
+|---|---|---|
+| Augmented LLM | 檢索源 | 多跳問題用圖行代替 vector search |
+| Prompt chaining | 閘門信號 | chain 步之間查圖驗新實體有冇衝突 |
+| Routing | 分類器輸入 | 實體類型+度數路由, 唔使 LLM call |
+| **Orchestrator–workers** | **共享記憶** | worker 直接讀寫圖, orchestrator window 唔爆 |
+| **Evaluator–optimizer** | **grounding 層** | evaluator 查三元組存在與否, 唔係靠「望落啱」 |
+
+## 對我哋寫 Loop 最重要嘅三個角色
+
+### 1. Evaluator 嘅 grounding 層 (VII.B)
+無圖: evaluator 只可以判「望落係咪啱」。
+有圖: evaluator 查 `(X) --[predicate]--> (Y)` 三元組, 查到/查唔到都有 provenance。
+反饋由「怪怪哋」變成「三元組 (X, works_at, Y) 唔存在; 圖入面係 (X, left, Y) from doc Z」。
+→ **我哋嘅 G6 corr gate / prescan / grill 就係呢層嘅雛形 — 但係斷言式唔係圖查詢式。**
+
+### 2. 持久 world model (VII.C)
+Loop 過夜: 圖好似 state file 咁 survive context flush。
+「agent 忘記, repo 唔會」嘅圖版: 新文檔增量 extract → 對現有 canonical set resolve
+(唔係互相 resolve) → 只加新邊。entity 淨係喺 source-doc set 變咗先 re-summarize。
+→ **research_ledger + [[architecture/knowledge-知識系統|wiki]] 已經係咁 — feeder 就係增量 update。**
+
+### 3. Orchestrator–workers 共享記憶 (VII.A)
+Worker 各自寫圖, synthesizer 行圖搵跨域連接, orchestrator window 保持細。
+→ **agent1-4-H 而家靠 JSON 檔交接 (handoff 有教訓: 幽靈config案) —
+  圖化交接係下一步進化方向。**
+
+## 質量指標 (VIII)
+
+- Apollo corpus: **precision 1.00, recall 0.38-0.55** — 寧缺勿濫係啱 trade-off:
+  錯 entity 生錯 relation 會喺多跳推理傳染; 漏咗只係圖唔完整但正確。
+- 兩個 resolution 失敗模式要監察: 漏 name (靜靜消失) / 過度合併 (Gemini 12 吞入 Project Gemini)
+
+## 生產 Checklist (Appendix D) — 10 樣
+
+| # | 項目 | 冇咗會點 |
+|---|---|---|
+| 1 | Gold set (≥2 份手標) | prompt 改動盲改 |
+| 2 | Alias map 覆蓋 scorer | recall 分數假跌 |
+| 3 | Schema 版本化 | 唔同 prompt 版本 entity 唔兼容 |
+| 4 | Extraction 上限 | corpus 事故 = 無限燒錢 |
+| 5 | Resolution fallback (單元素 cluster) | 實體靜靜消失 |
+| 6 | 每邊 provenance | evaluator 無得 fact-check |
+| 7 | 增量更新 | rebuild 成本隨 corpus 唔係 delta |
+| 8 | Connectivity 監察 | 碎島圖 = 漏跨文檔連接 |
+| 9 | Summarize 只喺 source set 變 | 白燒 Sonnet |
+| 10 | **人手抽樣: 每日一隨機 node 讀 profile 對 source** | comprehension rot |
+
+## Scale 指引 (IX)
+
+- Haiku 抽取: 10k 文檔 = 個位數美元; prompt caching + Batches API 再慳
+- Resolution scale: 先用平嘢 blocking (同姓/token 重疊) 再 LLM 仲裁 50-100 個一 block
+- NetworkX 到幾十萬邊 OK; 之後 Neo4j / 三張 Postgres 表
+- 長文檔: section 邊界 chunk + 一段重疊, chunk 內先 dedupe 再 resolution
+
+## 何時用 KG vs 唔用 (Appendix C)
+
+| 場景 | 工具 |
+|---|---|
+| 單文檔 QA | RAG / 直接 context |
+| 多文檔單跳 | RAG + reranking |
+| **多文檔多跳** | **KG** |
+| **多 agent 共享 state** | **KG** |
+| **evaluator 要 ground truth** | **KG** |
+| **過夜 loop 要持久記憶** | **KG** |
+| 簡單分類路由 | 單 agent |
+
+## 落地到 CBSC (Hermes 註)
+
+我哋已有: [[architecture/knowledge-知識系統|research_ledger(死軸)]] / alpha_graph edges.jsonl /
+本 wiki (wikilink 圖) / corr_alerts。
+照 playbook 對照, 缺嘅升級位:
+1. alpha_graph 而家係 verdict 流 (append-only), 未有 canonical entity resolution —
+   「同一軸唔同寫法」要靠 LLM 聚類 (第 20 課: ratio-vs-diff 異寫, 正規化殺唔到)
+2. evaluator (agent4-H / G6) 用嘅係數字 gate, 未做三元組 fact-check —
+   deploy_judgement 可以加「查 alpha_graph 邊」做 provenance 引用
+3. Checklist #10 人手抽樣: 每日睇一隨機策略頁 profile — 由我每朝做 (B1 習慣)
+
+← [[index]] · [[architecture/overview-系統總覽|系統架構]] · [[architecture/research-pipeline-研究流水線|流水線]]
+"""
+
+(WIKI / "graph-engineering-playbook.md").write_text(FM + BODY, encoding="utf-8")
+
+# index 連結
+idx = VAULT / "wiki" / "index.md"
+t = idx.read_text(encoding="utf-8")
+if "graph-engineering" not in t:
+    t = t.replace(
+        "- [[skills/caveman|🛠️ Skills 庫]] (26 個: caveman 系 / agent 用 / CBSC 專用)",
+        "- [[skills/caveman|🛠️ Skills 庫]] (26 個: caveman 系 / agent 用 / CBSC 專用)\n"
+        "- [[methodology/graph-engineering-playbook|📐 Graph Engineering Playbook]] (寫 loop 方法論: KG pipeline / evaluator grounding / 持久 world model)",
+    )
+    idx.write_text(t, encoding="utf-8")
+
+print("playbook 頁寫入 + index 連結")

@@ -1,0 +1,297 @@
+r"""數據層 — 常數 + SYMBOLS/FACTORS + futu/yfinance/CSV 讀取 + CACHE"""
+import socket
+import subprocess
+import sys
+from io import StringIO
+from pathlib import Path
+
+import pandas as pd
+
+from alpha_costs import PER_SIDE, ROUND_TRIP
+
+# ---------------------------------------------------------------------------
+# 目錄定位 (兼容從 backtests/ 啟動)
+# ---------------------------------------------------------------------------
+BACKTESTS_DIR = Path(__file__).parent                      # backtests/
+PROJECT_ROOT = BACKTESTS_DIR.parent                        # ZCodeProject/
+DATA_ROOT = PROJECT_ROOT / "cbsc-system-unification" / "data"
+if not DATA_ROOT.exists():
+    # [test-bugfix 09-23] 本檔係 backtests/vbt_data.py 嘅複製品 — 測試會將
+    # scripts/ 插入 sys.path 從呢度 import 佢, 「假設住 backtests」嘅定位失效
+    # (實錄: DATA_ROOT 計成 cbsc/cbsc/data 不存在 → factor_panels 全部 loader
+    # 靜靜返 None → test_orphan_panel_registration 15 個全套語境必炸)。
+    # 自癒: 向上搵真 repo root (有 cbsc-system-unification/data 嗰層)。
+    for _anc in BACKTESTS_DIR.parents:
+        if (_anc / "cbsc-system-unification" / "data").exists():
+            DATA_ROOT = _anc / "cbsc-system-unification" / "data"
+            break
+OHLCV_DIR = DATA_ROOT / "ohlcv_5y"
+FACTORS_DIR = DATA_ROOT / "factors"
+SWEEP_CSV = DATA_ROOT / "vbt_factor_reports" / "param_sweep_all_results.csv"
+HKPTRC_CSV = DATA_ROOT / "vbt_factor_reports" / "hkptrc_leaderboard.csv"
+KOL_CSV = DATA_ROOT / "vbt_factor_reports" / "kol_leaderboard.csv"
+
+# ---------------------------------------------------------------------------
+# 成本同風險常數 (Longbridge/長橋 港股實際口徑, 2026-06 用戶截圖核實)
+# ---------------------------------------------------------------------------
+# 個別費用 — 買賣雙邊都收
+COMMISSION     = 0.0005       # 佣金 0.05% (min 50 HKD; 全倉 100K 剛好踩 threshold)
+SETTLEMENT_FEE = 0.00005      # 交收費 0.005% (min 5.5 / max 200 HKD)
+TRADING_FEE    = 0.0000565    # 交易費 0.00565%
+SFC_LEVY       = 0.000027     # 證監會徵費 0.0027%
+FRC_LEVY       = 0.0000015    # 財匯局徵費 0.00015%
+# 只賣出收
+STAMP_DUTY     = 0.001        # 印花稅 0.1% (SELL only, 唔係之前嘅 0.13%)
+SLIPPAGE       = 0.001        # 滑點 (單邊)
+
+# vbt from_signals 既 fees 係對稱 (買賣同一比率).
+# stamp duty 只賣收 → 攤分到兩邊令「來回總成本」準確:
+#   per_side = 雙邊費用 + stamp/2 = 0.0005+0.00005+0.0000565+0.000027+0.0000015+0.0005
+# 單一真理來源 = alpha_costs.PER_SIDE (Futu 官方口徑).
+#   舊值 0.001135 (Longbridge 分項算式) → 統一為 0.0012788 (Futu 官方 + 保守 slippage).
+PER_SIDE_FEES = PER_SIDE  # was 0.001135, now 0.0012788 (single source of truth)
+# 來回總費用 (滑點另計, 從 vbt slippage 參數單邊收)
+TOTAL_COST = ROUND_TRIP   # was PER_SIDE_FEES*2 = 0.00227 (來回); now 0.0025576
+RF_RATE = 0.04            # 無風險利率
+
+# ---------------------------------------------------------------------------
+# 用戶富途實際收費 (verified 2026-07, autoresearch 使用)
+# Commission FREE (0%), platform 0, settlement 0.005% (min HK$5.5)
+# stamp duty 0.1%, trading fee 0.00565%, SFC levy 0.0027%, FRC levy 0.00015%
+# + slippage 0.05% (實盤 estimate)
+# ---------------------------------------------------------------------------
+USER_SLIPPAGE = 0.0005                              # 0.05% per side
+# 單一真理: USER_FEE 統一用 alpha_costs.PER_SIDE (Futu 官方口徑, 含 slippage).
+# 舊值 0.001635 (PER_SIDE_FEES + USER_SLIPPAGE, Longbridge 口徑) → 統一為 0.0012788.
+USER_FEE = PER_SIDE  # was 0.001635 (old slippage-inclusive), now unified
+# 註: min 佣金 50 HKD 對 <100K 倉位會令成本飆升 (e.g. 10K 倉 → 1.2%);
+#     vbt 純比率模型唔支援 min fee, 全倉 100K 策略下百分比剛好準確.
+
+# EMA 策略口徑 (統一用 alpha_costs.PER_SIDE, 同因子/hkptrc 一致)
+HK_FEES = PER_SIDE_FEES       # 0.0012788 (was 0.001135, now unified)
+HK_SLIPPAGE = SLIPPAGE        # 0.001
+
+INIT_CASH = 1_000_000         # EMA tab (港元)
+INIT_CASH_FACTOR = 100_000    # 因子 tab (同 CSV 一致)
+FREQ = "1D"
+
+# 參數掃描範圍 (同 vbt_visual_report.py 一致)
+N_DAYS_LIST = [2, 3, 4, 5, 7]
+THRESHOLD_LIST = [0.002, 0.004, 0.006, 0.008]
+HOLDING_LIST = [3, 5, 7, 10, 14]
+
+# 可選標的 (EMA tab): futu 代碼 -> yfinance 代碼
+SYMBOLS = {
+    "騰訊 HK.00700":   ("HK.00700", "0700.HK"),
+    "阿里 HK.09988":   ("HK.09988", "9988.HK"),
+    "美團 HK.03690":   ("HK.03690", "3690.HK"),
+    "小米 HK.01810":   ("HK.01810", "1810.HK"),
+    "比亞迪 HK.01211": ("HK.01211", "1211.HK"),
+    "騰訊 US.FUTU":    ("US.FUTU",  "FUTU"),
+    "蘋果 US.AAPL":    ("US.AAPL",  "AAPL"),
+    "英偉達 US.NVDA":  ("US.NVDA",  "NVDA"),
+}
+
+# HSI_CORE 藍籌池 — EXPANDED to 92 stocks (42 HSI + 50 large-cap extras)
+# All 50 extras pass 5-filter screen: price>$1, daily TO>$50M, vol>1M,
+# listed>2yr, ann_vol<150%. No shell/penny stocks.
+# Original 42 HSI list preserved in HSI_CORE_ORIGINAL for reference.
+HSI_CORE_ORIGINAL = [
+    'HK.00005', 'HK.00388', 'HK.00001', 'HK.00002', 'HK.00003', 'HK.00006',
+    'HK.00011', 'HK.00012', 'HK.00016', 'HK.00017', 'HK.00027', 'HK.00066',
+    'HK.00101', 'HK.00175', 'HK.00241', 'HK.00268', 'HK.00285', 'HK.00291',
+    'HK.00386', 'HK.00688', 'HK.00700', 'HK.00762', 'HK.00823', 'HK.00883',
+    'HK.00939', 'HK.00941', 'HK.01038', 'HK.01088', 'HK.01109', 'HK.01299',
+    'HK.01398', 'HK.01876', 'HK.01928', 'HK.02013', 'HK.02318', 'HK.02388',
+    'HK.02628', 'HK.03690', 'HK.06862', 'HK.09618', 'HK.09988', 'HK.09999',
+]
+
+# HSI_CORE is now 52 stocks: 42 HSI + 10 mega-cap extras
+# Mega-cap filter: daily TO > HK$500M, vol < 100%, listed > 2yr, price > $1
+
+HK_UNIVERSE = ['HK.00005', 'HK.00388', 'HK.00001', 'HK.00002', 'HK.00003', 'HK.00006', 'HK.00011', 'HK.00012', 'HK.00016', 'HK.00017', 'HK.00027', 'HK.00066', 'HK.00101', 'HK.00175', 'HK.00241', 'HK.00268', 'HK.00285', 'HK.00291', 'HK.00386', 'HK.00688', 'HK.00700', 'HK.00762', 'HK.00823', 'HK.00883', 'HK.00939', 'HK.00941', 'HK.01038', 'HK.01088', 'HK.01109', 'HK.01299', 'HK.01398', 'HK.01876', 'HK.01928', 'HK.02013', 'HK.02318', 'HK.02388', 'HK.02628', 'HK.03690', 'HK.06862', 'HK.09618', 'HK.09988', 'HK.09999', 'HK.01810', 'HK.09992', 'HK.01211', 'HK.01024', 'HK.02899', 'HK.09888', 'HK.00992', 'HK.01801', 'HK.00020', 'HK.02269']
+
+HSI_CORE = HK_UNIVERSE  # 52 stocks (42 HSI + 10 mega-cap)
+
+BENCH_FUTU = "HK.800000"
+BENCH_YFIN = "^HSI"
+
+# 因子 tab 可選 (8 個宏觀因子)
+FACTORS = ["dxy", "usdcnh", "vix", "gold", "copper", "sp500", "a_shares", "us_10y_yield"]
+
+# 港股 (因子 tab 標的, 動態讀 ohlcv_5y 全部可用股票)
+# 死股 (已除牌/長期停牌, 富途未知股票 + CSV 停更) — 2026-08-27 移出 universe.
+# 呢啲檔係 ohlcv_5y/ 殘留歷史 CSV, 掃描時要排除, 否則 live loop 每日噴
+# 「富途拉 HK.xxxxx 失敗: 未知股票」+「CSV 數據也過期」警告 (2285 行噪音).
+# 歷史 CSV 本身保留 (backtest 數據唔刪).
+DEAD_STOCKS = {
+    "HK.00067",  # 2022-05-31 停更 (長期停牌)
+    "HK.00091",  # 2024-11-01 停更 (已除牌)
+    "HK.00155",  # 2022-08-05 停更 (長期停牌)
+    "HK.00246",  # 2024-08-05 停更 (已除牌)
+}
+
+
+def _scan_factor_stocks():
+    """掃描 ohlcv_5y/ 目錄, 回所有 HK_*.csv 對應既股票碼 (排序).
+
+    排除 DEAD_STOCKS (已除牌/停更死股), 避免 live watchlist 撞板.
+    """
+    stocks = []
+    if OHLCV_DIR.exists():
+        for p in sorted(OHLCV_DIR.glob("HK_*.csv")):
+            code = p.stem.replace("HK_", "HK.")
+            if code in DEAD_STOCKS:
+                continue
+            stocks.append(code)
+    return stocks
+
+FACTOR_STOCKS = _scan_factor_stocks()
+
+CACHE = {}  # (key) -> df  避免重複拉數據
+_CACHE_MAX = 300  # 最大快取數, 超過觸發 GC
+
+
+def _cache_gc():
+    """清理 CACHE: 超過上限時移除最舊一半 entries (FIFO).
+    簡單有效: 300 entries ≈ 100 隻股 × 3 個不同 date range, 正常唔會觸發.
+    """
+    if len(CACHE) > _CACHE_MAX:
+        # 移除前半 (最舊既 entries)
+        keys_to_remove = list(CACHE.keys())[: len(CACHE) // 2]
+        for k in keys_to_remove:
+            del CACHE[k]
+
+
+# ---------------------------------------------------------------------------
+# CSV 讀取 (因子策略 tab 用)
+# ---------------------------------------------------------------------------
+def load_stock_close(code: str):
+    """讀 ohlcv_5y/{code}.csv 回 close Series. code 格式 'HK.00016'.
+
+    [Bug D8 fix] Delegate to data_loader.load_stock_close (cached + .copy() protection).
+    Falls back to local impl if data_loader unavailable.
+    """
+    try:
+        from data_loader import load_stock_close as _dl_load
+        result = _dl_load(code)
+        return result.copy() if result is not None else None  # 防 cache mutation
+    except ImportError:
+        pass
+    path = OHLCV_DIR / f"{code.replace('.', '_')}.csv"
+    if not path.exists():
+        return None
+    try:
+        df = pd.read_csv(path, parse_dates=["time_key"]).set_index("time_key").sort_index()
+        return df["close"].astype(float)
+    except Exception:
+        return None
+
+
+def load_factor_close(name: str):
+    """讀 factors/{name}.csv 回 close Series."""
+    path = FACTORS_DIR / f"{name}.csv"
+    if not path.exists():
+        return None
+    try:
+        df = pd.read_csv(path, index_col="date", parse_dates=True)
+        return df["close"].sort_index().astype(float)
+    except Exception:
+        return None
+
+
+def load_leaderboard(min_sharpe: float = 1.0):
+    """讀 param_sweep_all_results.csv, filter Sharpe>min_sharpe, 按降序."""
+    if not SWEEP_CSV.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(SWEEP_CSV)
+    df = df.replace([float("inf"), -float("inf")], pd.NA).dropna(subset=["sharpe"])
+    return df[df["sharpe"] > min_sharpe].sort_values("sharpe", ascending=False).reset_index(drop=True)
+
+
+def load_hkptrc_leaderboard(min_sharpe: float = 1.0):
+    """讀 hkptrc_leaderboard.csv, filter Sharpe>min_sharpe, 按降序."""
+    if not HKPTRC_CSV.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(HKPTRC_CSV)
+    df = df.replace([float("inf"), -float("inf")], pd.NA).dropna(subset=["Sharpe"])
+    return df[df["Sharpe"] > min_sharpe].sort_values("Sharpe", ascending=False).reset_index(drop=True)
+
+
+def load_kol_leaderboard(min_sharpe: float = 1.0):
+    """讀 kol_leaderboard.csv, filter Sharpe>min_sharpe, 按降序."""
+    if not KOL_CSV.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(KOL_CSV)
+    df = df.replace([float("inf"), -float("inf")], pd.NA).dropna(subset=["Sharpe"])
+    return df[df["Sharpe"] > min_sharpe].sort_values("Sharpe", ascending=False).reset_index(drop=True)
+
+
+# ---------------------------------------------------------------------------
+# futu / yfinance 數據層 (EMA tab 用)
+# ---------------------------------------------------------------------------
+def fetch_futu(code, start, end, aut="forward", timeout_sec=10):
+    """futu-api 取日 K. 子進程 + 硬 timeout, 避免 handshake hang."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(4)
+    try:
+        sock.connect(("127.0.0.1", 11111))
+        sock.close()
+    except Exception:
+        return None
+    script = (
+        "import sys,pandas as pd\n"
+        "from futu import OpenQuoteContext\n"
+        "qctx=OpenQuoteContext(host='127.0.0.1',port=11111)\n"
+        "try:\n"
+        f"    ret,df,_=qctx.request_history_kline({code!r},start={start!r},end={end!r},"
+        f"ktype='KL_DAY',autype={'AUTYPE_FORWARD' if aut=='forward' else 'AUTYPE_NONE'},max_count=100000)\n"
+        "    if ret!=0 or df is None or len(df)==0: sys.exit(1)\n"
+        "    df['date']=pd.to_datetime(df['time_key'])\n"
+        "    df[['date','open','high','low','close','volume']].astype(float).to_csv(sys.stdout,index=False)\n"
+        "finally:\n"
+        "    qctx.close()\n"
+    )
+    try:
+        proc = subprocess.run([sys.executable, "-c", script],
+                              capture_output=True, text=True, timeout=timeout_sec)
+        if proc.returncode != 0 or not proc.stdout.strip():
+            return None
+        df = pd.read_csv(StringIO(proc.stdout))
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.set_index("date").sort_index()
+        return df[["open", "high", "low", "close", "volume"]].astype(float)
+    except Exception:
+        return None
+
+
+def fetch_yfin(code, start, end):
+    try:
+        import yfinance as yf
+        df = yf.download(code, start=start, end=end, auto_adjust=True,
+                         multi_level_index=False, progress=False)
+        if df is None or len(df) == 0:
+            return None
+        df.columns = [c.lower() for c in df.columns]
+        return df[["open", "high", "low", "close", "volume"]].astype(float)
+    except Exception:
+        return None
+
+
+def get_stock_ohlcv(futu_code, yfin_code, start, end):
+    """futu 優先, fallback yfinance. 帶快取. 回 (df, src) 或 (None, None)."""
+    key = (futu_code, start, end)
+    if key in CACHE:
+        return CACHE[key]
+    df = fetch_futu(futu_code, start, end)
+    src = "futu"
+    if df is None or len(df) == 0:
+        df = fetch_yfin(yfin_code, start, end)
+        src = "yfinance"
+    if df is None or len(df) == 0:
+        return None, None
+    if df.index.tz is not None:
+        df.index = df.index.tz_convert(None)
+    CACHE[key] = (df, src)
+    _cache_gc()
+    return df, src

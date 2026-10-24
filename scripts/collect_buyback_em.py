@@ -1,0 +1,81 @@
+# -*- coding: utf-8 -*-
+"""
+agent2-H 2026-08-24: 爬東財港股公司回購 RPT_HKCH_COMPANYREPO (逐股日度)
+→ new_sources/buyback_em_raw.csv ; ckpt: buyback_em_ckpt.json
+宇宙 = ohlcv_5y 393 隻。識別碼 00001 → SECUCODE "00001.HK"。
+"""
+import json, time, sys, io
+import urllib.request
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+ROOT = r"C:\Users\Penguin8n\ZCodeProject"
+OUT = ROOT + r"\cbsc-system-unification\data\new_sources\buyback_em_raw.csv"
+CKPT = ROOT + r"\cbsc-system-unification\data\new_sources\buyback_em_ckpt.json"
+COLS = "SECURITY_CODE,SECURITY_NAME_ABBR,TRADE_DATE,REPO_NUM,HIGH_PRICE,LOW_PRICE,REPO_AMT,AVG_PRICE,SECUCODE"
+HDRS = {"User-Agent": "Mozilla/5.0", "Referer": "https://quote.eastmoney.com/"}
+
+codes = sorted(p.stem.split("_")[1] for p in __import__("pathlib").Path(ROOT + r"\cbsc-system-unification\data\ohlcv_5y").glob("HK_*.csv"))
+print("universe:", len(codes))
+
+try:
+    ck = json.load(open(CKPT))
+except Exception:
+    ck = {"done": {}}
+done = set(ck["done"])
+
+import csv
+newfile = False
+try:
+    open(OUT).readline()
+except FileNotFoundError:
+    newfile = True
+
+f = open(OUT, "a", newline="", encoding="utf-8")
+w = csv.writer(f)
+if newfile:
+    w.writerow(["SECURITY_CODE","SECURITY_NAME_ABBR","TRADE_DATE","REPO_NUM","HIGH_PRICE","LOW_PRICE","REPO_AMT","AVG_PRICE","SECUCODE"])
+
+ntot = 0
+for i, code in enumerate(codes):
+    if code in done:
+        continue
+    secucode = code + ".HK"
+    nrec = 0
+    page = 1
+    try:
+        while True:
+            url = ("https://datacenter-web.eastmoney.com/web/api/data/v1/get?"
+                   "reportName=RPT_HKCH_COMPANYREPO&columns=" + COLS +
+                   f"&filter=(SECUCODE%3D%22{secucode}%22)&pageNumber={page}&pageSize=500"
+                   "&sortTypes=-1&sortColumns=TRADE_DATE&source=QuoteWeb&client=WEB")
+            req = urllib.request.Request(url, headers=HDRS)
+            d = json.load(urllib.request.urlopen(req, timeout=30))
+            r = d.get("result")
+            if not r or not r.get("data"):
+                break
+            for row in r["data"]:
+                w.writerow([row.get("SECURITY_CODE"), row.get("SECURITY_NAME_ABBR"),
+                            row.get("TRADE_DATE","")[:10], row.get("REPO_NUM"),
+                            row.get("HIGH_PRICE"), row.get("LOW_PRICE"),
+                            row.get("REPO_AMT"), row.get("AVG_PRICE"), secucode])
+                nrec += 1
+            if page >= r.get("pages", 1):
+                break
+            page += 1
+            time.sleep(0.3)
+    except Exception as e:
+        print(f"ERR {secucode}: {e}", flush=True)
+        time.sleep(2)
+        continue  # 唔標記 done, 下次重試
+    f.flush()
+    ck["done"][code] = nrec
+    ntot += nrec
+    if i % 25 == 0:
+        json.dump(ck, open(CKPT, "w"))
+        print(f"[{i+1}/{len(codes)}] {secucode} rows={nrec} total_new={ntot}", flush=True)
+    time.sleep(0.35)
+
+json.dump(ck, open(CKPT, "w"))
+f.close()
+stk = sum(1 for v in ck["done"].values() if v > 0)
+print(f"DONE codes={len(ck['done'])} with_buyback={stk} total_rows={sum(ck['done'].values())}")

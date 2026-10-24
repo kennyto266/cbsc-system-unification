@@ -1,0 +1,55 @@
+"""backfill_pcr_2021.py — 回填 dqe zip 2021-01-04 → 2025-10-01 (pcr_raw 現有 gap 前段)
++ 補 2025-12-13 → 2026-08-21 (checkpoint 後段)。重用 collect_pcr_hkex.fetch_zip/parse。
+最後 sort+dedupe 寫 pcr_raw.csv, 同步 checkpoint。
+"""
+import csv, json, sys
+from datetime import date, timedelta
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE / "scripts"))
+from collect_pcr_hkex import fetch_zip, parse, RAW, CKPT, log
+
+SEGMENTS = [(date(2021, 1, 4), date(2025, 10, 1)),
+            (date(2025, 12, 13), date(2026, 8, 21))]
+
+def main():
+    have = {}
+    if RAW.exists():
+        import pandas as pd
+        old = pd.read_csv(RAW)
+        for d, c in zip(old.date, old.code):
+            have.setdefault(d, set()).add(c)
+    rows_out = []
+    for a, b in SEGMENTS:
+        d = a
+        while d <= b:
+            if d.weekday() < 5:
+                ymd = d.strftime("%y%m%d")
+                try:
+                    z = fetch_zip(ymd)
+                except Exception as e:
+                    log("ERR", ymd, e); z = None
+                if z is not None:
+                    rows = parse(z, d.isoformat())
+                    # dedupe against existing file
+                    ex = have.get(d.isoformat(), set())
+                    rows = [r for r in rows if r["code"] not in ex]
+                    rows_out.extend(rows)
+            d += timedelta(days=1)
+        log("segment done", a, b, "new rows", len(rows_out))
+    if rows_out:
+        new = not RAW.exists()
+        fp = open(RAW, "a", newline="", encoding="utf-8")
+        w = csv.DictWriter(fp, fieldnames=["date","code","hkats_code","put_volume","call_volume","put_oi","call_oi","iv"])
+        if new: w.writeheader()
+        w.writerows(rows_out); fp.close()
+    # sort + dedupe final
+    import pandas as pd
+    df = pd.read_csv(RAW).drop_duplicates(subset=["date","code"]).sort_values(["date","code"])
+    df.to_csv(RAW, index=False)
+    CKPT.write_text(json.dumps({"last_done": "2026-08-21"}))
+    log("ALL DONE total rows", len(df), "days", df.date.nunique())
+
+if __name__ == "__main__":
+    main()

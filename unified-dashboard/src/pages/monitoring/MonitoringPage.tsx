@@ -1,0 +1,61 @@
+import React, { useState, useEffect } from 'react'
+import { Card, Table, Tag, Spin, Row, Col, Statistic, Empty, Alert } from 'antd'
+
+const MonitoringPage: React.FC = () => {
+  const [data, setData] = useState<any>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/monitoring/risk').then(r => r.json()).then(d => {
+      setData(d.data || {})
+      setLoading(false)
+    }).catch(() => setLoading(false))
+  }, [])
+
+  const sr = data.systemic_risk || {}
+  const level = sr.level || 'NORMAL'
+  const levelColor = level === 'CRITICAL' ? 'red' : level === 'HIGH' ? 'orange' : level === 'ELEVATED' ? 'gold' : 'green'
+
+  const alertCols = [
+    { title: 'Pair', dataIndex: 'pair', key: 'pair' },
+    { title: '級別', dataIndex: 'level', key: 'lvl',
+      render: (v: string) => <Tag color={v === 'DANGER' ? 'red' : v === 'WARNING' ? 'orange' : 'blue'}>{v}</Tag> },
+    { title: 'Z-Score', dataIndex: 'z_score', key: 'z', align: 'right' as const, render: (v: number) => v?.toFixed(2) },
+  ]
+
+  const sigCols = [
+    { title: 'Pair', dataIndex: 'pair', key: 'pair' },
+    { title: 'Z-Score', dataIndex: 'z_score', key: 'z', align: 'right' as const, render: (v: number) => v?.toFixed(2) },
+    { title: '動態相關性', dataIndex: 'rolling_corr', key: 'rc', align: 'right' as const, render: (v: number) => v?.toFixed(3) },
+    { title: '風險級別', dataIndex: 'risk_level', key: 'rl',
+      render: (v: string) => <Tag color={v === 'DANGER' ? 'red' : v === 'SIGNAL' ? 'green' : v === 'WARNING' ? 'orange' : 'default'}>{v || 'NORMAL'}</Tag> },
+  ]
+
+  return (
+    <div style={{ padding: 24 }}>
+      <h2 style={{ marginBottom: 16 }}>🚨 風險監控中心</h2>
+      {loading ? <Spin /> : (
+        <>
+          <Row gutter={16} style={{ marginBottom: 16 }}>
+            <Col span={6}><Card><Statistic title="系統性風險級別" value={level}
+              valueStyle={{ color: level === 'CRITICAL' ? '#ff4d4f' : level === 'HIGH' ? '#fa8c16' : level === 'ELEVATED' ? '#faad14' : '#52c41a' }} /></Card></Col>
+            <Col span={6}><Card><Statistic title="全市場相關性" value={sr.market_corr || 0} precision={3} /></Card></Col>
+            <Col span={6}><Card><Statistic title="歷史中位數" value={sr.market_corr_median || 0} precision={3} /></Card></Col>
+            <Col span={6}><Card><Statistic title="活躍警報" value={(data.alerts || []).length} valueStyle={{ color: (data.alerts || []).length > 0 ? '#ff4d4f' : '#52c41a' }} /></Card></Col>
+          </Row>
+          {level !== 'NORMAL' && <Alert type="warning" message={sr.interpretation || ''} style={{ marginBottom: 16 }} showIcon />}
+          <Row gutter={16}>
+            <Col span={12}><Card title="🔔 活躍警報" size="small">
+              {(data.alerts || []).length > 0 ? <Table dataSource={data.alerts} columns={alertCols} rowKey="pair" size="small" pagination={false} /> : <Empty description="✅ 冇活躍警報" />}
+            </Card></Col>
+            <Col span={12}><Card title="📡 動態信號" size="small">
+              {(data.signals || []).length > 0 ? <Table dataSource={data.signals} columns={sigCols} rowKey="pair" size="small" pagination={{ pageSize: 8 }} /> : <Empty description="無信號" />}
+            </Card></Col>
+          </Row>
+        </>
+      )}
+    </div>
+  )
+}
+
+export default MonitoringPage

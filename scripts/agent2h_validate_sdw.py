@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""agent2-H one-off: validate sdw_hold_pct data sources for thesis sdwm.
+1. row counts / date coverage of southbound_holdings_merged.csv
+2. cross-check 3 dates x 5 big stocks: HKEX-collected raw vs eastmoney API (live)
+3. rebuild wide panel -> factor_store/sdw_hold_pct_sdwm.parquet (coverage report)
+"""
+import io, re, sys, json
+import pandas as pd
+import requests
+
+# [09-23 TG哨兵修] 舊版 NS 相對 cwd — refresh runner (cwd=scripts) 下 FileNotFoundError
+# (同 G93276 div_growth 同款病); 錨 __file__ 指返 submodule 數據層
+from pathlib import Path as _P
+_BASE = _P(__file__).resolve().parent.parent  # cbsc-system-unification/
+NS = str(_BASE / "data" / "new_sources") + "/"
+OUT_SDWM = str(_BASE / "data" / "factor_store" / "sdw_hold_pct_sdwm.parquet")
+H = {"User-Agent": "Mozilla/5.0", "Referer": "https://data.eastmoney.com/"}
+
+# tolerant raw read (names contain commas, collector didn't quote)
+lines = open(NS + "southbound_sdw_raw.csv", encoding="utf-8").read().splitlines()
+rows = []
+for ln in lines[1:]:
+    m = re.match(r"^(\d{4}-\d{2}-\d{2}),(\d+),\"?(.*?)\"?,([0-9]+),([0-9.]+)$", ln)
+    if m:
+        rows.append((m.group(1), m.group(2).zfill(5), int(m.group(4)), float(m.group(5))))
+raw = pd.DataFrame(rows, columns=["date", "code", "shares", "pct"])
+print("raw (tolerant):", raw.shape, raw.date.min(), raw.date.max(), raw.date.nunique())
+
+merged = pd.read_csv(NS + "southbound_holdings_merged.csv", dtype={"stock_code": str})
+print("merged:", merged.shape, merged.date.min(), merged.date.max(), merged.date.nunique())
+
+# ---- cross-check 3 dates vs eastmoney live ----
+def em(code5, dt):
+    u = ("https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_MUTUAL_HOLD_DET"
+         f"&columns=ALL&pageNumber=1&pageSize=10&sortColumns=HOLD_DATE&sortTypes=-1"
+         f"&filter=(SECUCODE%3D%22{code5}.HK%22)(HOLD_DATE%3D%27{dt}%27)")
+    d = (requests.get(u, headers=H, timeout=20).json().get("result") or {}).get("data") or []
+    if not d:
+        return None
+    return (sum(x["HOLD_NUM"] for x in d), sum(x["HOLD_SHARES_RATIO"] for x in d))
+
+ok = bad = 0
+for dt in ["2026-08-21", "2026-04-15", "2025-10-09"]:
+    sub = raw[raw.date == dt].set_index("code")
+    for c in ["00700", "09988", "00388", "01299", "00005"]:
+        try:
+            e = em(c, dt)
+        except Exception as ex:
+            print(f"  {dt} {c} EM request fail {ex}")
+            continue
+        if c not in sub.index:
+            print(f"  {dt} {c} MISSING in hkex raw (em={e})")
+            bad += 1
+            continue
+        sub2 = sub.loc[c]
+        if isinstance(sub2, pd.DataFrame):
+            sub2 = sub2.iloc[0]
+        r = (int(sub2["shares"]), float(sub2["pct"]))
+        if e is None:
+            print(f"  {dt} {c} em=None hkex={r}")
+            continue
+        match = abs(r[0] - e[0]) / max(e[0], 1) < 0.005 and abs(r[1] - e[1]) < 0.15
+        print(f"  {dt} {c} hkex={r} em={e} {'MATCH' if match else 'MISMATCH'}")
+        ok += match; bad += (not match)
+print(f"cross-check: {ok} match / {bad} problem")
+
+# ---- build wide panel ----
+merged["stock_code"] = merged.stock_code.str.zfill(5)
+panel = merged.pivot_table(index="date", columns="stock_code", values="pct_of_total", aggfunc="last").sort_index()
+panel.index = pd.to_datetime(panel.index)
+panel.to_parquet(OUT_SDWM)
+cover = panel.notna().sum(axis=1)
+print("panel:", panel.shape, panel.index.min().date(), panel.index.max().date())
+print("median stocks/day:", int(cover.median()), " daily-density dates(>800 stocks):", int((cover > 800).sum()))

@@ -1,0 +1,202 @@
+"""
+hkptrc 策略實作 Batch 1: 趨勢 + 均值回歸 (策略 #1-8)
+
+#1  Efficiency Ratio 濾網
+#2  Volume Profile 濾網
+#3  Channel Breakout
+#4  PIP 背馭
+#5  Extrema + Threshold
+#6  Double RSI
+#7  Z-Score 均值回歸
+#8  Percentile (SMA Divergence)
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, __file__.rsplit("\\", 1)[0])
+
+from common import *
+import numpy as np
+import pandas as pd
+
+
+def strategy_01_efficiency_ratio(prices, stock, n_er=20, sma_fast=10, sma_slow=30):
+    """#1 Efficiency Ratio 濾網 — SMA 交叉 + ER 高於平均"""
+    close = prices[stock].dropna()
+    if len(close) < 100:
+        return None
+
+    er = compute_efficiency_ratio(close, n_er)
+    er_mean = er.rolling(50).mean()
+    sma_f = compute_sma(close, sma_fast)
+    sma_s = compute_sma(close, sma_slow)
+
+    long_signal = (sma_f > sma_s) & (sma_f.shift(1) <= sma_s.shift(1))
+    short_signal = (sma_f < sma_s) & (sma_f.shift(1) >= sma_s.shift(1))
+    valid = er > er_mean
+
+    entries = long_signal & valid
+    exits = (sma_f < sma_s).fillna(False)
+    short_entries = short_signal & valid
+    short_exits = (sma_f > sma_s).fillna(False)
+
+    pf = backtest_signals(close, entries, exits, short_entries, short_exits)
+    return extract_metrics(pf, "01_ER_Filter", stock)
+
+
+def strategy_02_volume_profile(prices, stock, sma_period=50, bins=30):
+    """#2 Volume Profile — 收市 > MVPL + SMA50 交叉"""
+    close = prices[stock].dropna()
+    if len(close) < 100:
+        return None
+
+    # 用成交量近似（HSI 數據冇 volume，用 close 波動代替）
+    # 簡化：用 close 嘅 histogram 作為價格密集度
+    window = 250
+    mvpl = pd.Series(index=close.index, dtype=float)
+    for i in range(window, len(close)):
+        c = close.iloc[i-window:i]
+        counts, edges = np.histogram(c, bins=bins)
+        max_bin = np.argmax(counts)
+        mvpl.iloc[i] = (edges[max_bin] + edges[max_bin+1]) / 2
+
+    sma = compute_sma(close, sma_period)
+    cross_over = (close > sma) & (close.shift(1) <= sma.shift(1))
+    above_mvpl = close > mvpl
+
+    entries = cross_over & above_mvpl
+    exits = (close < sma).fillna(False)
+
+    pf = backtest_signals(close, entries, exits)
+    return extract_metrics(pf, "02_VolumeProfile", stock)
+
+
+def strategy_03_channel_breakout(prices, stock, window=20, range_pct=0.05):
+    """#3 Channel Breakout — 窄幅突破"""
+    df = prices[[stock]].copy()
+    df.columns = ["close"]
+    df["high"] = df["close"].rolling(window, min_periods=1).max()
+    df["low"] = df["close"].rolling(window, min_periods=1).min()
+
+    if len(df) < window * 2:
+        return None
+
+    rolling_high = df["high"].rolling(window).max()
+    rolling_low = df["low"].rolling(window).min()
+    channel_range = (rolling_high - rolling_low) / df["close"]
+    is_narrow = channel_range <= range_pct
+
+    breakout_up = (df["close"] > rolling_high.shift(1)) & is_narrow.shift(1).fillna(False)
+    breakout_down = (df["close"] < rolling_low.shift(1)) & is_narrow.shift(1).fillna(False)
+
+    entries = breakout_up.fillna(False)
+    exits = (df["close"] < rolling_high.shift(1)).fillna(False)  # 簡化出場
+    short_entries = breakout_down.fillna(False)
+    short_exits = (df["close"] > rolling_low.shift(1)).fillna(False)
+
+    pf = backtest_signals(df["close"], entries, exits, short_entries, short_exits)
+    return extract_metrics(pf, "03_ChannelBreakout", stock)
+
+
+def strategy_06_double_rsi(prices, stock, short_period=7, long_period=35, threshold=20):
+    """#6 Double RSI — 長短 RSI 差距 mean reversion"""
+    close = prices[stock].dropna()
+    if len(close) < long_period * 3:
+        return None
+
+    rsi_short = compute_rsi(close, short_period)
+    rsi_long = compute_rsi(close, long_period)
+    rsi_diff = rsi_long - rsi_short
+
+    entries = (rsi_diff > threshold).fillna(False)      # 長高於短 = 短期超賣 → 買
+    exits = (rsi_diff < 0).fillna(False)                # 回歸
+    short_entries = (rsi_diff < -threshold).fillna(False)
+    short_exits = (rsi_diff > 0).fillna(False)
+
+    pf = backtest_signals(close, entries, exits, short_entries, short_exits)
+    return extract_metrics(pf, "06_DoubleRSI", stock)
+
+
+def strategy_07_zscore_reversion(prices, stock, window=50, entry_z=2.0, exit_z=0.5):
+    """#7 Z-Score 均值回歸 — 價格偏離均值"""
+    close = prices[stock].dropna()
+    if len(close) < window * 3:
+        return None
+
+    z = compute_zscore(close, window)
+
+    entries = (z < -entry_z).fillna(False)    # 超賣
+    exits = (z > -exit_z).fillna(False)       # 回歸
+    short_entries = (z > entry_z).fillna(False)
+    short_exits = (z < exit_z).fillna(False)
+
+    pf = backtest_signals(close, entries, exits, short_entries, short_exits)
+    return extract_metrics(pf, "07_ZScoreReversion", stock)
+
+
+def strategy_08_percentile_sma_div(prices, stock, sma_period=50, window=250, pct=0.95):
+    """#8 Percentile — SMA Divergence > 95th percentile"""
+    close = prices[stock].dropna()
+    if len(close) < window + sma_period:
+        return None
+
+    sma = compute_sma(close, sma_period)
+    divergence = sma - close
+    threshold = divergence.rolling(window).quantile(pct)
+
+    entries = (divergence > threshold).fillna(False)   # 離開均線太遠 → 買
+    exits = (divergence < 0).fillna(False)             # 返回均線
+
+    pf = backtest_signals(close, entries, exits)
+    return extract_metrics(pf, "08_PercentileSMADiv", stock)
+
+
+def run_batch1(prices, stocks=None):
+    """運行 Batch 1 所有策略。"""
+    stocks = stocks or TEST_STOCKS
+    all_results = []
+
+    strategies = [
+        ("01 Efficiency Ratio", strategy_01_efficiency_ratio),
+        ("02 Volume Profile", strategy_02_volume_profile),
+        ("03 Channel Breakout", strategy_03_channel_breakout),
+        ("06 Double RSI", strategy_06_double_rsi),
+        ("07 Z-Score Reversion", strategy_07_zscore_reversion),
+        ("08 Percentile SMA Div", strategy_08_percentile_sma_div),
+    ]
+
+    for strat_name, func in strategies:
+        print("\n運行 {} ...".format(strat_name))
+        for stock in stocks:
+            if stock not in prices.columns:
+                continue
+            result = func(prices, stock)
+            if result:
+                all_results.append(result)
+
+    return all_results
+
+
+if __name__ == "__main__":
+    print("=" * 95)
+    print("📊 hkptrc Batch 1: 趨勢 + 均值回歸策略 (VectorBT)")
+    print("=" * 95)
+
+    prices = load_prices(250)
+    print("數據: {} 日 × {} 股".format(len(prices), prices.shape[1]))
+
+    results = run_batch1(prices)
+    print_results_table(results, "Batch 1 結果 (趨勢 + 均值回歸)")
+
+    # 加 B&H 基準
+    bh_results = []
+    for stock in TEST_STOCKS:
+        if stock not in prices.columns:
+            continue
+        pf_bh = buy_hold_benchmark(prices[stock].dropna())
+        m = extract_metrics(pf_bh, "Buy&Hold", stock)
+        if m:
+            bh_results.append(m)
+    print_results_table(bh_results, "Buy & Hold 基準")
+
+    save_results(results, "batch1_trend_meanrev.csv")
+    save_results(bh_results, "batch1_buyhold_benchmark.csv")

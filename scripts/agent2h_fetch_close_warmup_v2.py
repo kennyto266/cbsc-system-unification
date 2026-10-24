@@ -1,0 +1,64 @@
+"""agent2h_fetch_close_warmup_v2.py — QFQ close 2020-06~2021-09 warmup (v2)
+
+v1 教訓: eval prices 係前復權 (qfq) — Futu AuType.NONE 原始價 splice 唔到
+(00005 2021-09: raw 41.4 vs eval 30.7 = 五年派息復權差)。
+v2 用 AuType.QFQ 重取, splice 驗證: futu qfq close 喺 eval 窗首 5 日逐股
+對比 eval prices, 全部 |diff| < 1e-6 先算過關。
+"""
+import sys, time, json
+from pathlib import Path
+import pandas as pd
+
+BT = Path(r"C:/Users/Penguin8n/ZCodeProject/backtests")
+sys.path.insert(0, str(BT))
+import os
+os.chdir(str(BT))
+
+from llm_cs_adapter import _load_prices_and_rets
+prices, _ = _load_prices_and_rets()
+codes = list(prices.columns)
+
+from futu import OpenQuoteContext, KLType, AuType
+
+def fetch(q, code, start, end, autype):
+    res = q.request_history_kline(code, ktype=KLType.K_DAY, autype=autype,
+                                  start=start, end=end, max_count=1000)
+    for item in (res if isinstance(res, tuple) else (res,)):
+        if isinstance(item, pd.DataFrame) and "time_key" in item.columns:
+            return item
+    return None
+
+warm, ovl = {}, {}
+q = OpenQuoteContext(host="127.0.0.1", port=11111)
+try:
+    for code in codes:
+        df = fetch(q, code, "2020-06-01", "2021-09-03", AuType.QFQ)
+        if df is not None and len(df):
+            warm[code] = {str(pd.to_datetime(r.time_key).date()): float(r.close)
+                          for r in df.itertuples()}
+        time.sleep(0.3)
+    for code in codes:
+        df = fetch(q, code, "2021-09-06", "2021-09-10", AuType.QFQ)
+        if df is not None and len(df):
+            ovl[code] = {str(pd.to_datetime(r.time_key).date()): float(r.close)
+                         for r in df.itertuples()}
+        time.sleep(0.25)
+finally:
+    q.close()
+
+Path(BT / "_agent2h_close_warmup_qfq.json").write_text(json.dumps(warm))
+Path(BT / "_agent2h_close_overlap_qfq.json").write_text(json.dumps(ovl))
+
+mism, checked = [], 0
+for code, d in ovl.items():
+    for dt, c in d.items():
+        try:
+            ev = float(prices.loc[dt, code])
+        except KeyError:
+            continue
+        checked += 1
+        if abs(ev - c) > max(1e-6, abs(ev) * 1e-6):
+            mism.append((code, dt, c, ev))
+print(f"warmup stocks {len(warm)} | overlap checked {checked} bars | mismatches {len(mism)}")
+for m in mism[:10]:
+    print("  MISMATCH", m)

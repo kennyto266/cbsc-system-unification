@@ -1,0 +1,163 @@
+"""collect_ah_premium.py — AH 兩地上市股溢价 panel (thesis: cross-market/AH-premium)
+
+數據鏈 (全部免key):
+  A 股收市 (CNY): 東財 push2his kline API, secid=1.6xxxxx (SH) / 0.0xxxxxx (SZ)
+  H 股收市 (HKD): repo data/ohlcv_5y/HK_XXXXX.csv (Futu, 已有)
+  CNY→HKK 匯率: frankfurter.dev ECB 日頻 (ffill 齊 AH 共同交易日)
+
+Output:
+  data/new_sources/ah_premium_raw.csv   — date, code_h, code_a, a_close_cny, fx_cny_hkd, a_close_hkd, h_close_hkd, ah_premium
+  data/new_sources/ah_premium_panel.csv — date × code_h wide panel of ah_premium
+ah_premium = a_close_hkd / h_close_hkd - 1  (越高 = H 越平)
+"""
+import csv, json, time, urllib.request
+from datetime import date
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+NS = BASE / "data" / "new_sources"
+NS.mkdir(parents=True, exist_ok=True)
+RAW = NS / "ah_premium_raw.csv"
+PANEL = NS / "ah_premium_panel.csv"
+CKPT = NS / "ah_premium_checkpoint.json"
+
+# [09-15 fix] TO 原本寫死 2026-08-21 — 個任務波次整完就凍結, 水源冇停過
+# (ohlcv_5y 一直後生到 09-11+), 係個出水口焊死咗。改動態。
+FROM = "2021-01-01"
+TO = __import__("datetime").date.today().isoformat()
+
+# 51股 universe 內 AH 兩地上市股 (H code -> A 股票代碼, exchange 1=SH 0=SZ)
+AH = {
+    "00386": ("600028", 1),  # 中石化
+    "00883": ("600028", 1) if False else ("601857", 1),  # 中海油 -> 601857 SH
+    "00939": ("601939", 1),  # 建行
+    "00941": ("600941", 1),  # 中移動
+    "01088": ("601088", 1),  # 神華
+    "01211": ("002594", 0),  # 比亞迪 SZ
+    "01398": ("601398", 1),  # 工行
+    "02318": ("601318", 1),  # 平安
+    "02628": ("601628", 1),  # 中國人壽
+    "02899": ("601899", 1),  # 紫金礦業
+}
+
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "Referer": "https://quote.eastmoney.com/",
+      "Accept": "*/*"}
+
+
+def get_json(url, tries=6):
+    for i in range(tries):
+        try:
+            req = urllib.request.Request(url, headers=UA)
+            return json.loads(urllib.request.urlopen(req, timeout=30).read())
+        except Exception as e:
+            print("  retry", i + 1, url[:60], repr(e)[:80], flush=True)
+            if i == tries - 1:
+                raise
+            time.sleep(5 + 3 * i)
+
+
+def em_kline(secid):
+    """騰訊 ifzq 日K (不復權 kline/kline): date -> close (CNY).
+    一次過攞晒 2021-01→今 (~1400 bar < 2000 上限)."""
+    mkt, acode = secid.split(".")
+    sym = ("sh" if mkt == "1" else "sz") + acode
+    out = {}
+    url = (f"https://web.ifzq.gtimg.cn/appstock/app/kline/kline"
+           f"?param={sym},day,{FROM},{TO},2000,")
+    j = get_json(url)
+    data = (j.get("data") or {}).get(sym, {})
+    for k in data.get("day") or data.get("qfqday") or []:
+        out[k[0]] = float(k[2])
+    return out
+
+
+def fx_cny_hkd():
+    # [09-15 fix] frankfurter.dev/.app 雙雙 403 — 後備 yfinance CNYHKD=X 日線
+    # (yfinance 係 ohlcv_5y 御用源, 唔怕佢走)。frankfurter 返生就照用佢先。
+    out = {}
+    try:
+        url = f"https://api.frankfurter.dev/v1/{FROM}..{TO}?base=CNY&symbols=HKD"
+        j = get_json(url, tries=2)
+        for d, r in j["rates"].items():
+            if "HKD" in r:
+                out[d] = r["HKD"]
+        if out:
+            return out
+    except Exception:
+        pass
+    import pandas as pd
+    df = pd.DataFrame(__import__("yfinance").download(
+        "CNYHKD=X", start=FROM, end=TO, progress=False, auto_adjust=True)["Close"])
+    col = df.columns[0] if len(df.columns) else None
+    return {str(ts.date()): float(v) for ts, v in df[col].dropna().items()}
+
+
+def h_close_series(hcode):
+    """H 股收市 (HKD): ohlcv_5y (Futu) 前段 + ohlcv_10yr 補舊 + 騰訊 ifzq 填窿."""
+    import pandas as pd
+    parts = []
+    for src in ["ohlcv_5y", "ohlcv_10yr"]:
+        fp = BASE / "data" / src / f"HK_{hcode}.csv"
+        if fp.exists():
+            s = pd.read_csv(fp, parse_dates=["time_key"]).set_index("time_key")["close"]
+            if getattr(s.index, "tz", None) is not None:
+                s.index = s.index.tz_localize(None)
+            parts.append(s)
+    if parts:
+        s = pd.concat(parts).sort_index()
+        s = s[~s.index.duplicated(keep="first")]
+    else:
+        s = pd.Series(dtype=float)
+    if len(s) == 0 or str(s.index[0].date()) > FROM:
+        sym = "hk" + hcode
+        url = (f"https://web.ifzq.gtimg.cn/appstock/app/kline/kline"
+               f"?param={sym},day,{FROM},{TO},2000,")
+        j = get_json(url)
+        t = pd.Series({k[0]: float(k[2]) for k in j["data"][sym]["day"]})
+        t.index = pd.to_datetime(t.index)
+        if len(s):
+            t = t[~t.index.isin(s.index)]
+            s = pd.concat([s, t]).sort_index()
+        else:
+            s = t
+        time.sleep(1)
+    s.index = pd.to_datetime(s.index).strftime("%Y-%m-%d")
+    return s
+
+
+def main():
+    import pandas as pd
+    fx = fx_cny_hkd()
+    fx_s = pd.Series(fx).sort_index()
+    fx_s.index = pd.to_datetime(fx_s.index)
+    rows = []
+    for hcode, (acode, mkt) in AH.items():
+        a = em_kline(f"{mkt}.{acode}")
+        print(hcode, "A bars:", len(a), acode, flush=True)
+        h = h_close_series(hcode)
+        print("  H bars:", len(h), h.index[0], "~", h.index[-1], flush=True)
+        common = sorted(set(a) & set(h.index))
+        for d in common:
+            f = fx_s.asof(pd.Timestamp(d)) if pd.Timestamp(d) not in fx_s else fx_s[pd.Timestamp(d)]
+            ac, hc = a[d], h[d]
+            if pd.isna(f) or not ac or not hc:
+                continue
+            a_hkd = ac * f
+            rows.append({"date": d, "code_h": hcode, "code_a": acode,
+                         "a_close_cny": ac, "fx_cny_hkd": round(float(f), 5),
+                         "a_close_hkd": round(a_hkd, 4), "h_close_hkd": hc,
+                         "ah_premium": round(a_hkd / hc - 1, 6)})
+        time.sleep(1)
+    df = pd.DataFrame(rows).sort_values(["date", "code_h"])
+    df.to_csv(RAW, index=False)
+    # wide panel
+    p = df.pivot(index="date", columns="code_h", values="ah_premium").sort_index()
+    p.index.name = "date"
+    p.to_csv(PANEL)
+    CKPT.write_text(json.dumps({"last_done": TO, "stocks": len(AH)}))
+    print("RAW rows", len(df), "days", df.date.nunique(), "panel", p.shape)
+
+
+if __name__ == "__main__":
+    main()

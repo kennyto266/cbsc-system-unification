@@ -1,0 +1,124 @@
+"""VIX spike alpha parameter optimization."""
+import sys
+sys.path = [p for p in sys.path if 'CODEX' not in p]
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\backtests')
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts')
+import warnings
+warnings.filterwarnings('ignore')
+import numpy as np, pandas as pd
+from pathlib import Path
+from vbt_data import FACTOR_STOCKS
+
+DATA_5Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y')
+DATA_10Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr')
+SPLIT = pd.Timestamp('2024-01-01')
+FAC = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors')
+
+ohlcv_cache = {}
+for s in FACTOR_STOCKS:
+    fname = s.replace('.', '_')
+    for d in [DATA_10Y, DATA_5Y]:
+        p = d / f'{fname}.csv'
+        if p.exists():
+            ohlcv_cache[s] = pd.read_csv(p, parse_dates=['time_key']).set_index('time_key').sort_index()
+            break
+
+# Load VIX
+df_vix = pd.read_csv(FAC / 'vix.csv')
+date_col = [c for c in df_vix.columns if 'date' in c.lower() or c.lower() in ['time', 'ds']][0]
+df_vix = df_vix.set_index(pd.to_datetime(df_vix[date_col])).sort_index()
+vix = None
+for c in df_vix.columns:
+    if c != date_col and df_vix[c].dtype in [np.float64, np.int64, float, int]:
+        vix = df_vix[c].astype(float)
+        break
+
+print('VIX factor loaded:', len(vix), 'rows')
+
+
+def compute_portfolio(z_window=60, z_thresh=1.5, hold=5):
+    all_rets = {}
+    for stock, df in ohlcv_cache.items():
+        if len(df) < 400:
+            continue
+        close = df['close'].astype(float)
+        vix_a = vix.reindex(close.index).ffill()
+        z = (vix_a - vix_a.rolling(z_window).mean()) / vix_a.rolling(z_window).std().replace(0, np.nan)
+        entries = (z > z_thresh).shift(1).fillna(False)
+        ret1 = close.pct_change()
+        pos = pd.Series(0, index=close.index)
+        in_pos = False
+        dl = 0
+        for i in range(len(close)):
+            if entries.iloc[i] and not in_pos:
+                in_pos = True
+                dl = hold
+            pos.iloc[i] = 1 if in_pos else 0
+            if in_pos:
+                dl -= 1
+                if dl <= 0:
+                    in_pos = False
+        all_rets[stock] = (pos.shift(1) * ret1).dropna()
+    daily = pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+    oos = daily[daily.index >= SPLIT].dropna()
+    is_ = daily[daily.index < SPLIT].dropna()
+    if len(oos) < 20:
+        return None
+    oos_sr = oos.mean() / oos.std() * np.sqrt(252) if oos.std() > 0 else 0
+    is_sr = is_.mean() / is_.std() * np.sqrt(252) if is_.std() > 0 else 0
+    oos_dd = ((1 + oos).cumprod() / (1 + oos).cumprod().cummax() - 1).min()
+    oos_ret = (1 + oos).cumprod().iloc[-1] - 1
+    return is_sr, oos_sr, oos_dd, oos_ret
+
+
+print('\n=== VIX Spike Parameter Sweep ===')
+print(f'{"z_win":>5} {"z_thr":>5} {"hold":>4} {"IS":>6} {"OOS":>6} {"ret":>7} {"DD":>7}')
+best = (0, None)
+for zw in [40, 60, 90, 120]:
+    for zt in [1.0, 1.5, 2.0, 2.5]:
+        for hold in [3, 5, 10]:
+            r = compute_portfolio(z_window=zw, z_thresh=zt, hold=hold)
+            if r is None:
+                continue
+            is_sr, oos_sr, dd, ret = r
+            tag = '🟢' if oos_sr > 1.0 else '✨' if oos_sr > 0.7 else '  ' if oos_sr > 0.4 else '❌'
+            print(f'  {tag} {zw:>4} {zt:>5.1f} {hold:>4} {is_sr:>+6.2f} {oos_sr:>+6.2f} {ret:>+6.1%} {dd:>6.1%}')
+            if oos_sr > best[0] and abs(dd) < 0.15:
+                best = (oos_sr, (zw, zt, hold, is_sr, oos_sr, dd, ret))
+
+print(f'\nBest (SR with DD<15%): z_win={best[1][0]} z={best[1][1]} hold={best[1][2]} OOS_SR={best[1][4]:.2f} DD={best[1][5]:.1%}')
+
+# Walk-forward for best
+print('\n=== Walk-Forward (best config) ===')
+zw, zt, hold = best[1][:3]
+all_rets = {}
+for stock, df in ohlcv_cache.items():
+    if len(df) < 400:
+        continue
+    close = df['close'].astype(float)
+    vix_a = vix.reindex(close.index).ffill()
+    z = (vix_a - vix_a.rolling(zw).mean()) / vix_a.rolling(zw).std().replace(0, np.nan)
+    entries = (z > zt).shift(1).fillna(False)
+    ret1 = close.pct_change()
+    pos = pd.Series(0, index=close.index)
+    in_pos = False
+    dl = 0
+    for i in range(len(close)):
+        if entries.iloc[i] and not in_pos:
+            in_pos = True
+            dl = hold
+        pos.iloc[i] = 1 if in_pos else 0
+        if in_pos:
+            dl -= 1
+            if dl <= 0:
+                in_pos = False
+    all_rets[stock] = (pos.shift(1) * ret1).dropna()
+daily = pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+for year in range(2019, 2027):
+    yr = daily[daily.index.year == year].dropna()
+    if len(yr) < 20:
+        continue
+    sr = yr.mean() / yr.std() * np.sqrt(252) if yr.std() > 0 else 0
+    ret = (1 + yr).cumprod().iloc[-1] - 1
+    tag = '✅' if sr > 0.5 else '⚠️' if sr > 0 else '❌'
+    print(f'  {year}: SR={sr:+.2f} ret={ret:+.1%} {tag}')

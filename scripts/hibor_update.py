@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+"""hibor_update.py - Update HIBOR data from HKMA API.
+
+HKMA API: er-ir/hk-interbank-ir-daily (overnight rate).
+Run daily to keep hibor.csv current.
+
+增量更新: 若 hibor.csv 已存在, 只取最近已有日期之後既資料 (通常 1-2 頁),
+避免每次全量拉 12 年 (~60 頁) 導致 algotrade 30s timeout.
+用 --full 強制全量重建.
+"""
+import sys
+import requests, pandas as pd, time
+from pathlib import Path
+from datetime import datetime, timedelta
+
+OUT = Path(__file__).resolve().parent.parent / "data" / "factors" / "hibor.csv"
+URL = "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily"
+# 單次請求 timeout (秒). 短 timeout 快速失敗, 唔卡住 algotrade.
+REQ_TIMEOUT = 8
+# 全量分頁上限 (防無限 loop). 60 頁 = ~6000 行 (12 年日數).
+FULL_MAX_PAGES = 60
+# 增量分頁上限 (通常 1-2 頁足夠).
+INC_MAX_PAGES = 5
+
+
+def _last_date():
+    """讀取 hibor.csv 最後日期, 返 (date_str, datetime). 無檔案返 None."""
+    if not OUT.exists():
+        return None
+    try:
+        old = pd.read_csv(OUT)
+        if len(old) == 0:
+            return None
+        last = str(old.iloc[-1]["date"])
+        return last
+    except Exception:
+        return None
+
+
+def fetch_hibor(from_date="2014-01-01", max_pages=FULL_MAX_PAGES):
+    """分頁拉取 HIBOR, 由 from_date 開始. 返 DataFrame."""
+    all_records = []
+    offset = 0
+    to_date = (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d")
+    pages = 0
+    while pages < max_pages:
+        params = {"from": from_date, "to": to_date, "pagesize": 100, "offset": offset}
+        try:
+            r = requests.get(URL, params=params, timeout=REQ_TIMEOUT)
+            d = r.json()
+            records = d.get("result", {}).get("records", []) if "result" in d else []
+            if not records:
+                break
+            all_records.extend(records)
+            offset += len(records)
+            pages += 1
+            time.sleep(0.3)
+        except Exception:
+            break
+    if not all_records:
+        return pd.DataFrame(columns=["date", "close", "ir_overnight"])
+    df = pd.DataFrame(all_records)
+    df["date"] = df["end_of_day"]
+    df["close"] = df["ir_overnight"]  # 對齊 _load_factor_csv
+    return df[["date", "close", "ir_overnight"]].dropna().sort_values("date").drop_duplicates(subset="date", keep="last")
+
+
+def fetch_hkab_day(year: int, month: int, day: int):
+    """後備源: HKAB 官方 API (HKMA 就係照抄呢個 fixing, 2026-08-23 實測 4/4 日數值完全一致).
+
+    [fix 2026-09-04] 防未出爐 echo: HKAB API 對未來日/今日 fixing 未出 (11:15am 前) 唔報錯,
+    靜默回傳最近一期已出爐 fixing (date/time 欄係舊期). 要求日期同回傳 date 唔一致 → 拒收,
+    否則會將尋日數值錯標成今日 (09-04 事故: 10:56 補跑, 09-04 row 完全等於 09-03).
+    """
+    try:
+        r = requests.get(
+            f"https://www.hkab.org.hk/api/hibor?year={year}&month={month}&day={day}",
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                     "Referer": "https://www.hkab.org.hk/en/rates/hibor"},
+            timeout=8)
+        d = r.json()
+        if d.get("isHoliday") or d.get("Overnight") is None:
+            return None
+        # 防未出爐 echo: 回傳 date 必須等於要求日期 (HKAB 回 "2026-9-4" 無補零格式)
+        want = f"{year}-{month}-{day}"
+        got = str(d.get("date", ""))
+        if got != want:
+            return None
+        return {"date": f"{year:04d}-{month:02d}-{day:02d}",
+                "close": d["Overnight"], "ir_overnight": d["Overnight"],
+                "ir_1w": d.get("1 Week"), "ir_1m": d.get("1 Month"),
+                "ir_3m": d.get("3 Months"), "ir_6m": d.get("6 Months"),
+                "ir_9m": d.get("9 Months"), "ir_12m": d.get("12 Months")}
+    except Exception:
+        return None
+
+
+def backfill_hkab(from_date: str, to_date: str = None):
+    """HKAB 後備補洞: 逐日掃 (skip 週末/假期), 返 DataFrame (同 hibor.csv 欄位對齊)."""
+    from datetime import date as _date
+    start = datetime.strptime(from_date, "%Y-%m-%d").date()
+    end = datetime.strptime(to_date, "%Y-%m-%d").date() if to_date else _date.today()
+    rows = []
+    cur = start
+    while cur <= end:
+        if cur.weekday() < 5:  # Mon-Fri
+            rec = fetch_hkab_day(cur.year, cur.month, cur.day)
+            if rec:
+                rows.append(rec)
+            time.sleep(0.25)
+        cur += timedelta(days=1)
+    cols = ["date", "ir_12m", "ir_1m", "ir_1w", "ir_3m", "ir_6m", "ir_9m", "ir_overnight", "close"]
+    return pd.DataFrame(rows, columns=cols) if rows else pd.DataFrame(columns=cols)
+
+
+def main():
+    full = "--full" in sys.argv
+    last = _last_date()
+    if full or last is None:
+        # 全量 (首次 或 --full)
+        from_date = "2014-01-01"
+        max_pages = FULL_MAX_PAGES
+        mode = "full"
+    else:
+        # 增量: 由最後日期前 7 日開始 (防漏, 含週末/假期 gap)
+        dt = datetime.strptime(last, "%Y-%m-%d") - timedelta(days=7)
+        from_date = dt.strftime("%Y-%m-%d")
+        max_pages = INC_MAX_PAGES
+        mode = "incremental"
+    new = fetch_hibor(from_date=from_date, max_pages=max_pages)
+    # [fix 2026-08-23] HKMA API 死/滞後 → HKAB 官方 fixing 後備 (數值同源, 實測完全一致)
+    # 觸發條件: HKMA 完全冇回應 (0筆) 或者回嘅全部係舊數 (冇任何新過 last 嘅行 — 08-23 HKMA
+    # 只回到 07-31 前嘅數, 500 筆舊嘢都會行呢條路)
+    _n_new_hkma = len(new) if last is None else (int((new["date"] > last).sum()) if len(new) else 0)
+    if len(new) == 0 or _n_new_hkma == 0:
+        print(f"HIBOR: HKMA 冇新數 (fetched={len(new)}, new={_n_new_hkma}) → 試 HKAB 後備源...")
+        new = backfill_hkab(from_date=from_date)
+        if len(new):
+            print(f"HIBOR: HKAB 後備拎到 {len(new)} 筆")
+    if OUT.exists():
+        old = pd.read_csv(OUT)
+        combined = pd.concat([old, new]).drop_duplicates(subset="date", keep="last").sort_values("date").reset_index(drop=True)
+    else:
+        combined = new
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    combined.to_csv(OUT, index=False)
+    n_new = 0 if last is None else int((combined["date"] > last).sum())
+    print(f"HIBOR [{mode}]: {len(new)} fetched, +{n_new} new → {len(combined)} rows, "
+          f"last={combined.iloc[-1]['date']} rate={combined.iloc[-1]['close']}%")
+    # [fix 2026-08-23] 靜默失敗檢測: fetch 0 筆 + gap 已爆 7 日 → exit 1
+    # (2026-08 HKMA API 全站 timeout, 舊版照樣 exit 0 → DataGuard 誤判「更新成功」停止告警)
+    if len(new) == 0 and last is not None:
+        try:
+            gap_days = (datetime.now() - datetime.strptime(last, "%Y-%m-%d")).days
+        except ValueError:
+            gap_days = 0
+        if gap_days > 7:
+            print(f"HIBOR: ❌ fetch 0 筆 + data gap {gap_days}日 (>7) — 視為更新失敗", file=sys.stderr)
+            sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

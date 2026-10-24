@@ -1,0 +1,102 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project specific
+logs/
+data/cache/
+results/temp/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Testing
+.tox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Environments
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+docs/
+*.md
+
+# OS
+Thumbs.db
+*.log
+*.tmp
+*.temp
+
+# Data files that shouldn't be in container
+data/large_datasets/
+data/sensitive/
+data/production/
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+
+# Local configuration overrides
+config/local/
+config/production/
+config/secrets/
+
+# Development scripts
+scripts/dev/
+scripts/local/

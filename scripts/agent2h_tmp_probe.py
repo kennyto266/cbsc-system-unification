@@ -1,0 +1,14 @@
+import requests
+
+S = requests.Session()
+S.headers.update({"User-Agent": "Mozilla/5.0"})
+for u in [
+    "https://www.hkex.com.hk/Market-Data/Trading-Information/Securities-Market/Short-Sell-Turnover?sc_lang=en",
+    "https://www.hkex.com.hk/-/media/hkex-market-data/statistics/consolidated-reports/daily-short-sell",
+    "https://www.hkex.com.hk/eng/cbs/screen/shortsell",
+]:
+    try:
+        r = S.get(u, timeout=12)
+        print(u[-55:], r.status_code, len(r.text))
+    except Exception as e:
+        print(u[-55:], "ERR", str(e)[:60])

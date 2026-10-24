@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""collect_prem_px.py — [09-24 G27337] dbpz 上游不復權 close collector (Yahoo v8).
+
+prem_px.csv (code,date,close — build_di_buy_prem_panel 嘅 ratio 分母) 原本係
+agent inline curl 東財 push2his fqt=0 爬, 爬蟲从未入庫 → 09-17 後斷流
+(gsvi_5y 斷流同款: builder 接線在生, 上游爬蟲唔存在)。本 collector 補上游:
+
+  源頭: Yahoo v8 chart API quote.close (09-24 實證在生; 東財 push2his 由本
+  網絡 RemoteDisconnected 拒連 — 源切換記錄在案)。quote.close 係 split 調整
+  而非股息調整 (adjclose 先係全調整); builder ratio = 增持價/同日 close 係
+  per-date 語義, 調整基準差異只影響跨日比較, 唔影響同日比值。除權除淨日
+  增持價同 close 同日同基準, HK split/合股 週級發生機會極低 — 殘餘風險由
+  builder 既有 0.2~5.0 ratio 閘兜底。
+
+  增量: per-code 由現有 max date+1 → 今日; append-only 重疊日舊值永遠贏。
+  誠實: 今日 bar 未收市 (<16:15 本地) 唔落盤 (collect_intraday 同款守衛)。
+  [09-26 G15380] per-code 即寫: _factor_store_refresh 時間盒會截短 timeout
+  (412s 實錄) 殺進程 — 全量 memory 最尾先寫 = 白做+下輪由零重掃死鎖;
+  每掃完一隻即 append, 殺極進度保留, 下輪 last+1>today 跳過自動續掃。
+  股票清單 = 現有 prem_px.csv codes (新 code 唔會自動入 — di_corp2code
+  擴編嗰日人手補種子行, 呢度記錄在案)。
+
+輸出: data/new_sources/prem_px.csv (追加行, 欄序 code,date,close 唔變)
+"""
+from __future__ import annotations
+
+import json
+import sys
+import time
+import urllib.request
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+NS = BASE / "data" / "new_sources"
+CSV = NS / "prem_px.csv"
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+DELAY = 0.3
+# 收市守衛: 港股 16:10 收市, 15 分鐘結算後先信當日 close (本地 = HKT)
+CLOSE_H, CLOSE_M = 16, 15
+
+
+def fetch_yahoo_close(code5: str, p1: int, p2: int) -> list:
+    """Yahoo v8 chart 1d bars → [(YYYY-MM-DD, close)] — 空/異常返 [].
+
+    ticker = str(int(code)).zfill(4)+".HK" — Yahoo HK 慣例 4 位 padding
+    (0002.HK ✓ / 00002.HK 404 ✗, 09-24 首跑 1169 隻全 404 實錄); 5 位真碼
+    (9618) int 後 zfill(4) 原樣保留。404/4xx 係永久錯唔重試。
+    """
+    import urllib.error
+    tk = str(int(code5)).zfill(4) + ".HK"
+    url = (f"https://query1.finance.yahoo.com/v8/finance/chart/{tk}"
+           f"?period1={p1}&period2={p2}&interval=1d&events=history")
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    j = None
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=40) as r:
+                j = json.loads(r.read().decode("utf-8"))
+            break
+        except urllib.error.HTTPError as e:
+            if 400 <= e.code < 500:
+                return []          # 404/429 呢啲 — 重試冇意義
+            if attempt == 2:
+                return []
+            time.sleep(3 * (attempt + 1))
+        except Exception:
+            if attempt == 2:
+                return []
+            time.sleep(3 * (attempt + 1))
+    res = ((j or {}).get("chart") or {}).get("result") or []
+    if not res:
+        return []
+    ts = res[0].get("timestamp") or []
+    quote = ((res[0].get("indicators") or {}).get("quote") or [{}])[0]
+    closes = quote.get("close") or []
+    out = []
+    for t, c in zip(ts, closes):
+        if c is None:
+            continue
+        d = datetime.fromtimestamp(t, tz=timezone.utc).strftime("%Y-%m-%d")
+        out.append((d, float(c)))
+    return out
+
+
+def market_closed(now: datetime) -> bool:
+    return now.hour > CLOSE_H or (now.hour == CLOSE_H and now.minute >= CLOSE_M)
+
+
+def refresh(csv_path: Path = CSV, now: datetime | None = None,
+            fetch=fetch_yahoo_close, sleep=time.sleep,
+            fail_streak_abort: int = 30) -> dict:
+    """增量刷新 — per-code append-only; 返 {codes, fetched, new_rows, empty_codes, aborted}.
+
+    fail_streak_abort: 連續 N 隻兩手空空 (網絡死/源限流) 即斷路唔再車衣 —
+    09-24 首跑實錄: 源暫態限流時 1169×3 重試燒 28 分鐘零行零訊號。
+    [09-26 G15380] 每掃完一隻即 append 寫盤 — 上層 _factor_store_refresh
+    時間盒截短 timeout 殺進程時 (412s 實錄), 已掃 code 進度保留, 下輪
+    last+1>today 跳過機制自動由斷點續掃, 幾輪自癒。
+    """
+    now = now or datetime.now()
+    df = pd.read_csv(csv_path, dtype={"code": str}, parse_dates=["date"])
+    last_per_code = df.groupby("code")["date"].max().to_dict()
+    today = pd.Timestamp(now.date())
+    rows_new, fetched, fail_streak, empty_codes = [], 0, 0, 0
+    for code, last in sorted(last_per_code.items()):
+        beg = last + pd.Timedelta(days=1)
+        if beg > today:
+            continue
+        fetched += 1
+        p1 = int(datetime(beg.year, beg.month, beg.day).timestamp())
+        p2 = int((now + timedelta(days=1)).timestamp())
+        bars = fetch(code, p1, p2)
+        if bars:
+            fail_streak = 0
+        else:
+            fail_streak += 1
+            empty_codes += 1
+            if fail_streak >= fail_streak_abort:
+                print(f"[prem_px] 連續 {fail_streak} 隻零 bar — 源死/限流, "
+                      f"斷路停喺 {code} (已掃 {fetched}/{len(last_per_code)})")
+                break
+        code_rows = []
+        for d, c in bars:
+            dd = pd.Timestamp(d)
+            if dd <= last or dd > today:   # 重疊日舊值贏 / 未來日唔信
+                continue
+            if dd == today and not market_closed(now):
+                continue
+            code_rows.append((code, d, c))
+        if code_rows:
+            with open(csv_path, "a", encoding="utf-8", newline="") as f:
+                for cd, d, c in code_rows:
+                    f.write(f"{cd},{d},{c}\n")
+            rows_new.extend(code_rows)
+        if fetched % 200 == 0:
+            print(f"[prem_px] ... 已掃 {fetched} 隻, 新行 {len(rows_new)}",
+                  flush=True)
+        sleep(DELAY)
+    return {"codes": len(last_per_code), "fetched": fetched,
+            "new_rows": len(rows_new), "empty_codes": empty_codes,
+            "fail_streak": fail_streak,
+            "aborted": fail_streak >= fail_streak_abort}
+
+
+def main() -> int:
+    st = refresh()
+    print(f"prem_px 增量: {st['codes']} codes, 拉咗 {st['fetched']} 隻, "
+          f"新增 {st['new_rows']} 行, 空 {st['empty_codes']} 隻"
+          + (f" [ABORTED streak={st['fail_streak']}]" if st["aborted"] else "")
+          + f" → {CSV.name}")
+    return 1 if st["aborted"] else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

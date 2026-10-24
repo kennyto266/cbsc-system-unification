@@ -1,0 +1,203 @@
+"""Find candlestick/pattern signals WITHOUT momentum filter (low corr with A159)."""
+import sys
+sys.path = [p for p in sys.path if 'CODEX' not in p]
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\backtests')
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts')
+import warnings
+warnings.filterwarnings('ignore')
+import numpy as np, pandas as pd
+from pathlib import Path
+from vbt_data import FACTOR_STOCKS
+
+DATA_5Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y')
+DATA_10Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr')
+SPLIT = pd.Timestamp('2024-01-01')
+
+ohlcv_cache = {}
+for s in FACTOR_STOCKS:
+    fname = s.replace('.', '_')
+    for d in [DATA_10Y, DATA_5Y]:
+        p = d / f'{fname}.csv'
+        if p.exists():
+            ohlcv_cache[s] = pd.read_csv(p, parse_dates=['time_key']).set_index('time_key').sort_index()
+            break
+
+
+def compute_portfolio(entry_func, hold=3):
+    all_rets = {}
+    for stock, df in ohlcv_cache.items():
+        if len(df) < 400: continue
+        close = df['close'].astype(float)
+        try:
+            entries = entry_func(close, df)
+            if entries is None: continue
+            ret1 = close.pct_change()
+            pos = pd.Series(0, index=close.index)
+            in_pos = False; dl = 0
+            for i in range(len(close)):
+                if entries.iloc[i] and not in_pos: in_pos = True; dl = hold
+                pos.iloc[i] = 1 if in_pos else 0
+                if in_pos:
+                    dl -= 1
+                    if dl <= 0: in_pos = False
+            all_rets[stock] = (pos.shift(1) * ret1).dropna()
+        except Exception: pass
+    if not all_rets: return None
+    return pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+
+# Existing alphas for correlation
+def a159(close, df):
+    vol = df['volume'].astype(float)
+    ema_f = close.ewm(span=12, adjust=False).mean(); ema_s = close.ewm(span=26, adjust=False).mean()
+    macd = ema_f - ema_s; sig = macd.ewm(span=9, adjust=False).mean(); hist = macd - sig
+    e1 = ((hist > 0) & (hist > hist.shift(1))).shift(1).fillna(False)
+    vs = (vol - vol.rolling(20).mean()) / vol.rolling(20).std().replace(0, np.nan)
+    e2 = ((vs > 1.5) & (close.pct_change(5) > 0)).shift(1).fillna(False)
+    return (e1 & e2).fillna(False)
+
+def a160(close, df):
+    sma = close.rolling(100).mean(); dev = (close - sma) / sma
+    z = (dev - dev.rolling(120).mean()) / dev.rolling(120).std().replace(0, np.nan)
+    return (z < -1.5).shift(1).fillna(False)
+
+def a161(close, df):
+    high, low = df['high'].astype(float), df['low'].astype(float)
+    tr = pd.concat([(high-low), (high-close.shift()).abs(), (low-close.shift()).abs()], axis=1).max(axis=1)
+    atr = tr.rolling(14).mean(); atr_pct = atr / close
+    low_atr = atr_pct.rolling(60).rank(pct=True) < 0.15
+    sma = close.rolling(50).mean()
+    return (low_atr & (close > sma)).shift(1).fillna(False)
+
+FAC = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors')
+df_vix = pd.read_csv(FAC / 'vix.csv')
+df_vix = df_vix.set_index(pd.to_datetime(df_vix['date'])).sort_index()
+vix = df_vix['close'].astype(float)
+def a162(close, df):
+    vix_a = vix.reindex(close.index).ffill()
+    z = (vix_a - vix_a.rolling(90).mean()) / vix_a.rolling(90).std().replace(0, np.nan)
+    return (z > 2.0).shift(1).fillna(False)
+
+print('Computing existing alpha returns...')
+existing = {
+    'A159': compute_portfolio(a159, hold=3),
+    'A160': compute_portfolio(a160, hold=10),
+    'A161': compute_portfolio(a161, hold=3),
+    'A162': compute_portfolio(a162, hold=5),
+}
+
+print('\n' + '='*65)
+print('PATTERN SIGNALS WITHOUT MOMENTUM (target: low corr with all)')
+print('='*65)
+
+# C1: Upper shadow rejection NO momentum (pure candlestick)
+def uprej_nomom(close, df, shadow_mult=2.0, vol_mult=1.5):
+    opn = df['open'].astype(float); high = df['high'].astype(float)
+    vol = df['volume'].astype(float)
+    body = (close - opn).abs()
+    upper_shadow = (high - opn.clip(lower=close))
+    rejection = upper_shadow > body * shadow_mult
+    vol_spike = vol > vol.rolling(20).mean() * vol_mult
+    return (rejection & vol_spike).shift(1).fillna(False)
+
+# C2: Hammer NO momentum
+def hammer_nomom(close, df, shadow_mult=2.0):
+    opn = df['open'].astype(float); high = df['high'].astype(float); low = df['low'].astype(float)
+    body = (close - opn).abs()
+    lower_shadow = (opn.clip(upper=close) - low)
+    avg_body = body.rolling(20).mean()
+    hammer = (lower_shadow > body * shadow_mult) & (lower_shadow > avg_body)
+    return hammer.shift(1).fillna(False)
+
+# C3: Volume reversal — high volume + price drop → buy (exhaustion)
+def vol_drop(close, df, vol_mult=1.5, drop=0.02):
+    vol = df['volume'].astype(float)
+    vol_spike = vol > vol.rolling(20).mean() * vol_mult
+    price_drop = close.pct_change() < -drop
+    return (vol_spike & price_drop).shift(1).fillna(False)
+
+# C4: Intraday close strength NO momentum
+def close_strong(close, df, thresh=0.8):
+    high = df['high'].astype(float); low = df['low'].astype(float)
+    rng = high - low
+    close_pos = (close - low) / rng.replace(0, np.nan)
+    return (close_pos > thresh).shift(1).fillna(False)
+
+# C5: Doji NO momentum
+def doji_nomom(close, df, body_r=0.3, vol_mult=1.3):
+    opn = df['open'].astype(float); high = df['high'].astype(float); low = df['low'].astype(float)
+    vol = df['volume'].astype(float)
+    rng = high - low; body = (close - opn).abs()
+    doji = body < rng * body_r
+    vol_high = vol > vol.rolling(20).mean() * vol_mult
+    return (doji & vol_high).shift(1).fillna(False)
+
+# C6: 2-bar reversal (down bar followed by up bar)
+def two_bar_rev(close, df):
+    opn = df['open'].astype(float)
+    bar1_down = close.shift(1) < opn.shift(1)
+    bar2_up = close > opn
+    return (bar1_down & bar2_up).shift(1).fillna(False)
+
+# C7: Inside bar breakout (today's range inside yesterday's, breakout next)
+def inside_break(close, df):
+    high = df['high'].astype(float); low = df['low'].astype(float)
+    inside = (high < high.shift(1)) & (low > low.shift(1))
+    breakout = close > high.shift(1)
+    return (inside.shift(1) & breakout).shift(1).fillna(False)
+
+# C8: Wide range down + narrow range up (NR7 after WR)
+def wr_nr(close, df):
+    high = df['high'].astype(float); low = df['low'].astype(float)
+    rng = high - low
+    avg_rng = rng.rolling(20).mean()
+    wide = rng.shift(1) > avg_rng.shift(1) * 1.5
+    narrow = rng < avg_rng * 0.5
+    return (wide & narrow).shift(1).fillna(False)
+
+candidates = {
+    'UpRej_noMom_s2_v1.5': compute_portfolio(lambda c,d: uprej_nomom(c,d,2.0,1.5), hold=3),
+    'UpRej_noMom_s3_v1.5': compute_portfolio(lambda c,d: uprej_nomom(c,d,3.0,1.5), hold=3),
+    'Hammer_noMom_s2': compute_portfolio(lambda c,d: hammer_nomom(c,d,2.0), hold=3),
+    'Hammer_noMom_s3': compute_portfolio(lambda c,d: hammer_nomom(c,d,3.0), hold=3),
+    'VolDrop_v1.5_d2%': compute_portfolio(lambda c,d: vol_drop(c,d,1.5,0.02), hold=3),
+    'VolDrop_v2_d3%': compute_portfolio(lambda c,d: vol_drop(c,d,2.0,0.03), hold=3),
+    'CloseTop80': compute_portfolio(lambda c,d: close_strong(c,d,0.8), hold=3),
+    'Doji_b30_v1.3': compute_portfolio(lambda c,d: doji_nomom(c,d,0.3,1.3), hold=3),
+    'Doji_b50_v1.3': compute_portfolio(lambda c,d: doji_nomom(c,d,0.5,1.3), hold=3),
+    'TwoBarRev': compute_portfolio(two_bar_rev, hold=3),
+    'InsideBreak': compute_portfolio(inside_break, hold=3),
+    'WR_NR': compute_portfolio(wr_nr, hold=3),
+}
+
+df_all = pd.DataFrame({**existing, **candidates}).dropna()
+oos = df_all[df_all.index >= SPLIT]
+
+print(f'\n{"Signal":<25} {"OOS_SR":>7} {"ret":>7} {"DD":>7} {"cA159":>6} {"cA160":>6} {"cA161":>6} {"cA162":>6} {"avg":>5}')
+print('-'*85)
+ranked = []
+for col in candidates:
+    s = oos[col]
+    sr = s.mean()/s.std()*np.sqrt(252) if s.std() > 0 else 0
+    ret = (1+s).cumprod().iloc[-1]-1
+    dd = ((1+s).cumprod()/(1+s).cumprod().cummax()-1).min()
+    c159 = abs(oos[col].corr(oos['A159']))
+    c160 = abs(oos[col].corr(oos['A160']))
+    c161 = abs(oos[col].corr(oos['A161']))
+    c162 = abs(oos[col].corr(oos['A162']))
+    avg_c = (c159+c160+c161+c162)/4
+    ranked.append((col, sr, ret, dd, c159, c160, c161, c162, avg_c))
+    tag = '🟢' if sr > 1.0 else '✨' if sr > 0.7 else '  ' if sr > 0.4 else '❌'
+    low = '⭐' if avg_c < 0.3 else ''
+    print(f'  {tag} {col:<22} {sr:>+6.2f} {ret:>+6.1%} {dd:>6.1%} {c159:>5.2f} {c160:>5.2f} {c161:>5.2f} {c162:>5.2f} {avg_c:>4.2f} {low}')
+
+# Rank by SR / avg_correlation ratio
+print('\n=== BEST: High SR + Low Correlation ===')
+ranked.sort(key=lambda x: -x[1]/(x[8]+0.1))  # SR / avg_corr
+for col, sr, ret, dd, c159, c160, c161, c162, avg_c in ranked[:5]:
+    print(f'  {col}: SR={sr:+.2f} avg_corr={avg_c:.2f} SR/corr={sr/(avg_c+0.1):.1f}')
+    # Test 5-way with this candidate
+    combo5 = oos['A159']*0.2 + oos['A160']*0.2 + oos['A161']*0.2 + oos['A162']*0.2 + oos[col]*0.2
+    sr5 = combo5.mean()/combo5.std()*np.sqrt(252) if combo5.std() > 0 else 0
+    ret5 = (1+combo5).cumprod().iloc[-1]-1
+    dd5 = ((1+combo5).cumprod()/(1+combo5).cumprod().cummax()-1).min()
+    print(f'    → 5-way combo: SR={sr5:+.2f} ret={ret5:+.1%} DD={dd5:.1%}')

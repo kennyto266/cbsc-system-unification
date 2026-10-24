@@ -1,0 +1,54 @@
+"""build_option_pcr_panel.py — opcr_option_pressure_skew panel builder.
+
+由 hkex_option_dtop_raw.csv (HKATS code) + hkats_to_sehk.json 映射到 SEHK code,
+輸出 stock×day panel:
+  option_pcr   = put_oi_gross / call_oi_gross       (主指標, OI 版)
+  pcr_turnover = put_turnover / call_turnover       (對照, 成交版)
+只保留 51 股 universe (映射表內)。
+Output: data/new_sources/option_pcr_panel.csv (date,stock_code,call_oi,put_oi,option_pcr,call_to,put_to,pcr_to)
+"""
+import csv
+import json
+import collections
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+DIR = BASE / "data" / "new_sources"
+CODES = {'00001','00002','00003','00005','00006','00012','00016','00017','00020','00027','00066',
+'00101','00175','00241','00268','00285','00291','00386','00388','00688','00700','00762','00823',
+'00883','00939','00941','00992','01024','01038','01088','01109','01211','01299','01398','01801',
+'01810','01876','01928','02013','02269','02318','02388','02628','02899','03690','06862','09618',
+'09888','09988','09992','09999'}
+
+
+def main():
+    hkats2sehk = json.loads((DIR / "hkats_to_sehk.json").read_text())
+    rows = list(csv.DictReader(open(DIR / "hkex_option_dtop_raw.csv", encoding="utf-8")))
+    agg = collections.defaultdict(dict)  # (date, stock) -> {call_oi,...}
+    for r in rows:
+        sehk = hkats2sehk.get(r["hkats"])
+        if sehk not in CODES:
+            continue
+        k = (r["date"], sehk)
+        d = agg[k]
+        side = "call" if r["cp"] == "CALL" else "put"
+        d[side + "_oi"] = int(r["oi_gross"])
+        d[side + "_to"] = int(r["turnover"])
+    out = []
+    for (dt, sehk), d in sorted(agg.items()):
+        c, p = d.get("call_oi"), d.get("put_oi")
+        if not c or not p:
+            continue
+        pcr = round(p / c, 4)
+        pcr_to = round(d["put_to"] / d["call_to"], 4) if d.get("call_to") else ""
+        out.append([dt, sehk, c, p, pcr, d.get("call_to", ""), d.get("put_to", ""), pcr_to])
+    with open(DIR / "option_pcr_panel.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["date", "stock_code", "call_oi", "put_oi", "option_pcr", "call_to", "put_to", "pcr_to"])
+        w.writerows(out)
+    print(f"panel rows={len(out)} stocks={len(set(r[1] for r in out))} dates={len(set(r[0] for r in out))}")
+    print("range:", out[0][0], "->", out[-1][0])
+
+
+if __name__ == "__main__":
+    main()

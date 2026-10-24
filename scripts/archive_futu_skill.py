@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""archive_futu_skill.py — Futu API Skill (SkillHub) 工具頁 → wiki/tools/."""
+import sys
+from datetime import datetime
+from pathlib import Path
+
+VAULT = Path(r"C:/Users/Penguin8n/CBSC-KnowledgeVault")
+WIKI = VAULT / "wiki" / "tools"
+WIKI.mkdir(parents=True, exist_ok=True)
+TODAY = datetime.now().strftime("%Y-%m-%d")
+
+FM = """---
+title: "Futu API Skill (富途 SkillHub) — demo 倉/實盤交易接口"
+type: "tool"
+status: "active"
+tags: [tool, futu, trading, live, openapi]
+created: "{d}"
+updated: "{d}"
+---
+
+""".format(d=TODAY)
+
+BODY = """# Futu API Skill — 富途官方 AI Agent 交易接口
+
+> 官網: https://www.futunn.com/hk/skillhub/openapi
+> 文檔: https://openapi.futunn.com/futu-api-doc/hk/intro/ai.html
+> **角色: demo 倉 + 之後實盤嘅交易/行情接口 — 官方 Agent Skill 版**
+
+## 是咩
+
+富途官方出嘅 AI Agent Skill — 56 個 API 接口畀 LLM 用自然語言直接調用:
+- 📊 **即時行情** 35 接口: 報價快照/K線/買賣盤/逐筆/分時/板塊/選股/資金流向
+- 💹 **智能交易** 14 接口: 落單/改單/撤單/持倉/資金/成交歷史
+  **預設模擬環境; 切實盤要 OpenD 手動輸交易密碼 + 二次確認**
+- ⚡ **即時推送** 7 種回調: 報價推送/逐筆/到價提示/交易狀態通知
+- 🌏 5 市場: 港 · 美 · 滬深 · 新 · 日
+
+## 安全邊界 (重要 — 實盤前必讀)
+
+1. **交易密碼必須 OpenD 手動輸入** — 官方明文嚴禁俾 AI Agent 自動填密碼
+2. OpenD = 本地閘道, 數據本地加密傳輸, 唔經第三方
+3. 官方免責: AI 可能生成錯誤指令, 最終執行前要獨立核實
+4. 唔適合高頻 — 行情/指令有延遲 (我哋係日線級策略, 冇問題)
+
+## 同我哋現有堆疊嘅關係
+
+| 層 | 而家用 | Skill 版 |
+|---|---|---|
+| 行情/歷史數據 | futuapi Python SDK (collect_futu_daily 等 collectors) | 35 行情接口 (同一 OpenD) |
+| 落單執行 | FutuTrader (live_algotrade → OpenD 11111) | 14 交易接口 |
+| 推送 | 輪詢 (60s loop) | 7 種 callback (推送式, 更快) |
+
+**而我家 OpenD 已經行緊 (11111), futuapi SDK 已裝 — Skill 版係同一條水管
+嘅自然語言門面**, 可以:
+- 俾我 (Hermes) 用說話查倉/查價: 「睇下 0700 陰陽燭」「而家持倉有咩」
+- 對沖腿/手動干預時快啲操作
+- 實盤切換嗰日: 密碼人手輸, 指令照舊
+
+## 安裝 (備用 — 未裝)
+
+```
+# OpenClaw / Claude Code / Cursor 等 agent 一鍵安裝:
+# 詳情: https://openapi.futunn.com/futu-api-doc/hk/intro/ai.html
+```
+我哋 OpenD 已裝 (AppData/Roaming/Futu_OpenD/Futu_OpenD.exe, 開機自啟);
+Skill 本身要嗰陣先裝 — 裝之前睇 [[architecture/watchdogs-看門狗容錯|watchdog]]
+個 check_opend_blocking (OpenD crash 卡 login 要人手, 已有警報)。
+
+## 實盤切換 checklist (第日用)
+
+- [ ] REAL_TRADING flag (live_algotrade)
+- [ ] OpenD 實盤 login (人手密碼)
+- [ ] 交易品種/額度覆核 (RiskManager 限額照行)
+- [ ] 通知頻道預演 (DC/TG 收到訂單事件)
+- [ ] 細注試單一來回先上量
+
+← [[index]] · [[architecture/live-engine-Live交易引擎|Live 引擎]] · [[tools/open-code-review|OCR]]
+"""
+
+(WIKI / "futu-api-skill.md").write_text(FM + BODY, encoding="utf-8")
+
+idx = VAULT / "wiki" / "index.md"
+t = idx.read_text(encoding="utf-8")
+if "futu-api-skill" not in t:
+    t = t.replace(
+        "- [[tools/open-code-review|🔍 Open Code Review]] (code review 標準工具: 實戰紀錄 + 掛線建議)",
+        "- [[tools/open-code-review|🔍 Open Code Review]] (code review 標準工具: 實戰紀錄 + 掛線建議)\n"
+        "- [[tools/futu-api-skill|💰 Futu API Skill]] (demo倉/實盤交易接口: 56 API/安全邊界/實盤切換checklist)",
+    )
+    idx.write_text(t, encoding="utf-8")
+
+print("futu skill 頁寫入 + index 連結")

@@ -1,0 +1,233 @@
+#!/usr/bin/env python3
+"""
+真·VectorBT 原生 Dashboard
+
+直接用 vectorbt 嘅 pf.plot() 原生方法，出齊官網嗰款 report：
+1. 📈 cum_returns — 累計回報 vs Buy & Hold benchmark
+2. 🌊 underwater — 回撤水下圖（underwater equity curve）
+3. 🏷️ orders + trades — 下單/平倉點 + 交易盈虧標記
+4. 💵 cash — 現金水位
+5. 📊 gross_exposure — 持倉曝露
+6. 📅 monthly returns heatmap — 月份回報熱力圖
+7. 📋 完整 stats（pf.stats()）
+
+全部用 vectorbt 原生繪圖，唔係自己畫。
+
+用法:
+    python scripts/vbt_native_dashboard.py
+    python scripts/vbt_native_dashboard.py --factor dxy --stock HK.00016 --n-days 2 --threshold 0.008 --holding 10 --direction contrarian
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, ".")
+
+import argparse
+import numpy as np
+import pandas as pd
+import vectorbt as vbt
+import plotly.graph_objects as go
+from pathlib import Path
+from datetime import datetime
+from plotly.subplots import make_subplots
+
+# 重用既有 helper
+from scripts.vbt_visual_report import (
+    load_factor_close, load_stock_close, compute_signals,
+    TOTAL_COST, SLIPPAGE, RF_RATE,
+)
+
+ROOT = Path(__file__).parent.parent
+DATA = ROOT / "data"
+OHLCV_DIR = DATA / "ohlcv_5y"
+FACTORS_DIR = DATA / "factors"
+OUTPUT_DIR = DATA / "vbt_reports"
+OUTPUT_DIR.mkdir(exist_ok=True)
+
+
+def build_portfolio(factor_name, stock_code, n_days, threshold, holding, direction):
+    """讀數據 + 計信號 + 建 Portfolio（含 benchmark）"""
+    factor = load_factor_close(factor_name)
+    stock = load_stock_close(stock_code)
+    if factor is None or stock is None:
+        return None
+    e, x, se, sx, close = compute_signals(factor, stock, n_days, threshold, holding, direction)
+    if e is None or (not e.any() and not se.any()):
+        return None
+    # 唔用 group_by=True：單一 column 唔需要，而且 grouped 會令
+    # orders / trade_pnl 呢兩個 subplot 被跳過（"does not support grouped data"）
+    pf = vbt.Portfolio.from_signals(
+        close=close, entries=e, exits=x,
+        short_entries=se, short_exits=sx,
+        fees=TOTAL_COST / 2, slippage=SLIPPAGE,
+        freq="1D", init_cash=100_000,
+    )
+    return pf, close
+
+
+def native_portfolio_dashboard(pf, close, factor_name, stock_code, params, direction):
+    """
+    用 vectorbt 原生 pf.plot() 出官網風格 dashboard。
+    subplans: cum_returns（benchmark 對比）、underwater、orders、trade_pnl、cash、gross_exposure
+    """
+    # 設定 benchmark（B&H）俾 cum_returns 用
+    pf.benchmark_close = close
+
+    fig = pf.plot(
+        subplots=[
+            "cum_returns",
+            "underwater",
+            "orders",
+            "trade_pnl",
+            "cash",
+            "gross_exposure",
+        ],
+        template="plotly_dark",
+    )
+    fig.update_layout(
+        title=(
+            f"📊 真·VectorBT Dashboard — {factor_name.upper()} → {stock_code}<br>"
+            f"<sup>N={params['n_days']} | threshold={params['threshold']*100:.1f}% | "
+            f"holding={params['holding']}日 | {direction} | 成本 {TOTAL_COST*100:.2f}%/來回</sup>"
+        ),
+        title_font_size=16,
+        height=1400, width=1300,
+    )
+    return fig
+
+
+
+def monthly_returns_heatmap(pf, factor_name, stock_code, params, direction):
+    """📅 vectorbt monthly returns heatmap（用 daily_returns 轉月份）"""
+    daily = pf.daily_returns()
+    if isinstance(daily, pd.DataFrame):
+        daily = daily.iloc[:, 0]
+    monthly = daily.resample("ME").apply(lambda x: (1 + x).prod() - 1)
+    df = pd.DataFrame({"ret": monthly})
+    df["year"] = df.index.year
+    df["month"] = df.index.month
+    pivot = df.pivot_table(index="year", columns="month", values="ret")
+    month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    pivot.columns = [month_names[int(c) - 1] for c in pivot.columns]
+
+    fig = go.Figure(go.Heatmap(
+        z=pivot.values * 100,
+        x=pivot.columns,
+        y=pivot.index.astype(str),
+        colorscale="RdYlGn", zmid=0,
+        text=[[f"{v:.1f}%" if not np.isnan(v) else "" for v in row] for row in pivot.values],
+        texttemplate="%{text}",
+        colorbar=dict(title="%"),
+    ))
+    fig.update_layout(
+        title=f"📅 Monthly Returns Heatmap — {factor_name.upper()} → {stock_code}（{direction}）",
+        xaxis_title="月份", yaxis_title="年份",
+        template="plotly_dark", height=450, width=1300,
+    )
+    return fig
+
+
+def annual_returns_bar(pf, factor_name, stock_code, params, direction):
+    """📊 年度回報柱狀圖（vectorbt annual_returns）"""
+    annual = pf.annual_returns()
+    if isinstance(annual, pd.DataFrame):
+        annual = annual.iloc[:, 0]
+    fig = go.Figure(go.Bar(
+        x=annual.index.astype(str), y=annual.values * 100,
+        marker_color=["#00ff88" if v >= 0 else "#ff3366" for v in annual.values],
+        text=[f"{v:.1f}%" for v in annual.values], textposition="outside",
+    ))
+    fig.update_layout(
+        title=f"📊 Annual Returns — {factor_name.upper()} → {stock_code}（{direction}）",
+        yaxis_title="年度回報%", template="plotly_dark",
+        height=450, width=1300, showlegend=False,
+    )
+    return fig
+
+
+def full_stats_report(pf, factor_name, stock_code, params, direction):
+    """📋 vectorbt 原生 pf.stats() 完整報告"""
+    lines = []
+    lines.append(f"# 真·VectorBT Report — {factor_name.upper()} → {stock_code}\n")
+    lines.append(f"**參數**: N={params['n_days']} | threshold={params['threshold']*100:.1f}% | "
+                 f"holding={params['holding']}日 | {direction}")
+    lines.append(f"**成本**: {TOTAL_COST*100:.2f}%/來回（含 {SLIPPAGE*100:.1f}% 滑點）")
+    lines.append(f"**無風險利率**: {RF_RATE*100:.0f}%\n")
+    lines.append("## vectorbt pf.stats() 原生輸出\n```")
+    try:
+        lines.append(pf.stats().to_string())
+    except Exception as ex:
+        lines.append(f"(stats 讀取失敗: {ex})")
+    lines.append("```\n")
+    lines.append("## 關鍵指標\n| 指標 | 數值 |\n|------|------|")
+    for label, fn in [("總回報%", lambda: pf.total_return() * 100),
+                      ("年化回報%", lambda: pf.annualized_return() * 100),
+                      ("Sharpe", pf.sharpe_ratio),
+                      ("Sortino", pf.sortino_ratio),
+                      ("Calmar", pf.calmar_ratio),
+                      ("Max DD%", lambda: pf.max_drawdown() * 100),
+                      ("交易數", lambda: len(pf.trades.records_readable)),
+                      ("勝率%", lambda: pf.trades.win_rate() * 100)]:
+        try:
+            lines.append(f"| {label} | {fn():.2f} |")
+        except Exception:
+            lines.append(f"| {label} | - |")
+    return "\n".join(lines)
+
+
+def generate_all(factor_name, stock_code, n_days, threshold, holding, direction):
+    result = build_portfolio(factor_name, stock_code, n_days, threshold, holding, direction)
+    if result is None:
+        print(f"  ⚠️ 無信號，跳過 {factor_name}→{stock_code}")
+        return
+    pf, close = result
+    params = {"n_days": n_days, "threshold": threshold, "holding": holding}
+    safe = f"{factor_name}_{stock_code.replace('.','_')}_N{n_days}_th{threshold}_h{holding}"
+    out = OUTPUT_DIR / f"native_{safe}"
+
+    # 1. 主 Dashboard（6 合 1, 已含 cum_returns+underwater+orders+trade_pnl+cash+exposure）
+    print("    📊 原生 Dashboard（6合1）...")
+    fig = native_portfolio_dashboard(pf, close, factor_name, stock_code, params, direction)
+    fig.write_html(str(out.parent / f"dashboard_{safe}.html"))
+
+    # 2. Monthly returns heatmap
+    print("    📅 Monthly returns heatmap...")
+    monthly_returns_heatmap(pf, factor_name, stock_code, params, direction).write_html(
+        str(out.parent / f"monthly_{safe}.html"))
+
+    # 3. Annual returns bar
+    print("    📊 Annual returns bar...")
+    annual_returns_bar(pf, factor_name, stock_code, params, direction).write_html(
+        str(out.parent / f"annual_{safe}.html"))
+
+    # 4. Stats report
+    print("    📋 Stats report...")
+    report = full_stats_report(pf, factor_name, stock_code, params, direction)
+    with open(out.parent / f"report_{safe}.md", "w", encoding="utf-8") as f:
+        f.write(report)
+
+    print(f"    ✅ {safe} 完成（4 個輸出）")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="真·VectorBT 原生 Dashboard")
+    parser.add_argument("--factor", default="dxy")
+    parser.add_argument("--stock", default="HK.00016")
+    parser.add_argument("--n-days", type=int, default=2)
+    parser.add_argument("--threshold", type=float, default=0.008)
+    parser.add_argument("--holding", type=int, default=10)
+    parser.add_argument("--direction", default="contrarian")
+    args = parser.parse_args()
+
+    print("=" * 80)
+    print("📊 真·VectorBT 原生 Dashboard")
+    print("=" * 80)
+    print(f"時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"VectorBT: {vbt.__version__}")
+    generate_all(args.factor, args.stock, args.n_days, args.threshold,
+                 args.holding, args.direction)
+    print(f"\n✓ 全部輸出已儲存至 {OUTPUT_DIR}/")
+
+
+if __name__ == "__main__":
+    main()

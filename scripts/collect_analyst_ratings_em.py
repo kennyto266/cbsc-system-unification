@@ -1,0 +1,118 @@
+"""collect_analyst_ratings_em.py — T1 analyst_target_price_convergence backfill.
+
+東财 hk.eastmoney.com/rating.html 机构评级 — server-rendered HTML, 逐股分頁
+rating_N.html?code=XXXXXX (每頁50條, 公布日期+目標價+投行+評級)。
+攞到嘅係逐筆研報事件 → build_analyst_tp_panel.py 聚合做日更 consensus panel。
+PIT: 用公布日期 (page 嘅 公布日期欄), 唔用 fetch 日。
+
+Output: data/new_sources/analyst_ratings_em_raw.csv
+  columns: stock_code, date, broker, rating, target_price, price_at_note
+Checkpoint: analyst_ratings_em_ckpt.json (done codes)
+"""
+import csv
+import json
+import re
+import time
+import urllib.request
+from datetime import datetime
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+OUT_DIR = BASE / "data" / "new_sources"
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+RAW = OUT_DIR / "analyst_ratings_em_raw.csv"
+CKPT = OUT_DIR / "analyst_ratings_em_ckpt.json"
+
+CODES = ['00001','00002','00003','00005','00006','00012','00016','00017','00020','00027',
+'00066','00101','00175','00241','00268','00285','00291','00386','00388','00688','00700','00762',
+'00823','00883','00939','00941','00992','01024','01038','01088','01109','01211','01299','01398',
+'01801','01810','01876','01928','02013','02269','02318','02388','02628','02899','03690','06862',
+'09618','09888','09988','09992','09999']
+
+HDRS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Referer": "https://hk.eastmoney.com/rating.html"}
+
+log = lambda *a: print(datetime.now().strftime("%H:%M:%S"), *a, flush=True)
+
+
+def fetch(url, tries=3):
+    for i in range(tries):
+        try:
+            req = urllib.request.Request(url, headers=HDRS)
+            with urllib.request.urlopen(req, timeout=25) as r:
+                return r.read().decode("utf-8", "replace")
+        except Exception as e:
+            if i == 2:
+                raise
+            time.sleep(2 + 2 * i)
+
+
+ROW_RE = re.compile(r"<tr[^>]*>(.*?)</tr>", re.S)
+CELL_RE = re.compile(r"<td[^>]*>(.*?)</td>", re.S)
+DATE_RE = re.compile(r"20\d\d-\d\d-\d\d")
+
+
+def parse_page(html):
+    rows = []
+    for r in ROW_RE.findall(html):
+        cells = [re.sub(r"<[^>]+>", "", c).strip() for c in CELL_RE.findall(r)]
+        if len(cells) >= 9 and DATE_RE.fullmatch(cells[-1]):
+            code, name, broker, rating = cells[1], cells[2], cells[3], cells[4]
+            tp = cells[6] if cells[6] not in ("-", "") else ""
+            px = cells[5] if cells[5] not in ("-", "") else ""
+            rows.append([code, cells[-1], broker, rating, tp, px])
+    return rows
+
+
+def crawl_code(code):
+    out, page = [], 1
+    while True:
+        url = ("https://hk.eastmoney.com/rating.html?code=" + code) if page == 1 else \
+              (f"https://hk.eastmoney.com/rating_{page}.html?code={code}&org=&rating=")
+        html = fetch(url)
+        rows = parse_page(html)
+        if not rows:
+            break
+        out.extend(rows)
+        # 停喺 5年前
+        if rows[-1][1] < "2021-08" or page > 60:
+            break
+        page += 1
+        time.sleep(0.4)
+    return out
+
+
+def main():
+    ckpt = json.loads(CKPT.read_text()) if CKPT.exists() else {"done": {}}
+    exists = RAW.exists()
+    f = open(RAW, "a", newline="", encoding="utf-8")
+    w = csv.writer(f)
+    if not exists:
+        w.writerow(["stock_code", "date", "broker", "rating", "target_price", "price_at_note"])
+    for code in CODES:
+        if ckpt["done"].get(code):
+            continue
+        try:
+            rows = crawl_code(code)
+        except Exception as e:
+            log(code, "FAIL", e)
+            time.sleep(3)
+            continue
+        seen = set()
+        for r in rows:
+            k = tuple(r)
+            if k in seen:
+                continue
+            seen.add(k)
+            w.writerow(r)
+        f.flush()
+        ckpt["done"][code] = len(rows)
+        CKPT.write_text(json.dumps(ckpt))
+        log(code, len(rows), "rows, last", rows[-1][1] if rows else "-")
+        time.sleep(0.6)
+    f.close()
+    log("DONE")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,455 @@
+version: '3.8'
+
+# Production Environment Docker Compose Configuration
+# Optimized for CBSC Strategy Management System Production Deployment
+#
+# This configuration includes:
+# - Load balancing with Nginx
+# - Health checks and monitoring
+# - Security hardening
+# - Performance optimizations
+# - SSL termination
+#
+# Usage:
+#   docker-compose -f docker-compose.prod.yml up -d
+#   docker-compose -f docker-compose.prod.yml down
+
+services:
+  # PostgreSQL Database - Production Instance
+  postgres:
+    image: postgres:15-alpine
+    container_name: cbsc-prod-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cbsc_production}
+      POSTGRES_USER: ${POSTGRES_USER:-cbsc_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./database/prod/init:/docker-entrypoint-initdb.d
+      - ./database/prod/postgres.conf:/etc/postgresql/postgresql.conf
+      - ./database/prod/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    networks:
+      - cbsc-prod-network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cbsc_admin} -d ${POSTGRES_DB:-cbsc_production}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # Redis Cache - Production Instance
+  redis:
+    image: redis:7-alpine
+    container_name: cbsc-prod-redis
+    volumes:
+      - redis_prod_data:/data
+      - ./redis/prod/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - cbsc-prod-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # API Gateway - Production Instance (Multiple instances for load balancing)
+  api-gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile.prod
+    environment:
+      # Database Configuration
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-cbsc_admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cbsc_production}
+      - REDIS_URL=redis://redis:6379
+
+      # Gateway Configuration
+      - GATEWAY_SECRET_KEY=${GATEWAY_SECRET_KEY}
+      - GATEWAY_HOST=0.0.0.0
+      - GATEWAY_PORT=8000
+
+      # Service URLs
+      - QUANT_SYSTEM_URL=http://quant-system:8001
+      - USER_MANAGEMENT_URL=http://user-management:3004
+      - STRATEGY_DASHBOARD_URL=http://strategy-dashboard:3003
+      - CONFIG_SERVICE_URL=http://config-service:3005
+
+      # Production Configuration
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ENVIRONMENT=production
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://cbsc.example.com}
+      - RATE_LIMIT_ENABLED=true
+      - AUTH_ENABLED=true
+      - JWT_SECRET=${JWT_SECRET}
+      - SSL_ENABLED=true
+
+    volumes:
+      - gateway_prod_logs:/app/logs
+      - ./gateway/config:/app/config:ro
+      - ./gateway/ssl:/app/ssl:ro
+    networks:
+      - cbsc-prod-network
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--silent", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # Backend Services
+
+  # User Management Service - Production Instance
+  user-management:
+    build:
+      context: ./src/api
+      dockerfile: Dockerfile.prod
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-cbsc_admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cbsc_production}
+      - REDIS_URL=redis://redis:6379
+      - API_HOST=0.0.0.0
+      - API_PORT=3004
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - user_management_prod_logs:/app/logs
+      - ./src/api/uploads:/app/uploads
+    networks:
+      - cbsc-prod-network
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--silent", "http://localhost:3004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Strategy Dashboard Service - Production Instance
+  strategy-dashboard:
+    build:
+      context: ./src/dashboard
+      dockerfile: Dockerfile.prod
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-cbsc_admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cbsc_production}
+      - REDIS_URL=redis://redis:6379
+      - API_HOST=0.0.0.0
+      - API_PORT=3003
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - strategy_dashboard_prod_logs:/app/logs
+      - ./src/dashboard/data:/app/data
+    networks:
+      - cbsc-prod-network
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--silent", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Quant System Service - Production Instance
+  quant-system:
+    build:
+      context: ./src/quant
+      dockerfile: Dockerfile.prod
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-cbsc_admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cbsc_production}
+      - REDIS_URL=redis://redis:6379
+      - API_HOST=0.0.0.0
+      - API_PORT=8001
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - quant_system_prod_logs:/app/logs
+      - ./src/quant/models:/app/models:ro
+      - ./src/quant/data:/app/data
+    networks:
+      - cbsc-prod-network
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--silent", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # Configuration Service - Production Instance
+  config-service:
+    build:
+      context: ./src/config
+      dockerfile: Dockerfile.prod
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-cbsc_admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cbsc_production}
+      - REDIS_URL=redis://redis:6379
+      - API_HOST=0.0.0.0
+      - API_PORT=3005
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - CONFIG_PATH=/app/config
+    volumes:
+      - config_service_prod_logs:/app/logs
+      - ./config:/app/config:ro
+    networks:
+      - cbsc-prod-network
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--silent", "http://localhost:3005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  # Frontend Applications - Production Build
+
+  # React Frontend - Production Build
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    environment:
+      - REACT_APP_API_BASE_URL=https://${DOMAIN}/api
+      - REACT_APP_WS_URL=wss://${DOMAIN}/ws
+      - REACT_APP_ENV=production
+    networks:
+      - cbsc-prod-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  # Unified Dashboard - Production Build
+  unified-dashboard:
+    build:
+      context: ./unified-dashboard
+      dockerfile: Dockerfile.prod
+    environment:
+      - API_BASE_URL=https://${DOMAIN}/api
+      - WS_URL=wss://${DOMAIN}/ws
+      - NODE_ENV=production
+    networks:
+      - cbsc-prod-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  # Nginx Load Balancer and Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: cbsc-prod-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/prod/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/prod/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_prod_logs:/var/log/nginx
+      - ./frontend/build:/usr/share/nginx/html:ro
+      - ./unified-dashboard/dist:/usr/share/nginx/html/unified:ro
+    networks:
+      - cbsc-prod-network
+    restart: always
+    depends_on:
+      - api-gateway
+      - frontend
+      - unified-dashboard
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Monitoring Stack
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cbsc-prod-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prod/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prod/rules:/etc/prometheus/rules:ro
+      - prometheus_prod_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - cbsc-prod-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cbsc-prod-grafana
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_DOMAIN=${DOMAIN}
+      - GF_SERVER_ROOT_URL=https://${DOMAIN}/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+    volumes:
+      - grafana_prod_data:/var/lib/grafana
+      - ./monitoring/prod/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/prod/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - cbsc-prod-network
+    restart: always
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Log Aggregation (Optional)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+    container_name: cbsc-prod-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    volumes:
+      - elasticsearch_prod_data:/usr/share/elasticsearch/data
+    networks:
+      - cbsc-prod-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+    profiles:
+      - logging
+
+# Named Volumes for Production Data Persistence
+volumes:
+  postgres_prod_data:
+    driver: local
+  redis_prod_data:
+    driver: local
+  gateway_prod_logs:
+    driver: local
+  user_management_prod_logs:
+    driver: local
+  strategy_dashboard_prod_logs:
+    driver: local
+  quant_system_prod_logs:
+    driver: local
+  config_service_prod_logs:
+    driver: local
+  nginx_prod_logs:
+    driver: local
+  prometheus_prod_data:
+    driver: local
+  grafana_prod_data:
+    driver: local
+  elasticsearch_prod_data:
+    driver: local
+
+# Production Network Configuration
+networks:
+  cbsc-prod-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+          gateway: 172.22.0.1

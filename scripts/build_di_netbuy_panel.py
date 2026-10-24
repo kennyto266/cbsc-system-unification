@@ -1,0 +1,60 @@
+"""build_di_netbuy_panel.py — insd_insider_accumulation panel builder.
+
+由 di_aastocks_raw.csv 聚合 stock×day di_net_buy_bp:
+  對每 (stock, holder) 按日期 sort, Δshares = shares_after.diff() (首條=0),
+  di_net_buy = Σ_holders Δshares (股) ; implied_total = median(shares_after/pct_after×100)
+  di_net_buy_bp = di_net_buy / implied_total × 10000 (基點, 正=增持)
+
+Output: data/new_sources/di_netbuy_panel.csv  (date,stock_code,di_net_buy_bp,n_events)
+"""
+import csv
+import statistics
+import collections
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "di_aastocks_raw.csv"
+OUT = BASE / "data" / "new_sources" / "di_netbuy_panel.csv"
+
+
+def main():
+    rows = list(csv.DictReader(open(RAW, encoding="utf-8")))
+    by_stock = collections.defaultdict(list)
+    for r in rows:
+        try:
+            r["_after"] = float(r["shares_after_l"]) if r["shares_after_l"] else None
+            r["_pct"] = float(r["pct_after_l"]) if r["pct_after_l"] else None
+        except ValueError:
+            r["_after"] = r["_pct"] = None
+        if r["_after"] and r["_pct"] and r["_pct"] > 0:
+            by_stock[r["stock_code"]].append(r)
+
+    out = []
+    for code, evs in by_stock.items():
+        tot = statistics.median(e["_after"] / e["_pct"] * 100 for e in evs)
+        by_holder = collections.defaultdict(list)
+        for e in evs:
+            by_holder[e["holder"]].append(e)
+        daily = collections.defaultdict(lambda: [0.0, 0])
+        for holder, hs in by_holder.items():
+            hs.sort(key=lambda e: e["date"])
+            prev = None
+            for e in hs:
+                d = 0.0 if prev is None else e["_after"] - prev
+                daily[e["date"]][0] += d
+                daily[e["date"]][1] += 1
+                prev = e["_after"]
+        for date, (net, n) in sorted(daily.items()):
+            out.append([date.replace("/", "-"), code, round(net / tot * 10000, 4), n])
+
+    out.sort()
+    with open(OUT, "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["date", "stock_code", "di_net_buy_bp", "n_events"])
+        w.writerows(out)
+    print(f"panel rows={len(out)} stocks={len(by_stock)} dates={len(set(r[0] for r in out))}")
+    print("sample:", out[:3], out[-3:])
+
+
+if __name__ == "__main__":
+    main()

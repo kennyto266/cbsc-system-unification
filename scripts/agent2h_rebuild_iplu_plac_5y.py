@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""agent2h_rebuild_iplu_plac_5y.py — 用 ohlcv_5y 交易日曆重建 iplu_days_to_unlock + plac_shr_pct_63d.
+
+[2026-08-24 agent2-H thesis ipludg] 舊版兩個 panel 用 sdw_hold_pct 做日期軸 → 只得 494日 (2024-08起),
+過唔到三窗。源數據 (hk_orgprofile_listing.csv / hk_equity_changes.json) 本身係全歷史,
+換用 ohlcv_5y 聯合交易日曆 (2021-08-24起) 重建:
+  - iplu_days_to_unlock: 上市日+126交易日 解禁倒數/後計, 同 build_iplu_panel.py 邏輯
+  - plac_shr_pct_63d: 63日滾動配售股數/總股本, 同 build_plac_panel.py 邏輯
+Output: factor_store/*.parquet 覆寫 (backup 舊版做 *_494d.parquet)
+"""
+from pathlib import Path
+import re
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+NS = BASE / "data" / "new_sources"
+FS = BASE / "data" / "factor_store"
+OHL = BASE / "data" / "ohlcv_5y"
+
+# ---- 交易日曆: union of ohlcv dates ----
+dates = set()
+for f in OHL.glob("HK_*.csv"):
+    d = pd.read_csv(f, usecols=["time_key"])
+    dates.update(d["time_key"].tolist())
+dates = pd.DatetimeIndex(sorted(dates))
+print("calendar:", len(dates), dates.min().date(), "->", dates.max().date())
+n = len(dates)
+
+# ============ iplu_days_to_unlock ============
+org = pd.read_csv(NS / "hk_orgprofile_listing.csv", dtype={"SECURITY_CODE": str})
+org["LISTING_DATE"] = pd.to_datetime(org["LISTING_DATE"], errors="coerce")
+org = org.dropna(subset=["LISTING_DATE"])
+org["code"] = org["SECURITY_CODE"].str.zfill(5)
+
+cols = set("HK." + p.stem.replace("HK_", "").zfill(5) for p in OHL.glob("HK_*.csv"))
+recent = set("HK." + c for c in org[org["LISTING_DATE"] >= "2021-01-01"]["code"])
+cols = sorted(cols | recent)
+
+iplu = pd.DataFrame(index=dates, columns=cols, dtype=float)
+for _, r in org.iterrows():
+    col = "HK." + r["code"]
+    if col not in iplu.columns:
+        continue
+    ld = r["LISTING_DATE"]
+    if ld < dates[0] - pd.Timedelta(days=400):
+        continue
+    after = dates.searchsorted(ld)
+    unlock_i = after + 126
+    if unlock_i >= n:
+        continue
+    lo, hi = after, min(unlock_i + 61, n)
+    iplu.iloc[lo:unlock_i, iplu.columns.get_loc(col)] = -(unlock_i - pd.Series(range(lo, unlock_i))).values
+    seg = pd.Series(range(unlock_i, hi), index=dates[unlock_i:hi])
+    iplu.loc[dates[unlock_i:hi], col] = (seg - unlock_i).values
+
+if (FS / "iplu_days_to_unlock.parquet").exists():
+    (FS / "iplu_days_to_unlock_494d.parquet").write_bytes((FS / "iplu_days_to_unlock.parquet").read_bytes())
+iplu.to_parquet(FS / "iplu_days_to_unlock.parquet")
+pre20 = ((iplu < 0) & (iplu >= -20)).sum().sum()
+print(f"iplu: shape={iplu.shape} cells={int(iplu.notna().sum().sum())} "
+      f"stocks={iplu.notna().any(axis=0).sum()} [-20,0)window={pre20}")
+
+# ============ plac_shr_pct_63d ============
+import json as _json
+raw = _json.load(open(NS / "hk_equity_changes.json", encoding="utf-8"))
+df = pd.DataFrame(raw["rows"])
+df["CHANGE_DATE"] = pd.to_datetime(df["CHANGE_DATE"])
+df["code"] = df["SECUCODE"].str.replace(".HK", "", regex=False)
+df = df.sort_values(["code", "CHANGE_DATE"])
+
+PLAC_RE = re.compile(r"配售|增发|增發|发行|發行|公開發售|先舊後新|供股")
+EXCL_RE = re.compile(r"期权|期權|购回|購回|注销|註銷|拆股|并股|合股|分拆")
+
+placed = []
+for code, g in df.groupby("code"):
+    g = g.drop_duplicates(subset="CHANGE_DATE", keep="last")
+    delta = g["HK_SHARES"].diff()
+    for dt, d, reason in zip(g["CHANGE_DATE"], delta, g["CHANGE_REASON"]):
+        if pd.isna(d) or d <= 0:
+            continue
+        rr = str(reason)
+        if PLAC_RE.search(rr) and not EXCL_RE.search(rr):
+            placed.append((code, dt, d, rr))
+pl = pd.DataFrame(placed, columns=["code", "date", "new_shares", "reason"])
+print("placement events:", len(pl), "stocks:", pl["code"].nunique())
+
+total = df.pivot_table(index="CHANGE_DATE", columns="code", values="HK_SHARES").sort_index()
+total = total.reindex(total.index.union(dates)).ffill().loc[dates]
+total.columns = ["HK." + c for c in total.columns]
+
+ev = pl.copy(); ev["code"] = "HK." + ev["code"]
+ev_long = ev.groupby(["date", "code"])["new_shares"].sum().unstack(fill_value=0)
+ev_long = ev_long.reindex(index=dates, columns=total.columns, fill_value=0).sort_index()
+roll = ev_long.rolling("63D", min_periods=1).sum()
+panel = (roll / total).fillna(0.0).astype(float)
+panel = panel[panel.index <= pd.Timestamp.today()]
+
+if (FS / "plac_shr_pct_63d.parquet").exists():
+    (FS / "plac_shr_pct_63d_494d.parquet").write_bytes((FS / "plac_shr_pct_63d.parquet").read_bytes())
+panel.to_parquet(FS / "plac_shr_pct_63d.parquet")
+print(f"plac: shape={panel.shape} cells>0={int((panel>0).sum().sum())} "
+      f"stocks_events={(panel>0).any(axis=0).sum()}")

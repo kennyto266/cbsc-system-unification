@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+"""build_gw_capex_panels.py — 商譽/資本開支 panels (PIT, 照 build_cell7_panels.py 模式).
+
+ thesis1 goodwill_impairment_overhang:
+   goodwill_net_asset = (商譽+負商譽) / 歸母股東權益 (fallback 股東權益), forward-fill
+ thesis2 capex_intensity_cycle:
+   capex_depreciation = 購建固定資產 TTM / 折舊攤銷 TTM (4期滾動和, 現金流表半年/季度混頻用 rolling sum)
+   現金流量表 AMOUNT 係期間數 — TTM 用最近 2 期(半年口徑)或 4 期(季度口徑)唔可靠,
+   簡單穩妥: capex/depr 用同期配對比率 (同一 REPORT_DATE 兩欄相除), 唔做跨期 TTM.
+
+PIT: results_calendar 公布日+1, 冇紀錄 +60日 lag (同 cell7).
+輸出: factor_store/goodwill_net_asset.parquet, capex_depreciation.parquet
+"""
+import os
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+BASE = Path(r"C:/Users/Penguin8n/ZCodeProject/cbsc-system-unification")
+BT = Path(r"C:/Users/Penguin8n/ZCodeProject/backtests")
+sys.path.insert(0, str(BT))
+os.chdir(str(BT))
+
+RAW = BASE / "data" / "new_sources" / "gw_capex_raw.csv"
+CAL = BASE / "data" / "new_sources" / "results_calendar_raw.csv"
+STORE = BASE / "data" / "factor_store"
+
+
+def main():
+    from llm_cs_adapter import _load_prices_and_rets
+    prices, _ = _load_prices_and_rets()
+    idx = prices.index
+
+    raw = pd.read_csv(RAW, dtype={"code": str}, encoding="utf-8-sig")
+    raw["code"] = raw["code"].str.zfill(5)
+    raw["amount"] = pd.to_numeric(raw["amount"], errors="coerce")
+    piv = raw.pivot_table(index=["code", "report_date"], columns="item",
+                          values="amount", aggfunc="last")
+    # 商譽 + 負商譽 合併 (負商譽為負值)
+    if "商誉" in piv.columns:
+        piv["gw"] = piv["商誉"].fillna(0) + piv.get("负商誉", pd.Series(0, index=piv.index)).fillna(0)
+        piv.loc[piv["商誉"].isna() & piv.get("负商誉", pd.Series(np.nan, index=piv.index)).isna(), "gw"] = np.nan
+    else:
+        piv["gw"] = np.nan
+    eq = piv["归属于母公司股东权益"] if "归属于母公司股东权益" in piv.columns else np.nan
+    piv["equity"] = eq.fillna(piv["股东权益"]) if "股东权益" in piv.columns else eq
+    piv["goodwill_net_asset"] = piv["gw"] / piv["equity"].replace(0, np.nan)
+    piv["capex_depreciation"] = (piv["购建固定资产"] /
+                                 piv["加:折旧及摊销"].replace(0, np.nan))
+    piv = piv.reset_index()
+    piv["report_date"] = pd.to_datetime(piv["report_date"])
+
+    # PIT 公布日
+    cal = pd.read_csv(CAL, dtype={"stock_code": str})
+    cal["d"] = pd.to_datetime(cal["doc_date"], dayfirst=True)
+    ann = {c: sorted(g["d"].tolist()) for c, g in cal.groupby("stock_code")}
+
+    def eff_date(code, rd):
+        for d in ann.get(code, []):
+            if rd <= d <= rd + pd.Timedelta(days=170):
+                return d + pd.Timedelta(days=1)
+        return rd + pd.Timedelta(days=60)
+
+    piv["eff_date"] = [eff_date(r.code, r.report_date) for r in piv.itertuples()]
+
+    def to_panel(colname):
+        panel = pd.DataFrame(np.nan, index=idx, columns=prices.columns)
+        for code, gg in piv.dropna(subset=[colname]).groupby("code"):
+            col = f"HK.{code}"
+            if col not in panel.columns:
+                continue
+            gg = gg.sort_values("eff_date")
+            s = pd.Series(gg[colname].values, index=gg["eff_date"].values)
+            s = s[~s.index.duplicated(keep="last")]
+            daily = s.reindex(panel.index, method="ffill")
+            mask = pd.Series(False, index=panel.index)
+            for vf in s.index:
+                mask |= panel.index >= vf
+            panel[col] = daily.where(mask)
+        return panel
+
+    for name in ("goodwill_net_asset", "capex_depreciation"):
+        panel = to_panel(name)
+        p = STORE / f"{name}.parquet"
+        panel.to_parquet(p)
+        nn = int(panel.notna().sum().sum())
+        cov = (panel.notna().sum() > 0).sum()
+        print(f"{name}: {panel.shape} | 非NaN {nn} | {cov}股 | → {p.name}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

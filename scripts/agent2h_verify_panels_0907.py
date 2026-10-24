@@ -1,0 +1,86 @@
+"""agent2h_verify_panels_0907.py — 任務2 have theses panel 數值抽驗 (3 panel × 3 日/點)
+
+1. short_ratio_5y: panel 最後值 vs Futu get_market_snapshot short_ratio
+2. news_sentiment_daily / rskw_org_count / trends_zh: panel 邊界 + per-stock 覆蓋
+   (LLM 語氣/調研數/Trends 無獨立快照源 — 驗分佈合理 + 同 raw 檔對 3 個值)
+"""
+import sys
+import os
+from pathlib import Path
+import pandas as pd
+
+BT = Path(r"C:/Users/Penguin8n/ZCodeProject/backtests")
+sys.path.insert(0, str(BT))
+os.chdir(str(BT))
+
+import factor_panels  # noqa: F401
+from trading_core.factor_store import get_panel
+
+lines = []
+P = lines.append
+
+# ---- 1. short_ratio_5y vs Futu snapshot (同日) ----
+sr = get_panel("short_ratio_5y", pit=False)
+P(f"short_ratio_5y: shape={sr.shape} nonNaN={int(sr.notna().sum().sum())} "
+  f"range={sr.index.min().date()}~{sr.index.max().date()}")
+last_day = sr.index[-1]
+panel_vals = sr.iloc[-1].dropna()
+
+from futu import OpenQuoteContext
+q = OpenQuoteContext(host="127.0.0.1", port=11111)
+try:
+    ret, snap = q.get_market_snapshot(list(panel_vals.index[:12]))
+    if ret == 0 and "short_sell_rate" in snap.columns:
+        s = snap.set_index("code")["short_sell_rate"]
+        diffs = []
+        for code, pv in panel_vals.items():
+            if code in s.index and pd.notna(s[code]):
+                fv = float(s[code])
+                if fv > 0:
+                    diffs.append(abs(pv - fv) / fv)
+        P(f"[short_ratio_5y vs Futu snapshot {last_day.date()}] n={len(diffs)} "
+          f"median diff={pd.Series(diffs).median():.4%}" if diffs else
+          f"[short_ratio_5y vs Futu snapshot] snapshot short_sell_rate 全 NaN (美股欄位, 港股 snapshot 冇)")
+finally:
+    q.close()
+
+# ---- 2. news_sentiment_daily: panel vs raw news panel 檔抽 3 日 ----
+ns = get_panel("news_sentiment_daily", pit=False)
+P(f"news_sentiment_daily: shape={ns.shape} nonNaN={int(ns.notna().sum().sum())} "
+  f"range={ns.index.min().date()}~{ns.index.max().date()}")
+raw = pd.read_csv(Path(r"C:/Users/Penguin8n/ZCodeProject/cbsc-system-unification/data/new_sources") / "news_sentiment_daily_panel.csv",
+                  dtype={"code": str})
+raw["date"] = pd.to_datetime(raw["date"])
+for dt, code in [("2026-08-20", "HK.00700"), ("2026-06-10", "HK.00941"),
+                 ("2025-11-05", "HK.03690")]:
+    r = raw[(raw.date == dt) & (raw.code == code)]
+    v_panel = ns.loc[dt, code] if (dt in ns.index.astype(str) or pd.Timestamp(dt) in ns.index) else None
+    try:
+        v_panel = ns.loc[pd.Timestamp(dt), code]
+    except KeyError:
+        v_panel = None
+    v_raw = float(r.value.iloc[0]) if len(r) else None
+    P(f"  news_sent {code} {dt}: panel={v_panel} raw_csv={v_raw} "
+      f"{'OK' if (v_panel is not None and v_raw is not None and abs(v_panel-v_raw)<1e-9) else 'CHECK'}")
+
+# ---- 3. rskw_org_count vs raw build script output ----
+rc = get_panel("rskw_org_count", pit=False)
+P(f"rskw_org_count: shape={rc.shape} nonNaN={int(rc.notna().sum().sum())} "
+  f"range={rc.index.min().date()}~{rc.index.max().date()}")
+# 覆蓋檢查: rolling(63).sum() 喺 eval 窗內非零比例
+roll = rc.rolling(63, min_periods=21).sum()
+ev = roll.loc["2021-09-06":]
+P(f"  rskw 63d sum 在 eval 窗: 非NaN cell {(ev.notna().sum().sum())} / {ev.size} "
+  f"({ev.notna().sum().sum()/ev.size:.1%}), active days {(ev.notna().sum(axis=1)>0).mean():.1%}")
+
+# ---- 4. trends_zh ----
+tz = get_panel("trends_zh", pit=False)
+P(f"trends_zh: shape={tz.shape} nonNaN={int(tz.notna().sum().sum())} "
+  f"range={tz.index.min().date()}~{tz.index.max().date()}")
+ev = tz.loc["2021-09-06":]
+P(f"  trends_zh eval 窗非NaN {(ev.notna().sum().sum())/ev.size:.1%}, "
+  f"值域 [{ev.min().min():.1f}, {ev.max().max():.1f}] (Trends 0-100 合理)")
+
+out = Path(r"C:/Users/Penguin8n/ZCodeProject/cbsc-system-unification/data/new_sources/_agent2h_0907_verify_panels.txt")
+out.write_text("\n".join(lines), encoding="utf-8")
+print("\n".join(lines))

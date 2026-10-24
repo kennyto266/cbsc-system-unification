@@ -1,0 +1,153 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""agent2-H collector: hsi_fut_netpos (HKEX DTOP HSI futures net open interest).
+
+Source: HKEX DCASS DTOP daily zip
+  https://www.hkex.com.hk/eng/stat/dmstat/OI/DTOP_F_yyyymmdd.zip
+  -> yyyymmdd_1_dtop_f_hkcc_fut_dtl_hsi.rpt -> row "HSIFUT TOTAL" (GROSS/NET OI)
+Note: DTOP has NO participant-type breakdown (Dealer/Asset Mgmt etc not public
+daily); crawl_spec fallback = total market net OI as proxy. Also record the
+front (spot) contract series + its NET for reference.
+
+Output CSV (canonical): cbsc-system-unification/data/new_sources/dtop_hsi/
+  dtop_hsi_daily.csv — date, net_total, gross_total, net_spot, n_contracts
+  (同 09-23 上輪 schema 一致; build_hsi_fut_netpos_panel.py 食呢個檔)。
+Incremental: skips dates already in CSV (resume-safe).
+Wired in backtests/_factor_store_refresh.py (collector + builder 鏈)。
+"""
+import csv
+import datetime as dt
+import io
+import os
+import re
+import subprocess
+import sys
+import zipfile
+from concurrent.futures import ThreadPoolExecutor
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+OUTDIR = os.path.join(HERE, "..", "data", "new_sources", "dtop_hsi")
+OUT = os.path.join(OUTDIR, "dtop_hsi_daily.csv")
+CONTRACTS_OUT = os.path.join(OUTDIR, "dtop_hsi_contracts.csv")
+BASE = "https://www.hkex.com.hk/eng/stat/dmstat/OI/DTOP_F_{}.zip"
+UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36")
+
+TOTAL_RE = re.compile(r"^HSIFUT\s+TOTAL\s+(-?[\d,]+)\s+(-?[\d,]+)\s+(-?[\d,]+)\s+(-?[\d,]+)\s+(-?[\d,]+)", re.M)
+SERIES_RE = re.compile(r"^(HSI\s+\d{2}\s+\w{3}\s+\d{2})\s+(-?[\d,]+)\s+(-?[\d,]+)\s+(-?[\d,]+)\s+(-?[\d,]+)\s+(-?[\d,]+)\s+(-?[\d,]+)\s+(-?[\d,]+)", re.M)
+
+
+def num(s):
+    return int(s.replace(",", "")) if s else None
+
+
+def parse_day(ds, txt):
+    """rpt text -> (daily_record, [contract_records]) or (None, [])."""
+    m = TOTAL_RE.search(txt)
+    if not m:
+        return None, []
+    gross, net, netchg, to, deal = (num(m.group(i)) for i in range(1, 6))
+    contracts = []
+    dashed = f"{ds[:4]}-{ds[4:6]}-{ds[6:]}"
+    for sm in SERIES_RE.finditer(txt):
+        contracts.append({
+            "date": dashed, "contract": " ".join(sm.group(1).split()),
+            "gross_oi": num(sm.group(2)), "net_oi": num(sm.group(3)),
+            "net_chg": num(sm.group(4)), "turnover": num(sm.group(5)),
+            "deals": num(sm.group(6)), "settle": num(sm.group(7)),
+            "settle_chg": num(sm.group(8)),
+        })
+    # spot month = 第一個列出嘅系列 (DTOP 排序: 近月先行)
+    spot_net = contracts[0]["net_oi"] if contracts else None
+    rec = {"date": f"{ds[:4]}-{ds[4:6]}-{ds[6:]}",
+           "net_total": net, "gross_total": gross,
+           "net_spot": spot_net, "n_contracts": len(contracts)}
+    return rec, contracts
+
+
+def fetch_one(day):
+    """Download one day's zip, return (date_str, rec, contracts) or (date_str, None, [])."""
+    ds = day.strftime("%Y%m%d")
+    url = BASE.format(ds)
+    try:
+        p = subprocess.run(
+            ["curl", "-s", "--max-time", "45", "-A", UA,
+             "-H", "Referer: https://www.hkex.com.hk/eng/stat/dmstat/OI/oi_f.asp",
+             url],
+            capture_output=True, timeout=60)
+        if p.returncode != 0 or not p.stdout[:2] == b"PK":
+            return ds, None, []
+        z = zipfile.ZipFile(io.BytesIO(p.stdout))
+        names = [n for n in z.namelist() if n.endswith("fut_dtl_hsi.rpt")]
+        if not names:
+            return ds, None, []
+        txt = z.read(names[0]).decode("utf-8", "replace")
+        rec, contracts = parse_day(ds, txt)
+        return ds, rec, contracts
+    except Exception:
+        return ds, None, []
+
+
+def main(start="2020-01-01", end=None):
+    end = end or dt.date.today().strftime("%Y-%m-%d")
+    d0 = dt.date.fromisoformat(start)
+    d1 = dt.date.fromisoformat(end)
+    have = set()
+    if os.path.exists(OUT):
+        with open(OUT, newline="", encoding="utf-8") as f:
+            have = {r["date"] for r in csv.DictReader(f)}
+    days = []
+    d = d0
+    while d <= d1:
+        if d.weekday() < 5 and d.strftime("%Y-%m-%d") not in have:
+            days.append(d)
+        d += dt.timedelta(days=1)
+    print(f"todo {len(days)} days ({days[0] if days else '-'}..{days[-1] if days else '-'}) have={len(have)}", flush=True)
+    rows, contracts, miss = [], [], 0
+    with ThreadPoolExecutor(max_workers=12) as ex:
+        for ds, rec, cr in ex.map(fetch_one, days):
+            if rec:
+                rows.append(rec)
+                contracts.extend(cr)
+            else:
+                miss += 1
+    if rows:
+        rows.sort(key=lambda r: r["date"])
+        newfile = not os.path.exists(OUT)
+        with open(OUT, "a", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=["date", "net_total", "gross_total",
+                                              "net_spot", "n_contracts"])
+            if newfile:
+                w.writeheader()
+            w.writerows(rows)
+    if contracts:
+        contracts.sort(key=lambda r: (r["date"], r["contract"]))
+        newfile = not os.path.exists(CONTRACTS_OUT)
+        with open(CONTRACTS_OUT, "a", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=["date", "contract", "gross_oi", "net_oi",
+                                              "net_chg", "turnover", "deals",
+                                              "settle", "settle_chg"])
+            if newfile:
+                w.writeheader()
+            w.writerows(contracts)
+    got = len(rows)
+    print(f"got {got} miss {miss} -> {os.path.abspath(OUT)}", flush=True)
+    # [G28421] exit 語義係新鮮度, 唔係「有冇新 got」: DTOP 係 EOD 產品, 香港
+    # 公眾假期 (weekday 冇報告) + 當日報告夜晚先出 令日間輪次 got=0 — 舊
+    # `return 0 if got else 1` 每日下晝必 exit 1, moat-sentry 誤判代碼炸
+    # (09-24 實錄 38 miss = 37 假日死日 + 當日未出)。max_date 落後 ≤2 個
+    # weekday (worst case 聖誕/農曆年連假) 仍算新鮮; ≥3 = 真斷流先警報。
+    max_have = max(have | {r["date"] for r in rows}, default=None)
+    fresh = False
+    if max_have:
+        wd_behind, d = 0, d1
+        while d.isoformat() != max_have and wd_behind <= 2:
+            if d.weekday() < 5:
+                wd_behind += 1
+            d -= dt.timedelta(days=1)
+        fresh = d.isoformat() == max_have
+    return 0 if (got or fresh) else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(*sys.argv[1:]))

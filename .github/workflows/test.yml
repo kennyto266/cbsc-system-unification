@@ -1,0 +1,389 @@
+name: Enterprise Testing Pipeline
+
+on:
+  push:
+    branches: [ main, develop, refactor/massive-optimizer-decomposition ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # 每天凌晨2點運行完整測試套件
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of tests to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - unit
+          - integration
+          - performance
+          - security
+      gpu_tests:
+        description: 'Run GPU-accelerated tests'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  PYTHONUNBUFFERED: '1'
+  PYTHONDONTWRITEBYTECODE: '1'
+  TEST_DATABASE_URL: 'sqlite:///test_quant_system.db'
+  LOG_LEVEL: 'DEBUG'
+
+jobs:
+  test-matrix:
+    name: Test Matrix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+        exclude:
+          # 減少矩陣大小，加快CI/CD
+          - os: macos-latest
+            python-version: '3.11'
+          - os: macos-latest
+            python-version: '3.12'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+            ${{ runner.os }}-pip-
+
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sqlite3 libsqlite3-dev
+
+      - name: Install system dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install sqlite3
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pytest-xdist pytest-benchmark memory-profiler
+
+      - name: Validate code quality
+        run: |
+          # Code formatting check
+          black --check --diff .
+
+          # Import sorting check
+          isort --check-only .
+
+          # Type checking
+          mypy simplified_system/src backend/
+
+          # Linting
+          flake8 simplified_system/src backend/ tests/
+
+          # Security scanning
+          bandit -r simplified_system/src backend/ -f json -o bandit-report.json || true
+
+      - name: Run unit tests
+        run: |
+          pytest tests/unit/ \
+            -v \
+            --cov=simplified_system \
+            --cov=backend \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-fail-under=80 \
+            --durations=10 \
+            --junitxml=unit-test-results.xml
+
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.10' && matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+      - name: Run integration tests (Linux only)
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
+        run: |
+          pytest tests/integration/ \
+            -v \
+            --timeout=300 \
+            --junitxml=integration-test-results.xml \
+            -m "not slow"
+
+      - name: Archive test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
+          path: |
+            unit-test-results.xml
+            integration-test-results.xml
+            htmlcov/
+            bandit-report.json
+
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: test-matrix
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pytest-benchmark memory-profiler psutil matplotlib
+
+      - name: Run performance benchmarks
+        run: |
+          pytest tests/performance/ \
+            -v \
+            --benchmark-only \
+            --benchmark-json=benchmark-results.json \
+            --benchmark-html=benchmark-report.html
+
+      - name: Analyze performance regression
+        run: |
+          python .github/scripts/analyze_performance.py \
+            --current benchmark-results.json \
+            --threshold 10  # 10% regression threshold
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: |
+            benchmark-results.json
+            benchmark-report.html
+
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    needs: test-matrix
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install safety bandit
+
+      - name: Run security tests
+        run: |
+          pytest tests/security/ \
+            -v \
+            --junitxml=security-test-results.xml
+
+      - name: Check for known security vulnerabilities
+        run: |
+          safety check --json --output safety-report.json || true
+
+      - name: Run Bandit security analysis
+        run: |
+          bandit -r simplified_system/src backend/ -f json -o bandit-report.json
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-results
+          path: |
+            security-test-results.xml
+            safety-report.json
+            bandit-report.json
+
+  gpu-tests:
+    name: GPU Tests
+    runs-on: ubuntu-latest
+    needs: test-matrix
+    if: github.event.inputs.gpu_tests == 'true' || contains(github.event.head_commit.message, '[gpu-tests]')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Set up CUDA environment
+        uses: Jimver/cuda-toolkit@v0.2.11
+        with:
+          cuda: '11.8'
+          method: 'local'
+
+      - name: Install GPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install cupy-cuda11x
+          pip install -e ".[dev]"
+
+      - name: Verify CUDA installation
+        run: |
+          python -c "import cupy as cp; print('CUDA available:', cp.cuda.is_available())"
+
+      - name: Run GPU tests
+        run: |
+          pytest tests/ -v -m "gpu" --junitxml=gpu-test-results.xml
+
+      - name: Upload GPU test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: gpu-test-results
+          path: gpu-test-results.xml
+
+  slow-tests:
+    name: Slow Integration Tests
+    runs-on: ubuntu-latest
+    needs: test-matrix
+    if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[run-slow-tests]')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run slow tests
+        run: |
+          pytest tests/ \
+            -v \
+            -m "slow" \
+            --timeout=1800 \
+            --junitxml=slow-test-results.xml
+
+      - name: Upload slow test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: slow-test-results
+          path: slow-test-results.xml
+
+  build-test-reports:
+    name: Build Test Reports
+    runs-on: ubuntu-latest
+    needs: [test-matrix, performance-tests, security-tests]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install report dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install jinja2 matplotlib
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate comprehensive test report
+        run: |
+          python .github/scripts/generate_test_report.py \
+            --output-dir test-reports \
+            --github-run-id ${{ github.run_id }}
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: comprehensive-test-report
+          path: test-reports/
+
+  notify-results:
+    name: Notify Test Results
+    runs-on: ubuntu-latest
+    needs: [test-matrix, performance-tests, security-tests, build-test-reports]
+    if: always() && (github.event_name == 'schedule' || github.ref == 'refs/heads/main')
+
+    steps:
+      - name: Notify on success
+        if: needs.test-matrix.result == 'success' && needs.performance-tests.result == 'success' && needs.security-tests.result == 'success'
+        run: |
+          echo "✅ All tests passed successfully!"
+          # 這裡可以添加Slack/Teams/Email通知
+
+      - name: Notify on failure
+        if: needs.test-matrix.result == 'failure' || needs.performance-tests.result == 'failure' || needs.security-tests.result == 'failure'
+        run: |
+          echo "❌ Some tests failed!"
+          # 這裡可以添加失敗通知邏輯
+
+  deploy-docs:
+    name: Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: build-test-reports
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install documentation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" sphinx sphinx-rtd-theme
+
+      - name: Build documentation
+        run: |
+          cd docs
+          make html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/_build/html

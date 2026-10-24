@@ -1,0 +1,245 @@
+#!/usr/bin/env python3
+"""thesis_precheck.py — Thesis-first alpha 嘅 5 道預檢關卡.
+
+將「人類 quant 直覺」拆解成可量化嘅關卡, 喺跑 backtest 之前就過濾掉
+注定失敗嘅 thesis. 每關卡都有明確 PASS/FAIL 標準 + 根因解釋.
+
+關卡 (由頂尖量化方法論 + 我 2 次失敗提煉):
+  G1 數據生命力 (Data Vitality)     — 數據是否活緊? 非零/有變動?
+  G2 訊號活動率 (Signal Activity)   — 訊號會否觸發? 觸發密度合理?
+  G3 符號合理性 (Sign Sanity)       — 方向是否符合經濟直覺?
+  G4 子期穩定性 (Sub-period Stability) — IC 喺唔同時期是否一致? (非 regime-dependent)
+  G5 經濟機制 (Economic Mechanism)  — 因果鏈能否講通? (人類判斷)
+
+用法:
+    from thesis_precheck import precheck
+    report = precheck(factor, returns, signal, thesis="...", direction=-1)
+"""
+import warnings
+warnings.filterwarnings("ignore")
+import numpy as np
+import pandas as pd
+from scipy.stats import spearmanr
+
+
+# ============================================================
+# G1: 數據生命力 (Data Vitality)
+# 根因 (A144): discount_window 近期若真係全 0, 用佢做訊號無意義.
+# 標準: 最近 252 日 >= 10% 非零 AND 有 >1 個唯一非零值.
+# ============================================================
+def g1_data_vitality(factor: pd.Series, name="factor", recent=252):
+    recent_vals = factor.tail(recent).dropna()
+    if len(recent_vals) < 50:
+        return ("FAIL", f"近期樣本太少 ({len(recent_vals)} 日)")
+    nonzero_pct = (recent_vals != 0).mean()
+    n_unique_all = recent_vals.nunique()
+    # 二元訊號 (0/1 旗標) 用唔同標準: 只要近期兩個 state 都出現過就得
+    is_binary = set(recent_vals.unique()) <= {0, 1, 0.0, 1.0} or n_unique_all <= 2
+    if is_binary:
+        if nonzero_pct < 0.05 or nonzero_pct > 0.95:
+            return ("FAIL", f"二元訊號近期全 {'0' if nonzero_pct<0.5 else '1'}, 無變化")
+        return ("PASS", f"二元訊號, 近期 active {nonzero_pct:.1%}")
+    # 連續因子
+    n_unique = recent_vals[recent_vals != 0].nunique() if nonzero_pct > 0 else 0
+    if nonzero_pct < 0.10:
+        return ("FAIL", f"近期 {nonzero_pct:.1%} 非零, 數據近乎死亡")
+    if n_unique < 2:
+        return ("FAIL", f"近期非零值只有 {n_unique} 種, 無信息量")
+    return ("PASS", f"近期非零 {nonzero_pct:.1%}, {n_unique} 種值")
+
+
+# ============================================================
+# G2: 訊號活動率 (Signal Activity)
+# 根因 (A144): dw>0 永遠 False (sign 反), 0% 觸發 → 無交易.
+# 標準: 訊號觸發率 0.5% ~ 60% (太密=冇篩選力, 太疏=統計不足).
+# ============================================================
+def g2_signal_activity(signal: pd.Series, name="signal"):
+    active = signal.fillna(False).astype(bool)
+    trig_pct = active.mean()
+    n_trig = active.sum()
+    if n_trig < 20:
+        return ("FAIL", f"全期只觸發 {n_trig} 次, 統計不足")
+    if trig_pct < 0.005:
+        return ("FAIL", f"觸發率 {trig_pct:.2%} 太低 (<0.5%)")
+    if trig_pct > 0.60:
+        return ("WARN", f"觸發率 {trig_pct:.1%} 太高 (>60%), 篩選力弱")
+    return ("PASS", f"觸發率 {trig_pct:.1%} ({n_trig} 次)")
+
+
+# ============================================================
+# G3: 符號合理性 (Sign Sanity)
+# 根因 (A144): discount_window_usage 全 ≤0 (HKMA 借錢記負資產),
+#   我用 dw>0 做 active → 永遠 False. 經濟論述無錯, 係代碼 sign 反.
+# 方法: 檢查 factor 同 forward return 嘅 IC 符號是否符合預期 direction.
+# 標準: 實測 IC 符號 = 預期符號 (方向一致).
+# ============================================================
+def g3_sign_sanity(factor: pd.Series, fwd_ret: pd.Series, expected_dir, name="factor"):
+    """expected_dir: +1=factor升→ret升, -1=factor升→ret跌."""
+    common = factor.dropna().index.intersection(fwd_ret.dropna().index)
+    if len(common) < 100:
+        return ("FAIL", f"交集樣本太少 ({len(common)})")
+    f = factor.reindex(common)
+    r = fwd_ret.reindex(common)
+    # 二元訊號 (0/1) 唔需要排除 0; 連續因子排除死值 0
+    is_binary = set(f.dropna().unique()) <= {0, 1, 0.0, 1.0} or f.nunique() <= 2
+    mask = (f != 0) if not is_binary else pd.Series(True, index=f.index)
+    mask = mask & f.notna() & r.notna()
+    if mask.sum() < 50:
+        return ("FAIL", f"有效值只有 {mask.sum()} 個")
+    ic, _ = spearmanr(f[mask], r[mask])
+    if np.isnan(ic):
+        return ("FAIL", "IC 計唔到 (常數?)")
+    actual_dir = np.sign(ic)
+    if actual_dir == 0:
+        return ("WARN", f"IC={ic:.3f} ≈ 0, 無方向")
+    if actual_dir != np.sign(expected_dir):
+        return ("FAIL", f"IC={ic:+.3f} 方向反咗 (預期 {expected_dir:+d}) — 疑似 sign convention 錯")
+    if abs(ic) < 0.02:
+        return ("WARN", f"IC={ic:+.3f} 極弱 (|IC|<0.02)")
+    return ("PASS", f"IC={ic:+.3f} 方向正確 (預期 {expected_dir:+d})")
+
+
+# ============================================================
+# G4: 子期穩定性 (Sub-period Stability) — 最關鍵, 防 regime-dependent
+# 根因 (A143): 全期 IC 顯著, 但拆開 IS/OOS 符號反轉 (regime-dependent).
+#   ohlcv pattern alpha 亦都係咁 fail (學咗熊市 mean-reversion, 牛市反轉).
+# 方法: 將全期分 4 段, 計每段 IC, 要求符號一致 + 多數顯著.
+# 標準: >=3/4 段符號一致 AND 同向段平均 |IC| > 0.02.
+# ============================================================
+def g4_subperiod_stability(factor: pd.Series, fwd_ret: pd.Series, n_periods=4, name="factor"):
+    common = factor.dropna().index.intersection(fwd_ret.dropna().index)
+    if len(common) < 200:
+        return ("FAIL", f"樣本太少 ({len(common)}) 分唔到段")
+    f = factor.reindex(common)
+    r = fwd_ret.reindex(common)
+    # 二元訊號唔排除 0
+    is_binary = set(f.dropna().unique()) <= {0, 1, 0.0, 1.0} or f.nunique() <= 2
+    # 用位置分割 (DatetimeIndex 唔支援 np.array_split)
+    n = len(common)
+    bounds = np.linspace(0, n, n_periods + 1, dtype=int)
+    ics = []
+    for i in range(n_periods):
+        ch = common[bounds[i]:bounds[i+1]]
+        fc, rc = f.reindex(ch), r.reindex(ch)
+        mask = (fc != 0) if not is_binary else pd.Series(True, index=fc.index)
+        mask = mask & fc.notna() & rc.notna()
+        if mask.sum() < 30:
+            ics.append(np.nan); continue
+        ic, _ = spearmanr(fc[mask], rc[mask])
+        ics.append(ic)
+    ics = np.array(ics)
+    valid = ics[~np.isnan(ics)]
+    if len(valid) < 3:
+        return ("FAIL", f"只得 {len(valid)} 段有效 IC")
+    signs = np.sign(valid)
+    # 符號一致性
+    pos = (signs > 0).sum()
+    neg = (signs < 0).sum()
+    majority_sign = 1 if pos >= neg else -1
+    consistent = ((signs == majority_sign) | (signs == 0)).sum()
+    # 同向段平均 |IC|
+    same_dir = valid[(signs == majority_sign) | (signs == 0)]
+    mean_ic = np.mean(np.abs(same_dir)) if len(same_dir) else 0
+    ic_str = " ".join(f"{x:+.3f}" for x in ics)
+    if consistent < 3:
+        return ("FAIL", f"IC 符號唔一致 [{ic_str}] — regime-dependent, OOS 必反")
+    if mean_ic < 0.02:
+        return ("WARN", f"IC 符號一致但極弱 [{ic_str}], avg|IC|={mean_ic:.3f}")
+    return ("PASS", f"IC 子期一致 [{ic_str}], avg|IC|={mean_ic:.3f}")
+
+
+# ============================================================
+# G5: 經濟機制 (Economic Mechanism) — 人類判斷, 無法全自動化
+# 只記錄 checklist, 供人腦過.
+# ============================================================
+def g5_economic_checklist(thesis: str, mechanism: str):
+    """人類必答 5 條. 答唔到 = 唔好做."""
+    questions = [
+        "1. 因果鏈: 點解呢個因子會領前股價? (唔係'因為歷史咁')",
+        "2. 資訊效率: 邊類投資者會用呢個訊號? 佢地已經用緊未?",
+        "3. 結構性 vs 周期性: 呢個 edge 源自制度結構 (持久) 定係短期錯價 (會消失)?",
+        "4. 容量: 多少資金可以承載? 會唔會自己用完就冇?",
+        "5. 反例: 喺咩情況下呢個 thesis 會失效?",
+    ]
+    return questions
+
+
+# ============================================================
+# 主預檢函數
+# ============================================================
+def precheck(factor: pd.Series, fwd_ret: pd.Series, signal: pd.Series,
+             thesis: str = "", expected_dir: int = 0, name: str = "factor"):
+    """跑 G1-G4 自動關卡, 返回報告. G5 為人類 checklist."""
+    results = []
+    results.append(("G1 數據生命力", g1_data_vitality(factor, name)))
+    results.append(("G2 訊號活動率", g2_signal_activity(signal, name)))
+    if expected_dir != 0:
+        results.append(("G3 符號合理性", g3_sign_sanity(factor, fwd_ret, expected_dir, name)))
+    results.append(("G4 子期穩定性", g4_subperiod_stability(factor, fwd_ret, name=name)))
+
+    print(f"\n{'='*65}")
+    print(f"🔍 預檢報告: {name}")
+    print(f"   Thesis: {thesis}")
+    print(f"{'='*65}")
+    n_fail = n_warn = 0
+    for gate, (status, msg) in results:
+        icon = {"PASS": "✅", "WARN": "⚠️ ", "FAIL": "❌"}[status]
+        print(f"  {icon} {gate}: {msg}")
+        if status == "FAIL": n_fail += 1
+        elif status == "WARN": n_warn += 1
+    verdict = "通過" if n_fail == 0 else f"不通過 ({n_fail} FAIL)"
+    print(f"  {'─'*50}")
+    print(f"  → 預檢 verdict: {verdict}" + (f", {n_warn} WARN" if n_warn else ""))
+    print(f"\n  🧠 G5 經濟機制 (人類必答):")
+    for q in g5_economic_checklist(thesis, ""):
+        print(f"     {q}")
+    return {"verdict": verdict, "n_fail": n_fail, "n_warn": n_warn, "results": results}
+
+
+if __name__ == "__main__":
+    # ============ Retrospective: 用框架 re-diagnose A143/A144 ============
+    from pathlib import Path
+    FACT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors")
+    SC_PATH = FACT_DIR.parent / "stock_connect" / "sc_full.csv"
+
+    def load_col(file, col):
+        p = FACT_DIR / file
+        df = pd.read_csv(p)
+        dc = next((c for c in df.columns if c.lower() in ("date","end_of_day","datetime","time","time_key")), df.columns[0])
+        df[dc] = pd.to_datetime(df[dc], errors="coerce")
+        df = df.dropna(subset=[dc, col]).sort_values(dc).drop_duplicates(subset=dc, keep="last")
+        return pd.Series(df[col].astype(float).values, index=df[dc].values, name=col)
+
+    # 用 HSI 做 forward return proxy (簡化, 只為 demo 預檢)
+    print("\n" + "█"*65)
+    print("█  RETROSPECTIVE: 預檢框架能否 re-diagnose A143/A144 失敗?")
+    print("█"*65)
+
+    # --- A144 重診 (貼現窗) ---
+    dw = load_col("discount_window.csv", "discount_window_usage")
+    # 構造一個 HSI fwd return proxy: 用 a_shares 反向 (簡化 demo)
+    # 真正驗證用 fwd_ret, 呢度用 dw 自己嘅滯後差分做 sanity
+    fwd = dw.diff().shift(-5)  # 5日前瞻
+    # 原始錯誤訊號: dw > 0
+    sig_wrong = dw > 0
+    print("\n[A144 錯誤版] dw > 0 (我原本寫錯嘅):")
+    precheck(dw, fwd, sig_wrong, thesis="貼現窗活動=壓力→做淡", expected_dir=-1, name="dw_usage(>0 錯版)")
+
+    # 修正訊號: dw < 0 (正確 sign, HKMA 借錢記負)
+    sig_right = dw < 0
+    print("\n[A144 修正版] dw < 0 (正確 sign convention):")
+    precheck(dw, fwd, sig_right, thesis="貼現窗活動=壓力→做淡", expected_dir=+1, name="dw_usage(<0 正版)")
+    # 注意: dw<0 時 dw 數值更負 → 數值升代表壓力減, 所以同 fwd diff 嘅關係要再諗
+    # expected_dir 呢度只為 demo sign sanity 關卡, 唔代表最終方向
+
+    # --- A143 重診 (南向資金) ---
+    sc = pd.read_csv(SC_PATH)
+    sc["date"] = pd.to_datetime(sc["date"], errors="coerce")
+    south = sc[sc["type_name"].str.contains("南向", na=False)]
+    nb = south.groupby("date")["net_buy"].sum().sort_index()
+    cum5 = nb.rolling(5).sum()
+    z = (cum5 - cum5.rolling(60).mean()) / cum5.rolling(60).std()
+    fwd_nb = cum5.diff().shift(-5)
+    sig = (z > 1.5) | (z < -1.5)
+    print("\n[A143] 南向資金 Z 極端 (momentum thesis):")
+    precheck(z, fwd_nb, sig, thesis="南向大額流入→跟勢做多", expected_dir=0, name="southbound_z")

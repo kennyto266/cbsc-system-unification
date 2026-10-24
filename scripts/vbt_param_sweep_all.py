@@ -1,0 +1,372 @@
+#!/usr/bin/env python3
+"""
+全參數掃描 — 多進程 VectorBT 回測
+
+8 因子 × 6 股票 × 80 參數組合 = 3,840 個回測
+用 joblib 32 核心並行 + VectorBT 向量化
+
+每個組合計算：Sharpe / Sortino / Calmar / MaxDD / PF / 勝率 / Walk-forward
+
+用法:
+    python scripts/vbt_param_sweep_all.py
+    python scripts/vbt_param_sweep_all.py --workers 32
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, ".")
+
+import argparse
+import time
+import os
+import numpy as np
+import pandas as pd
+import vectorbt as vbt
+from pathlib import Path
+from datetime import datetime
+from itertools import product
+from joblib import Parallel, delayed, cpu_count
+from scipy import stats as scistats
+
+ROOT = Path(__file__).parent.parent
+DATA = ROOT / "data"
+OHLCV_DIR = DATA / "ohlcv_5y"
+FACTORS_DIR = DATA / "factors"
+OUTPUT_DIR = DATA / "vbt_factor_reports"
+OUTPUT_DIR.mkdir(exist_ok=True)
+
+# 成本由 backtests/vbt_data.py 統一管理 (Longbridge 港股實際口徑)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "backtests"))
+from vbt_data import (STAMP_DUTY, COMMISSION, SETTLEMENT_FEE, TRADING_FEE, SFC_LEVY, FRC_LEVY,
+                      SLIPPAGE, TOTAL_COST, RF_RATE)
+
+# 參數網格
+N_DAYS_LIST = [2, 3, 4, 5, 7]
+THRESHOLD_LIST = [0.002, 0.004, 0.006, 0.008]
+HOLDING_LIST = [3, 5, 7, 10, 14]
+DIRECTION_LIST = ["contrarian", "follow"]
+
+FACTORS = ["vix", "dxy", "gold", "copper", "us_10y_yield", "sp500", "usdcnh", "a_shares"]
+
+
+def load_stock_close(stock_code):
+    path = OHLCV_DIR / f"{stock_code.replace('.', '_')}.csv"
+    if not path.exists():
+        return None
+    df = pd.read_csv(path, parse_dates=["time_key"]).set_index("time_key").sort_index()
+    return df["close"]
+
+
+def load_factor_close(name):
+    path = FACTORS_DIR / f"{name}.csv"
+    if not path.exists():
+        return None
+    df = pd.read_csv(path, index_col="date", parse_dates=True)
+    return df["close"].sort_index()
+
+
+def run_single_backtest(factor_name, stock_code, n_days, threshold, holding, direction):
+    """單個回測（worker 函數）"""
+    factor = load_factor_close(factor_name)
+    stock = load_stock_close(stock_code)
+    if factor is None or stock is None:
+        return None
+
+    factor_ret = factor.pct_change()
+    cum_ret = factor / factor.shift(n_days - 1) - 1
+
+    common = factor_ret.index.intersection(stock.index)
+    if len(common) < n_days + holding + 20:
+        return None
+
+    fr = factor_ret.reindex(common).fillna(0).values
+    cr = cum_ret.reindex(common).fillna(0).values
+    close = stock.reindex(common)
+
+    n = len(fr)
+    entries = np.zeros(n, dtype=bool)
+    exits = np.zeros(n, dtype=bool)
+    short_entries = np.zeros(n, dtype=bool)
+    short_exits = np.zeros(n, dtype=bool)
+    n_trades = 0
+
+    for i in range(n_days, n - holding - 1):
+        window = fr[i - n_days + 1: i + 1]
+        c = cr[i]
+        if np.isnan(c):
+            continue
+        all_pos = bool(np.all(window > 0))
+        all_neg = bool(np.all(window < 0))
+
+        if all_pos and c > threshold:
+            exit_i = min(i + 1 + holding, n - 1)
+            if direction == "contrarian":
+                short_entries[i + 1] = True
+                short_exits[exit_i] = True
+            else:
+                entries[i + 1] = True
+                exits[exit_i] = True
+            n_trades += 1
+        elif all_neg and c < -threshold:
+            exit_i = min(i + 1 + holding, n - 1)
+            if direction == "contrarian":
+                entries[i + 1] = True
+                exits[exit_i] = True
+            else:
+                short_entries[i + 1] = True
+                short_exits[exit_i] = True
+            n_trades += 1
+
+    if n_trades == 0:
+        return None
+
+    entries_s = pd.Series(entries, index=common)
+    exits_s = pd.Series(exits, index=common)
+    se_s = pd.Series(short_entries, index=common)
+    sx_s = pd.Series(short_exits, index=common)
+
+    try:
+        pf = vbt.Portfolio.from_signals(
+            close=close, entries=entries_s, exits=exits_s,
+            short_entries=se_s, short_exits=sx_s,
+            fees=TOTAL_COST / 2, slippage=SLIPPAGE,
+            freq="1D", init_cash=100_000, accumulate=False)
+    except Exception:
+        return None
+
+    try:
+        total_ret = float(pf.total_return())
+        ann_ret = float(pf.annualized_return())
+        sharpe = float(pf.sharpe_ratio())
+        sortino = float(pf.sortino_ratio())
+        max_dd = float(pf.max_drawdown())
+        calmar = float(pf.calmar_ratio())
+
+        if sharpe != 0 and ann_ret != 0:
+            vol = ann_ret / sharpe
+            sharpe = (ann_ret - RF_RATE) / vol if vol > 0 else sharpe
+        if sortino != 0 and ann_ret != 0:
+            dvol = ann_ret / sortino
+            sortino = (ann_ret - RF_RATE) / dvol if dvol > 0 else sortino
+
+        trades = pf.trades.records_readable
+        nt = len(trades)
+        if nt > 0 and "PnL" in trades.columns:
+            wr = float((trades["PnL"] > 0).sum() / nt)
+            gp = float(trades[trades["PnL"] > 0]["PnL"].sum())
+            gl = abs(float(trades[trades["PnL"] < 0]["PnL"].sum()))
+            pf_ratio = gp / gl if gl > 0 else 99.0
+        else:
+            wr = 0; pf_ratio = 0
+
+        # B&H
+        pf_bh = vbt.Portfolio.from_holding(close, init_cash=100_000, fees=TOTAL_COST/2, freq="1D")
+        bh_sharpe = float(pf_bh.sharpe_ratio())
+        if bh_sharpe != 0:
+            bh_vol = float(pf_bh.annualized_return()) / bh_sharpe
+            bh_sharpe = (float(pf_bh.annualized_return()) - RF_RATE) / bh_vol if bh_vol > 0 else bh_sharpe
+
+        # Walk-forward
+        split = int(len(close) * 0.7)
+        oos_sharpe = 0
+        if split < len(close) - 20:
+            close_oos = close.iloc[split:]
+            e_oos = entries_s.iloc[split:]
+            x_oos = exits_s.iloc[split:]
+            se_oos = se_s.iloc[split:]
+            sx_oos = sx_s.iloc[split:]
+            if e_oos.any() or se_oos.any():
+                try:
+                    pf_oos = vbt.Portfolio.from_signals(
+                        close=close_oos, entries=e_oos, exits=x_oos,
+                        short_entries=se_oos, short_exits=sx_oos,
+                        fees=TOTAL_COST/2, slippage=SLIPPAGE, freq="1D", init_cash=100_000)
+                    oos_sharpe = float(pf_oos.sharpe_ratio())
+                    if oos_sharpe != 0:
+                        oos_vol = float(pf_oos.annualized_return()) / oos_sharpe
+                        oos_sharpe = (float(pf_oos.annualized_return()) - RF_RATE) / oos_vol if oos_vol > 0 else oos_sharpe
+                except Exception:
+                    pass
+
+        return {
+            "factor": factor_name,
+            "stock": stock_code,
+            "n_days": n_days,
+            "threshold": threshold,
+            "holding": holding,
+            "direction": direction,
+            "sharpe": round(sharpe, 3),
+            "sortino": round(sortino, 3),
+            "calmar": round(calmar, 3),
+            "annual_return_pct": round(ann_ret * 100, 2),
+            "max_drawdown_pct": round(max_dd * 100, 2),
+            "n_trades": nt,
+            "win_rate_pct": round(wr * 100, 1),
+            "profit_factor": round(pf_ratio, 2),
+            "bh_sharpe": round(bh_sharpe, 3),
+            "alpha": round(sharpe - bh_sharpe, 3),
+            "oos_sharpe": round(oos_sharpe, 3),
+            "robust": bool(oos_sharpe > 0),
+        }
+    except Exception:
+        return None
+
+
+def main():
+    parser = argparse.ArgumentParser(description="全參數掃描（多進程 VectorBT）")
+    parser.add_argument("--workers", type=int, default=-1)
+    parser.add_argument("--report", action="store_true")
+    args = parser.parse_args()
+
+    n_workers = args.workers if args.workers > 0 else cpu_count()
+
+    # 股票列表
+    stock_files = list(OHLCV_DIR.glob("*.csv"))
+    stocks = [f.stem.replace("_", ".") for f in stock_files]
+
+    # 生成所有任務
+    param_combos = list(product(N_DAYS_LIST, THRESHOLD_LIST, HOLDING_LIST, DIRECTION_LIST))
+    tasks = [(f, s, nd, th, hd, dr) for f in FACTORS for s in stocks for nd, th, hd, dr in param_combos]
+
+    total = len(tasks)
+    print("=" * 85)
+    print("🔬 全參數掃描（多進程 VectorBT）")
+    print("=" * 85)
+    print(f"時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"因子: {len(FACTORS)} 個")
+    print(f"股票: {len(stocks)} 隻 ({', '.join(stocks[:4])}...)")
+    print(f"參數組合: {len(param_combos)} ({len(N_DAYS_LIST)}N × {len(THRESHOLD_LIST)}th × {len(HOLDING_LIST)}hold × {len(DIRECTION_LIST)}dir)")
+    print(f"總任務: {total:,}")
+    print(f"進程數: {n_workers}")
+    print(f"成本: {TOTAL_COST*100:.2f}%/來回（含 {SLIPPAGE*100:.1f}% 滑點）| rf={RF_RATE*100:.0f}%")
+    print()
+
+    start = time.time()
+    print(f"啟動 {n_workers} 進程...")
+
+    results = Parallel(n_jobs=n_workers, backend="loky", verbose=5)(
+        delayed(run_single_backtest)(*task) for task in tasks
+    )
+
+    elapsed = time.time() - start
+    valid = [r for r in results if r is not None]
+
+    print(f"\n{'='*85}")
+    print(f"✓ 完成！{elapsed:.0f}秒 ({elapsed/60:.1f}分鐘)")
+    print(f"  總任務: {total:,}")
+    print(f"  有效結果: {len(valid):,}")
+    print(f"  每個: {elapsed/max(len(valid),1)*1000:.1f}ms")
+    print(f"  CPU 核心: {n_workers}")
+    print(f"{'='*85}")
+
+    if not valid:
+        print("❌ 冇有效結果")
+        return
+
+    df = pd.DataFrame(valid).sort_values("sharpe", ascending=False)
+    df = df.replace([np.inf, -np.inf], np.nan)
+
+    # 匯總
+    clean = df.dropna(subset=["sharpe"])
+    print(f"\n📊 統計（{len(clean)} 有效結果）:")
+    print(f"  Sharpe 中位數:   {clean['sharpe'].median():.3f}")
+    print(f"  Sharpe > 0:      {(clean['sharpe']>0).sum()}/{len(clean)} ({(clean['sharpe']>0).sum()/len(clean)*100:.1f}%)")
+    print(f"  Sharpe > 0.5:    {(clean['sharpe']>0.5).sum()}")
+    print(f"  Sharpe > 1.0:    {(clean['sharpe']>1.0).sum()}")
+    print(f"  Walk-forward 穩健: {clean['robust'].sum()}/{len(clean)}")
+    print(f"  平均 MaxDD:      {clean['max_drawdown_pct'].mean():.1f}%")
+
+    # 各因子最佳
+    print(f"\n🏆 各因子最佳結果:")
+    print(f"{'因子':<12} {'最佳Sharpe':>10} {'參數':>20} {'股票':<12} {'年回報':>7} {'MDD':>7} {'PF':>5} {'WF':>4}")
+    print("-" * 85)
+    for factor in FACTORS:
+        grp = clean[clean["factor"] == factor]
+        if grp.empty:
+            print(f"{factor:<12} 無有效結果")
+            continue
+        best = grp.iloc[0]
+        params = f"N={int(best['n_days'])} th={best['threshold']:.3f} h={int(best['holding'])} {best['direction'][:4]}"
+        wf = "✓" if best["robust"] else "✗"
+        print(f"{factor:<12} {best['sharpe']:>10.2f} {params:>20} {best['stock']:<12} {best['annual_return_pct']:>6.1f}% {best['max_drawdown_pct']:>6.1f}% {best['profit_factor']:>5.2f} {wf:>4}")
+
+    # Top 20
+    print(f"\n🥇 Top 20 組合:")
+    print(f"{'#':>3} {'因子':<10} {'股票':<12} {'N':>3} {'th':>6} {'h':>3} {'dir':<5} {'Sharpe':>7} {'Sort':>6} {'年回報':>7} {'MDD':>7} {'PF':>5} {'勝率':>5} {'Alpha':>7} {'OOS':>6}")
+    print("-" * 100)
+    for i, (_, r) in enumerate(clean.head(20).iterrows(), 1):
+        wf = "✓" if r["robust"] else "✗"
+        print(f"{i:>3} {r['factor']:<10} {r['stock']:<12} {int(r['n_days']):>3} {r['threshold']:>6.3f} {int(r['holding']):>3} {r['direction'][:4]:<5} {r['sharpe']:>7.2f} {r['sortino']:>6.2f} {r['annual_return_pct']:>6.1f}% {r['max_drawdown_pct']:>6.1f}% {r['profit_factor']:>5.2f} {r['win_rate_pct']:>4.0f}% {r['alpha']:>+7.2f} {r['oos_sharpe']:>6.2f}{wf}")
+
+    # 儲存
+    csv_path = OUTPUT_DIR / "param_sweep_all_results.csv"
+    df.to_csv(csv_path, index=False)
+    print(f"\n✓ 儲存: {csv_path.relative_to(ROOT)}")
+
+    if args.report:
+        generate_full_report(clean, elapsed, total, n_workers)
+
+
+def generate_full_report(df, elapsed, total, n_workers):
+    """生成詳細 report"""
+    report_path = OUTPUT_DIR / "PARAM_SWEEP_FULL_REPORT.md"
+    lines = [
+        f"# 全參數掃描報告",
+        f"",
+        f"**生成時間**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        f"**總任務**: {total:,} | **有效結果**: {len(df):,}",
+        f"**耗時**: {elapsed:.0f}秒 ({elapsed/60:.1f}分鐘) | **進程**: {n_workers}",
+        f"**引擎**: VectorBT {vbt.__version__} + Joblib {n_workers} 核心並行",
+        f"**成本**: {TOTAL_COST*100:.2f}%/來回（含滑點 {SLIPPAGE*100:.1f}%）",
+        f"**無風險利率**: {RF_RATE*100:.0f}% | **Walk-forward**: 70/30",
+        f"",
+        f"## 匯總",
+        f"",
+        f"| 指標 | 數值 |",
+        f"|------|------|",
+        f"| Sharpe 中位數 | {df['sharpe'].median():.3f} |",
+        f"| Sharpe > 0 | {(df['sharpe']>0).sum()}/{len(df)} ({(df['sharpe']>0).sum()/len(df)*100:.1f}%) |",
+        f"| Sharpe > 0.5 | {(df['sharpe']>0.5).sum()} |",
+        f"| Sharpe > 1.0 | {(df['sharpe']>1.0).sum()} |",
+        f"| Walk-forward 穩健 | {df['robust'].sum()}/{len(df)} |",
+        f"| 平均 Max DD | {df['max_drawdown_pct'].mean():.1f}% |",
+        f"| 平均 PF | {df['profit_factor'].mean():.2f} |",
+        f"",
+        f"## 各因子最佳參數",
+        f"",
+        f"| 因子 | 最佳 Sharpe | N | threshold | holding | direction | 股票 | 年回報% | MaxDD% | PF | 勝率% | WF |",
+        f"|------|-----------|---|-----------|---------|-----------|------|--------|-------|-----|-------|-----|",
+    ]
+
+    for factor in FACTORS:
+        grp = df[df["factor"] == factor]
+        if grp.empty:
+            continue
+        best = grp.iloc[0]
+        wf = "✅" if best["robust"] else "❌"
+        lines.append(f"| {factor} | {best['sharpe']:.2f} | {int(best['n_days'])} | {best['threshold']:.3f} | {int(best['holding'])} | {best['direction']} | {best['stock']} | {best['annual_return_pct']:.1f}% | {best['max_drawdown_pct']:.1f}% | {best['profit_factor']:.2f} | {best['win_rate_pct']:.0f}% | {wf} |")
+
+    lines.extend([
+        f"",
+        f"## Top 30 組合",
+        f"",
+        f"| # | 因子 | 股票 | N | threshold | holding | direction | Sharpe | Sortino | Calmar | 年回報% | MaxDD% | PF | 勝率% | Alpha | OOS Sharpe | WF |",
+        f"|---|------|------|---|-----------|---------|-----------|--------|---------|--------|---------|-------|-----|-------|-------|-----------|-----|",
+    ])
+
+    for i, (_, r) in enumerate(df.head(30).iterrows(), 1):
+        wf = "✅" if r["robust"] else "❌"
+        lines.append(f"| {i} | {r['factor']} | {r['stock']} | {int(r['n_days'])} | {r['threshold']:.3f} | {int(r['holding'])} | {r['direction']} | {r['sharpe']:.2f} | {r['sortino']:.2f} | {r['calmar']:.2f} | {r['annual_return_pct']:.1f}% | {r['max_drawdown_pct']:.1f}% | {r['profit_factor']:.2f} | {r['win_rate_pct']:.0f}% | {r['alpha']:+.2f} | {r['oos_sharpe']:.2f} | {wf} |")
+
+    lines.extend([
+        f"",
+        f"## 完整結果",
+        f"見 `param_sweep_all_results.csv`（{len(df)} 行）",
+    ])
+
+    with open(report_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    print(f"✓ Report: {report_path.relative_to(ROOT)}")
+
+
+if __name__ == "__main__":
+    main()

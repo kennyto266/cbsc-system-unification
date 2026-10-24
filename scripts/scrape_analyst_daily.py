@@ -1,0 +1,77 @@
+"""scrape_analyst_daily.py — 每日收集分析師目標價 snapshot, 開始累積真 PIT history.
+
+港股分析師數據冇免費歷史源 (Futu/AAYahoo 全部只出今日值)。
+唯一誠實做法: 每日 snapshot 由今日開始累積, 供未來窗口用。
+數據源: yfinance (需 C:/Python313/python.exe, 個 venv 冇 yfinance)。
+欄位: date, code, mean_target_price_hkd, n_analysts, rating_mean
+Output: data/new_sources/analyst_target_pit_daily.csv (append, 同日冚)
+"""
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
+import yfinance as yf
+
+DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "new_sources"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+OUT = DATA_DIR / "analyst_target_pit_daily.csv"
+
+
+def collect(stocks=None):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "backtests"))
+    from vbt_data import HK_UNIVERSE
+    stocks = stocks or HK_UNIVERSE
+    today = datetime.now().strftime("%Y-%m-%d")
+    rows = []
+    for stock in stocks:
+        num = int(stock.replace("HK.", ""))
+        code = f"{num:04d}.HK"
+        try:
+            tk = yf.Ticker(code)
+            info = tk.info
+            mtp = info.get("targetMeanPrice")
+            n = info.get("numberOfAnalystOpinions")
+            rm = info.get("recommendationMean")
+            # EPS estimate + revisions (yfinance analysis endpoint)
+            eps_cons = eps_fwd = n_an_eps = n_up = n_down = None
+            try:
+                est = tk.get_earnings_estimate()
+                if "0y" in est.index:
+                    eps_cons = float(est.loc["0y", "avg"])
+                    n_an_eps = int(est.loc["0y", "numberOfAnalysts"])
+                    eps_fwd = float(est.loc["+1y", "avg"]) if "+1y" in est.index else None
+                rev = tk.get_eps_revisions()
+                if "0y" in rev.index:
+                    n_up = int(rev.loc["0y", "upLast30days"])
+                    n_down = int(rev.loc["0y", "downLast30days"])
+            except Exception:
+                pass
+            if mtp is not None or eps_cons is not None:
+                rows.append({
+                    "date": today, "code": stock,
+                    "mean_target_price_hkd": float(mtp) if mtp is not None else float("nan"),
+                    "n_analysts": n if n is not None else -1,
+                    "rating_mean": rm if rm is not None else float("nan"),
+                    "eps_consensus_0y": eps_cons if eps_cons is not None else float("nan"),
+                    "eps_fwd_1y": eps_fwd if eps_fwd is not None else float("nan"),
+                    "n_analysts_eps": n_an_eps if n_an_eps is not None else -1,
+                    "n_up_30d": n_up if n_up is not None else -1,
+                    "n_down_30d": n_down if n_down is not None else -1,
+                })
+        except Exception:
+            pass
+        time.sleep(0.3)
+    df = pd.DataFrame(rows)
+    if OUT.exists():
+        old = pd.read_csv(OUT)
+        old = old[old["date"] != today]
+        df = pd.concat([old, df], ignore_index=True)
+    df.to_csv(OUT, index=False)
+    return df
+
+
+if __name__ == "__main__":
+    out = collect()
+    print(f"collected {len(out)} stocks -> {OUT}")

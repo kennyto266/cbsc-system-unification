@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+"""fix_arch_links.py — 架構頁 wikilink 對齊實際檔名 (lint dead_links 17→0)."""
+import re
+from pathlib import Path
+
+WIKI = Path(r"C:/Users/Penguin8n/CBSC-KnowledgeVault/wiki")
+
+# 實際檔名
+ARCH = {p.stem: p.name for p in (WIKI / "architecture").glob("*.md")}
+DATA = {p.stem: p.name for p in (WIKI / "data").glob("*.md")}
+STRAT = {p.stem: p.name for p in (WIKI / "strategies").glob("*.md")}
+ALL = {**ARCH, **DATA, **STRAT}
+ALL["index"] = "index.md"
+
+FIX = {
+    "data-evx-oi": "data/evx_oi",
+    "data-ocf-oi-ttm": "data/ocf_oi_ttm",
+    "wiki/data": "index",
+    "cross_sectional_engine": None,   # 冇呢頁 → 轉文字
+    "live_signal_engine": None,
+    "架構-html": None,
+    "architecture-research-pipeline": "architecture/research-pipeline-研究流水線",
+    "architecture-live-engine": "architecture/live-engine-Live交易引擎",
+    "architecture-data-layer": "architecture/data-layer-數據層",
+    "architecture-watchdogs": "architecture/watchdogs-看門狗容錯",
+    "architecture-notifications": "architecture/notifications-通知系統",
+    "architecture-knowledge": "architecture/knowledge-知識系統",
+    "architecture-goals": "architecture/goals-目標與策略池",
+}
+
+for p in (WIKI / "architecture").glob("*.md"):
+    t = p.read_text(encoding="utf-8")
+    orig = t
+    for old, new in FIX.items():
+        if new is None:
+            t = t.replace(f"[[{old}|", "").replace(f"[[{old}]]", old)
+            # 呢個太粗 — 逐個 case 手術式處理 below
+    p.write_text(orig, encoding="utf-8")  # revert, 用精準法
+
+# 精準法: 逐頁逐 link regex 換
+pat = re.compile(r"\[\[([^\]|]+)(\|[^\]]*)?\]\]")
+n_fix = 0
+for p in (WIKI / "architecture").glob("*.md"):
+    t = p.read_text(encoding="utf-8")
+    def repl(m):
+        global n_fix
+        target, alias = m.group(1), m.group(2) or ""
+        key = target.strip()
+        if key in FIX:
+            new = FIX[key]
+            if new is None:
+                # 冇頁 → 純文字 (去括號)
+                label = alias.lstrip("|") or key
+                n_fix += 1
+                return label
+            n_fix += 1
+            return f"[[{new}{alias}]]"
+        return m.group(0)
+    t2 = pat.sub(repl, t)
+    if t2 != t:
+        p.write_text(t2, encoding="utf-8")
+print(f"fixed {n_fix} links")

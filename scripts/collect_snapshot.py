@@ -1,0 +1,140 @@
+"""collect_snapshot.py — Daily Futu market snapshot for PE/PB/turnover history.
+
+Uses get_market_snapshot (fast, <1s per batch) instead of get_valuation_detail
+(which times out on this OpenD instance). Collects current-day pe_ratio,
+pb_ratio, turnover_rate for all 52 HSI_CORE stocks → appends to a growing
+daily-history CSV. After 1-2 months, enough PIT data to test fundamental
+factors (despair_value etc.).
+
+Usage:
+    python collect_snapshot.py                    # collect today's snapshot
+
+Output: cbsc-system-unification/data/fundamentals/snapshot_history.csv
+Columns: date, code, pe_ratio, pb_ratio, turnover_rate, last_price, volume
+Append-safe: skips if today's date already exists.
+"""
+import sys, os, json, time, socket
+from pathlib import Path
+from datetime import datetime
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+DATA_DIR = ROOT / "cbsc-system-unification" / "data" / "fundamentals"
+OUT_FILE = DATA_DIR / "snapshot_history.csv"
+
+OPEND_HOST, OPEND_PORT = "127.0.0.1", 11111
+
+# Canonical universe — 單一來源 vbt_data.HK_UNIVERSE (52 stocks)。
+# 舊版硬編碼 51 隻同 trading universe 有 21 隻出入, 每日累積錯誤 cross-section
+# 嘅 PIT history (R3 architecture review C2 finding)。
+sys.path.insert(0, str(ROOT / "backtests"))
+from vbt_data import HK_UNIVERSE as HSI_CORE
+
+
+def _pos_or_nan(v):
+    # [09-14 T3384E3] PE/PB <= 0 係「源頭冇數」唔係真零 (0 sentinel 同負盈利混體,
+    # pe_hist 00823 全期 0 假值教訓) — 落 NaN 唔好入庫假 0
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        return float("nan")
+    return x if x > 0 else float("nan")
+
+
+def _opend_alive(host=OPEND_HOST, port=OPEND_PORT, timeout=3.0):
+    """TCP 預檢 OpenD 網關 — [TG哨兵 09-23] OpenD crash (FTCrash 01:19) 後
+    futu lib 無限重連吊死, 120s scheduler timeout 食滿晒先爆 TimeoutExpired。
+    連唔到即棄 (exit 1 + marker), 人工重跑唔使等 hang。"""
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def collect():
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    # skip if already collected today
+    if OUT_FILE.exists():
+        import pandas as pd
+        existing = pd.read_csv(OUT_FILE, usecols=["date"])
+        if today in existing["date"].values:
+            print(f"[snapshot] {today} already collected, skip")
+            return 0
+
+    # [TG哨兵 09-23] OpenD 死 → 快速失敗, 唔好入 futu lib 無限重連
+    if not _opend_alive():
+        print(f"[snapshot] ERROR {today}: Futu OpenD {OPEND_HOST}:{OPEND_PORT} 冇 listener "
+              f"(crash/未開) — 快速失敗, 唔入 futu 無限重連")
+        try:
+            (DATA_DIR / f"snapshot_collect_fail_{today}.marker").write_text(
+                f"opend_down: no listener on {OPEND_HOST}:{OPEND_PORT}\n", encoding="utf-8")
+        except OSError:
+            pass
+        return 1
+
+    # lazy import — 預檢過咗先 load futu (OpenD 死時連 lib 都唔好 load)
+    from futu import OpenQuoteContext
+    ctx = OpenQuoteContext(host=OPEND_HOST, port=OPEND_PORT)
+    try:
+        rows = []
+        missing = []
+        # batch in chunks of 10 (full 52-code list fails on this OpenD)
+        for i in range(0, len(HSI_CORE), 10):
+            batch = HSI_CORE[i:i+10]
+            ret, data = ctx.get_market_snapshot(batch)
+            frames = [data] if ret == 0 else []
+            if ret != 0:
+                # [10-09 毒code根修] 25/25 日 batch0 全失根因唔係時序係
+                # HK.00011「未知股票」一隻毒死全批 (ret=-1, retry 無效實測) —
+                # batch 失敗即刻逐隻重查, 窿由 10 隻縮到淨毒 code, 毒名現形
+                print(f"[snapshot] batch {i//10} ret={ret} ({str(data)[:50]}) — 逐隻隔離重查")
+                for code in batch:
+                    r2, d2 = ctx.get_market_snapshot([code])
+                    if r2 == 0:
+                        frames.append(d2)
+                    else:
+                        missing.append(code)
+                    time.sleep(0.2)
+            for df in frames:
+                for _, row in df.iterrows():
+                    rows.append({
+                        "date": today,
+                        "code": row.get("code", ""),
+                        "pe_ratio": _pos_or_nan(row.get("pe_ratio")),
+                        "pb_ratio": _pos_or_nan(row.get("pb_ratio")),
+                        "turnover_rate": float(row.get("turnover_rate", 0) or 0),
+                        "last_price": float(row.get("last_price", 0) or 0),
+                        "volume": float(row.get("volume", 0) or 0),
+                    })
+            time.sleep(0.5)  # rate limit safety
+
+        # [09-14 T3384E3] 靜默失敗修復 — pb_ratio panel 靜默停更 3 週教訓:
+        # 0 行都扮綠係點病發。0 rows → ERROR + marker + exit 1, 排程器見到紅。
+        if not rows:
+            print(f"[snapshot] ERROR {today}: 0 stocks collected — crawl 失敗, 唔好扮綠")
+            try:
+                (DATA_DIR / f"snapshot_collect_fail_{today}.marker").write_text(
+                    f"0 rows, missing={missing}\n", encoding="utf-8")
+            except OSError:
+                pass
+            return 1
+
+        import pandas as pd
+        df = pd.DataFrame(rows)
+        header = not OUT_FILE.exists()
+        df.to_csv(OUT_FILE, mode="a", header=header, index=False)
+        valid_pe = sum(1 for r in rows if r["pe_ratio"] > 0)
+        print(f"[snapshot] {today}: {len(rows)} stocks, {valid_pe} with valid PE")
+        if missing:
+            # 毒 code 名要喺呢行現形 — scheduler 成功路只印尾兩行, 呢行係
+            # auto_scheduler.log 唯一倖存嘅缺口報告 (10-09 前 25 日窿冇名)
+            print(f"[snapshot] WARN {today}: {len(missing)} code(s) 隔離缺口: {','.join(missing)}")
+        return 0
+    finally:
+        ctx.close()
+
+
+if __name__ == "__main__":
+    sys.exit(collect())

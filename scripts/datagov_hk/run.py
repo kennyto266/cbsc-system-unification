@@ -1,0 +1,137 @@
+"""CLI:data.gov.hk 抓取管線。
+  scan  : 掃目錄 → dataset_catalog
+  map   : 套 endpoint_map → dataset_resources
+  fetch : 抓數據 [--dataset ID | --provider hk-hkma | --all]
+  verify: 報告 fetch_status 分布
+"""
+import argparse
+
+from . import db
+from .catalog_scanner import scan_catalog
+from .endpoint_map import apply_endpoint_map, slug_for
+from .factors_writer import write_factor_csv
+from .fetchers.hkma import HKMAFetcher
+from .fetchers.censtatd import CenstatdFetcher
+
+
+def cmd_scan(args):
+    if args.category:
+        n = scan_catalog(category=args.category)
+    else:
+        n = scan_catalog(keyword=args.keyword or "金融")
+    print(f"[scan] {n} datasets in catalog")
+
+
+def cmd_map(args):
+    conn = db.get_conn()
+    db.init_schema(conn)
+    n = apply_endpoint_map(conn)
+    conn.close()
+    print(f"[map] {n} endpoint mappings")
+
+
+def _provider_of(conn, dataset_id):
+    row = conn.execute("SELECT provider FROM dataset_catalog WHERE id=?",
+                       (dataset_id,)).fetchone()
+    return row[0] if row else None
+
+
+def _fetch_one(conn, dataset_id):
+    provider = _provider_of(conn, dataset_id)
+    try:
+        if provider == "hk-censtatd":
+            n = CenstatdFetcher(dataset_id).run(conn)
+            slug = dataset_id.replace("hk-censtatd-tablechart-", "")
+        else:
+            # HKMA (及其他 mapped dataset): endpoint 來自 dataset_resources
+            row = conn.execute(
+                "SELECT endpoint FROM dataset_resources WHERE dataset_id=?",
+                (dataset_id,)).fetchone()
+            if not row:
+                db.set_status(conn, dataset_id, "error: no_mapping")
+                print(f"[fetch] {dataset_id}: no_mapping")
+                return 0
+            n = HKMAFetcher(dataset_id, row[0]).run(conn)
+            slug = slug_for(conn, dataset_id) or dataset_id.replace("hk-hkma-", "")
+        out = write_factor_csv(conn, dataset_id, slug)
+        print(f"[fetch] {dataset_id}: {n} rows -> {out}")
+        return n
+    except Exception as e:
+        print(f"[fetch] {dataset_id} FAILED: {e}")
+        return 0
+
+
+def cmd_fetch(args):
+    conn = db.get_conn()
+    db.init_schema(conn)
+    try:
+        if args.dataset:
+            _fetch_one(conn, args.dataset)
+        elif args.provider:
+            # fetch directly from catalog (works for any provider; _fetch_one
+            # dispatches by provider). Incremental: skip datasets already ok.
+            if args.force:
+                ids = [r[0] for r in conn.execute(
+                    "SELECT id FROM dataset_catalog WHERE provider=? ORDER BY id",
+                    (args.provider,))]
+            else:
+                ids = [r[0] for r in conn.execute(
+                    "SELECT id FROM dataset_catalog WHERE provider=? "
+                    "AND (fetch_status IS NULL OR fetch_status!='ok') ORDER BY id",
+                    (args.provider,))]
+            if not ids:
+                print(f"[fetch] no pending for provider={args.provider} "
+                      "(all ok; use --force to re-fetch)")
+            for did in ids:
+                _fetch_one(conn, did)
+        elif args.all:
+            ids = [r[0] for r in conn.execute(
+                "SELECT dataset_id FROM dataset_resources")]
+            for did in ids:
+                try:
+                    _fetch_one(conn, did)
+                except Exception as e:
+                    print(f"[fetch] {did} FAILED: {e}")
+        else:
+            print("specify --dataset / --provider / --all")
+    finally:
+        conn.close()
+
+
+def cmd_verify(args):
+    conn = db.get_conn()
+    print("[verify] catalog rows:",
+          conn.execute("SELECT COUNT(*) FROM dataset_catalog").fetchone()[0])
+    print("[verify] raw_data rows:",
+          conn.execute("SELECT COUNT(*) FROM raw_data").fetchone()[0])
+    print("[verify] status distribution:")
+    for status, n in conn.execute(
+            "SELECT fetch_status, COUNT(*) FROM dataset_catalog "
+            "GROUP BY fetch_status"):
+        print(f"   {status}: {n}")
+    print("[verify] mapped datasets:",
+          conn.execute("SELECT COUNT(*) FROM dataset_resources").fetchone()[0])
+    conn.close()
+
+
+def main():
+    p = argparse.ArgumentParser(prog="datagov_hk")
+    sub = p.add_subparsers(dest="cmd", required=True)
+    sc = sub.add_parser("scan")
+    sc.add_argument("--keyword", default=None)
+    sc.add_argument("--category", default=None)
+    sub.add_parser("map")
+    f = sub.add_parser("fetch")
+    f.add_argument("--dataset")
+    f.add_argument("--provider")
+    f.add_argument("--all", action="store_true")
+    f.add_argument("--force", action="store_true",
+                   help="re-fetch even datasets already ok (otherwise skip)")
+    sub.add_parser("verify")
+    args = p.parse_args()
+    {"scan": cmd_scan, "map": cmd_map, "fetch": cmd_fetch,
+     "verify": cmd_verify}[args.cmd](args)
+
+
+if __name__ == "__main__":
+    main()

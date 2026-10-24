@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""build_insf_hold_pct_panel.py — [09-24 G32004] ifhp panel canonical builder.
+
+insf_hold_pct (機構持股% 51股) 原本 _a2h_0918_ins_build_panel.py 一次性 build
+(backtests/ 側絕對路徑, 冇任何排程) → max-date 停喺 09-18 (G32004 落後 6 日)。
+本 builder = 同邏輯 canonical 版 (scripts/ 側相對路徑) + 同步出 new_sources
+長表 CSV (_load_new_source 格式), COLLECTORS 接線日更:
+
+  PIT 口徑 (照 09-18 版): Futu 冇 NOTICE_DATE — period_end + 92 日做生效日
+  (HK 主板中期 2 個月/年報 3 個月內公佈, +92 保守下界保證無 lookahead);
+  未完成期 (period_end > 今日) 剔除; ffill 限 70 交易日 (≈一季)。
+
+  誠實新鮮度: 源頭 insf_institutional_raw.json 過期未重爬嗰陣, ffill 帽爆
+  自然 NaN、日曆照伸到今日 — C5 紅係源頭真陳舊 (唔係廣播假新鮮)。
+  季度源重爬 (Futu OpenD get_shareholders_institutional) 歸 agent2-H 後續單;
+  Q2-2026 生效日 09-30 (06-30 +92) 起先入到 panel。
+
+輸出:
+  data/factor_store/insf_hold_pct.parquet    (wide date × HK.XXXXX)
+  data/new_sources/insf_hold_pct_panel.csv   (date,code,value 長表)
+"""
+from __future__ import annotations
+
+import json
+import sys
+from datetime import date, timedelta
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "insf_institutional_raw.json"
+OUT_PARQ = BASE / "data" / "factor_store" / "insf_hold_pct.parquet"
+OUT_CSV = BASE / "data" / "new_sources" / "insf_hold_pct_panel.csv"
+PIT_LAG_DAYS = 92
+FFILL_LIMIT = 70      # 交易日 ≈ 一季
+START = "2019-01-01"  # 熱身基期 (shift(126) 熱身用, 照 09-18 版)
+
+QEND = {"Q1": (3, 31), "Q2": (6, 30), "Q3": (9, 30), "Q4": (12, 31)}
+
+
+def parse_period(pt):
+    # "2026/Q3" → 期末日
+    try:
+        y, q = str(pt).split("/Q")
+        m, d = QEND["Q" + str(int(q))]
+        return pd.Timestamp(int(y), m, d)
+    except Exception:
+        return None
+
+
+def build_panel(raw: dict, today: pd.Timestamp,
+                start: str = START) -> pd.DataFrame:
+    """(stocks → rows) raw JSON → wide panel (date × code). 純函數俾測試."""
+    cal = pd.bdate_range(start, today)   # 誠實: 日曆到今日, 唌 +1 偽造未來行
+    cols = {}
+    for code, ent in raw.get("stocks", {}).items():
+        recs = []
+        for r in (ent.get("rows") or []):
+            pe = parse_period(r.get("period_text"))
+            hp = r.get("holder_pct")
+            if pe is None or hp is None:
+                continue
+            if pe > today:                      # 未完成期 (e.g. Q3 未結)
+                continue
+            recs.append((pe + timedelta(days=PIT_LAG_DAYS), float(hp)))
+        if not recs:
+            continue
+        df = pd.DataFrame(recs, columns=["eff", "val"]).sort_values("eff")
+        df = df.drop_duplicates(subset="eff", keep="last")   # 同期多次取最新
+        s = pd.Series(df["val"].values, index=df["eff"])
+        s = s[~s.index.duplicated(keep="last")]
+        cols[code] = (s.reindex(cal.union(s.index))
+                      .ffill(limit=FFILL_LIMIT).reindex(cal))
+    panel = pd.DataFrame(cols)
+    panel.index.name = "date"
+    return panel
+
+
+def main() -> int:
+    today = pd.Timestamp(date.today())
+    raw = json.loads(RAW.read_text(encoding="utf-8"))
+    panel = build_panel(raw, today)
+
+    OUT_PARQ.parent.mkdir(parents=True, exist_ok=True)
+    panel.to_parquet(OUT_PARQ)
+    stacked = panel.stack().rename("value").reset_index()
+    stacked.columns = ["date", "code", "value"]
+    stacked["date"] = stacked["date"].dt.strftime("%Y-%m-%d")
+    stacked.to_csv(OUT_CSV, index=False)
+
+    cov = panel.notna().mean(axis=1)
+    tail = cov.iloc[-90:]
+    print(f"insf_hold_pct: {panel.shape[0]}日 × {panel.shape[1]}股 "
+          f"({panel.index.min().date()} → {panel.index.max().date()}) "
+          f"cells{int(panel.notna().sum().sum())}; 近90日覆蓋 "
+          f"p50={tail.quantile(0.5):.0%} p10={tail.quantile(0.1):.0%}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

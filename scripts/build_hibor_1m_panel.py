@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""build_hibor_1m_panel.py — hibor_1m panel: HKMA 貼現窗 + HKAB 雙源拼接 1M HIBOR。
+
+[09-30 G62277 重建] 原 builder 09-30 worktree 清場事故穿過 junction 被剷
+(untracked 檔零 git 史救不回 — 09-27 bbex / hsi_fut_netpos 同案第三宗)。
+呢份由 factor_store 黃金樣板反推重建 (data/factor_store/hibor_1m.parquet,
+6842 行 x 1 欄), 逐格 maxdiff 0.0 先落筆。
+
+逆向出嚟嘅配方 (黃金樣板實證):
+  a = discount_window.csv [hibor_fixing_1m] dropna   (factor_updater HKMA 源,
+      1999-01-11 起 6821 個非 NaN — 1998 尾 hibor_fixing_1m 全 NaN 唔出欄)
+  b = hibor.csv [ir_1m] dropna                       (hibor_update HKAB 源,
+      2026-08-24 起 27 個非 NaN — HKAB 史前 tenor 欄全 NaN 同樣唔出欄)
+  重疊守衛: 交集日期 |a-b| > 0.05pp 拒併 (實測 2026-08-24..08-31 6 日
+      重疊, 兩源 5 位小數全同, max diff 0.0pp — 兩源同底 fixing, 守衛長期綠)
+  拼接: index = a.index ∪ b.index (union; 實證 6821+27-6=6842 全等黃金),
+      HKMA 優先 a.combine_first(b) — 09-28 接線註解語義「api.hkma 502 陣死時
+      靠 HKAB 活源補尾」。注意: 現存重疊位兩源逐字相同, 優先序由樣板本身
+      分辨唔到 (b.combine_first(a) 同 maxdiff 0.0); HKMA 優先係照接線語義揀。
+  輸出: 單欄 hibor_1m (float64, 百分比量級), index name='date' datetime64,
+      排序升冪, 0 NaN (union 只收非 NaN 日期, 冇洞)。
+
+驗證 (2026-09-30 G62277): 對黃金樣板 6842 行 index 全等 + maxdiff 0.0 +
+NaN 位置 (0/0) 對齊; 兩次連跑 byte 級零差 (冪等)。
+
+輸入: data/factors/discount_window.csv + data/factors/hibor.csv (utf-8;
+  讀檔自動 fallback utf-8-sig / cp950)
+輸出: data/factor_store/hibor_1m.parquet (--out 可改指 tmp; 原子寫
+  tmp→os.replace, 與 build_bbex_panel.py 同款)
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+GUARD_PP = 0.05  # 重疊窗一致性守衛 (百分點; 09-28 接線註解原文值)
+
+
+def _read_csv_any(path: Path) -> pd.DataFrame | None:
+    for enc in ("utf-8", "utf-8-sig", "cp950"):
+        try:
+            return pd.read_csv(path, encoding=enc)
+        except UnicodeDecodeError:
+            continue
+        except Exception as e:  # 結構爛唔關 encoding 事, 即爆
+            print(f"[hibor1m-build] 讀 {path.name} 失敗 ({enc}): {e}", flush=True)
+            return None
+    print(f"[hibor1m-build] {path.name} utf-8/utf-8-sig/cp950 全解唔開", flush=True)
+    return None
+
+
+def _series_1m(csv: pd.DataFrame | None, col: str, src: str, path: Path,
+               optional: bool = False) -> pd.Series | None:
+    if csv is None:
+        if optional:  # 活源死 → 退淨主幹照出 (09-28 agent2-H 契約: 主幹 99.7% 完整)
+            print(f"[hibor1m-build] {src} {path.name} 讀唔成 — 淨用主幹 (尾段停格)",
+                  flush=True)
+            return None
+        print(f"[hibor1m-build] {src} {path.name} 讀唔成 — 唔寫輸出", flush=True)
+        raise SystemExit(1)
+    if col not in csv.columns or "date" not in csv.columns:
+        if optional:
+            print(f"[hibor1m-build] {path.name} 缺欄 (要 date+{col}) — 淨用主幹",
+                  flush=True)
+            return None
+        raise SystemExit(f"[hibor1m-build] {path.name} 缺欄 (要 date+{col}) — 唔寫輸出")
+    s = pd.Series(
+        pd.to_numeric(csv[col], errors="coerce").to_numpy(),
+        index=pd.to_datetime(csv["date"], errors="coerce"),
+    ).dropna()
+    s = s[s.index.notna()]  # 壞 date 行 (NaT index) 跳過 (09-28 契約)
+    n_dupe = int(s.index.duplicated().sum())
+    if n_dupe:
+        print(f"[hibor1m-build] WARN {src} {n_dupe} 個重複日期 keep-last", flush=True)
+        s = s[~s.index.duplicated(keep="last")]
+    s = s.sort_index()
+    print(f"[hibor1m-build] {src} {path.name} [{col}]: {len(s)} 個非 NaN "
+          f"{s.index.min().date()} → {s.index.max().date()}", flush=True)
+    return s
+
+
+def build_panel(data_root: Path) -> pd.DataFrame:
+    dw_csv = data_root / "factors" / "discount_window.csv"
+    hb_csv = data_root / "factors" / "hibor.csv"
+    if not dw_csv.exists():  # 主源缺 → exit 1; 活源 (hb) 缺由 optional 路退化
+        print(f"[hibor1m-build] 源唔在場: {dw_csv} — 唔寫輸出", flush=True)
+        raise SystemExit(1)
+    a = _series_1m(_read_csv_any(dw_csv), "hibor_fixing_1m", "HKMA", dw_csv)   # 主源
+    b = _series_1m(_read_csv_any(hb_csv), "ir_1m", "HKAB", hb_csv,
+                   optional=True)                                              # 補尾活源
+
+    if b is None or b.empty:
+        # 活源死: 淨主幹照出 (exit 0) — 舊 test_build_hibor_1m_panel 規格
+        b = pd.Series(dtype=float)
+    ov = a.index.intersection(b.index)
+    if len(ov) == 0:
+        print("[hibor1m-build] WARN 兩源零重疊 — 守衛冇得驗, 照拼 (風險自負)",
+              flush=True)
+    else:
+        dmax = float((a.loc[ov] - b.loc[ov]).abs().max())
+        print(f"[hibor1m-build] 重疊 {len(ov)} 日 {ov.min().date()}→{ov.max().date()} "
+              f"max diff {dmax:.5f}pp (守衛 {GUARD_PP}pp)", flush=True)
+        if dmax > GUARD_PP:
+            # exit code 語義 (09-28 規格): 0=ok / 1=缺源 / 2=兩源打交拒併
+            print(f"[hibor1m-build] 重疊窗一致性 {dmax:.5f}pp > {GUARD_PP}pp 拒併 — "
+                  f"兩源打交, 唔寫輸出 (查 factor_updater/hibor_update 邊個壞)",
+                  flush=True)
+            raise SystemExit(2)
+
+    idx = a.index.union(b.index)
+    panel = (a.reindex(idx).combine_first(b.reindex(idx))
+             .rename("hibor_1m").to_frame())
+    panel.index.name = "date"
+    panel = panel.sort_index()
+    print(f"[hibor1m-build] panel {len(panel)} 行 {panel.index.min().date()} → "
+          f"{panel.index.max().date()} (HKMA {len(a)} + HKAB 補 "
+          f"{len(idx.difference(a.index))}, NaN {int(panel['hibor_1m'].isna().sum())})",
+          flush=True)
+    return panel
+
+
+def _atomic_parquet(df: pd.DataFrame, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    df.to_parquet(tmp)
+    os.replace(tmp, path)
+
+
+def main(argv: list[str] | None = None) -> int:
+    here = Path(__file__).resolve().parent.parent
+    ap = argparse.ArgumentParser(description="HKMA+HKAB 雙源 1M HIBOR panel builder")
+    ap.add_argument("--data-root", type=Path, default=here / "data",
+                    help="data 根 (預設 HERE-based; 生產 schtask 裸跑用)")
+    ap.add_argument("--out", type=Path, default=None,
+                    help="輸出 parquet (預設 <data-root>/factor_store/hibor_1m.parquet)")
+    args = ap.parse_args(argv)
+    out = args.out if args.out is not None else (
+        args.data_root / "factor_store" / "hibor_1m.parquet")
+
+    panel = build_panel(args.data_root)
+    _atomic_parquet(panel, out)
+    print(f"[hibor1m-build] 寫 {out} ({len(panel)} 行)", flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

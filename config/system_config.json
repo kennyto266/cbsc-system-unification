@@ -1,0 +1,42 @@
+{
+  "system": {
+    "version": "1.0.0",
+    "debug_mode": false,
+    "log_level": "INFO",
+    "max_cache_size": 100,
+    "auto_save_interval": 300
+  },
+  "data_sources": {
+    "stock_api": {
+      "base_url": "http://18.180.162.113:9191",
+      "timeout": 30,
+      "max_retries": 3,
+      "endpoint": "/inst/getInst"
+    },
+    "government_data": {
+      "hibor_source": "simplified_system/src/api/government_data.py",
+      "hkma_base_url": "https://api.hkma.gov.hk",
+      "cache_duration": 300
+    }
+  },
+  "performance": {
+    "enable_gpu": true,
+    "gpu_memory_limit": "8GB",
+    "parallel_cores": "auto",
+    "chunk_size": 1000
+  },
+  "backtesting": {
+    "default_duration": 252,
+    "commission": 0.001,
+    "slippage": 0.0001,
+    "risk_free_rate": 0.03
+  },
+  "ui": {
+    "theme": "dark",
+    "language": "zh-CN",
+    "chart_type": "ascii",
+    "table_format": "grid",
+    "decimal_places": 2,
+    "date_format": "%Y-%m-%d"
+  }
+}

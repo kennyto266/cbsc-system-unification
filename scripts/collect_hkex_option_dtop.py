@@ -1,0 +1,88 @@
+"""collect_hkex_option_dtop.py — opcr_option_pressure_skew collector.
+
+HKEX DCASS DTOP (Daily Trading Activity & Open Positions) stock options summary:
+  https://www.hkex.com.hk/eng/stat/dmstat/oi/DTOP_O_YYYYMMDD.zip  (交易日先有, 非交易日 404)
+Zip 內 yyyymmdd_1_dtop_o_seoch_summary.rpt 有 per-underlying CALL/PUT GROSS OI(=volume? 見下)、NET OI、T/O、DEAL。
+
+注意語義 (對照 readme): GROSS/NET 係 Open Interest, T/O 係 turnover(合約數), DEAL 係成交宗數。
+本 collector 抽 GROSS(call/put) 做 OI, 並另存 T/O (成交量代理)。
+PCR 主指標用 put_gross/call_gross (OI 版) + put_to/call_to (成交版對照)。
+
+Underlying HKATS code -> SEHK code 映射由 HKEX 官方 xlsx (stock option classes) 而嚟。
+Output: data/new_sources/hkex_option_dtop_raw.csv
+Checkpoint: hkex_option_dtop_ckpt.json
+"""
+import csv
+import io
+import json
+import re
+import time
+import urllib.request
+import zipfile
+from datetime import date, timedelta
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+OUT_DIR = BASE / "data" / "new_sources"
+RAW = OUT_DIR / "hkex_option_dtop_raw.csv"
+CKPT = OUT_DIR / "hkex_option_dtop_ckpt.json"
+
+START = date(2022, 8, 23)
+HDRS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126"}
+ROW_RE = re.compile(r"^\s*([A-Z0-9]{2,4}) - (CALL|PUT) OPTIONS\s+([\d,]+)\s+([\d,]+)\s+(-?[\d,]+)\s+([\d,]+)\s+([\d,]+)")
+
+
+def fetch_zip(d):
+    url = f"https://www.hkex.com.hk/eng/stat/dmstat/oi/DTOP_O_{d:%Y%m%d}.zip"
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=HDRS), timeout=30) as r:
+            return r.read()
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None
+        raise
+
+
+def parse_summary(blob):
+    z = zipfile.ZipFile(io.BytesIO(blob))
+    name = [n for n in z.namelist() if "summary" in n and "seoch" in n]
+    if not name:
+        return []
+    rows = []
+    for line in z.read(name[0]).decode("ascii", "replace").splitlines():
+        m = ROW_RE.match(line)
+        if m:
+            cls, cp, gross, net, netchg, to, deal = m.groups()
+            rows.append([cls, cp, gross.replace(",", ""), net.replace(",", ""),
+                         netchg.replace(",", ""), to.replace(",", ""), deal.replace(",", "")])
+    return rows
+
+
+def main():
+    ckpt = json.loads(CKPT.read_text()) if CKPT.exists() else {"last_date": None, "done_dates": 0}
+    cur = date.fromisoformat(ckpt["last_date"]) + timedelta(days=1) if ckpt["last_date"] else START
+    end = date.today()
+    exists = RAW.exists()
+    f = open(RAW, "a", newline="", encoding="utf-8")
+    w = csv.writer(f)
+    if not exists:
+        w.writerow(["date", "hkats", "cp", "oi_gross", "oi_net", "oi_net_chg", "turnover", "deals"])
+    n_dates = 0
+    while cur <= end:
+        blob = fetch_zip(cur)
+        if blob is not None:
+            for r in parse_summary(blob):
+                w.writerow([cur.isoformat()] + r)
+            f.flush()
+            n_dates += 1
+            ckpt["last_date"] = cur.isoformat()
+            ckpt["done_dates"] += 1
+            CKPT.write_text(json.dumps(ckpt))
+        cur += timedelta(days=1)
+        time.sleep(0.3)
+    f.close()
+    print("new trading days:", n_dates, "last:", ckpt["last_date"])
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+"""
+日內 5min K線收集器 — yfinance (免費, 60日歷史) + 富途 fallback (更長歷史)
+
+[09-24 G27335 casn 修復] 預設行為 = 增量 merge: 淨加新完整日, 舊值 (Futu 8年史)
+一律保留 — 舊版 to_parquet 全量覆蓋, 一跑就剷走成個 parquet, 係地雷。
+未收市 partial 日剔除 (最後 bar 未到 UTC 08:05 競價段而且係今日);
+無 --stocks 時刷新全部現有 parquet (日更接線後嘅自然語義)。
+
+用法:
+    python scripts/collect_intraday.py                  # 增量 merge 全部現有
+    python scripts/collect_intraday.py --stocks HK.00005,HK.00700
+    python scripts/collect_intraday.py --overwrite      # 全量覆蓋 (危險)
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, ".")
+
+import argparse
+import time
+from datetime import date
+from pathlib import Path
+
+import pandas as pd
+
+ROOT = Path(__file__).parent.parent
+INTRADAY_DIR = ROOT / "data" / "intraday_5min"
+INTRADAY_DIR.mkdir(parents=True, exist_ok=True)
+
+# 10 隻熱門 (有足夠流動性做日內)
+HOT_STOCKS = [
+    "HK.00005", "HK.00700", "HK.09988", "HK.03690", "HK.01211",
+    "HK.00016", "HK.00001", "HK.00388", "HK.01093", "HK.09992",
+]
+
+
+def to_yf_code(code):
+    """HK.00005 -> 0005.HK"""
+    n = int(code.replace("HK.", ""))
+    return f"{n:04d}.HK"
+
+
+def fetch_yfin_intraday(code, period="60d", interval="5m"):
+    """yfinance 拉日內 (免費, 最近 60 日 5min)."""
+    import yfinance as yf
+    yc = to_yf_code(code)
+    try:
+        df = yf.download(yc, period=period, interval=interval, auto_adjust=True,
+                         multi_level_index=False, progress=False)
+        if df is None or len(df) == 0:
+            return None
+        df.columns = [c.lower() for c in df.columns]
+        df = df[["open", "high", "low", "close", "volume"]].astype(float)
+        # 轉無時區 (方便對齊)
+        if df.index.tz is not None:
+            df.index = df.index.tz_convert(None)
+        df.index.name = "datetime"
+        return df.reset_index()
+    except Exception as e:
+        print(f"    yfinance ERR: {str(e)[:60]}")
+        return None
+
+
+AUCTION_BAR = "08:05"  # UTC 08:05 = HKT 16:05 — 完整交易日最後一條 bar (收市競價落呢度)
+
+
+def complete_sessions(df, today=None):
+    """剔除未收市嘅 in-progress 日 — 最後 bar 未到競價段而且係今日先剔。
+    過咗嘅日子照收 (稀疏完整日/半日市交下游 builder 語義處理: 半日冇 CAS
+    段自然 skip 嗰日)。"""
+    today = today or date.today()
+    days = df["datetime"].dt.date
+    last_bar = df.groupby(days)["datetime"].max().dt.strftime("%H:%M")
+    keep = [d for d, t in last_bar.items() if t >= AUCTION_BAR or d < today]
+    return df[days.isin(keep)]
+
+
+def existing_codes():
+    """現有 parquet 推導股票清單 — 日更接線後刷新全部現有 (唔止 HOT_STOCKS)."""
+    return sorted(p.stem.rsplit("_", 1)[0].replace("HK_", "HK.")
+                  for p in INTRADAY_DIR.glob("HK_*_5m.parquet"))
+
+
+def merge_stock(code, interval="5m", period="60d", overwrite=False, verbose=True):
+    """拉一隻 + 增量 merge 落現有 parquet (dedupe keep old, 舊值唔俾覆蓋)。
+    回 'created' / 'merged:<N新bars>' / 'no-data'."""
+    df = fetch_yfin_intraday(code, period=period, interval=interval)
+    if df is None or len(df) == 0:
+        if verbose:
+            print(f"  ❌ {code}: 拎唔到")
+        return "no-data"
+    df = complete_sessions(df)
+    if df.empty:
+        if verbose:
+            print(f"  ⏭️ {code}: 淨係未收市 partial 日, 唔落盤")
+        return "no-data"
+    fname = f"{code.replace('.', '_')}_{interval}.parquet"
+    out_path = INTRADAY_DIR / fname
+    if out_path.exists() and not overwrite:
+        old = pd.read_parquet(out_path)
+        new = df[~df["datetime"].isin(old["datetime"])]
+        merged = pd.concat([old, new]).sort_values("datetime").reset_index(drop=True)
+        merged.to_parquet(out_path, index=False, engine="pyarrow")
+        if verbose:
+            print(f"  ✅ {code}: +{len(new)} bars (merged, 舊 {len(old)} 保留) "
+                  f"[{merged['datetime'].min()} ~ {merged['datetime'].max()}]")
+        return f"merged:{len(new)}"
+    df = df.sort_values("datetime").reset_index(drop=True)
+    df.to_parquet(out_path, index=False, engine="pyarrow")
+    if verbose:
+        n_days = df["datetime"].dt.date.nunique()
+        print(f"  ✅ {code}: {len(df)} bars ({interval}), {n_days} 日 (created) "
+              f"[{df['datetime'].min()} ~ {df['datetime'].max()}]")
+    return "created"
+
+
+def collect_stock(code, interval="5m", period="60d", verbose=True):
+    """舊介面 — 內部行 merge (舊版全量覆蓋一跑剷走 8 年史, 09-24 G27335 拆雷)。"""
+    return 0 if merge_stock(code, interval=interval, period=period,
+                            verbose=verbose) == "no-data" else 1
+
+
+def main():
+    parser = argparse.ArgumentParser(description="收集日內 5min K線")
+    parser.add_argument("--freq", default="5m", choices=["5m", "15m", "30m", "60m"])
+    parser.add_argument("--period", default="60d", help="yfinance period (60d=5min max)")
+    parser.add_argument("--stocks", help="指定 (逗號分隔)")
+    parser.add_argument("--overwrite", action="store_true",
+                        help="全量覆蓋現有 parquet (危險: 剷走舊史; 預設增量 merge)")
+    args = parser.parse_args()
+
+    stocks = (args.stocks.split(",") if args.stocks
+              else existing_codes() or HOT_STOCKS)
+
+    print("=" * 60)
+    print(f"📥 收集日內 {args.freq} K線 ({len(stocks)} 隻, 增量 merge)")
+    print(f"   期間: 最近 {args.period}")
+    print("=" * 60)
+
+    ok, total = 0, 0
+    for code in stocks:
+        total += 1
+        if merge_stock(code, interval=args.freq, period=args.period,
+                       overwrite=args.overwrite) != "no-data":
+            ok += 1
+        time.sleep(0.5)
+
+    print(f"\n{'='*60}")
+    print(f"✅ 完成: {ok}/{total} 隻, 輸出: {INTRADAY_DIR}/")
+    print(f"{'='*60}")
+
+
+if __name__ == "__main__":
+    main()

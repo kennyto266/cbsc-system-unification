@@ -1,0 +1,39 @@
+# -*- coding: utf-8 -*-
+"""build_tp_store.py — analyst_tp_em_panel.csv (wide) → factor_store/target_price.parquet (09-15 G50843).
+
+build_analyst_tp_panel 只交 long/raw; wide parquet 嗰步以前係任務 inline。
+呢度常設化: 讀 NS/analyst_tp_em_panel.csv (wide, EM 目標價, 日更),
+merge 入現有 parquet (union 日期軸, 新值覆蓋舊值)。
+
+09-15 T3 DRY: dedup/merge 邏輯抽咗去 panel_store_merge.merge_wide (同
+build_ah_premium_store 共用), 呢度只留 讀檔/寫檔。
+"""
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling helper
+from panel_store_merge import merge_wide  # noqa: E402
+
+BASE = Path(__file__).resolve().parent.parent
+SRC = BASE / "data" / "new_sources" / "analyst_tp_em_panel.csv"
+DST = BASE / "data" / "factor_store" / "target_price.parquet"
+
+
+def main() -> int:
+    fresh = pd.read_csv(SRC, index_col=0)
+    fresh.index = pd.to_datetime(fresh.index)
+    old = None
+    if DST.exists():
+        old = pd.read_parquet(DST)
+        old.index = pd.to_datetime(old.index)
+    merged = merge_wide(old, fresh)
+    merged.index.name = "date"
+    merged.to_parquet(DST)
+    print(f"target_price: {merged.shape} → {merged.index.max().date()}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

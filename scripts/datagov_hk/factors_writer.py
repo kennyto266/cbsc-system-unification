@@ -1,0 +1,23 @@
+"""raw_data (long) → factors/<slug>.csv (wide),對接現有 vbt 工作流。"""
+from pathlib import Path
+
+import pandas as pd
+
+from . import db
+
+FACTORS_DIR = Path(db.DATA_DIR) / "factors"
+FACTORS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def write_factor_csv(conn, dataset_id: str, slug: str):
+    df = pd.read_sql(
+        "SELECT obs_date AS date, field, value FROM raw_data "
+        "WHERE dataset_id=? ORDER BY obs_date",
+        conn, params=(dataset_id,))
+    if df.empty:
+        return None
+    wide = df.pivot(index="date", columns="field", values="value").reset_index()
+    wide.columns.name = None
+    out = FACTORS_DIR / f"{slug}.csv"
+    wide.to_csv(out, index=False)
+    return out

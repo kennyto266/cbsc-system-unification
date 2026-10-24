@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+"""collect_ah_premium_full.py — AH 兩地上市溢價 panel, 全 202 隻 AH 股.
+
+名單: data/new_sources/ah_list_em.json (東財 push2 clist fs=b:MK0101, f191=A代碼 f192=市場 1=SH 0=SZ)
+A 股收市 (CNY): 騰訊 ifzq 日K (不復權)
+H 股收市 (HKD): 騰訊 ifzq 日K (hk code)
+匯率: frankfurter.dev CNY->HKD
+輸出:
+  data/new_sources/ah_premium_full_raw.csv  — date, code_h, code_a, a_close_cny, fx_cny_hkd, a_close_hkd, h_close_hkd, ah_premium
+  data/new_sources/ah_premium_full_panel.csv — date × code_h wide panel (ah_premium)
+Resume-safe: 每股 checkpoint.
+"""
+import json, time, urllib.request
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+NS = BASE / "data" / "new_sources"
+RAW = NS / "ah_premium_full_raw.csv"
+PANEL = NS / "ah_premium_full_panel.csv"
+CKPT = NS / "ah_premium_full_ckpt.json"
+LIST = NS / "ah_list_em.json"
+
+FROM, TO = "2021-01-01", "2026-08-23"
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+
+
+def get_json(url, tries=5):
+    for i in range(tries):
+        try:
+            req = urllib.request.Request(url, headers=UA)
+            return json.loads(urllib.request.urlopen(req, timeout=30).read())
+        except Exception as e:
+            print("  retry", i + 1, url[:60], repr(e)[:80], flush=True)
+            if i == tries - 1:
+                return None
+            time.sleep(4 + 3 * i)
+
+
+def tk_kline(sym):
+    """騰訊 ifzq 日K close: sym e.g. sh600028 / hk00038 -> {date: close}"""
+    url = (f"https://web.ifzq.gtimg.cn/appstock/app/kline/kline"
+           f"?param={sym},day,{FROM},{TO},2000,")
+    j = get_json(url)
+    if not j:
+        return {}
+    data = (j.get("data") or {}).get(sym, {})
+    out = {}
+    for k in data.get("day") or data.get("qfqday") or []:
+        try:
+            out[k[0]] = float(k[2])
+        except (ValueError, IndexError):
+            pass
+    return out
+
+
+def fx_series():
+    import pandas as pd
+    url = f"https://api.frankfurter.dev/v1/{FROM}..{TO}?base=CNY&symbols=HKD"
+    j = get_json(url)
+    s = pd.Series({d: r["HKD"] for d, r in (j or {}).get("rates", {}).items() if "HKD" in r})
+    s.index = pd.to_datetime(s.index)
+    return s.sort_index()
+
+
+def main():
+    import pandas as pd
+    lst = json.loads(LIST.read_text())
+    # entries are flat dicts
+    AH = {e["f12"].zfill(5): (e["f191"], e["f192"]) for e in lst if e.get("f191") not in (None, "", "-")}
+    print(f"universe: {len(AH)} AH stocks", flush=True)
+
+    fx = fx_series()
+    print(f"fx days: {len(fx)} {fx.index[0].date()} ~ {fx.index[-1].date()}", flush=True)
+
+    done = set()
+    if CKPT.exists():
+        done = set(json.loads(CKPT.read_text()).get("done", []))
+    if RAW.exists():
+        old = pd.read_csv(RAW, dtype={"code_h": str, "code_a": str})
+    else:
+        old = pd.DataFrame()
+
+    buf = []
+    todo = [c for c in AH if c not in done]
+    for i, hcode in enumerate(todo):
+        acode, mkt = AH[hcode]
+        asy = ("sh" if mkt == 1 else "sz") + acode
+        hsy = "hk" + hcode
+        a = tk_kline(asy)
+        h = tk_kline(hsy)
+        common = sorted(set(a) & set(h))
+        n = 0
+        for d in common:
+            f = fx.get(pd.Timestamp(d))
+            if pd.isna(f) or not a[d] or not h[d]:
+                continue
+            a_hkd = a[d] * f
+            if h[d] <= 0:
+                continue
+            buf.append({"date": d, "code_h": hcode, "code_a": acode,
+                        "a_close_cny": a[d], "fx_cny_hkd": round(float(f), 5),
+                        "a_close_hkd": round(a_hkd, 4), "h_close_hkd": h[d],
+                        "ah_premium": round(a_hkd / h[d] - 1, 6)})
+            n += 1
+        done.add(hcode)
+        if (i + 1) % 10 == 0 or i + 1 == len(todo):
+            if buf:
+                new = pd.DataFrame(buf)
+                merged = pd.concat([old, new], ignore_index=True)
+                merged.to_csv(RAW, index=False)
+                old = merged
+                buf = []
+            CKPT.write_text(json.dumps({"done": sorted(done)}))
+        print(f"[{i+1}/{len(todo)}] {hcode}/{acode}: {n} rows", flush=True)
+        time.sleep(0.6)
+
+    if buf:
+        merged = pd.concat([old, pd.DataFrame(buf)], ignore_index=True)
+        merged.to_csv(RAW, index=False)
+
+    df = pd.read_csv(RAW, dtype={"code_h": str, "code_a": str})
+    p = df.pivot_table(index="date", columns="code_h", values="ah_premium").sort_index()
+    p.index.name = "date"
+    p.to_csv(PANEL)
+    print(f"DONE raw={len(df)} stocks={df.code_h.nunique()} days={df.date.nunique()} "
+          f"panel={p.shape} range={df.date.min()}->{df.date.max()}", flush=True)
+
+
+if __name__ == "__main__":
+    main()

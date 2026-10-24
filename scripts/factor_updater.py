@@ -1,0 +1,535 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""factor_updater.py — 統一 factor 數據更新 (yfinance + HKMA API).
+
+更新 7 個 DataGuard 監控嘅 factor:
+  yfinance: gold, copper, mstr_btc, a_shares
+  HKMA (主站 MSB mirror, api WAF 全 405): discount_window, er-eeri, hkd-fer
+
+用法:
+  python factor_updater.py              # 更新全部
+  python factor_updater.py gold copper  # 指定更新
+"""
+import warnings
+warnings.filterwarnings("ignore")
+import json
+import sys
+import time
+import requests
+import pandas as pd
+import numpy as np
+from pathlib import Path
+from datetime import datetime, timedelta
+
+FACT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors")
+SC_DIR = FACT_DIR.parent / "stock_connect"
+
+HKMA_BASE = "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin"
+
+
+# ============================================================
+# yfinance factors (cross-asset)
+# ============================================================
+YF_FACTORS = {
+    "gold":      {"ticker": "GC=F",     "file": "gold.csv"},
+    "copper":    {"ticker": "HG=F",     "file": "copper.csv"},
+    "mstr_btc":  {"ticker": "MSTR",     "file": "mstr_btc.csv"},
+    "a_shares":  {"ticker": "000001.SS", "file": "a_shares.csv"},
+    "dxy":       {"ticker": "DX-Y.NYB", "file": "dxy.csv"},
+    "vix":       {"ticker": "^VIX",     "file": "vix.csv"},
+    "sp500":     {"ticker": "^GSPC",    "file": "sp500.csv"},
+    "usdcnh":    {"ticker": "USDCNY=X", "file": "usdcnh.csv"},
+    "btcd":      {"ticker": "BTC-USD",  "file": "btcd.csv"},  # 2026-07-29 added
+}
+
+
+def update_yfinance(name, ticker, filepath):
+    """用 yfinance 更新 cross-asset factor. 格式: date,close,return."""
+    import yfinance as yf
+    try:
+        # 讀現有最後日期
+        last_date = None
+        if filepath.exists():
+            old = pd.read_csv(filepath, usecols=[0])
+            old_dates = pd.to_datetime(old.iloc[:, 0], errors="coerce").dropna()
+            if len(old_dates) > 0:
+                last_date = old_dates.max()
+
+        # fetch (由最後日期起, 冇就 5 年)
+        start = (last_date + timedelta(days=1)) if last_date else (datetime.now() - timedelta(days=365*5))
+        # guard: 如果 start 已經係未來 (即已經係最新), skip
+        if start.date() > datetime.now().date():
+            print(f"  ✅ {name}: 已係最新 ({last_date.date()})")
+            return True
+        t = yf.Ticker(ticker)
+        hist = t.history(start=start.strftime("%Y-%m-%d"))
+        if hist is None or len(hist) == 0:
+            print(f"  ⚠️ {name}: yfinance 冇新數據")
+            return False
+
+        # 格式化: date,close,return
+        new_df = pd.DataFrame({
+            "date": hist.index.strftime("%Y-%m-%d"),
+            "close": hist["Close"].values,
+            "return": hist["Close"].pct_change().values,
+        })
+        new_df["date"] = pd.to_datetime(new_df["date"])
+
+        # 合併舊數據 (去重)
+        if filepath.exists():
+            old_df = pd.read_csv(filepath)
+            old_df["date"] = pd.to_datetime(old_df["date"], errors="coerce")
+            combined = pd.concat([old_df, new_df], ignore_index=True)
+            combined = combined.drop_duplicates(subset="date", keep="last").sort_values("date")
+        else:
+            combined = new_df.sort_values("date")
+
+        # Outlier guard: 拒絕單日 >30% 變動 (yfinance 數據污染防護)
+        combined_sorted = combined.sort_values("date")
+        combined_close = pd.to_numeric(combined_sorted["close"], errors="coerce")
+        day_chg = combined_close.pct_change().abs()
+        bad_mask = day_chg > 0.30
+        if bad_mask.any():
+            n_bad = bad_mask.sum()
+            bad_dates = combined_sorted.loc[bad_mask[bad_mask].index, "date"].tolist()
+            print(f"  ⚠️ {name}: 拒絕 {n_bad} 個異常值 (>30% 單日變動), 日期: {bad_dates}")
+            combined = combined_sorted.loc[~bad_mask.values].copy()
+        else:
+            combined = combined_sorted
+
+        # 重新計算 return (確保連續性)
+        combined["close"] = pd.to_numeric(combined["close"], errors="coerce")
+        combined["return"] = combined["close"].pct_change()
+
+        combined["date"] = pd.to_datetime(combined["date"]).dt.strftime("%Y-%m-%d")
+        combined.to_csv(filepath, index=False)
+        latest = combined["date"].iloc[-1]
+        print(f"  ✅ {name}: {len(combined)} 行, 最新={latest}")
+        return True
+    except Exception as e:
+        print(f"  ❌ {name}: {e}")
+        return False
+
+
+# ============================================================
+# HKMA API factors
+# ============================================================
+HKMA_FACTORS = {
+    "discount_window": {
+        "endpoint": f"{HKMA_BASE}/monetary-operation/disc-win-liquid-adj-win-rates-daily",
+        "file": "discount_window.csv",
+        "date_col": "end_of_day",
+        # CSV 原始欄位: date,discount_window_usage,disc_win_base_rate,hibor_overnight,close
+        # API 欄位: end_of_day,disc_win_base_rate,hibor_overnight,hibor_fixing_1m,liquid_adj_win_offer_rate
+        # discount_window_usage = hibor_overnight - disc_win_base_rate (近似, 或直接用 -close)
+        "rename": {"end_of_day": "date"},
+    },
+    "er-eeri": {
+        "endpoint": f"{HKMA_BASE}/er-ir/er-eeri-daily",
+        "file": "er-eeri-daily.csv",
+        "date_col": "end_of_day",
+        "rename": {},
+    },
+    "hkd-fer": {
+        "endpoint": f"{HKMA_BASE}/er-ir/hkd-fer-daily",
+        "file": "hkd-fer-daily.csv",
+        "date_col": "end_of_day",
+        "rename": {"end_of_day": "date"},
+    },
+}
+
+
+def _hkma_get_with_retry(endpoint, params, max_retries=3, timeout=45):
+    """對 HKMA API 做 GET，針對暫時性錯誤（timeout / 5xx）做指數退避重試。
+
+    HKMA API 間中會 502 Bad Gateway 或 ReadTimeout（server 端問題），
+    等幾秒再試通常就恢復。4xx（參數錯）唔重試。
+    回傳 (response, error_msg)；成功時 error_msg=None。
+    """
+    wait = 1.0
+    for attempt in range(max_retries + 1):
+        try:
+            r = requests.get(endpoint, params=params, timeout=timeout)
+            # 5xx = server 端問題，值得重試
+            if 500 <= r.status_code < 600:
+                if attempt < max_retries:
+                    print(f"      ↻ HKMA HTTP {r.status_code}, {wait:.0f}s 後重試 ({attempt+1}/{max_retries})")
+                    time.sleep(wait)
+                    wait *= 2
+                    continue
+                return None, f"HTTP {r.status_code}（重試 {max_retries} 次後仍失敗）"
+            return r, None
+        except requests.exceptions.Timeout:
+            if attempt < max_retries:
+                print(f"      ↜ HKMA timeout, {wait:.0f}s 後重試 ({attempt+1}/{max_retries})")
+                time.sleep(wait)
+                wait *= 2
+                continue
+            return None, f"timeout（重試 {max_retries} 次後仍超時）"
+        except requests.exceptions.RequestException as e:
+            return None, str(e)
+    return None, "未知錯誤"
+
+
+def update_hkma(name, endpoint, filepath, date_col, rename):
+    """用 HKMA API 更新 factor. 增量 fetch + 合併（含重試）."""
+    try:
+        # 讀現有最後日期
+        last_date = None
+        if filepath.exists():
+            old = pd.read_csv(filepath, nrows=5)
+            dc = next((c for c in old.columns if c.lower() in ("date", "end_of_day", "datetime")), old.columns[0])
+            full = pd.read_csv(filepath, usecols=[dc])
+            dates = pd.to_datetime(full[dc], errors="coerce").dropna()
+            if len(dates) > 0:
+                last_date = dates.max()
+
+        # fetch from last_date (增量)
+        from_date = last_date.strftime("%Y-%m-%d") if last_date else "2002-01-01"
+        all_records = []
+        offset = 0
+        while True:
+            # HKMA API: choose 要配 from+till, 唔用 choose 就用 from+pagesize
+            params = {"pagesize": 1000, "offset": offset,
+                      "from": from_date}
+            r, err = _hkma_get_with_retry(endpoint, params, max_retries=3, timeout=45)
+            if err is not None:
+                print(f"  ❌ {name}: {err}")
+                return False
+            if r.status_code != 200:
+                print(f"  ❌ {name}: HTTP {r.status_code} {r.text[:80]}")
+                return False
+            result = r.json().get("result", {})
+            records = result.get("records", [])
+            if not records:
+                break
+            all_records.extend(records)
+            if len(records) < 1000:
+                break
+            offset += 1000
+            time.sleep(0.3)  # rate limit
+
+        if not all_records:
+            print(f"  ⚠️ {name}: HKMA API 冇新數據")
+            return False
+
+        new_df = pd.DataFrame(all_records)
+        # rename date column
+        if rename:
+            new_df = new_df.rename(columns=rename)
+
+        # 合併舊數據
+        if filepath.exists():
+            old_df = pd.read_csv(filepath)
+            # 對齊欄位: 只保留舊 CSV 有嘅欄位 + 新數據
+            common_cols = [c for c in old_df.columns if c in new_df.columns]
+            if common_cols:
+                combined = pd.concat([old_df, new_df[common_cols]], ignore_index=True)
+            else:
+                combined = pd.concat([old_df, new_df], ignore_index=True)
+            dc = next((c for c in combined.columns if c.lower() in ("date", "end_of_day")), combined.columns[0])
+            combined[dc] = pd.to_datetime(combined[dc], errors="coerce")
+            combined = combined.drop_duplicates(subset=dc, keep="last").sort_values(dc)
+        else:
+            dc = next((c for c in new_df.columns if c.lower() in ("date", "end_of_day")), new_df.columns[0])
+            new_df[dc] = pd.to_datetime(new_df[dc], errors="coerce")
+            combined = new_df.drop_duplicates(subset=dc).sort_values(dc)
+
+        # 格式化日期欄
+        combined[dc] = combined[dc].dt.strftime("%Y-%m-%d")
+        combined.to_csv(filepath, index=False)
+        latest = combined[dc].iloc[-1]
+        print(f"  ✅ {name}: {len(combined)} 行, 最新={latest}")
+        return True
+    except Exception as e:
+        print(f"  ❌ {name}: {e}")
+        return False
+
+
+# ============================================================
+# [G67804 10-15 → G8198 10-16 再生] HKMA 主站 MSB mirror lane
+# api.hkma.gov.hk WAF IP flag 全 405 → 三源改行 www.hkma.gov.hk 主站
+# MSB Excel mirror (hkma_msb_update.py: 月度 checkpoint + 08-31 對照硬閘
+# + DW hibor 日尾 derive);api 留每日單發復活 probe lane。
+# ============================================================
+MSB_LANE_FACTORS = ("discount_window", "er-eeri", "hkd-fer")
+_API_REVIVAL_STATE = FACT_DIR.parent / "_msb_cache" / "api_revival.json"
+_MSB_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+           "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+
+
+def _api_revival_state():
+    """讀 api 復活 probe state (壞檔 → 空 dict, 唔炸)."""
+    try:
+        with open(_API_REVIVAL_STATE, "r", encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _api_probe_done_today(name):
+    return _api_revival_state().get(name) == datetime.now().strftime("%Y-%m-%d")
+
+
+def _mark_api_probe_done(name):
+    """記錄今日已 probe (每日單發, 唔准重試 loop — IP flag 狂 probe 惡化封鎖)."""
+    d = _api_revival_state()
+    d[name] = datetime.now().strftime("%Y-%m-%d")
+    try:
+        _API_REVIVAL_STATE.parent.mkdir(parents=True, exist_ok=True)
+        with open(_API_REVIVAL_STATE, "w", encoding="utf-8") as f:
+            json.dump(d, f)
+    except OSError:
+        pass
+
+
+def _api_single_shot_probe(endpoint):
+    """api.hkma.gov.hk 單發 probe (G3029 urllib + Mozilla UA 配方; 1 attempt,
+    timeout 20, 任何 4xx/異常 → False 靜默退避)."""
+    import urllib.request
+    req = urllib.request.Request(
+        f"{endpoint}?pagesize=1&offset=0",
+        headers={"User-Agent": _MSB_UA, "Accept": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            return 200 <= resp.status < 300
+    except Exception:
+        return False
+
+
+def update_hkma_msb(name):
+    """HKMA 三源 lane: 主站 MSB mirror 行先 + api 單發復活 lane.
+
+    - MSB 行先: hkma_msb_update.update_factor(name);import 唔到
+      (submodule pin 未落地窗口) / 行唔到 → graceful ❌ False 唔炸 guard。
+    - api 復活: 每表每日 1 發 probe, 200 即 WAF 解封 → 行返 update_hkma
+      API 增量 (er-eeri/fer 即時升日度);405/timeout 靜默退避到明日。
+    """
+    ok = False
+    try:
+        sys.path.insert(0, str(Path(__file__).parent))
+        import hkma_msb_update
+        ok = hkma_msb_update.update_factor(name)
+    except Exception as e:
+        print(f"  ⚠️ {name}: hkma_msb_update lane 唔可用 ({e}) — graceful ❌")
+        ok = False
+    if name not in HKMA_FACTORS:
+        return ok
+    try:
+        cfg = HKMA_FACTORS[name]
+        if not _api_probe_done_today(name):
+            revived = _api_single_shot_probe(cfg["endpoint"])
+            _mark_api_probe_done(name)
+            if revived:
+                print(f"  🎉 {name}: api.hkma 復活 (200) — 切返 API 增量做日尾")
+                ok = update_hkma(name, cfg["endpoint"], FACT_DIR / cfg["file"],
+                                 cfg["date_col"], cfg["rename"]) or ok
+            else:
+                print(f"  💤 {name}: api.hkma 仍 blocked — 退避到明日")
+    except Exception as e:
+        print(f"  ⚠️ {name}: api 復活 lane 異常 ({e}) — 唔影響 MSB 結果")
+    return ok
+
+
+# ============================================================
+# 主函數
+# ============================================================
+def update_sc_full():
+    """增量更新南向資金 (東方財富 API)."""
+    try:
+        sys.path.insert(0, str(Path(__file__).parent))
+        from eastmoney_stock_connect import crawl_incremental
+        sc_path = SC_DIR / "sc_full.csv"
+        crawl_incremental(str(sc_path))
+        return True
+    except Exception as e:
+        print(f"  ❌ sc_full: {e}")
+        return False
+
+
+def update_hibor():
+    """更新 HIBOR (call 已有嘅 hibor_update.py)."""
+    try:
+        sys.path.insert(0, str(Path(__file__).parent))
+        import hibor_update
+        hibor_update.main()
+        return True
+    except Exception as e:
+        print(f"  ❌ hibor: {e}")
+        return False
+
+
+def update_us10y(refresh_source: bool = True):
+    """Sync us_10y_yield.csv from FRED DGS10 (same underlying series).
+
+    FRED DGS10 is the canonical source (updated by fred_updater.py).
+    us_10y_yield.csv is what data_update_guard + thesis_registry check.
+    This keeps both files in sync.
+
+    [fix 2026-09-23] refresh_source: copy 前先 update_fred(['DGS10']) 刷 canonical
+    源 — DataGuard 逐 source 補跑, DATA_SOURCES 次序 US10Y (鏡像) 排 DGS10 (源頭)
+    之前, 舊版淨係 copy2 現檔: 09-23 05:59 警報實錘 — fred_dgs10.csv 當時仲止於
+    09-17 (DGS10 條目同秒之後先刷到 09-21), 鏡像抄咗舊檔 (copy2 連 source mtime
+    一齊 preserve → us_10y_yield.csv mtime 停 09-20 17:01) → 同輪自癒變
+    「更新後仍過期 (6日前)」假失敗警報, 要等 6h 後下一輪先真自癒.
+    刷源失敗 (API 例外 / False) → fallback 抄現檔 (best-effort 舊行為).
+    """
+    try:
+        import shutil
+        src = FACT_DIR / "fred_dgs10.csv"
+        dst = FACT_DIR / "us_10y_yield.csv"
+        if refresh_source:
+            try:
+                sys.path.insert(0, str(Path(__file__).parent))
+                from fred_updater import update_fred
+                res = update_fred(["DGS10"])
+                if not res.get("DGS10"):
+                    print("  ⚠️ us_10y_yield: DGS10 刷源失敗, fallback 抄現檔")
+            except Exception as e:
+                print(f"  ⚠️ us_10y_yield: DGS10 刷源例外 ({e}), fallback 抄現檔")
+        if not src.exists():
+            print("  ❌ us_10y_yield: fred_dgs10.csv not found (run FRED updater first)")
+            return False
+        shutil.copy2(src, dst)
+        df = pd.read_csv(dst)
+        print(f"  ✅ us_10y_yield: synced from FRED DGS10, {len(df)} rows, last={df.iloc[-1, 0]}")
+        return True
+    except Exception as e:
+        print(f"  ❌ us_10y_yield: {e}")
+        return False
+
+
+def update_hsif():
+    """Update hsif_combined.csv from Futu OpenD (HSI futures main contract).
+
+    Requires Futu OpenD running on localhost:11111.
+    Falls back gracefully if OpenD not available.
+    """
+    try:
+        from futu import OpenQuoteContext
+        qctx = OpenQuoteContext(host='127.0.0.1', port=11111)
+        try:
+            # Fetch last 30 days of HSI futures main contract
+            from datetime import datetime as _dt
+            start = (_dt.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+            end = _dt.now().strftime("%Y-%m-%d")
+            ret, df, _ = qctx.request_history_kline('HK.HSImain',
+                                                     start=start, end=end, max_count=100)
+        finally:
+            qctx.close()
+        if ret != 0 or df is None or len(df) == 0:
+            print("  ⚠️ hsif: Futu returned no data (OpenD running?)")
+            return False
+        out = FACT_DIR / "hsif_combined.csv"
+        new = df[['time_key', 'close']].copy()
+        new['time_key'] = pd.to_datetime(new['time_key'])
+        new = new.set_index('time_key')
+        new.index.name = 'date'
+        if out.exists():
+            existing = pd.read_csv(out, index_col='date', parse_dates=True)
+            combined = pd.concat([existing, new[~new.index.isin(existing.index)]])
+            combined = combined[~combined.index.duplicated(keep='last')].sort_index()
+        else:
+            combined = new.sort_index()
+        combined.to_csv(out)
+        print(f"  ✅ hsif_combined: {len(combined)} rows, last={combined.index[-1].date()} close={combined.iloc[-1]['close']:.0f}")
+        return True
+    except ImportError:
+        print("  ⚠️ hsif: futu package not installed, skip")
+        return False
+    except Exception as e:
+        print(f"  ❌ hsif: {e}")
+        return False
+
+
+def main(targets=None):
+    print("=" * 55)
+    print(f"📥 Factor Updater — {datetime.now():%Y-%m-%d %H:%M}")
+    print("=" * 55)
+
+    all_names = list(YF_FACTORS.keys()) + list(HKMA_FACTORS.keys()) + ["sc_full"]
+    targets = targets or all_names
+    results = {}
+
+    # yfinance factors
+    print("\n--- yfinance (cross-asset) ---")
+    for name in targets:
+        if name not in YF_FACTORS:
+            continue
+        cfg = YF_FACTORS[name]
+        ok = update_yfinance(name, cfg["ticker"], FACT_DIR / cfg["file"])
+        results[name] = ok
+
+    # HKMA factors — [G67804→G8198] 三源行 MSB mirror lane (api WAF 全 405),
+    # 其餘 HKMA target 照舊直行 API
+    print("\n--- HKMA (MSB mirror 行先 / api 單發復活) ---")
+    for name in targets:
+        if name not in HKMA_FACTORS:
+            continue
+        if name in MSB_LANE_FACTORS:
+            results[name] = update_hkma_msb(name)
+            continue
+        cfg = HKMA_FACTORS[name]
+        ok = update_hkma(name, cfg["endpoint"], FACT_DIR / cfg["file"], cfg["date_col"], cfg["rename"])
+        results[name] = ok
+
+    # 南向資金 (東方財富)
+    if "sc_full" in targets:
+        print("\n--- 東方財富 (南向資金) ---")
+        results["sc_full"] = update_sc_full()
+
+    # HIBOR (HKMA API, 已有獨立 script)
+    if "hibor" in targets:
+        print("\n--- HIBOR (HKMA) ---")
+        results["hibor"] = update_hibor()
+
+    # HSIF (Futu OpenD — HSI futures main contract daily settlement)
+    if "hsif" in targets or len(targets) == len(all_names):
+        print("\n--- HSIF (Futu OpenD) ---")
+        results["hsif"] = update_hsif()
+
+    # FRED (美國宏觀數據)
+    fred_targets = [t for t in targets if t.startswith("DGS") or t in ("FEDFUNDS","WALCL","T10YIE","BAA10Y","NFCI")]
+    if fred_targets or len(targets) == len(all_names):  # 全部模式時都跑 FRED
+        print("\n--- FRED (美國宏觀) ---")
+        try:
+            sys.path.insert(0, str(Path(__file__).parent))
+            from fred_updater import update_fred, FRED_SERIES
+            fred_ids = fred_targets if fred_targets else list(FRED_SERIES.keys())
+            fred_results = update_fred(fred_ids)
+            results.update({f"FRED/{k}": v for k, v in fred_results.items()})
+        except Exception as e:
+            print(f"  ❌ FRED: {e}")
+
+    # US10Y (sync from FRED DGS10 — same series, different filename)
+    # [fix 2026-09-23] 次序修正: 由 FRED section 之前移到之後 — 全套模式下
+    # 舊次序會喺 fred_dgs10.csv 刷新前抄舊檔 (同 DataGuard DATA_SOURCES 次序
+    # 同病, 09-23 05:59 假警報). refresh 條件: 呢輪 FRED section 已成功刷過
+    # DGS10 (results["FRED/DGS10"]=True) 就唔重刷; targeted 模式 (淨 us_10y_yield,
+    # FRED section 冇行) 就自刷 — 兩條路都保證 copy 之前源頭係最新.
+    if "us_10y_yield" in targets or len(targets) == len(all_names):
+        print("\n--- US10Y (sync from FRED DGS10) ---")
+        results["us_10y_yield"] = update_us10y(refresh_source=not results.get("FRED/DGS10"))
+
+    # 摘要
+    print(f"\n{'='*55}")
+    ok_count = sum(1 for v in results.values() if v)
+    print(f"更新結果: {ok_count}/{len(results)} 成功")
+    for name, ok in results.items():
+        print(f"  {'✅' if ok else '❌'} {name}")
+    print("=" * 55)
+
+
+if __name__ == "__main__":
+    # Windows Task Scheduler 冇 console，stdout 預設用 cp950，
+    # 印 emoji（✅ ❌）會觸發 UnicodeEncodeError 導致崩潰。
+    # 強制 stdout/stderr 用 UTF-8，排程與手動環境行為一致。
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+    targets = sys.argv[1:] if len(sys.argv) > 1 else None
+    main(targets)

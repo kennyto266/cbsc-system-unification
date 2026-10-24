@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""list_all_strategies.py — 列出所有策略嘅 SR/MDD/return 表現."""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings; warnings.filterwarnings("ignore")
+import numpy as np, pandas as pd
+import kol_alpha_strategies as kol
+from vbt_data import load_stock_close, FACTOR_STOCKS
+
+STOCKS = sorted(FACTOR_STOCKS)
+# 權重股子集 (南向資金/指數代表)
+HEAVY = ["HK.00005","HK.00883","HK.02888","HK.01088","HK.02018","HK.01211","HK.01810","HK.09999","HK.00700","HK.00016"]
+STOCK_ALPHA_IDS = [27, 74, 131, 132, 136, 137, 139, 140, 141, 142, 144]
+
+
+def backtest_alpha(aid, stocks):
+    """對一組股票跑一個 alpha, 返 [(stock, sharpe, mdd, ret, n_trades)]."""
+    name, _, func, _ = kol.KOL_REGISTRY[aid]
+    rows = []
+    for stk in stocks:
+        c = load_stock_close(stk)
+        if c is None or len(c) < 300: continue
+        prices = pd.DataFrame({stk: c})
+        try:
+            res = func(prices, stk)
+            if res:
+                rows.append((stk, res.get("sharpe",0), res.get("max_drawdown_pct",0),
+                            res.get("total_return_pct",0), res.get("n_trades",0)))
+        except: pass
+    return rows
+
+
+def stats(rows):
+    if not rows: return None
+    arr = np.array([(r[1],r[2],r[3],r[4]) for r in rows])
+    return {
+        "n": len(arr),
+        "sr_med": float(np.median(arr[:,0])),
+        "sr_mean": float(np.mean(arr[:,0])),
+        "mdd_med": float(np.median(arr[:,1])),
+        "ret_med": float(np.median(arr[:,2])),
+        "trades_med": float(np.median(arr[:,3])),
+        "pct_pos": float((arr[:,0]>0).mean()),
+    }
+
+
+def main():
+    print("=" * 78)
+    print(f"📊 全策略表現 (vbt 全股回測) — {len(STOCKS)} 股")
+    print("=" * 78)
+
+    # === 股票層策略 ===
+    print(f"\n{'─'*78}")
+    print(f"  股票層 (alpha_ids = {STOCK_ALPHA_IDS})")
+    print(f"{'─'*78}")
+    print(f"{'ID':>4} {'策略名':<24} {'n':>4} {'SR中位':>7} {'SR均':>6} {'MDD中':>7} "
+          f"{'回報中':>7} {'交易':>4} {'正SR%':>5}")
+    print("-" * 78)
+
+    for aid in STOCK_ALPHA_IDS:
+        name, _, _, _ = kol.KOL_REGISTRY[aid]
+        # A144 用權重股子集 (index edge); 其他用全股
+        test_stocks = HEAVY if aid == 144 else STOCKS
+        rows = backtest_alpha(aid, test_stocks)
+        s = stats(rows)
+        if s is None:
+            print(f"{aid:>4} {name[:24]:<24} {'N/A':>4} ---")
+            continue
+        tag = " ★" if s["sr_med"] > 0.5 else (" ✓" if s["sr_med"] > 0 else "")
+        print(f"{aid:>4} {name[:24]:<24} {s['n']:>4} {s['sr_med']:>+7.2f} {s['sr_mean']:>+6.2f} "
+              f"{s['mdd_med']:>+6.1f}% {s['ret_med']:>+6.1f}% {s['trades_med']:>4.0f} "
+              f"{s['pct_pos']:>4.0%}{tag}")
+
+    # === 期貨層策略 (OOS SR, 唔跑 vbt) ===
+    print(f"\n{'─'*78}")
+    print(f"  期貨層 HSIF (OOS-validated, frozen 參數)")
+    print(f"{'─'*78}")
+    print(f"{'ID':>4} {'策略名':<28} {'方向':>6} {'OOS SR':>7} {'持倉':>4} {'入場條件'}")
+    print("-" * 78)
+    futures = [
+        (200, "A-shares regime short", "SHORT", 0.75, "14td", "A股>SMA70 + 恒指當日跌"),
+        (201, "Quarter-end long",      "LONG",  0.47, "3td",  "季末最後5交易日 (window dressing)"),
+        (202, "Disc-window stress short","SHORT",0.77, "7td",  "貼現窗 dw 0→<0 rising edge"),
+    ]
+    for fid, fn, dirn, sr, hold, entry in futures:
+        tag = " ★" if sr > 0.6 else " ✓"
+        print(f"{fid:>4} {fn:<28} {dirn:>6} {sr:>+7.2f} {hold:>4} {entry}{tag}")
+
+    # === 組合概覽 ===
+    print(f"\n{'='*78}")
+    print(f"📈 組合概覽")
+    print(f"{'='*78}")
+    print(f"  股票層: {len(STOCK_ALPHA_IDS)} 個策略 (alpha_ids), 監控 {len(STOCKS)} 股")
+    print(f"  期貨層: 3 個 HSIF 訊號 (2 SHORT + 1 LONG)")
+    print(f"  總計: {len(STOCK_ALPHA_IDS)+3} 個策略")
+    print(f"\n  ⚠️ 注意:")
+    print(f"     • A144 (南向資金) 只對權重股有效 (index edge), 已限制子集測試")
+    print(f"     • A143 (貼現窗) 對個股差, 已移到期貨層做訊號 202")
+    print(f"     • 期貨 OOS SR = IS<2024 / OOS≥2024 frozen test (唔係全期)")
+
+
+if __name__ == "__main__":
+    main()

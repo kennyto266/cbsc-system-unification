@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""archive_ocr_tool.py — open-code-review 工具頁 → wiki/tools/."""
+import sys
+from datetime import datetime
+from pathlib import Path
+
+VAULT = Path(r"C:/Users/Penguin8n/CBSC-KnowledgeVault")
+WIKI = VAULT / "wiki" / "tools"
+WIKI.mkdir(parents=True, exist_ok=True)
+TODAY = datetime.now().strftime("%Y-%m-%d")
+
+FM = """---
+title: "Open Code Review (阿里 OCR) — 我哋嘅 code review 標準工具"
+type: "tool"
+status: "active"
+tags: [tool, code-review, quality-gate]
+created: "{d}"
+updated: "{d}"
+---
+
+""".format(d=TODAY)
+
+BODY = """# Open Code Review — code review 標準工具
+
+> Repo: https://github.com/alibaba/open-code-review (阿里內部數萬開發者用過,
+> 開源版。`ocr` CLI v1.9.9 已裝喺本機)
+> **角色: 本項目嘅 code review 走佢 — 唔係人手肉眼 review**
+
+## 點解用佢 (vs 通用 agent review)
+
+| 痛點 (Claude Code review) | OCR 解法 |
+|---|---|
+| 大 changeset 「偷工」漏檔 | 工程化揀檔 — 邊啲要 review 邊啲過濾, 硬保證 |
+| 行數/位置飄 | 獨立定位 module — comment 位置準確 |
+| 質素隨 prompt 波動 | 模板引擎規則匹配, 唔靠自然語言約束 |
+
+**Benchmark**: 對 Claude Code 高 Precision/F1, token 慳 ~9 倍
+(Recall 低啲 — 刻意寧缺勿濫, 同我哋 KG extraction 哲學一樣)
+50 repo × 200 PR × 10 語言 × 80+ 高工標註 (AACR-Bench)
+
+## 核心設計: 確定性工程 × Agent 混合
+
+- **必須啱嘅步** (揀檔/綁檔/規則匹配) = 工程邏輯, 唔交俾 LLM
+- **要判斷嘅步** (動態 context/檢索) = agent 場景化 prompt+工具
+
+## 我哋嘅用法 (已實戰)
+
+```bash
+# 掃指定檔 (審計陌生 code / 冇 diff 都得)
+ocr scan --path live_algotrade.py,watchdog.py,full_revalidate.py --audience agent
+
+# review 改動 (branch range)
+ocr review --from main --to feature-branch
+
+# 存 JSON (俾 agent 消費)
+ocr review --format json --output result.json
+```
+
+### 實戰紀錄
+- **08-23 架構審計**: 4 檔 17 findings → 修 5 真嘢
+  (殭屍 process / 假成功 JSON 驗證 / NameError) — eval/TOCTOU 記錄不修
+- **08-24 live 核心審計**: 3 檔 → 修 insufficient key 名 bug
+  (dashboard event bus) + --ids range 崩潰
+- 經驗: findings ~60% 真; 誤報要人手覆核 (例如「watchdog 命令注入」—
+  keyword 全 hardcoded, 理論性)。**真發現率夠高, 值得每輪大改後跑**
+
+## 掛入流程建議 (未做, 待批准)
+
+而家係我手動跑。可以掛:
+- think_loop 前置閘之後 (test_gates 綠 → ocr scan 熱檔)? 慢 (2-5min/檔), 可能太密
+- **建議: 每日一次** — daily_scheduler Step 6.5, 掃當日有 commit 嘅檔
+
+← [[index]] · [[architecture/watchdogs-看門狗容錯|看門狗]] · [[methodology/graph-engineering-playbook|Playbook]]
+"""
+
+(WIKI / "open-code-review.md").write_text(FM + BODY, encoding="utf-8")
+
+idx = VAULT / "wiki" / "index.md"
+t = idx.read_text(encoding="utf-8")
+if "open-code-review" not in t:
+    t = t.replace(
+        "- [[methodology/graph-engineering-playbook|📐 Graph Engineering Playbook]] (寫 loop 方法論: KG pipeline / evaluator grounding / 持久 world model)",
+        "- [[methodology/graph-engineering-playbook|📐 Graph Engineering Playbook]] (寫 loop 方法論: KG pipeline / evaluator grounding / 持久 world model)\n"
+        "- [[tools/open-code-review|🔍 Open Code Review]] (code review 標準工具: 實戰紀錄 + 掛線建議)",
+    )
+    idx.write_text(t, encoding="utf-8")
+
+print("OCR tool 頁寫入 + index 連結")

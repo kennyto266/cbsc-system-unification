@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""build_prean_dte_panel.py — prean thesis: 業績日曆 → days-to-earnings panel.
+
+輸入: data/new_sources/results_calendar_raw.csv (793 events × 48股, 2021-2026,
+      title 含 'Results' 過濾 — 業績公佈日)
+輸出: data/factor_store/prean_dte.parquet — wide (date × HK.XXXXX)
+      value = 距離下一個業績公佈日嘅「交易日」數; 已過咗 = 負值; 冇業績日紀錄股 = NaN
+"""
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "results_calendar_raw.csv"
+OUT = BASE / "data" / "factor_store" / "prean_dte.parquet"
+START = "2021-01-01"
+
+POOL = ['00001','00002','00003','00005','00006','00012','00016','00017','00020','00027',
+'00066','00101','00175','00241','00268','00285','00291','00386','00388','00688','00700','00762',
+'00823','00883','00939','00941','00992','01024','01038','01088','01109','01211','01299','01398',
+'01801','01810','01876','01928','02013','02269','02318','02388','02628','02899','03690','06862',
+'09618','09888','09988','09992','09999']
+
+rc = pd.read_csv(RAW)
+rc["dt"] = pd.to_datetime(rc["doc_date"], format="mixed", dayfirst=True).dt.normalize()
+rc = rc[rc["title"].str.contains("Results", case=False, na=False)].copy()
+rc["code5"] = rc["stock_code"].astype(str).str.zfill(5)
+rc = rc[rc["code5"].isin(POOL)]
+events = {c: sorted(g["dt"].unique()) for c, g in rc.groupby("code5")}
+
+# 交易日曆 (close_unadj union)
+cal = set()
+for f in (BASE / "data" / "futu_history" / "close_unadj").glob("*.csv"):
+    c = pd.read_csv(f, usecols=["time_key"])
+    cal.update(pd.to_datetime(c["time_key"]).dt.normalize())
+cal = pd.DatetimeIndex(sorted(cal))
+cal = cal[cal >= pd.Timestamp(START)]
+pos = {d: i for i, d in enumerate(cal)}
+
+# 每股事件 → 交易日 index
+ev_idx = {c: np.array([pos[d] for d in ds if d in pos], dtype=float)
+          for c, ds in events.items()}
+
+cols = ["HK." + c for c in POOL if c in ev_idx]
+out = pd.DataFrame(np.nan, index=pd.Index(cal, name="date"), columns=cols)
+for c, evs in ev_idx.items():
+    if len(evs) == 0:
+        continue
+    col = "HK." + c
+    vals = np.full(len(cal), np.nan)
+    # 對每個交易日 i: 下一個事件 j (>=i) → j-i; 若 i 之前有事件但之後冇 → 用最後事件 i-j (負)
+    evs_sorted = np.sort(evs)
+    nxt = np.searchsorted(evs_sorted, np.arange(len(cal)), side="left")
+    for i in range(len(cal)):
+        j = nxt[i]
+        if j < len(evs_sorted):
+            vals[i] = evs_sorted[j] - i          # 0..N 之前/當日
+        else:
+            vals[i] = i - evs_sorted[-1]          # 全部過晒 — 負向距離 * -1
+            vals[i] = -(vals[i])  # 已過 → 負值
+    out[col] = vals
+
+OUT.parent.mkdir(parents=True, exist_ok=True)
+out.to_parquet(OUT)
+print(f"prean_dte: {out.shape}, events used {sum(len(v) for v in ev_idx.values())}, "
+      f"range {out.index.min().date()}→{out.index.max().date()}, "
+      f"stocks {len(cols)}")
+print("dte 分佈:", out.stack().describe()[["min", "25%", "50%", "max"]].to_dict())

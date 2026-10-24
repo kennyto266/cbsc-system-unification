@@ -1,0 +1,217 @@
+#!/usr/bin/env python3
+"""portfolio_sim_8alpha.py — 8 個真 alpha 組合模擬 + SR 加權.
+
+步驟:
+  1. 計 8 個 alpha 既 per-stock daily return streams (full + OOS)
+  2. Correlation matrix (睇分散潛力)
+  3. 三種 weighting 對比: equal / SR-weighted / Markowitz
+  4. OOS 驗證 (2024-2026)
+  5. A74/A140 去留 sensitivity
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from datetime import datetime
+
+import kol_alpha_strategies as kol
+from kol_alpha_strategies import KOL_REGISTRY
+from vbt_data import load_stock_close, FACTOR_STOCKS
+
+OUT = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports")
+SPLIT = "2024-01-01"
+REAL_ALPHAS = [27, 74, 131, 132, 136, 137, 139, 140, 141, 142]
+
+
+def capture_returns(close_full, alpha_id, stock):
+    """跑 alpha, 攔截 portfolio daily returns (用於 correlation + 組合模擬)."""
+    prices = pd.DataFrame({stock: close_full})
+    func = KOL_REGISTRY[alpha_id][2]
+    orig_bs = kol.backtest_signals
+    cap = {"pf": None, "n": 0}
+
+    def spy(close, entries, exits, se=None, sx=None):
+        cap["n"] += 1
+        pf = orig_bs(close, entries, exits, se, sx)
+        if pf is not None:
+            cap["pf"] = pf
+        return pf
+    # ALSO patch the common module's reference (alpha funcs may resolve via common)
+    try:
+        import common as _cm
+        _cm_orig = _cm.backtest_signals
+        _cm.backtest_signals = spy
+    except Exception:
+        _cm_orig = None
+
+    kol.backtest_signals = spy
+    try:
+        m = func(prices, stock)
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        m = None
+    finally:
+        kol.backtest_signals = orig_bs
+        if _cm_orig is not None:
+            _cm.backtest_signals = _cm_orig
+    import sys as _s
+    if False and cap.get('n', -1) >= 0:  # debug disabled
+        print(f"   [DBG] A{alpha_id} {stock}: spy n={cap['n']}", flush=True)
+    if m is None or cap["pf"] is None:
+        return None
+    try:
+        # daily portfolio returns. vbt 可能返 Series (單資產) 或 DataFrame.
+        rets_obj = cap["pf"].returns()
+        if isinstance(rets_obj, pd.DataFrame):
+            rets = rets_obj.iloc[:, 0]
+        else:
+            rets = rets_obj
+        # 統一 tz: 部分股票 index 係 tz-aware, 部分 tz-naive → 全部轉 tz-naive
+        if getattr(rets.index, 'tz', None) is not None:
+            rets.index = rets.index.tz_localize(None)
+        return rets.rename(stock)
+    except Exception:
+        return None
+
+
+def sharpe_from_returns(returns, rf=0.0):
+    """由 daily returns 計年化 Sharpe."""
+    if returns is None or len(returns) < 30:
+        return 0.0
+    ann_ret = returns.mean() * 252
+    ann_vol = returns.std() * np.sqrt(252)
+    if ann_vol == 0:
+        return 0.0
+    return (ann_ret - rf) / ann_vol
+
+
+def main():
+    stocks = sorted(FACTOR_STOCKS)[:40]  # 40 股 (代表性, 計 return matrix 快)
+    print("=" * 70)
+    print("📊 10 Alpha Portfolio 模擬 (SR 加權, +低相關 A141/142)")
+    print(f"  Alpha: {REAL_ALPHAS}")
+    print(f"  股票: {len(stocks)} 隻  |  Full + OOS split")
+    print("=" * 70, flush=True)
+
+    # 1. 收集所有 (alpha, stock) 既 daily returns
+    print(f"\n1️⃣ 收集 daily returns (8 alpha × {len(stocks)} 股)...", flush=True)
+    # returns_dict: {(alpha, stock): Series}
+    returns_dict = {}
+    for aid in REAL_ALPHAS:
+        cnt = 0
+        for s in stocks:
+            c = load_stock_close(s)
+            if c is None or len(c) < 400: continue
+            r = capture_returns(c, aid, s)
+            if r is not None and len(r) >= 30:
+                returns_dict[(aid, s)] = r
+                cnt += 1
+        print(f"   A{aid}: {cnt} 股有 returns", flush=True)
+
+    # 2. Correlation: alpha 層面 (平均各股 return, 睇 alpha 之間相關性)
+    print(f"\n2️⃣ Alpha-level correlation...", flush=True)
+    alpha_rets = {}  # alpha -> combined returns (sum across stocks, equal weight)
+    for aid in REAL_ALPHAS:
+        rets_list = [returns_dict[(aid, s)] for (a, s) in returns_dict if a == aid]
+        if not rets_list: continue
+        df = pd.concat(rets_list, axis=1)
+        alpha_rets[aid] = df.mean(axis=1)  # equal-weight avg across stocks
+    corr_df = pd.DataFrame(alpha_rets).corr()
+    print(corr_df.round(2).to_string())
+    print(f"\n   平均 off-diagonal correlation: "
+          f"{corr_df.where(~np.eye(len(corr_df), dtype=bool)).stack().mean():.2f}")
+
+    # 3. 組合模擬 — 每隻股內, 8 alpha 既 return 合成 portfolio return
+    print(f"\n3️⃣ 組合模擬 (per-stock 8-alpha 合成)...", flush=True)
+    # 對每隻股, 收集佢所有 alpha 既 returns, 做 weighted combination
+    def simulate_portfolio(weighting="equal", period="full", drop=None):
+        """返組合 Sharpe (cross-stock avg).
+        weighting: equal / sr / markowitz
+        period: full / oos
+        drop: 要剔除既 alpha id list (sensitivity test)
+        """
+        alphas = [a for a in REAL_ALPHAS if a not in (drop or [])]
+        all_sharpes = []
+        for s in stocks:
+            # 收呢隻股所有 alpha returns
+            rets_by_alpha = {}
+            for aid in alphas:
+                key = (aid, s)
+                if key not in returns_dict: continue
+                r = returns_dict[key]
+                if period == "oos":
+                    r = r[r.index >= SPLIT]
+                else:
+                    r = r[r.index < SPLIT] if period == "is" else r
+                if len(r) >= 30:
+                    rets_by_alpha[aid] = r
+            if len(rets_by_alpha) < 2: continue
+            df = pd.DataFrame(rets_by_alpha)
+            df = df.fillna(0)
+            # weights
+            if weighting == "equal":
+                w = np.ones(len(df.columns)) / len(df.columns)
+            elif weighting == "sr":
+                srs = np.array([sharpe_from_returns(df[c]) for c in df.columns])
+                srs = np.clip(srs, 0, None)  # 負 SR → 0 weight
+                if srs.sum() == 0:
+                    w = np.ones(len(df.columns)) / len(df.columns)
+                else:
+                    w = srs / srs.sum()
+            elif weighting == "markowitz":
+                # 簡化 Markowitz: 最小變異 (long-only, sum=1)
+                try:
+                    cov = df.cov().values * 252
+                    inv = np.linalg.pinv(cov)
+                    w = inv.sum(axis=1)
+                    w = np.clip(w, 0, None)
+                    if w.sum() == 0:
+                        w = np.ones(len(df.columns)) / len(df.columns)
+                    else:
+                        w = w / w.sum()
+                except Exception:
+                    w = np.ones(len(df.columns)) / len(df.columns)
+            port_ret = (df.values * w).sum(axis=1)
+            all_sharpes.append(sharpe_from_returns(pd.Series(port_ret, index=df.index)))
+        return np.mean(all_sharpes) if all_sharpes else 0, np.median(all_sharpes) if all_sharpes else 0
+
+    # 三種 weighting × full
+    print(f"\n{'='*70}")
+    print(f"📊 組合 Sharpe (Full 2021-2026)")
+    print(f"{'='*70}")
+    for w in ["equal", "sr", "markowitz"]:
+        m, med = simulate_portfolio(w, "full")
+        print(f"  {w:12s}: mean={m:.2f}  median={med:.2f}")
+
+    # OOS (2024-2026)
+    print(f"\n📊 組合 Sharpe (OOS 2024-2026)")
+    for w in ["equal", "sr", "markowitz"]:
+        m, med = simulate_portfolio(w, "oos")
+        print(f"  {w:12s}: mean={m:.2f}  median={med:.2f}")
+
+    # 4. A74/A140 sensitivity (drop 一個睇影響)
+    print(f"\n{'='*70}")
+    print(f"📊 A74/A140 去留 sensitivity (SR-weighted, OOS)")
+    print(f"{'='*70}")
+    base_m, _ = simulate_portfolio("sr", "oos")
+    print(f"  全部 8 alpha:        OOS mean={base_m:.2f}")
+    for drop in [[74], [140], [74, 140]]:
+        m, _ = simulate_portfolio("sr", "oos", drop=drop)
+        delta = m - base_m
+        label = "+".join([f"A{d}" for d in drop])
+        verdict = "→ 建議保留" if delta < -0.05 else ("→ 建議剔除" if delta > 0.05 else "→ 影響微")
+        print(f"  drop {label:8s}:       OOS mean={m:.2f}  (Δ{delta:+.2f}) {verdict}")
+
+    # 存 correlation + summary
+    corr_df.to_csv(OUT / "alpha_correlation_matrix.csv")
+    print(f"\nCorrelation matrix: {OUT / 'alpha_correlation_matrix.csv'}")
+
+
+if __name__ == "__main__":
+    main()

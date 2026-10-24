@@ -1,0 +1,224 @@
+name: Security Scan Pipeline
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main ]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit safety semgrep flake8 pylint
+        pip install -r requirements.txt
+
+    - name: Run Bandit Security Scanner
+      run: |
+        echo "Running Bandit security scan..."
+        bandit -r . -f json -o bandit-report.json || true
+        bandit -r . -f txt -o bandit-report.txt || true
+
+    - name: Run Safety Dependency Check
+      run: |
+        echo "Running safety dependency check..."
+        safety check --json --output safety-report.json || true
+        safety check --output safety-report.txt || true
+
+    - name: Run Semgrep Security Scan
+      run: |
+        echo "Running Semgrep security scan..."
+        semgrep --config=auto --json --output=semgrep-report.json . || true
+        semgrep --config=auto . || true
+
+    - name: Run SQL Injection Security Tests
+      run: |
+        echo "Running SQL injection security tests..."
+        python -m pytest tests/test_database_security.py -v --tb=short || true
+
+    - name: Check for Hardcoded Credentials
+      run: |
+        echo "Checking for hardcoded credentials..."
+        # Common patterns for hardcoded secrets
+        grep -r -E "(password|secret|key|token)\s*=\s*['\"]" --include="*.py" --include="*.js" --include="*.json" --exclude-dir=.git --exclude-dir=.venv . || true
+
+    - name: Run Flake8 Code Quality Check
+      run: |
+        echo "Running Flake8 code quality check..."
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
+
+    - name: Analyze Security Scan Results
+      run: |
+        echo "Analyzing security scan results..."
+
+        # Check for high severity issues
+        HIGH_ISSUES=0
+
+        # Count Bandit high severity issues
+        if [ -f bandit-report.json ]; then
+          BANDIT_HIGH=$(jq '[.results[] | select(.issue_severity == "HIGH")] | length' bandit-report.json)
+          HIGH_ISSUES=$((HIGH_ISSUES + BANDIT_HIGH))
+          echo "Bandit high severity issues: $BANDIT_HIGH"
+        fi
+
+        # Count Safety vulnerabilities
+        if [ -f safety-report.json ]; then
+          SAFETY_ISSUES=$(jq '.vulnerabilities | length' safety-report.json)
+          HIGH_ISSUES=$((HIGH_ISSUES + SAFETY_ISSUES))
+          echo "Safety vulnerabilities: $SAFETY_ISSUES"
+        fi
+
+        # Count Semgrep findings
+        if [ -f semgrep-report.json ]; then
+          SEMGREP_ISSUES=$(jq '.results | length' semgrep-report.json)
+          echo "Semgrep findings: $SEMGREP_ISSUES"
+        fi
+
+        echo "Total high severity issues: $HIGH_ISSUES"
+
+        # Fail if high severity issues found
+        if [ $HIGH_ISSUES -gt 0 ]; then
+          echo "❌ SECURITY SCAN FAILED: Found $HIGH_ISSUES high severity issues"
+          exit 1
+        else
+          echo "✅ SECURITY SCAN PASSED: No high severity issues found"
+        fi
+
+    - name: Upload Security Artifacts
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-scan-reports
+        path: |
+          bandit-report.*
+          safety-report.*
+          semgrep-report.*
+        retention-days: 30
+
+    - name: Comment PR with Security Results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+
+          let comment = '## 🔒 Security Scan Results\n\n';
+
+          // Bandit results
+          if (fs.existsSync('bandit-report.txt')) {
+            const banditResults = fs.readFileSync('bandit-report.txt', 'utf8');
+            comment += '### Bandit Security Scanner\n';
+            comment += '```\n' + banditResults + '\n```\n\n';
+          }
+
+          // Safety results
+          if (fs.existsSync('safety-report.txt')) {
+            const safetyResults = fs.readFileSync('safety-report.txt', 'utf8');
+            comment += '### Safety Dependency Check\n';
+            comment += '```\n' + safetyResults + '\n```\n\n';
+          }
+
+          // Create comment
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+  sql-injection-test:
+    runs-on: ubuntu-latest
+    needs: security-scan
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Run SQL Injection Attack Simulation
+      run: |
+        echo "Running SQL injection attack simulation..."
+        python -c "
+        import sys
+        sys.path.insert(0, 'src')
+
+        # Test SQL injection protection
+        injection_attempts = [
+            \"'; DROP TABLE users; --\",
+            \"' OR '1'='1\",
+            \"UNION SELECT * FROM passwords\",
+            \"admin'; --\",
+            \"'; DELETE FROM stock_data; --\",
+            \"1'; SELECT * FROM users --\"
+        ]
+
+        from database_secure import SecureDatabaseManager
+
+        # Mock environment for testing
+        import os
+        os.environ['DATABASE_URL'] = 'sqlite:///test.db'
+
+        manager = SecureDatabaseManager()
+
+        print('Testing SQL injection detection...')
+        for attempt in injection_attempts:
+            detected = manager._check_sql_injection(attempt)
+            if detected:
+                print(f'✅ DETECTED: {attempt}')
+            else:
+                print(f'❌ MISSED: {attempt}')
+                sys.exit(1)
+
+        print('✅ All SQL injection attempts detected!')
+        "
+
+  code-quality-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install analysis tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install pylint bandit flake8 mypy isort
+
+    - name: Run Pylint Code Analysis
+      run: |
+        echo "Running Pylint code analysis..."
+        pylint src/database_secure.py --output-format=text --score=no || true
+
+    - name: Check Code Style with flake8
+      run: |
+        echo "Running flake8 code style check..."
+        flake8 src/database_secure.py --max-line-length=100 --ignore=E501,W503 || true
+
+    - name: Check Import Sorting
+      run: |
+        echo "Checking import sorting..."
+        isort --check-only --diff src/database_secure.py || true

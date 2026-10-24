@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""build_bbex_panel.py — bbex thesis: 東財回購執行力度 raw → bbex_buy_intensity panel.
+
+[09-27 G62366 重建] 原 builder 01:58 P0 清空被剷 (worktree-local untracked
+全機零副本 — G46794/G48056 同案; build_hsi_fut_netpos_panel 同晚同款重建)。
+呢份由 factor_store 黃金樣板反推重建: 全 panel 23 欄 x 1161 日逐格 maxdiff 0.0
+先落筆 (驗證配方 2026-09-27: rolling 63d min_periods=1, sum/mean 兩邊同窗)。
+
+[09-28 agent2-H 腿語義修] NDD 官方源交叉對照揭盲點: 東財 RPT_HKCH_COMPANYREPO
+同日同股多行唔係「重複」係「多筆」— 00005 每日 6 行 = 1 場內港腿 (HKD ~161)
++ 5 倫敦 GBP 腿 (~15.x)。原 keep-last 亂揀: 有時揀中 GBP 腿當 HKD (量綱錯 ~10x),
+有時掉真場內筆 (2026-08 起窗口漏 14.7% 金額)。修法照 build_rbag_panel.py 已
+驗證配方 (09-28 12 案例全判對): containment 過濾 — 真場內回購必然成交喺當日
+實際 unadj 交易區間內 (em_hi ≥ day_lo×0.98 且 em_lo ≤ day_hi×1.02; day range 由
+ohlcv high/low × unadj/qfq 複權比還原), 場外/跨境腿剔走, 場內同日多筆 sum。
+NDD 官方版對照: 00005 2026-09-15 場內 93,349,260 = EM 港腿單行, 證實細行全倫敦腿。
+
+輸入: data/new_sources/buyback_em_raw.csv (東財 RPT_HKCH_COMPANYREPO 日頻明細;
+  _a2h_0926_bbex_window_refresh.py replace-in-window 日增)
+輸出:
+  1) factor_store/bbex_raw.parquet — 事件表 (date/code5/shares/high/low/amount),
+     場內腿過濾後同日 sum
+  2) factor_store/bbex_buy_intensity.parquet — wide (date x HK.XXXXX):
+     值 = 63d 回購金額合計 / 63d 日均成交額 (ohlcv_5y turnover; 缺時 close*volume)
+     淨出「事件落入 ohlcv 窗內」嘅股 (事件全喺窗前 = 無訊號唔出欄, 12/35 股實錄);
+     無回購日 = 0 (非 NaN); 2022-01 起 (buyback_yield_full 同採集規格, 之前紀錄稀疏)
+"""
+from __future__ import annotations
+
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "buyback_em_raw.csv"
+OHLCV_DIR = BASE / "data" / "ohlcv_5y"
+UNADJ_DIR = BASE / "data" / "futu_history" / "close_unadj"
+OUT_RAW = BASE / "data" / "factor_store" / "bbex_raw.parquet"
+OUT_PANEL = BASE / "data" / "factor_store" / "bbex_buy_intensity.parquet"
+
+BT = BASE.parent / "backtests"
+
+WINDOW = 63
+PANEL_START = "2022-01-01"
+RANGE_TOL = 0.02  # 當日區間判定容差 (同 build_rbag_panel.py)
+
+# [G53073] raw 新鮮度前置閘 — 裁決 (a) builder 前置雙閘 (判詞 .scratch/g53073-bbex-stale-gate/)
+STALE_MTIME_DAYS = 4  # collector 日更無條件重寫 raw — mtime 凍結即 collector 鏈死 (同 _factor_store_refresh FRESH_LAG 口徑)
+STALE_DATA_DAYS = 7   # 事件面: 51股 pool 2025 起最長無事件 gap 5 日 (p99=3) + 緩衝
+
+
+def _load_universe() -> pd.DataFrame:
+    sys.path.insert(0, str(BT))
+    from llm_cs_adapter import _load_prices_and_rets
+    prices, _ = _load_prices_and_rets()
+    prices.index = pd.to_datetime(prices.index)
+    return prices
+
+
+def _atomic_parquet(df: pd.DataFrame, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    df.to_parquet(tmp)
+    os.replace(tmp, path)
+
+
+def _now() -> datetime:
+    return datetime.now()
+
+
+def _raw_stale_reason(csv_path: Path, date_col: str, date_fmt: str | None) -> str | None:
+    """[G53073] None = 新鮮可以重建; 有字 = 凍結原因 (skip 重建等哨兵).
+
+    缺口: a2h collector 部分敗照 rc=0 (淨 100% 全敗先講真話) + builder 零
+    freshness guard + panel reindex(prices.index) 行到最新交易日 →
+    measure_lags 恒 lag=0 — collector 死 N 日 raw 凍結, builder 日日重建
+    推前 panel 時效 = 假新鮮 panel 呃晒 mtime/index 哨兵. 閘死時唔重寫
+    panel: 時效如實凍結, measure_lags 4 日後自動紅, 哨兵鏈接手.
+    """
+    if not csv_path.exists():
+        return f"raw 唔在場: {csv_path.name}"
+    age = (_now() - datetime.fromtimestamp(csv_path.stat().st_mtime)).days
+    if age > STALE_MTIME_DAYS:
+        return f"mtime 凍結 {age} 日 (>{STALE_MTIME_DAYS}) — collector 鏈死?"
+    td = pd.to_datetime(
+        pd.read_csv(csv_path, usecols=[date_col])[date_col], errors="coerce",
+        format=date_fmt).max()
+    if pd.isna(td):
+        return f"{date_col} 全爛 — 讀唔到事件日"
+    dage = (_now() - td.to_pydatetime()).days
+    if dage > STALE_DATA_DAYS:
+        return f"max {date_col} {td.date()} 凍結 {dage} 日 (>{STALE_DATA_DAYS}) — 源端停更/collector 部分敗?"
+    return None
+
+
+def _load_events() -> pd.DataFrame | None:
+    if not RAW.exists():
+        print(f"[bbex-build] raw 唔在場: {RAW} — 唔靜靜寫壞 parquet", flush=True)
+        return None
+    df = pd.read_csv(RAW, dtype={"SECURITY_CODE": str})
+    ev = pd.DataFrame({
+        "date": pd.to_datetime(df["TRADE_DATE"], format="%Y-%m-%d", errors="coerce"),
+        "code5": df["SECURITY_CODE"].str.zfill(5),
+        "shares": pd.to_numeric(df["REPO_NUM"], errors="coerce"),
+        "high": pd.to_numeric(df["HIGH_PRICE"], errors="coerce"),
+        "low": pd.to_numeric(df["LOW_PRICE"], errors="coerce"),
+        "amount": pd.to_numeric(df["REPO_AMT"], errors="coerce"),
+    })
+    n_bad = int((ev["date"].isna() | ev["amount"].isna()).sum())
+    ev = ev[ev["date"].notna() & ev["amount"].notna()]
+    # EM 重疊窗後補: 完全相同筆 (同額同股數) 先係重複, keep-last;
+    # 唔同額嘅同日行 = 多筆/多腿, 留俾 containment 過濾 + sum
+    ev = ev.drop_duplicates(["date", "code5", "amount", "shares"], keep="last")
+    ev = ev.sort_values(["date", "code5"]).reset_index(drop=True)
+    if ev.empty:
+        print("[bbex-build] events 全空 (raw 爛?) — 唔寫輸出", flush=True)
+        return None
+    print(f"[bbex-build] events {len(ev)} 行 {ev['code5'].nunique()} 股 "
+          f"{ev['date'].min().date()} → {ev['date'].max().date()} "
+          f"(壞行剔 {n_bad}, 全同筆 dup keep-last)", flush=True)
+    return ev
+
+
+def main() -> int:
+    stale = _raw_stale_reason(RAW, "TRADE_DATE", "%Y-%m-%d")
+    if stale:
+        print(f"[bbex-build] STALE-GATE: {stale} — 唔重建, panel 如實凍結等哨兵接手 [G53073]",
+              flush=True)
+        return 1
+    ev = _load_events()
+    if ev is None:
+        return 1
+
+    prices = _load_universe()
+    kept_parts = []
+    n_leg_rows = n_nopx_rows = 0
+    amt_cols: dict[str, pd.Series] = {}
+    for c in sorted(ev["code5"].unique()):
+        hk = "HK." + c
+        if hk not in prices.columns:
+            continue
+        ocsv = OHLCV_DIR / f"HK_{c}.csv"
+        fcsv = UNADJ_DIR / f"{hk}.csv"
+        if not ocsv.exists():
+            print(f"[bbex-build] WARN ohlcv 缺 {ocsv.name} — 股跳過", flush=True)
+            continue
+        o = (pd.read_csv(ocsv, parse_dates=["time_key"])
+               .set_index("time_key").sort_index()[["close", "high", "low", "turnover", "volume"]])
+        sub = ev[ev["code5"] == c].set_index("date")
+        if fcsv.exists():
+            u = (pd.read_csv(fcsv, parse_dates=["time_key"])
+                   .set_index("time_key")["close"].sort_index())
+            j = sub.join(u.rename("uadj"), how="left").join(
+                o[["close", "high", "low"]].rename(columns={
+                    "close": "qfq", "high": "day_hi", "low": "day_lo"}), how="left")
+            with np.errstate(divide="ignore", invalid="ignore"):
+                scale = j["uadj"] / j["qfq"]
+            dlo, dhi = j["day_lo"] * scale, j["day_hi"] * scale
+            has_px = j["uadj"].notna() & dlo.notna() & dhi.notna()
+            # containment: 場內腿必然落喺當日實際 unadj 區間 (容差 2%)
+            in_range = ((j["low"] >= dlo * (1 - RANGE_TOL))
+                        & (j["high"] <= dhi * (1 + RANGE_TOL)))
+            keep = has_px & in_range.fillna(False)
+            n_leg_rows += int((has_px & ~in_range.fillna(False)).sum())
+            n_nopx_rows += int((~has_px).sum())
+            kept = j[keep]
+        else:
+            # 冇 unadj 倉庫 — 冇得驗腿, 唔靜靜用可疑數: 全股剔 + 警告
+            print(f"[bbex-build] WARN unadj 缺 {fcsv.name} — 股跳過 (唔驗腿唔收)", flush=True)
+            continue
+        if kept.empty:
+            continue  # 全史跨境腿 (09988 純 ADR) / 全缺價 — 無訊號唔出欄
+        day_amt = kept.groupby(level=0).agg(
+            shares=("shares", "sum"), amount=("amount", "sum"),
+            high=("high", "max"), low=("low", "min"))
+        kept_parts.append(day_amt.rename_axis("date").reset_index().assign(code5=c))
+        to = o["turnover"].fillna(o["close"] * o["volume"])
+        a = day_amt["amount"].reindex(o.index).fillna(0.0)
+        num = a.rolling(WINDOW, min_periods=1).sum()
+        den = to.rolling(WINDOW, min_periods=1).mean()
+        with np.errstate(divide="ignore", invalid="ignore"):
+            amt_cols[hk] = (num / den).reindex(prices.index)
+
+    panel = pd.DataFrame(amt_cols, index=prices.index)
+    panel.index.name = "time_key"
+    panel = panel[panel.index >= PANEL_START]
+    _atomic_parquet(panel, OUT_PANEL)
+    raw_out = (pd.concat(kept_parts, ignore_index=True)[
+        ["date", "code5", "shares", "high", "low", "amount"]]
+        if kept_parts else pd.DataFrame(columns=["date", "code5", "shares", "high", "low", "amount"]))
+    _atomic_parquet(raw_out, OUT_RAW)
+    print(f"[bbex-build] 跨境/場外腿剔 {n_leg_rows} 筆 + 冇價 {n_nopx_rows} 筆; "
+          f"panel {panel.shape[0]}日 x {panel.shape[1]}股, "
+          f"max {panel.index.max().date()} → {OUT_PANEL.name}", flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

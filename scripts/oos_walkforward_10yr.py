@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""Out-of-sample walk-forward: train 2016-2022, test 2023-2026.
+
+用 10 年富途數據, 拆成 train (7yr) + test (3yr).
+如果策略喺 test 期都賺 = robust, 唔係只喺特定 regime 有效.
+
+跑法:
+  1. 全期跑策略 → 計 IS (train) vs OOS (test) Sharpe
+  2. 每個策略 × 股票, 比較 IS/OOS 一致性
+  3. 如果 OOS Sharpe > 0 且方向一致 = 通過
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from datetime import datetime
+
+import kol_alpha_strategies as kol
+from kol_alpha_strategies import KOL_REGISTRY
+from vbt_validation import monte_carlo_pvalue, benjamini_hochberg
+
+DATA_10YR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr")
+OUT = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports")
+
+# Sharpe > 1.0 的策略池
+STRATEGIES = {
+    7:  ["HK.01288"],
+    9:  ["HK.00762"],
+    15: ["HK.01336", "HK.00762", "HK.02018", "HK.00700", "HK.00016", "HK.02318"],
+    26: ["HK.02601", "HK.01336"],
+}
+
+
+def load_10yr_close(stock):
+    """讀 10 年 ohlcv close."""
+    fname = stock.replace(".", "_")
+    p = DATA_10YR / f"{fname}.csv"
+    if not p.exists():
+        return None
+    df = pd.read_csv(p, parse_dates=["time_key"]).set_index("time_key").sort_index()
+    return df["close"].astype(float)
+
+
+def _capture_entries(func, prices, stock):
+    """攔截 backtest_signals 拎 pf."""
+    captured = {"pf": None, "metrics": None}
+    orig_bs = kol.backtest_signals
+    def spy(close, entries, exits, se=None, sx=None):
+        pf = orig_bs(close, entries, exits, se, sx)
+        if pf is not None:
+            captured["pf"] = pf
+        return pf
+    kol.backtest_signals = spy
+    try:
+        m = func(prices, stock)
+        captured["metrics"] = m
+    except Exception:
+        pass
+    finally:
+        kol.backtest_signals = orig_bs
+    return captured
+
+
+def run_strategy_period(func, stock, close, start, end):
+    """跑策略喺指定期間, 返 Sharpe."""
+    mask = (close.index >= start) & (close.index <= end)
+    sub = close[mask]
+    if len(sub) < 300:
+        return None
+    prices = pd.DataFrame({stock: sub})
+    cap = _capture_entries(func, prices, stock)
+    pf = cap["pf"]
+    if pf is None:
+        return None
+    try:
+        sharpe = float(pf.sharpe_ratio())
+        n_trades = pf.trades.count()
+        total_ret = float(pf.total_return())
+        return {"sharpe": sharpe, "trades": n_trades, "return": total_ret}
+    except Exception:
+        return None
+
+
+def main():
+    # 期間定義
+    IS_START, IS_END = "2016-01-01", "2022-12-31"  # 7yr train
+    OOS_START, OOS_END = "2023-01-01", "2026-06-25"  # 3.5yr test
+
+    rows = []
+    print("=" * 70)
+    print(f"Out-of-Sample Walk-Forward")
+    print(f"  IS (train): {IS_START} ~ {IS_END} (7年)")
+    print(f"  OOS (test): {OOS_START} ~ {OOS_END} (3.5年)")
+    print("=" * 70)
+
+    for aid, stocks in STRATEGIES.items():
+        if aid not in KOL_REGISTRY:
+            continue
+        name, kol_name, func, _ = KOL_REGISTRY[aid]
+        for stock in stocks:
+            close = load_10yr_close(stock)
+            if close is None:
+                print(f"  ⚠️ {name} @ {stock}: 無 10 年數據")
+                continue
+
+            is_result = run_strategy_period(func, stock, close, IS_START, IS_END)
+            oos_result = run_strategy_period(func, stock, close, OOS_START, OOS_END)
+
+            if is_result is None or oos_result is None:
+                print(f"  ⚠️ {name} @ {stock}: 跑唔到 (IS={'有' if is_result else '無'} OOS={'有' if oos_result else '無'})")
+                continue
+
+            # 一致性判斷
+            consistent = (is_result["sharpe"] > 0) == (oos_result["sharpe"] > 0)
+            oos_positive = oos_result["sharpe"] > 0
+            passed = oos_positive and consistent
+
+            row = {
+                "策略": f"ALPHA-{aid} {name}",
+                "股票": stock,
+                "IS_Sharpe": round(is_result["sharpe"], 3),
+                "IS_交易數": is_result["trades"],
+                "IS_回報%": round(is_result["return"] * 100, 1),
+                "OOS_Sharpe": round(oos_result["sharpe"], 3),
+                "OOS_交易數": oos_result["trades"],
+                "OOS_回報%": round(oos_result["return"] * 100, 1),
+                "方向一致": "✅" if consistent else "❌",
+                "OOS正Sharpe": "✅" if oos_positive else "❌",
+                "通過": "✅" if passed else "❌",
+            }
+            rows.append(row)
+            print(f"  {name} @ {stock}")
+            print(f"    IS:  Sharpe={is_result['sharpe']:.3f}  trades={is_result['trades']}  ret={is_result['return']*100:.1f}%")
+            print(f"    OOS: Sharpe={oos_result['sharpe']:.3f}  trades={oos_result['trades']}  ret={oos_result['return']*100:.1f}%")
+            dir_str = "" if consistent else "唔"
+            oos_str = "" if oos_positive else "唔"
+            print(f"    → {'✅ 通過' if passed else '❌ 唔通過'} (方向{dir_str}一致, OOS{oos_str}正)")
+            print()
+
+    df = pd.DataFrame(rows)
+    csv_path = OUT / "oos_walkforward_10yr.csv"
+    df.to_csv(csv_path, index=False)
+
+    n_pass = (df["通過"] == "✅").sum() if len(df) > 0 else 0
+    n_total = len(df)
+    print("=" * 70)
+    print(f"📊 OOS Walk-Forward 結果: {n_pass}/{n_total} 通過")
+    print("=" * 70)
+    if n_total > 0:
+        print(df[["策略","股票","IS_Sharpe","OOS_Sharpe","OOS_回報%","通過"]].to_string(index=False))
+    print(f"\n報告: {csv_path}")
+    print()
+    if n_pass / max(n_total, 1) > 0.5:
+        print("✅ 多數策略 OOS 仍有效 — 可以信")
+    else:
+        print("⚠️ 多數策略 OOS 失效 — 可能只喺特定 regime 有效, 需謹慎")
+
+    return df
+
+
+if __name__ == "__main__":
+    main()

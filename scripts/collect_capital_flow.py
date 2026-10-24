@@ -1,0 +1,306 @@
+#!/usr/bin/env python3
+"""
+每日資金流向收集器 — 富途 OpenAPI 版 (Phase 2)
+
+收集 HSI_CORE 52 隻股票嘅每日資金流向 (capital flow), 拆分超大單/大單/中單/細單淨流入.
+資金流向 = 大戶手影, 係 orthogonal 嘅 alternative-data 維度 (唔係 price/volume 衍生).
+
+設計 (學自 collect_intraday_futu.py 嘅實戰經驗):
+  - 直接 import OpenQuoteContext 會 hang (OpenD 唔回應時無法 recover)
+  - 所以用 subprocess + hard timeout: 每次拉一隻都 spawn 子進程, 超時即 kill
+  - 子進程寫 parquet 到 temp file (唔用 stdout — 避免 Futu log 污染)
+  - --workers N 用 ThreadPoolExecutor 並行 spawn 多個子進程 (OpenD 支援多連線)
+
+Futu API:
+  - ctx.get_capital_flow(code, period_type=PeriodType.DAY, start, end)
+  - period_type=DAY → 每日一行 (歷史 ~1 年)
+  - 欄位: in_flow(net 總), super_in_flow/super_out_flow, big_*, mid_*, sml_*,
+          main_in_flow/main_out_flow
+  - 限頻: 30 req / 30s
+
+輸出: cbsc-system-unification/data/capital_flow/HK_<code>_flow.csv
+欄位: date, super_large_net, large_net, medium_net, small_net, total_net, super_large_pct
+
+Incremental: 讀現有 CSV, 攞最後 date, 由嗰日 +1 開始拉 (skip 已拉 dates). Append-safe.
+
+用法:
+    python scripts/collect_capital_flow.py                 # 增量 (skip 已有 dates)
+    python scripts/collect_capital_flow.py --workers 4     # 4 並行
+    python scripts/collect_capital_flow.py --backfill      # 全量 (~1y, 唔理現有)
+    python scripts/collect_capital_flow.py --stocks HK.00700,HK.09988
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+
+import argparse
+import os
+import socket
+import subprocess
+import tempfile
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parent.parent
+FLOW_DIR = ROOT / "data" / "capital_flow"
+FLOW_DIR.mkdir(parents=True, exist_ok=True)
+
+# HSI_CORE 52 stocks (42 HSI + 10 mega-cap extras) — 同 vbt_data.HK_UNIVERSE 一致.
+HSI_CORE = [
+    "HK.00005", "HK.00388", "HK.00001", "HK.00002", "HK.00003", "HK.00006",
+    "HK.00011", "HK.00012", "HK.00016", "HK.00017", "HK.00027", "HK.00066",
+    "HK.00101", "HK.00175", "HK.00241", "HK.00268", "HK.00285", "HK.00291",
+    "HK.00386", "HK.00688", "HK.00700", "HK.00762", "HK.00823", "HK.00883",
+    "HK.00939", "HK.00941", "HK.01038", "HK.01088", "HK.01109", "HK.01299",
+    "HK.01398", "HK.01876", "HK.01928", "HK.02013", "HK.02318", "HK.02388",
+    "HK.02628", "HK.03690", "HK.06862", "HK.09618", "HK.09988", "HK.09999",
+    "HK.01810", "HK.09992", "HK.01211", "HK.01024", "HK.02899", "HK.09888",
+    "HK.00992", "HK.01801", "HK.00020", "HK.02269",
+]
+
+FUTU_HOST = "127.0.0.1"
+FUTU_PORT = 11111
+
+
+def opend_alive(host=FUTU_HOST, port=FUTU_PORT) -> bool:
+    """快 check OpenD port 是否接受連線."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(4)
+    try:
+        sock.connect((host, port))
+        sock.close()
+        return True
+    except Exception:
+        return False
+
+
+def _child_script(code: str, start: str, end: str, tmp_path: str,
+                  host: str, port: int) -> str:
+    """組裝子進程 script (拉 capital flow DAY period → 寫 parquet).
+
+    子進程做:
+      1. 連 OpenD
+      2. ctx.get_capital_flow(code, period_type=PeriodType.DAY, start, end)
+      3. 計各 tier net (in_flow - out_flow, 冇 out_flow 就用 in_flow)
+      4. 寫 parquet 到 tmp_path
+    """
+    return (
+        "import sys, logging\n"
+        "logging.disable(logging.CRITICAL)\n"  # 屏蔽 Futu connection log
+        "import pandas as pd\n"
+        "from futu import OpenQuoteContext, PeriodType\n"
+        f"q = OpenQuoteContext(host={host!r}, port={port})\n"
+        "try:\n"
+        f"    kwargs = {{'period_type': PeriodType.DAY}}\n"
+        + (f"    kwargs['start'] = {start!r}\n" if start else "")
+        + (f"    kwargs['end'] = {end!r}\n" if end else "")
+        + f"    ret, df = q.get_capital_flow({code!r}, **kwargs)\n"
+        "    if ret != 0 or df is None or len(df) == 0:\n"
+        "        sys.exit(1)\n"
+        "    df = df.copy()\n"
+        "    df['date'] = pd.to_datetime(df['capital_flow_item_time']).dt.normalize()\n"
+        "    def _net(df, tier):\n"
+        "        inc, outc = tier + '_in_flow', tier + '_out_flow'\n"
+        "        if inc in df.columns and outc in df.columns:\n"
+        "            return pd.to_numeric(df[inc], errors='coerce') - pd.to_numeric(df[outc], errors='coerce')\n"
+        "        return pd.to_numeric(df.get(inc, 0), errors='coerce')\n"
+        "    out = pd.DataFrame({'date': df['date']})\n"
+        "    out['super_large_net'] = _net(df, 'super')\n"
+        "    out['large_net']       = _net(df, 'big')\n"
+        "    out['medium_net']      = _net(df, 'mid')\n"
+        "    out['small_net']       = _net(df, 'sml')\n"
+        # total_net: 用頂層 in_flow (net) 為準; 冇就用 4 個 tier 加總
+        "    if 'in_flow' in df.columns:\n"
+        "        out['total_net'] = pd.to_numeric(df['in_flow'], errors='coerce')\n"
+        "    else:\n"
+        "        out['total_net'] = out[['super_large_net','large_net','medium_net','small_net']].sum(axis=1, min_count=1)\n"
+        "    _denom = out['total_net'].replace(0, pd.NA)\n"
+        "    out['super_large_pct'] = (out['super_large_net'] / _denom).fillna(0.0)\n"
+        "    out = out.groupby('date', as_index=False).last().sort_values('date').reset_index(drop=True)\n"
+        f"    out.to_parquet({tmp_path!r}, index=False, engine='pyarrow')\n"
+        "finally:\n"
+        "    q.close()\n"
+    )
+
+
+def fetch_capital_flow(code: str, start: str = None, end: str = None,
+                       timeout_sec: int = 90) -> pd.DataFrame | None:
+    """子進程拉一隻股票嘅每日資金流向 (硬 timeout, 唔會 hang 主進程).
+
+    Args:
+        code: HK.00700 格式
+        start/end: 'YYYY-MM-DD' 字串 (Futu DAY period)
+    Returns:
+        DataFrame [date, super_large_net, large_net, medium_net, small_net,
+                   total_net, super_large_pct] 或 None
+    """
+    fd, tmp_path = tempfile.mkstemp(suffix=".parquet")
+    os.close(fd)
+    script = _child_script(code, start, end, tmp_path, FUTU_HOST, FUTU_PORT)
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True, text=True, timeout=timeout_sec,
+        )
+        if proc.returncode != 0:
+            return None
+        if not os.path.exists(tmp_path):
+            return None
+        df = pd.read_parquet(tmp_path)
+        return df if not df.empty else None
+    except subprocess.TimeoutExpired:
+        print(f"    [timeout] {code} 超過 {timeout_sec}s, skip")
+        return None
+    except Exception as e:
+        print(f"    [err] {code}: {str(e)[:80]}")
+        return None
+    finally:
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            pass
+
+
+def collect_stock(code: str, backfill: bool = False, timeout_sec: int = 90,
+                  history_days: int = 365, verbose: bool = True) -> int:
+    """拉一隻股票 + incremental merge 落 CSV. 回最終行數."""
+    out_path = FLOW_DIR / f"{code.replace('.', '_')}_flow.csv"
+
+    # incremental: 搵現有最後 date → 由嗰日 +1 開始
+    start, end = None, pd.Timestamp.now().strftime("%Y-%m-%d")
+    if out_path.exists() and not backfill:
+        try:
+            old = pd.read_csv(out_path, parse_dates=["date"])
+            if not old.empty:
+                last_date = old["date"].max().normalize()
+                start = (last_date + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+                if verbose:
+                    print(f"  ⏩ {code}: incremental from {start}")
+        except Exception:
+            pass
+    else:
+        start = (pd.Timestamp.now() - pd.Timedelta(days=history_days)).strftime("%Y-%m-%d")
+
+    df = fetch_capital_flow(code, start=start, end=end, timeout_sec=timeout_sec)
+    if df is None or df.empty:
+        if verbose:
+            print(f"  ❌ {code}: 拎唔到{' (增量無新數據)' if start else ''}")
+        # 若現有 CSV 存在, 報現有行數
+        if out_path.exists():
+            try:
+                return len(pd.read_csv(out_path))
+            except Exception:
+                pass
+        return 0
+
+    df["date"] = pd.to_datetime(df["date"]).dt.normalize()
+
+    # append-safe merge
+    if out_path.exists():
+        try:
+            old = pd.read_csv(out_path, parse_dates=["date"])
+            old["date"] = pd.to_datetime(old["date"]).dt.normalize()
+            df = pd.concat([old, df], ignore_index=True)
+        except Exception:
+            pass
+    df = (df.sort_values("date")
+            .drop_duplicates(subset=["date"], keep="last")
+            .reset_index(drop=True))
+
+    # 確保欄位順序 (向後相容: 補缺欄)
+    for col in ["super_large_net", "large_net", "medium_net", "small_net",
+                "total_net", "super_large_pct"]:
+        if col not in df.columns:
+            df[col] = pd.NA
+    df = df[["date", "super_large_net", "large_net", "medium_net",
+             "small_net", "total_net", "super_large_pct"]]
+    df.to_csv(out_path, index=False)
+
+    if verbose:
+        rng = f"{df['date'].min().date()} ~ {df['date'].max().date()}"
+        print(f"  ✅ {code}: {len(df)} 日 [{rng}]")
+    return len(df)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="每日資金流向收集器 (富途 DAY period)")
+    parser.add_argument("--workers", type=int, default=4,
+                        help="並行 subprocess 數 (預設 4, OpenD 支援多連線)")
+    parser.add_argument("--stocks", help="指定 (逗號分隔), 預設 HSI_CORE 52 隻")
+    parser.add_argument("--backfill", action="store_true",
+                        help="全量 backfill (~1y), 唔理現有 CSV")
+    parser.add_argument("--history-days", type=int, default=365,
+                        help="backfill 歷史天數 (預設 365, Futu capital flow 上限 ~1y)")
+    parser.add_argument("--timeout", type=int, default=90, help="每隻 fetch timeout (秒)")
+    parser.add_argument("--rate-sleep", type=float, default=0.4,
+                        help="每隻完成後 sleep 秒數 (限頻禮貌, 預設 0.4)")
+    args = parser.parse_args()
+
+    stocks = args.stocks.split(",") if args.stocks else HSI_CORE
+
+    print("=" * 64)
+    print(f"📥 富途每日資金流向收集器 (subprocess + timeout)")
+    print(f"   股票: {len(stocks)} 隻")
+    print(f"   模式: {'全量 backfill (~1y)' if args.backfill else '增量 (skip 已有 dates)'}")
+    print(f"   並行: {args.workers} workers")
+    print(f"   OpenD: {'✓ alive' if opend_alive() else '✗ DEAD — 先啟動 FutuOpenD'}")
+    print(f"   輸出: {FLOW_DIR}/HK_<code>_flow.csv")
+    print("=" * 64)
+
+    if not opend_alive():
+        print("\n❌ OpenD port 11111 冇開. 請先啟動 FutuOpenD 再跑.")
+        return 1
+
+    ok, total, total_rows = 0, 0, 0
+
+    def _task(code):
+        return code, collect_stock(
+            code, backfill=args.backfill, timeout_sec=args.timeout,
+            history_days=args.history_days, verbose=False)
+
+    failed = []
+
+    def _run_pass(stock_list, pass_label, rate_sleep):
+        nonlocal ok, total, total_rows
+        pass_failed = []
+        with ThreadPoolExecutor(max_workers=max(1, args.workers)) as ex:
+            futures = {ex.submit(_task, c): c for c in stock_list}
+            for fut in as_completed(futures):
+                code = futures[fut]
+                total += 1
+                try:
+                    c, rows = fut.result()
+                except Exception as e:
+                    print(f"  ❌ {code}: {str(e)[:80]}")
+                    pass_failed.append(code)
+                    continue
+                if rows > 0:
+                    ok += 1
+                    total_rows += rows
+                    print(f"  ✅ [{pass_label}] {c}: {rows} 日")
+                else:
+                    print(f"  ⚠️  [{pass_label}] {c}: 0 日 (timeout / 冇數據)")
+                    pass_failed.append(code)
+                time.sleep(rate_sleep)  # 限頻禮貌
+        return pass_failed
+
+    # [修復 2026-08-18] 批次連環 bombard 會撞 OpenD 限頻 (單獨 fetch 1 秒搞掂,
+    # 批次就 timeout) — 第一輪失敗嘅股 sleep 後重試一輪 (慢節奏)
+    failed = _run_pass(stocks, f"1/{len(stocks)}", args.rate_sleep)
+    if failed:
+        print(f"\n🔁 重試 {len(failed)} 隻失敗股 (sleep 10s 後慢節奏重試)...")
+        time.sleep(10)
+        retry_failed = _run_pass(failed, "retry", args.rate_sleep * 4)
+        print(f"   重試救返 {len(failed) - len(retry_failed)} 隻")
+
+    print(f"\n{'='*64}")
+    print(f"✅ 完成: {ok}/{total} 隻有數據, 共 {total_rows:,} 行")
+    if ok < total:
+        print(f"   ⚠️  {total - ok} 隻失敗 (timeout / 冇 capital flow 數據)")
+    print(f"{'='*64}")
+
+
+if __name__ == "__main__":
+    main()

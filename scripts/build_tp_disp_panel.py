@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""build_tp_disp_panel.py — 由 analyst_ratings_em_raw.csv (per-broker 目標價) 起
+target_price_disagreement thesis 要嘅 tp_disp / tp_med panel.
+
+PIT 規則: 第 t 日只可以用 report_date <= t-1 嘅目標價; 每券商用最新一筆;
+close 用 futu_history close_unadj (HK.xxxxx). tp_disp = (max-min)/close; tp_med = median/close.
+輸出 wide panel: data/new_sources/tp_disp_panel.csv (date x stock, 值=dispersion)
+              + data/new_sources/tp_med_panel.csv (date x stock, 值=median TP / close)
+"""
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parent.parent
+NS = ROOT / "data" / "new_sources"
+CLOSE_DIR = ROOT / "data" / "futu_history" / "close_unadj"
+
+raw = pd.read_csv(NS / "analyst_ratings_em_raw.csv",
+                  dtype={"stock_code": str})
+raw["stock_code"] = raw["stock_code"].str.zfill(5)
+raw["date"] = pd.to_datetime(raw["date"])
+raw = raw.dropna(subset=["target_price"])
+
+# 讀 close panel
+close_files = sorted(CLOSE_DIR.glob("*.csv"))
+print("close files:", len(close_files))
+closes = {}
+for f in close_files:
+    code = f.stem.split(".")[-1].zfill(5)
+    s = pd.read_csv(f)
+    dcol = "time_key"
+    ccol = "close"
+    closes[code] = pd.Series(s[ccol].values, index=pd.to_datetime(s[dcol]))
+close = pd.DataFrame(closes).sort_index()
+
+# 有效 broker 集合 per stock per date: 用 latest TP per broker as of t-1
+codes = sorted(set(raw.stock_code) & set(close.columns))
+print("codes with close:", len(codes))
+all_days = close.index
+
+disp = {}
+med = {}
+for code in codes:
+    sub = raw[raw.stock_code == code].sort_values("date")
+    # 重新 build: as-of 講法 — 對每個交易日, 取 date<=t-1 每券商最新
+    ev = sub.drop_duplicates(subset=["broker", "date"], keep="last")
+    dates = ev["date"].values
+    tps = ev["target_price"].values
+    brks = ev["broker"].values
+
+    days = [d for d in all_days if d in close.index and not pd.isna(close.at[d, code])]
+    ser_d, ser_m = [], []
+    broker_tp = {}
+    i = 0
+    ev_sorted = ev.sort_values("date")
+    dates = ev_sorted["date"].values
+    tps = ev_sorted["target_price"].values
+    brks = ev_sorted["broker"].values
+    for d in days:
+        cutoff = d - pd.Timedelta(days=1)
+        while i < len(dates) and dates[i] <= cutoff:
+            broker_tp[brks[i]] = tps[i]
+            i += 1
+        vals = np.array(list(broker_tp.values()))
+        if len(vals) >= 3:
+            ser_d.append((vals.max() - vals.min()) / close.at[d, code])
+            ser_m.append(np.median(vals) / close.at[d, code])
+        else:
+            ser_d.append(np.nan); ser_m.append(np.nan)
+    disp[code] = pd.Series(ser_d, index=days)
+    med[code] = pd.Series(ser_m, index=days)
+
+disp_df = pd.DataFrame(disp).sort_index()
+med_df = pd.DataFrame(med).sort_index()
+disp_df.index.name = "date"; med_df.index.name = "date"
+disp_df.to_csv(NS / "tp_disp_panel.csv")
+med_df.to_csv(NS / "tp_med_panel.csv")
+print("disp:", disp_df.shape, "cols>=126d valid:", (disp_df.notna().sum() >= 126).sum())
+print("med :", med_df.shape)
+print(disp_df.notna().sum().describe().round(0))

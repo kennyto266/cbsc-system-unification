@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+CBSC 數據資產每日備份（A3）
+
+打包關鍵數據資產做單個 zip，擺喺 repo 外面（唔會爆 git）：
+    C:/Users/Penguin8n/ZCodeProject_backups/data_assets_YYYYMMDD.zip
+
+備份範圍（glob 容錯，唔存在嘅自動跳過）：
+    - cbsc-system-unification/data/factor_store/*.parquet        (所有 panels)
+    - cbsc-system-unification/data/new_sources/em_fundamentals/*.csv (28年 raw)
+    - cbsc-system-unification/data/new_sources/{eveb_raw,results_calendar_raw,buyback_em_raw}.csv
+    - backtests/strategy_state.json, backtests/hermes_theses.json
+    - trading_graph/research_ledger.json
+
+旋轉：淨留最近 14 個 zip，舊嘅刪。
+
+手動執行:
+    py -3.13 scripts/backup_data_assets.py
+"""
+
+import argparse
+import sys
+import zipfile
+from datetime import datetime
+from pathlib import Path
+
+# 層級: scripts/ -> cbsc-system-unification/ -> ZCodeProject (repo root)
+REPO_ROOT = Path(__file__).resolve().parents[2]
+UNIFY = REPO_ROOT / "cbsc-system-unification"
+
+# 備份輸出目錄 — repo 外面!
+BACKUP_DIR = Path("C:/Users/Penguin8n/ZCodeProject_backups")
+KEEP_N = 14
+
+# glob patterns (相對 repo root); missing 自動跳過
+GLOB_PATTERNS = [
+    "cbsc-system-unification/data/factor_store/*.parquet",
+    "cbsc-system-unification/data/new_sources/em_fundamentals/*.csv",
+    "cbsc-system-unification/data/new_sources/eveb_raw.csv",
+    "cbsc-system-unification/data/new_sources/results_calendar_raw.csv",
+    "cbsc-system-unification/data/new_sources/buyback_em_raw.csv",
+    "backtests/strategy_state.json",
+    "backtests/hermes_theses.json",
+    "trading_graph/research_ledger.json",
+]
+
+
+def collect_files() -> list:
+    """glob 收集所有要備份嘅檔案，去重 + 排序"""
+    files = set()
+    for pattern in GLOB_PATTERNS:
+        for p in REPO_ROOT.glob(pattern):
+            if p.is_file():
+                files.add(p.resolve())
+    return sorted(files)
+
+
+def make_backup() -> Path:
+    """打包做 zip，return zip path"""
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+
+    date_tag = datetime.now().strftime("%Y%m%d")
+    zip_path = BACKUP_DIR / f"data_assets_{date_tag}.zip"
+
+    files = collect_files()
+    if not files:
+        raise RuntimeError("冇搵到任何要備份嘅檔案 — check GLOB_PATTERNS")
+
+    # 同日重跑直接覆蓋（temp 寫完先 atomic rename）
+    tmp_path = zip_path.with_suffix(".zip.tmp")
+    with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+        for f in files:
+            arcname = f.relative_to(REPO_ROOT).as_posix()
+            zf.write(f, arcname)
+    tmp_path.replace(zip_path)
+
+    return zip_path
+
+
+def rotate_backups(keep: int = KEEP_N) -> list:
+    """刪走舊 zip，淨留最近 keep 個。return 被刪嘅 path list"""
+    zips = sorted(BACKUP_DIR.glob("data_assets_*.zip"))
+    to_delete = zips[:-keep] if len(zips) > keep else []
+    for p in to_delete:
+        p.unlink()
+    return to_delete
+
+
+def main():
+    parser = argparse.ArgumentParser(description="CBSC 數據資產每日備份")
+    parser.add_argument("--keep", type=int, default=KEEP_N, help=f"保留 zip 數量 (default {KEEP_N})")
+    parser.add_argument("--dry-run", action="store_true", help="只列出會備份嘅檔案，唔打包")
+    args = parser.parse_args()
+
+    if args.dry_run:
+        files = collect_files()
+        for f in files:
+            print(f"  {f.relative_to(REPO_ROOT).as_posix()}  ({f.stat().st_size:,} B)")
+        print(f"總共 {len(files)} 個檔案")
+        return 0
+
+    zip_path = make_backup()
+    deleted = rotate_backups(args.keep)
+
+    n_files = len(collect_files())
+    size_mb = zip_path.stat().st_size / (1024 * 1024)
+    print(f"✅ 備份完成: {zip_path}")
+    print(f"   檔案數: {n_files}  |  zip 大細: {size_mb:.1f} MB")
+    if deleted:
+        print(f"   旋轉: 刪咗 {len(deleted)} 個舊 zip (keep {args.keep})")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

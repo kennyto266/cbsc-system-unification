@@ -1,0 +1,563 @@
+name: CI Main Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  # Setup and Environment
+  setup:
+    name: Setup Environment
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is-release: ${{ steps.version.outputs.is-release }}
+      cache-key: ${{ steps.cache.outputs.key }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate version
+        id: version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "is-release=true" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(git describe --tags --always --dirty)
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "is-release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate cache key
+        id: cache
+        run: |
+          CACHE_KEY="${{ runner.os }}-${{ hashFiles('**/package-lock.json', '**/requirements*.txt', '**/poetry.lock') }}"
+          echo "key=$CACHE_KEY" >> $GITHUB_OUTPUT
+
+  # Code Quality and Security
+  code-quality:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            unified-dashboard/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          # Frontend dependencies
+          cd frontend && npm ci
+          cd ../unified-dashboard && npm ci
+          cd ..
+
+          # Backend dependencies
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run code quality checks
+        run: |
+          # Frontend linting and type checking
+          cd frontend && npm run lint && npm run type-check
+          cd ../unified-dashboard && npm run lint && npm run type-check
+          cd ..
+
+          # Backend linting
+          flake8 src/ --max-line-length=120 --ignore=E203,W503
+          black --check src/
+          isort --check-only src/
+          mypy src/ --ignore-missing-imports
+
+      - name: Run security scans
+        run: |
+          # Python security
+          bandit -r src/ -f json -o bandit-report.json
+          safety check --json --output safety-report.json || true
+
+          # JavaScript security
+          cd frontend && npm audit --audit-level moderate
+          cd ../unified-dashboard && npm audit --audit-level moderate
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+          retention-days: 30
+
+  # Testing Matrix
+  test-matrix:
+    name: Test Matrix
+    runs-on: ${{ matrix.os }}
+    needs: [setup, code-quality]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.10', '3.11']
+        node-version: ['16', '18', '20']
+        include:
+          - os: ubuntu-latest
+            python-version: '3.11'
+            node-version: '18'
+            coverage: true
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_cbsc
+          POSTGRES_USER: test_user
+        options: >-
+          --health-cmd pg_isready -U test_user -d test_cbsc
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          # Install frontend dependencies
+          cd frontend && npm ci
+          cd ../unified-dashboard && npm ci
+          cd ..
+
+          # Install backend dependencies
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Run backend tests
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_cbsc
+          REDIS_URL: redis://localhost:6379/0
+          TESTING: true
+        run: |
+          pytest tests/ \
+            -v \
+            --cov=src \
+            --cov-report=xml \
+            --cov-report=html \
+            --junitxml=test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
+
+      - name: Run frontend tests
+        run: |
+          cd frontend && npm run test:ci
+          cd ../unified-dashboard && npm run test:ci
+
+      - name: Upload coverage reports
+        if: matrix.coverage == true
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml,./frontend/coverage/lcov.info,./unified-dashboard/coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
+          path: |
+            test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
+            htmlcov/
+            frontend/coverage/
+            unified-dashboard/coverage/
+
+  # Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [setup, code-quality]
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_cbsc
+          POSTGRES_USER: test_user
+        options: >-
+          --health-cmd pg_isready -U test_user -d test_cbsc
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Start services
+        run: |
+          # Start the backend services
+          docker-compose -f docker-compose.test.yml up -d
+
+          # Wait for services to be ready
+          sleep 30
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_cbsc
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          alembic upgrade head
+
+      - name: Run API integration tests
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_cbsc
+          REDIS_URL: redis://localhost:6379/0
+          API_BASE_URL: http://localhost:8000
+        run: |
+          pytest tests/integration/api/ \
+            -v \
+            --timeout=300 \
+            --junitxml=integration-test-results.xml
+
+      - name: Run end-to-end tests
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_cbsc
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          pytest tests/e2e/ \
+            -v \
+            --junitxml=e2e-test-results.xml
+
+      - name: Stop services
+        if: always()
+        run: |
+          docker-compose -f docker-compose.test.yml down -v
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            integration-test-results.xml
+            e2e-test-results.xml
+
+  # Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: [setup, code-quality]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install locust pytest-benchmark
+
+      - name: Run load tests
+        run: |
+          locust -f tests/performance/locustfile.py \
+            --headless \
+            --users 100 \
+            --spawn-rate 10 \
+            --run-time 60s \
+            --host http://localhost:8000 \
+            --html performance-report.html || true
+
+      - name: Run performance benchmarks
+        run: |
+          pytest tests/performance/ \
+            -v \
+            --benchmark-only \
+            --benchmark-json=benchmark-results.json
+
+      - name: Analyze performance regression
+        run: |
+          python .github/scripts/analyze_performance.py \
+            --current benchmark-results.json \
+            --threshold 10
+
+      - name: Upload performance reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-reports
+          path: |
+            performance-report.html
+            benchmark-results.json
+
+  # Build Docker Images
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [setup, test-matrix, integration-tests]
+    strategy:
+      matrix:
+        service:
+          - { name: 'api-gateway', context: './gateway', dockerfile: './Dockerfile' }
+          - { name: 'frontend', context: './frontend', dockerfile: './Dockerfile' }
+          - { name: 'unified-dashboard', context: './unified-dashboard', dockerfile: './Dockerfile' }
+          - { name: 'user-management', context: './src/api', dockerfile: './Dockerfile' }
+          - { name: 'strategy-dashboard', context: './src/dashboard', dockerfile: './Dockerfile' }
+          - { name: 'quant-system', context: './src/quant', dockerfile: './Dockerfile' }
+          - { name: 'config-service', context: './src/config', dockerfile: './Dockerfile' }
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service.name }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service.name }}@${{ steps.build.outputs.digest }}
+          format: spdx-json
+          output-file: sbom-${{ matrix.service.name }}.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom-${{ matrix.service.name }}
+          path: sbom-${{ matrix.service.name }}.json
+
+  # Create Deployment Bundle
+  create-bundle:
+    name: Create Deployment Bundle
+    runs-on: ubuntu-latest
+    needs: [setup, build-images]
+    outputs:
+      bundle-url: ${{ steps.bundle.outputs.url }}
+      bundle-version: ${{ needs.setup.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create deployment bundle
+        id: bundle
+        run: |
+          # Create bundle directory
+          mkdir -p deployment-bundle
+
+          # Copy Kubernetes manifests
+          cp -r k8s/ deployment-bundle/
+
+          # Copy Helm charts
+          cp -r helm/ deployment-bundle/
+
+          # Copy deployment scripts
+          cp -r scripts/deploy/ deployment-bundle/
+
+          # Create version info
+          cat > deployment-bundle/version.json << EOF
+          {
+            "version": "${{ needs.setup.outputs.version }}",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "build_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "is_release": ${{ needs.setup.outputs.is-release }}
+          }
+          EOF
+
+          # Create bundle
+          tar -czf deployment-bundle-${{ needs.setup.outputs.version }}.tar.gz deployment-bundle/
+
+          # Upload to release assets if it's a release
+          if [[ "${{ needs.setup.outputs.is-release }}" == "true" ]]; then
+            gh release upload v${{ needs.setup.outputs.version }} deployment-bundle-${{ needs.setup.outputs.version }}.tar.gz
+            echo "url=https://github.com/${{ github.repository }}/releases/download/v${{ needs.setup.outputs.version }}/deployment-bundle-${{ needs.setup.outputs.version }}.tar.gz" >> $GITHUB_OUTPUT
+          else
+            # Upload as artifact for non-release
+            echo "url=artifact:deployment-bundle" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload deployment bundle
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-bundle
+          path: deployment-bundle-${{ needs.setup.outputs.version }}.tar.gz
+          retention-days: 30
+
+  # Notification
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [setup, code-quality, test-matrix, integration-tests, performance-tests, build-images]
+    if: always()
+    steps:
+      - name: Determine status
+        id: status
+        run: |
+          if [[ "${{ needs.code-quality.result }}" == "success" &&
+                "${{ needs.test-matrix.result }}" == "success" &&
+                "${{ needs.integration-tests.result }}" == "success" &&
+                "${{ needs.build-images.result }}" == "success" ]]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "color=good" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "color=danger" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Slack notification
+        if: env.SLACK_WEBHOOK != ''
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              "attachments": [
+                {
+                  "color": "${{ steps.status.outputs.color }}",
+                  "fields": [
+                    {
+                      "title": "Pipeline Status",
+                      "value": "${{ steps.status.outputs.status }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Repository",
+                      "value": "${{ github.repository }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Branch",
+                      "value": "${{ github.ref_name }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Commit",
+                      "value": "<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>",
+                      "short": true
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "type": "button",
+                      "text": "View Workflow",
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

@@ -1,0 +1,40 @@
+import json, re, time, urllib.request, urllib.parse
+import websocket
+
+CDP = "http://127.0.0.1:9333"
+
+
+def probe(url, wait=14, click_sel=None):
+    req = urllib.request.Request(f"{CDP}/json/new?" + urllib.parse.urlencode({"url": "about:blank"}), method="PUT")
+    tab = json.loads(urllib.request.urlopen(req, timeout=15).read())
+    ws = websocket.create_connection(tab["webSocketDebuggerUrl"], timeout=15)
+    ws.send(json.dumps({"id": 1, "method": "Network.enable"}))
+    ws.send(json.dumps({"id": 2, "method": "Page.navigate", "params": {"url": url}}))
+    t0 = time.time(); reqs = []
+    while time.time() - t0 < wait:
+        try:
+            ws.settimeout(2); m = json.loads(ws.recv())
+        except Exception:
+            continue
+        if m.get("method") == "Network.requestWillBeSent":
+            u = m["params"]["request"]["url"]
+            if "eastmoney" in u or "dfcfw" in u:
+                reqs.append(u)
+    try:
+        ws.close()
+        urllib.request.urlopen(f"{CDP}/json/close/{tab['id']}", timeout=10).read()
+    except Exception:
+        pass
+    names = sorted(set(n for u in reqs for n in re.findall(r"reportName=([A-Z0-9_]+)", u)))
+    return names, [u[:160] for u in reqs if "reportName" not in u][:6]
+
+
+for u in [
+    "https://data.eastmoney.com/hk/cghl/00700.html",
+    "https://data.eastmoney.com/hkgk/cghl.html",
+    "https://data.eastmoney.com/hk/cggs/00700.html",
+]:
+    n, o = probe(u)
+    print(u, "->", n)
+    for x in o:
+        print("   ", x)

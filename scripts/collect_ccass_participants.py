@@ -1,0 +1,276 @@
+#!/usr/bin/env python3
+"""collect_ccass_participants.py — HKEX SDW per-stock participant collector (8 workers).
+
+源頭: https://www3.hkexnews.hk/sdw/search/searchsdw.aspx (ASP.NET WebForms POST)
+  txtStockCode=00XXX + txtShareholdingDate=YYYY/MM/DD → participant table (~644行)
+  實測 2026-08-23: 只保留約 12 個月窗口 (2025/09 有貨, 2025/08-20 前空)。
+  假日請求會 fallback 顯示前一交易日 — 以頁面顯示嘅 Shareholding Date 去重 (builder 處理)。
+
+8 個 worker 各自獨立 session/ViewState, 分 stock round-robin。
+輸出: 每 worker 獨立 part 檔 (data/new_sources/ccass_parts/part_{i}.csv)
+  + 增量合併落 data/new_sources/ccass_participants_long.csv。
+
+[T2 增量寫+斷點續爬 09-15] 舊版 docstring 話「最後合併」但根本冇嗰步 —
+_factor_store_refresh 900s timeout 殺完, part 檔進度永遠落唔到 long.csv,
+下游 broker_top3 讀住殘檔。而家三層保命:
+  ① main() monitor 每 MERGE_EVERY 秒 merge_parts() 增量合併落 long.csv
+     (原子 tmp+replace) — 殺進程只蝕最後一個週期;
+  ② 每 worker 每行完一個日曆日就 flush + save_ckpt (last_done + retry pairs)
+     — 重跑由 last_done+1 續爬唔重複 (done set 由 part 檔讀返做後備);
+  ③ merge = 舊 long ∪ parts, dedup (shown_date, stock, participant_id) keep
+     last (parts 贏) + shrink guard (結果 < 上次 90% 拒寫, 08-26 教訓)。
+網絡擷取邏輯 (request 構造/重試/regex/DELAY) 原封不動。
+用法:
+  python scripts/collect_ccass_participants.py            # 全量 8 workers
+"""
+import csv
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+import urllib.parse
+import urllib.request
+import http.cookiejar
+from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
+from datetime import date, datetime, timedelta
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+OUT_DIR = BASE / "data" / "new_sources"
+PARTS = OUT_DIR / "ccass_parts"
+PARTS.mkdir(parents=True, exist_ok=True)
+
+URL = "https://www3.hkexnews.hk/sdw/search/searchsdw.aspx"
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+DELAY = 2.0
+START = date(2025, 8, 25)
+
+POOL = ['00001','00002','00003','00005','00006','00012','00016','00017','00020','00027',
+'00066','00101','00175','00241','00268','00285','00291','00386','00388','00688','00700','00762',
+'00823','00883','00939','00941','00992','01024','01038','01088','01109','01211','01299','01398',
+'01801','01810','01876','01928','02013','02269','02318','02388','02628','02899','03690','06862',
+'09618','09888','09988','09992','09999']
+
+CSV_HEAD = ["shown_date", "stock", "participant_id", "participant_name", "shares", "pct_of_issued"]
+
+ROW_RE = re.compile(
+    r'<td class="col-participant-id">\s*<div[^>]*>[^<]*</div>\s*<div[^>]*>([A-Z][0-9]{5})</div>\s*</td>\s*'
+    r'<td class="col-participant-name">\s*<div[^>]*>[^<]*</div>\s*<div[^>]*>([^<]*)</div>\s*</td>\s*'
+    r'<td class="col-address">.*?</td>\s*'
+    r'<td class="col-shareholding[^"]*">\s*<div[^>]*>[^<]*</div>\s*<div[^>]*>([0-9,]+)</div>\s*</td>\s*'
+    r'<td class="col-shareholding-percent[^"]*">\s*<div[^>]*>[^<]*</div>\s*<div[^>]*>([0-9.]+)%', re.S)
+SHOWN_DATE_RE = re.compile(r"Shareholding Date[^0-9]*([0-9]{4}/[0-9]{2}/[0-9]{2})")
+
+
+def daterange(start: date, end: date):
+    d = start
+    while d <= end:
+        if d.weekday() < 5:
+            yield d
+        d += timedelta(days=1)
+
+
+MERGE_EVERY = 240  # 秒 — monitor 週期合併落 long.csv, timeout 殺極都只蝕一個週期
+MERGE_STATE = "merge_state.json"  # 上次合併行數 (shrink guard 之用)
+
+
+def _ckpt_path(parts_dir: Path, wid: int) -> Path:
+    return parts_dir / f"ckpt_{wid}.json"
+
+
+def load_ckpt(parts_dir: Path, wid: int):
+    """讀 worker checkpoint → (last_done 'YYYY/MM/DD' 或 '', retry pairs set)。"""
+    try:
+        d = json.loads(_ckpt_path(parts_dir, wid).read_text(encoding="utf-8"))
+        return str(d.get("last_done", "")), {tuple(p) for p in d.get("retry", [])}
+    except Exception:
+        return "", set()
+
+
+def save_ckpt(parts_dir: Path, wid: int, last_done: str, retry: set) -> None:
+    """checkpoint 原子寫 (tmp+replace) — 每行完一個日曆日就落盤, 殺進程唔蒸發。"""
+    p = _ckpt_path(parts_dir, wid)
+    tmp = p.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(
+        {"last_done": last_done, "retry": sorted(list(p_) for p_ in retry),
+         "ts": f"{datetime.now():%Y-%m-%d %H:%M}"}, ensure_ascii=False), encoding="utf-8")
+    # [09-15 fix] Windows os.replace 撞鎖 (AV/殘handle, WinError 5) — 19:09 實錄炸死
+    # 收尾 worker。checkpoint 係進度優化唔係數據本體 — 寫唔到降級警告, 唔准炸死爬蟲。
+    for i in range(3):
+        try:
+            os.replace(tmp, p)
+            return
+        except PermissionError:
+            time.sleep(1.5 * (i + 1))
+            tmp = p.with_suffix(f".json.tmp{i}")  # 換名避開同一鎖
+            tmp.write_text(json.dumps(
+                {"last_done": last_done, "retry": sorted(list(p_) for p_ in retry),
+                 "ts": f"{datetime.now():%Y-%m-%d %H:%M}"}, ensure_ascii=False), encoding="utf-8")
+    print(f"[ckpt{wid}] ⚠️ 三次都寫唔到 (檔被鎖) — 落盤降級, 進度靠 parts 檔本身", flush=True)
+
+
+def merge_parts(parts_dir: Path = None, out_path: Path = None) -> int:
+    """parts + 舊 long → ccass_participants_long.csv 增量合併 (原子 tmp+replace)。
+
+    - 舊 long frame 排先、parts 排尾 → dedup keep last 時 parts (新爬) 贏;
+      舊 raw 獨有日子 (HK_*_hist_p 來源嗰啲) 原封保留。
+    - dedup key = (shown_date, stock, participant_id); stock 統一 zfill(5)。
+    - shrink guard: 結果 < 上次 (merge_state.json) 90% → 拒寫保舊檔
+      (08-26 教訓: 無條件覆蓋令 51 股變 3 股)。
+    回傳寫入行數 (0 = 冇嘢寫/拒寫)。
+    """
+    import pandas as pd
+    pdir = Path(parts_dir) if parts_dir else PARTS
+    out = Path(out_path) if out_path else OUT_DIR / "ccass_participants_long.csv"
+    frames = []
+    if out.exists():  # 舊 raw 行先 — keep last 俾 parts 贏
+        try:
+            old = pd.read_csv(out, dtype={"stock": str})
+            if len(old) and all(c in old.columns for c in CSV_HEAD):
+                frames.append(old[CSV_HEAD])
+        except Exception as e:
+            print(f"[merge] 舊 {out.name} 讀唔到 ({type(e).__name__}) — 當冇舊貨", flush=True)
+    for p in sorted(pdir.glob("part_*.csv")):
+        try:  # on_bad_lines=skip — worker 啱啱 flush 緊嘅撕裂尾行唔會炸成個 part
+            df = pd.read_csv(p, dtype={"stock": str}, on_bad_lines="skip")
+            if len(df) and all(c in df.columns for c in CSV_HEAD):
+                frames.append(df[CSV_HEAD])
+        except Exception as e:
+            print(f"[merge] {p.name} 讀唔到, 跳過: {type(e).__name__}", flush=True)
+    if not frames:
+        return 0
+    big = pd.concat(frames, ignore_index=True)
+    big["stock"] = big["stock"].astype(str).str.strip().str.zfill(5)
+    big = big.drop_duplicates(subset=["shown_date", "stock", "participant_id"], keep="last")
+    big = big.sort_values(["stock", "shown_date"], kind="stable")
+    state = pdir / MERGE_STATE
+    try:
+        prev_rows = int(json.loads(state.read_text(encoding="utf-8")).get("rows", 0))
+    except Exception:
+        prev_rows = 0
+    if prev_rows and len(big) < prev_rows * 0.9:
+        print(f"[merge] 拒寫: {len(big)} rows < 上次 {prev_rows} 嘅 90% (parts 可能壞) "
+              f"— 舊 {out.name} 原封不動", flush=True)
+        return 0
+    tmp = out.with_suffix(out.suffix + ".tmp")
+    big.to_csv(tmp, index=False)
+    os.replace(tmp, out)
+    state.write_text(json.dumps({"rows": len(big), "ts": f"{datetime.now():%Y-%m-%d %H:%M}"},
+                                ensure_ascii=False), encoding="utf-8")
+    print(f"[merge] {out.name} rows={len(big)} stocks={big['stock'].nunique()}", flush=True)
+    return len(big)
+
+
+def worker(wid: int, stocks: list, parts_dir: Path = None):
+    parts_dir = Path(parts_dir) if parts_dir else PARTS
+    cj = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+    opener.addheaders = list(UA.items())
+
+    def refresh():
+        html = opener.open(URL, timeout=40).read().decode("utf-8", "ignore")
+        def hid(name):
+            m = re.search(r'<input type="hidden" name="' + name + r'"[^>]*value="([^"]*)"', html)
+            return m.group(1) if m else ""
+        return hid("__VIEWSTATE"), hid("__VIEWSTATEGENERATOR")
+
+    vs, vg = refresh()
+    out = parts_dir / f"part_{wid}.csv"
+    new = not out.exists()
+    f = open(out, "a", newline="", encoding="utf-8")
+    w = csv.writer(f)
+    if new:
+        w.writerow(CSV_HEAD)
+    done = set()
+    if not new:  # resume 後備: part 檔已有 rows 嘅 (股,日) 唔重爬
+        import pandas as pd
+        try:
+            prev = pd.read_csv(out, usecols=["stock", "shown_date"])
+            done = set(zip(prev["stock"].astype(str).str.zfill(5), prev["shown_date"]))
+        except Exception:
+            pass
+    # checkpoint (主): last_done 前嘅日子一律唔重爬, 淨補 retry pairs
+    last_done_ds, retry_pairs = load_ckpt(parts_dir, wid)
+    try:
+        last_done = datetime.strptime(last_done_ds, "%Y/%m/%d").date() if last_done_ds else None
+    except ValueError:
+        last_done = None
+
+    today = datetime.now().strftime("%Y%m%d")
+    n_req = n_rows = n_fail = 0
+    for d in daterange(START, date.today()):
+        ds = d.strftime("%Y/%m/%d")
+        below = last_done is not None and d <= last_done
+        date_fails = []
+        for stock in stocks:
+            if (stock, ds) in done:
+                continue
+            if below and (stock, ds) not in retry_pairs:
+                continue  # checkpoint 已覆蓋嘅日子 — 唔重爬 (假日 fallback 求職日都計在內)
+            data = {"__EVENTTARGET": "btnSearch", "__EVENTARGUMENT": "", "__VIEWSTATE": vs,
+                    "__VIEWSTATEGENERATOR": vg, "txtStockCode": stock,
+                    "txtShareholdingDate": ds, "today": today,
+                    "sortBy": "shareholding", "sortDirection": "desc",
+                    "originalShareholdingDate": "", "alertMsg": ""}
+            html = ""
+            for attempt in range(3):
+                try:
+                    html = opener.open(URL, urllib.parse.urlencode(data).encode(), timeout=60).read().decode("utf-8", "ignore")
+                    break
+                except Exception:
+                    time.sleep(5 * (attempt + 1))
+                    vs, vg = refresh()
+            n_req += 1
+            if html:
+                m_sd = SHOWN_DATE_RE.search(html)
+                shown = m_sd.group(1) if m_sd else ds
+                rows = ROW_RE.findall(html)
+                if rows:
+                    for pid, pname, sh, pct in rows:
+                        w.writerow([shown, stock, pid, pname.strip(), sh.replace(",", ""), pct])
+                    n_rows += len(rows)
+                else:
+                    n_fail += 1
+                    date_fails.append((stock, ds))
+            else:
+                n_fail += 1
+                date_fails.append((stock, ds))
+            if n_req % 20 == 0:
+                f.flush()
+                print(f"[w{wid}] req={n_req} rows={n_rows} fail={n_fail} @ {ds} {stock}", flush=True)
+            time.sleep(DELAY)
+        # --- [T2 ②] 每日斷點: flush + checkpoint 落盤 (殺進程唔蒸發) ---
+        if below:  # retry 飛完: 成功/已見 rows 嘅 pair 踢走, 仍 fail 嘅留低
+            fails = set(date_fails)
+            retry_pairs = {p for p in retry_pairs if p[1] != ds or p in fails}
+        elif date_fails:
+            retry_pairs.update(date_fails)
+        if (last_done is None or d > last_done) and not date_fails:
+            last_done = d
+        f.flush()
+        save_ckpt(parts_dir, wid, last_done.strftime("%Y/%m/%d") if last_done else "", retry_pairs)
+    f.close()
+    print(f"[w{wid}] DONE req={n_req} rows={n_rows} fail={n_fail}", flush=True)
+
+
+def main():
+    workers = [POOL[i::8] for i in range(8)]
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        futs = [ex.submit(worker, wid, stocks) for wid, stocks in enumerate(workers)]
+        while True:  # [T2 ①] monitor — 週期增量合併, 殺進程只蝕最後一個週期
+            _, pending = wait(futs, timeout=MERGE_EVERY, return_when=ALL_COMPLETED)
+            if not pending:
+                break
+            try:
+                merge_parts()
+            except Exception as e:
+                print(f"[merge] 週期合併失敗 (下個週期再試): {type(e).__name__}: {e}", flush=True)
+        for f in futs:
+            f.result()  # worker 炸要浮面
+    merge_parts()  # 收尾合併
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,249 @@
+"""
+VectorBT 參數掃描引擎（vbt 0.28 broadcasting 版）
+
+vbt 0.28 冇 vbt.Param（Pro 功能），但可以用 broadcasting
+技巧實現同等效果：將每個參數組合生成獨立 column，
+一次過放入 from_signals 做 batch 回測。
+
+參數掃描：Z-Score 策略 × 多個 window × 多個 entry_z
+- 5 個 window × 4 個 entry_z × 60 隻股票 = 1,200 個組合
+- 全部一次過 batch 回測（Numba 32 核心並行）
+
+用法:
+    python scripts/hkptrc_strategies/param_sweep.py
+    python scripts/hkptrc_strategies/param_sweep.py --stocks 30 --windows 5,10,20,30,50
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, __file__.rsplit("\\", 1)[0])
+
+from common import *
+import numpy as np
+import pandas as pd
+import vectorbt as vbt
+import time
+import argparse
+import itertools
+import numba
+
+
+def generate_param_columns(prices, windows, entry_zs, exit_z=0.5):
+    """為每個 (window, entry_z) 組合生成 entries/exits。
+
+    用 broadcasting 技巧：每個參數組合生成一組信號，
+    然後全部組合 + 所有股票拼成一個大 DataFrame，
+    一次過放入 from_signals。
+
+    返回:
+        close_wide: 展開嘅 close（每 column = stock×param_combo）
+        entries_wide: 展開嘅 entries
+        exits_wide: 展開嘅 exits
+        param_index: 參數組合映射
+    """
+    stocks = prices.columns.tolist()
+    param_combos = list(itertools.product(windows, entry_zs))
+
+    all_closes = {}
+    all_entries = {}
+    all_exits = {}
+    param_map = []  # [(col_name, stock, window, entry_z), ...]
+
+    for stock in stocks:
+        close = prices[stock].dropna()
+        for window, entry_z in param_combos:
+            col_name = "{}__w{}_z{}".format(stock, window, entry_z)
+            z = compute_zscore(close, window)
+
+            all_closes[col_name] = close.values
+            all_entries[col_name] = (z < -entry_z).fillna(False).values
+            all_exits[col_name] = (z > -exit_z).fillna(False).values
+            param_map.append({
+                "column": col_name,
+                "stock": stock,
+                "window": window,
+                "entry_z": entry_z,
+            })
+
+    # 對齊 index（用最長嘅）
+    max_len = max(len(v) for v in all_closes.values())
+    index = prices.index[-max_len:]
+
+    close_wide = pd.DataFrame(
+        {k: np.pad(v, (max_len - len(v), 0), constant_values=np.nan) for k, v in all_closes.items()},
+        index=index)
+    entries_wide = pd.DataFrame(
+        {k: np.pad(v, (max_len - len(v), 0), constant_values=False) for k, v in all_entries.items()},
+        index=index)
+    exits_wide = pd.DataFrame(
+        {k: np.pad(v, (max_len - len(v), 0), constant_values=False) for k, v in all_exits.items()},
+        index=index)
+
+    param_df = pd.DataFrame(param_map)
+    return close_wide, entries_wide, exits_wide, param_df
+
+
+def run_param_sweep(prices, windows, entry_zs, exit_z=0.5):
+    """參數掃描主函數。
+
+    一次過 batch 回測所有 參數×股票 組合。
+    """
+    n_combos = len(windows) * len(entry_zs)
+    n_stocks = len(prices.columns)
+    total = n_combos * n_stocks
+
+    print("\n  參數組合: {} windows × {} entry_z = {} 組合".format(
+        len(windows), len(entry_zs), n_combos))
+    print("  股票數: {}".format(n_stocks))
+    print("  總回測數: {} (= {} × {})".format(total, n_combos, n_stocks))
+    print("  全部一次過 batch 回測（Numba {} 核心並行）...".format(
+        numba.get_num_threads()))
+
+    # 生成參數掃描信號
+    start = time.time()
+    close_wide, entries_wide, exits_wide, param_df = generate_param_columns(
+        prices, windows, entry_zs, exit_z)
+    gen_time = time.time() - start
+    print("  信號生成: {}ms ({} columns)".format(int(gen_time * 1000), close_wide.shape[1]))
+
+    # Batch 回測（一次過所有組合）
+    start = time.time()
+    pf = vbt.Portfolio.from_signals(
+        close_wide, entries_wide, exits_wide,
+        fees=FEE_PER_SIDE, freq="1D", init_cash=100_000)
+    bt_time = time.time() - start
+    print("  Batch 回測: {}ms".format(int(bt_time * 1000)))
+
+    # 提取指標（一次過）
+    start = time.time()
+    results = pd.DataFrame({
+        "sharpe": _safe(pf.sharpe_ratio()),
+        "sortino": _safe(pf.sortino_ratio()),
+        "max_drawdown": _safe(pf.max_drawdown()),
+        "total_return": _safe(pf.total_return()),
+        "annual_return": _safe(pf.annualized_return()),
+        "calmar": _safe(pf.calmar_ratio()),
+    })
+    metric_time = time.time() - start
+    print("  指標提取: {}ms".format(int(metric_time * 1000)))
+
+    # Sharpe 扣 rf
+    mask = (results["sharpe"] != 0) & (results["annual_return"] != 0)
+    vol = results.loc[mask, "annual_return"] / results.loc[mask, "sharpe"]
+    results.loc[mask, "sharpe"] = (results.loc[mask, "annual_return"] - RF_RATE) / vol.replace(0, np.nan)
+
+    # 合併參數信息
+    results = results.reset_index().rename(columns={"index": "column"})
+    results = results.merge(param_df, on="column", how="left")
+
+    total_time = gen_time + bt_time + metric_time
+    print("  總耗時: {}ms ({:.1f}ms/組合)".format(
+        int(total_time * 1000), total_time / total * 1000))
+
+    return results
+
+
+def _safe(series):
+    return pd.Series(series).replace([np.inf, -np.inf], np.nan)
+
+
+def analyze_results(results):
+    """分析參數掃描結果。"""
+    clean = results.replace([np.inf, -np.inf], np.nan).dropna(subset=["sharpe"])
+
+    print("\n" + "=" * 85)
+    print("📊 參數掃描結果分析")
+    print("=" * 85)
+
+    # 1. 最佳參數組合（跨所有股票中位數）
+    print("\n【最佳參數組合】（按 Sharpe 中位數排序）")
+    param_summary = clean.groupby(["window", "entry_z"]).agg({
+        "sharpe": ["median", "mean", "count"],
+        "max_drawdown": "median",
+        "annual_return": "median",
+    }).round(3)
+    param_summary.columns = ["sharpe_med", "sharpe_mean", "n_stocks", "mdd_med", "ann_ret_med"]
+    param_summary = param_summary.sort_values("sharpe_med", ascending=False)
+
+    print("\n{:<8} {:>8} {:>10} {:>10} {:>10} {:>8}".format(
+        "window", "entry_z", "Sharpe中位", "Sharpe平均", "年回報中位", "MaxDD中位"))
+    print("-" * 60)
+    for (w, z), row in param_summary.head(10).iterrows():
+        print("{:<8} {:>8.1f} {:>10.3f} {:>10.3f} {:>9.1f}% {:>9.1f}%".format(
+            w, z, row["sharpe_med"], row["sharpe_mean"],
+            row["ann_ret_med"] * 100, row["mdd_med"] * 100))
+
+    # 2. Top 10 最佳 單個 組合
+    print("\n【Top 10 最佳 stock×param 組合】")
+    top10 = clean.nlargest(10, "sharpe")
+    print("\n{:<14} {:<8} {:>8} {:>8} {:>8} {:>8} {:>8}".format(
+        "股票", "window", "entry_z", "Sharpe", "年回報%", "MaxDD%", "Calmar"))
+    print("-" * 70)
+    for _, r in top10.iterrows():
+        print("{:<14} {:<8} {:>8.1f} {:>8.2f} {:>7.1f}% {:>7.1f}% {:>8.2f}".format(
+            r["stock"], r["window"], r["entry_z"], r["sharpe"],
+            r["annual_return"] * 100, r["max_drawdown"] * 100, r.get("calmar", 0)))
+
+    # 3. 參數穩定性（邊個參數跨股票表現最穩定）
+    print("\n【參數穩定性】（Sharpe 標準差越細越穩定）")
+    stability = clean.groupby(["window", "entry_z"])["sharpe"].agg(["mean", "std", "median"])
+    stability["stability_score"] = stability["median"] / stability["std"].replace(0, np.nan)
+    stability = stability.sort_values("stability_score", ascending=False)
+
+    print("\n{:<8} {:>8} {:>8} {:>8} {:>10}".format(
+        "window", "entry_z", "Sharpe中位", "標準差", "穩定性分數"))
+    print("-" * 50)
+    for (w, z), row in stability.head(5).iterrows():
+        print("{:<8} {:>8.1f} {:>8.3f} {:>8.3f} {:>10.2f}".format(
+            w, z, row["median"], row["std"], row["stability_score"]))
+
+    return param_summary
+
+
+def main():
+    parser = argparse.ArgumentParser(description="VectorBT 參數掃描")
+    parser.add_argument("--stocks", type=int, default=30)
+    parser.add_argument("--days", type=int, default=250)
+    parser.add_argument("--windows", type=str, default="5,10,20,30,50",
+                        help="逗號分隔嘅 window 列表")
+    parser.add_argument("--entry-zs", type=str, default="1.5,2.0,2.5,3.0",
+                        help="逗號分隔嘅 entry_z 列表")
+    args = parser.parse_args()
+
+    windows = [int(x) for x in args.windows.split(",")]
+    entry_zs = [float(x) for x in args.entry_zs.split(",")]
+
+    print("=" * 85)
+    print("🔬 VectorBT 參數掃描引擎（broadcasting + Numba 多進程）")
+    print("=" * 85)
+    print("CPU: {} 核心".format(numba.get_num_threads()))
+    print("windows: {}".format(windows))
+    print("entry_zs: {}".format(entry_zs))
+
+    prices = load_prices(args.days)
+    valid = [c for c in prices.columns if prices[c].dropna().shape[0] > args.days * 0.8][:args.stocks]
+    close_df = prices[valid].dropna()
+    print("數據: {} 隻股票 × {} 日".format(len(valid), len(close_df)))
+
+    # 參數掃描
+    results = run_param_sweep(close_df, windows, entry_zs)
+
+    # 分析
+    param_summary = analyze_results(results)
+
+    # 儲存
+    results.to_csv(OUTPUT_DIR / "param_sweep_results.csv", index=False)
+    param_summary.to_csv(OUTPUT_DIR / "param_sweep_summary.csv")
+    print("\n✓ 儲存:")
+    print("  - param_sweep_results.csv（所有 stock×param 組合）")
+    print("  - param_sweep_summary.csv（參數組合匯總）")
+
+    # 效能對比
+    total_combos = len(windows) * len(entry_zs) * len(valid)
+    print("\n📊 效能: {} 個回測一次過完成".format(total_combos))
+    print("   如果用 for loop: 每個 50ms × {} = {:.0f}秒".format(
+        total_combos, total_combos * 0.05))
+    print("   VectorBT batch: 上方已顯示實際耗時")
+
+
+if __name__ == "__main__":
+    main()

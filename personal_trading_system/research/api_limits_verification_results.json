@@ -1,0 +1,104 @@
+{
+  "hkma_hibor": {
+    "5": {
+      "success": false,
+      "error": "name 'np' is not defined",
+      "data_points": 0
+    },
+    "7": {
+      "success": false,
+      "error": "name 'np' is not defined",
+      "data_points": 0
+    },
+    "10": {
+      "success": false,
+      "error": "name 'np' is not defined",
+      "data_points": 0
+    }
+  },
+  "central_api": {
+    "0700.hk": {
+      "5": {
+        "success": true,
+        "data_points": 14,
+        "fetch_time_seconds": 0.6574435234069824,
+        "status_code": 200,
+        "response_type": "dict"
+      },
+      "7": {
+        "success": true,
+        "data_points": 14,
+        "fetch_time_seconds": 0.6686856746673584,
+        "status_code": 200,
+        "response_type": "dict"
+      },
+      "10": {
+        "success": true,
+        "data_points": 14,
+        "fetch_time_seconds": 0.675039529800415,
+        "status_code": 200,
+        "response_type": "dict"
+      }
+    },
+    "0941.hk": {
+      "5": {
+        "success": true,
+        "data_points": 14,
+        "fetch_time_seconds": 0.674170970916748,
+        "status_code": 200,
+        "response_type": "dict"
+      },
+      "7": {
+        "success": true,
+        "data_points": 14,
+        "fetch_time_seconds": 0.7147583961486816,
+        "status_code": 200,
+        "response_type": "dict"
+      },
+      "10": {
+        "success": true,
+        "data_points": 14,
+        "fetch_time_seconds": 0.607898473739624,
+        "status_code": 200,
+        "response_type": "dict"
+      }
+    },
+    "1398.hk": {
+      "5": {
+        "success": true,
+        "data_points": 14,
+        "fetch_time_seconds": 0.6492149829864502,
+        "status_code": 200,
+        "response_type": "dict"
+      },
+      "7": {
+        "success": true,
+        "data_points": 14,
+        "fetch_time_seconds": 0.6474900245666504,
+        "status_code": 200,
+        "response_type": "dict"
+      },
+      "10": {
+        "success": true,
+        "data_points": 14,
+        "fetch_time_seconds": 0.6925537586212158,
+        "status_code": 200,
+        "response_type": "dict"
+      }
+    }
+  },
+  "alternative_sources": {
+    "yahoo_finance": {
+      "success": true,
+      "data_points": 1230,
+      "date_range_days": 1824,
+      "start_date": "2020-11-30",
+      "end_date": "2025-11-28"
+    },
+    "local_cache": {
+      "success": true,
+      "file_path": "C:\\Users\\Penguin8n\\CODEX--\\data\\cache\\hsi_constituents_82.json",
+      "file_size_bytes": 32945
+    }
+  }
+}

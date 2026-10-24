@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+"""agent2-H probe v2: EM reportNames via requests (params-encoded)."""
+import requests
+
+S = requests.Session()
+S.headers.update({"User-Agent": "Mozilla/5.0"})
+
+def em(report, extra=None, ps=3):
+    params = {"reportName": report, "columns": "ALL", "pageNumber": 1,
+              "pageSize": ps, "source": "F10", "client": "PC"}
+    params.update(extra or {})
+    r = S.get("https://datacenter.eastmoney.com/securities/api/data/v1/get",
+              params=params, timeout=20)
+    try:
+        d = r.json()
+    except Exception:
+        print(report, "non-json", r.text[:120]); return []
+    rows = (d.get("result") or {}).get("data") or []
+    print(f"\n== {report} {extra or ''} -> HTTP{r.status_code} n={len(rows)}")
+    if rows:
+        print(" keys:", list(rows[0].keys())[:15])
+        print(" row0:", {k: rows[0][k] for k in list(rows[0])[:8]})
+    else:
+        print(" msg:", d.get("message"))
+    return rows
+
+F7700 = {"filter": '(SECUCODE="00700.HK")'}
+
+# block trade
+em("RPT_HKF10_BLKTRADE", F7700)
+em("RPT_HKF10_INFO_BLKTRADE", F7700)
+# org/institutional holding (F10)
+em("RPT_HKF10_INFO_ORGHOLD", F7700)
+em("RPT_HKF10_EH_MAINHOLDER", F7700)
+em("RPT_HKF10_INFO_MAINHOLDER", F7700)
+# warrant/derivative per underlying
+em("RPT_HKF10_WARRANT", F7700)
+em("RPT_HKF10_INFO_WARRANT", F7700)

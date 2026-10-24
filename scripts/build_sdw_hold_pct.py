@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+"""build_sdw_hold_pct.py — sdw_hold_pct panel (thesis sbhold: rank(sdw_hold_pct.diff(21))).
+
+日度源兩條 (2026-08-23 agent2-H):
+  1) em_holdranks_daily.csv — 東财 RPT_MUTUAL_STOCK_HOLDRANKS 日度 2024-08-23→ (滬+深合計)
+  2) southbound_holdings_hkex.csv — HKEX mutualmarket 官方日度 2025-08-25→ (12個月牆)
+口徑驗證: 重疊期 EM HOLD_SHARES_RATIO vs HKEX pct_of_total 逐股對照,
+HKEX 優先 (canonical), EM 補 2024-08→2025-08 段.
+更舊 (2021-08→2024-08) 日度源三路實證不存在 (HKEX 12mo牆 / HOLD_DET sparse / HOLDRANKS 2024-08起).
+
+Output: data/factor_store/sdw_hold_pct.parquet — wide date × HK.xxxxx, value = 南向持股佔已發行%.
+"""
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+NS = BASE / "data" / "new_sources"
+OUT = BASE / "data" / "factor_store" / "sdw_hold_pct.parquet"
+
+em = pd.read_csv(NS / "em_holdranks_daily.csv", dtype={"stock_code": str})
+hk = pd.read_csv(NS / "southbound_holdings_hkex.csv", dtype={"stock_code": str})
+hk = hk[["date", "stock_code", "pct_of_total"]].rename(columns={"pct_of_total": "hold_pct"})
+em = em[["date", "stock_code", "hold_pct"]]
+
+# ── overlap audit: EM vs HKEX 同日同股差異 ──
+m = em.merge(hk, on=["date", "stock_code"], suffixes=("_em", "_hkex"))
+if len(m):
+    m["d"] = (m["hold_pct_em"] - m["hold_pct_hkex"]).abs()
+    print(f"overlap: {len(m)} cells, {m['date'].nunique()} dates — "
+          f"mean|d|={m['d'].mean():.4f}pp, max|d|={m['d'].max():.4f}pp, "
+          f"frac<0.05pp={(m['d'] < 0.05).mean():.3f}")
+    worst = m.groupby("stock_code")["d"].median().sort_values(ascending=False).head(5)
+    print("worst median drift stocks:\n", worst)
+
+hk["src"] = "hkex"
+em["src"] = "em"
+merged = pd.concat([hk, em[~em["date"].isin(set(hk["date"]))]], ignore_index=True)
+merged = (merged.drop_duplicates(subset=["date", "stock_code"])
+          .sort_values(["date", "stock_code"]))
+merged["date"] = pd.to_datetime(merged["date"])
+merged["stock"] = "HK." + merged["stock_code"].str.zfill(5)
+panel = merged.pivot_table(index="date", columns="stock", values="hold_pct").sort_index()
+panel.to_parquet(OUT)
+print(f"sdw_hold_pct: {panel.shape}, non-NaN {int(panel.notna().sum().sum())}, "
+      f"{panel.index.min().date()} -> {panel.index.max().date()}")
+for y in sorted(set(panel.index.year)):
+    sub = panel[panel.index.year == y]
+    print(f"  {y}: {int(sub.notna().any(axis=1).sum())} active days, "
+          f"mean coverage {sub.notna().sum(axis=1).mean():.1f}/{panel.shape[1]} stocks")

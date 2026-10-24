@@ -1,0 +1,33 @@
+import React from 'react'
+import { Card, Descriptions, Tag } from 'antd'
+
+const SettingsPage: React.FC = () => {
+  return (
+    <div style={{ padding: 24 }}>
+      <h2 style={{ marginBottom: 16 }}>⚙️ 系統設置</h2>
+      <Card title="系統資訊" size="small">
+        <Descriptions column={1} bordered size="small">
+          <Descriptions.Item label="系統名稱">CBSC 量化交易系統</Descriptions.Item>
+          <Descriptions.Item label="版本">1.0.0</Descriptions.Item>
+          <Descriptions.Item label="後端">FastAPI (port 3006)</Descriptions.Item>
+          <Descriptions.Item label="前端">React + Vite (port 3000)</Descriptions.Item>
+          <Descriptions.Item label="行情 API">富途 OpenD (port 1130)</Descriptions.Item>
+          <Descriptions.Item label="數據存儲">Parquet 分區存儲</Descriptions.Item>
+          <Descriptions.Item label="回測引擎">VectorBT 1.0 + Joblib 32 核心並行</Descriptions.Item>
+          <Descriptions.Item label="交易成本"><Tag color="blue">0.23% / 來回</Tag></Descriptions.Item>
+          <Descriptions.Item label="無風險利率"><Tag color="blue">4%</Tag></Descriptions.Item>
+        </Descriptions>
+      </Card>
+      <Card title="已安裝模組" size="small" style={{ marginTop: 16 }}>
+        <Descriptions column={1} size="small">
+          <Descriptions.Item label="數據層">unified data layer (FutuAdapter + CCASSFetcher + IntradayFetcher)</Descriptions.Item>
+          <Descriptions.Item label="策略庫">hkptrc 19 個策略（VectorBT 回測）</Descriptions.Item>
+          <Descriptions.Item label="Pair Trade">動態 Rolling + 系統性風險監控</Descriptions.Item>
+          <Descriptions.Item label="知識庫">hkptrc 53 條 YouTube 片 + 19 個策略文檔</Descriptions.Item>
+        </Descriptions>
+      </Card>
+    </div>
+  )
+}
+
+export default SettingsPage

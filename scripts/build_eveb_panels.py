@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""build_eveb_panels.py — 東財季度基本面 raw → evx_oi / evx_op panels (PIT).
+
+構造:
+  evx_oi = (市值 + 總負債) / 營業額       (資本負擔/規模 — 越低越平)
+  evx_op = (市值 + 總負債) / 經營利潤     (資本負擔/經營盈利, EBITDA 下界近似)
+
+PIT: 業績日曆 (results_calendar_raw.csv) 有公布日嘅用公布日+1;
+  冇嘅 (早期數據) 用 report_date + 60日 lag (pb panel 同款保守做法).
+注意: 市值係報告日時點市值 (東財快照), 唔係每日 — panel 係「季度值 ffill 到日」,
+  結合每日 close 時 ranking 用 ratio 結構唔會被舊市值毒化 (分子分母同源同時點).
+"""
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+BASE = Path(r"C:/Users/Penguin8n/ZCodeProject/cbsc-system-unification")
+BT = Path(r"C:/Users/Penguin8n/ZCodeProject/backtests")
+sys.path.insert(0, str(BT))
+import os
+os.chdir(str(BT))
+
+RAW = BASE / "data" / "new_sources" / "eveb_raw.csv"
+CAL = BASE / "data" / "new_sources" / "results_calendar_raw.csv"
+STORE = BASE / "data" / "factor_store"
+
+
+def main():
+    from llm_cs_adapter import _load_prices_and_rets
+    prices, _ = _load_prices_and_rets()
+    idx = prices.index
+
+    raw = pd.read_csv(RAW, dtype={"code": str})
+    raw["report_date"] = pd.to_datetime(raw["report_date"])
+    cal = pd.read_csv(CAL, dtype={"stock_code": str})
+    cal["d"] = pd.to_datetime(cal["doc_date"], dayfirst=True)
+    # 公布日 map: (code, report期) → 第一個公布日. 業績日曆 doc_date 係公布日,
+    # 對應 report期要粗對: 公布日喺 report_date 之後 0-150日 窗口內最近嗰個
+    ann_by_code = {}
+    for code, g in cal.groupby("stock_code"):
+        ann_by_code[code] = sorted(g["d"].tolist())
+
+    def effective_date(code, report_date):
+        """公布日 = report_date 之後第一個公布紀錄; 冇就 +60日."""
+        for d in ann_by_code.get(code, []):
+            if report_date <= d <= report_date + pd.Timedelta(days=170):
+                return d + pd.Timedelta(days=1)
+        return report_date + pd.Timedelta(days=60)
+
+    raw["code5"] = raw["code"].str.zfill(5)
+    raw["eff_date"] = [
+        effective_date(r.code5, r.report_date) for r in raw.itertuples()
+    ]
+
+    # 構造比值 (萬億級數字相除 → float OK)
+    raw["ev"] = raw["mktcap"] + raw["total_liab"]
+    raw["evx_oi"] = raw["ev"] / raw["operate_income"].replace(0, np.nan)
+    raw["evx_op"] = raw["ev"] / raw["operate_profit"].replace(0, np.nan)
+
+    out = {}
+    for name in ("evx_oi", "evx_op"):
+        panel = pd.DataFrame(np.nan, index=idx, columns=prices.columns)
+        for code, g in raw.groupby("code5"):
+            col = f"HK.{code}"
+            if col not in panel.columns:
+                continue
+            g = g.dropna(subset=[name]).sort_values("eff_date")
+            s = pd.Series(g[name].values, index=g["eff_date"].values)
+            s = s[~s.index.duplicated(keep="last")]
+            # reindex 到日曆 → ffill (eff_date 之後先見到 = PIT)
+            daily = s.reindex(panel.index, method="ffill")
+            # eff_date 之後先有效: reindex ffill 會將 eff_date 前填埋 — 用 mask
+            valid_from = s.index
+            mask = pd.Series(False, index=panel.index)
+            for vf in valid_from:
+                mask |= panel.index >= vf
+            panel[col] = daily.where(mask)
+        out[name] = panel
+        p = STORE / f"{name}.parquet"
+        panel.to_parquet(p)
+        nn = int(panel.notna().sum().sum())
+        print(f"{name}: {panel.shape} | 非NaN {nn} cells | {panel.dropna(how='all').index.min().date()} → {panel.dropna(how='all').index.max().date()} → {p.name}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

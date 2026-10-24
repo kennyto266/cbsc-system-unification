@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""agent2-H 2026-08-24 [thesis sstx] Futu get_daily_short_volume prescan 採集.
+
+每股 num=100 (~5個月) 沽空成交; 全池 ~984 股, OpenD 30req/30s 限流。
+輸出: data/new_sources/futu_short_prescan/<code>.csv (每股一檔, 可斷點續爬)
+之後 build_sst_panel.py 聚合成 factor_store/sst_ratio.parquet (21日均)。
+"""
+import sys
+import time
+from pathlib import Path
+
+import pandas as pd
+from futu import OpenQuoteContext, RET_OK
+
+ROOT = Path(r"C:/Users/Penguin8n/ZCodeProject")
+sys.path.insert(0, str(ROOT / "backtests"))
+sys.path.insert(0, str(ROOT))
+import bootstrap  # noqa: F401
+from full_revalidate import preload_prices
+from trading_core.universe import filter_universe
+
+OUT = ROOT / "cbsc-system-unification/data/new_sources/futu_short_prescan"
+OUT.mkdir(parents=True, exist_ok=True)
+
+_REQ_TS: list[float] = []
+
+
+def _throttle():
+    global _REQ_TS
+    now = time.time()
+    _REQ_TS = [t for t in _REQ_TS if now - t < 31]
+    while len(_REQ_TS) >= 28:
+        time.sleep(2)
+        now = time.time()
+        _REQ_TS = [t for t in _REQ_TS if now - t < 31]
+    _REQ_TS.append(now)
+
+
+def main(limit=None, num=50):
+    prices = filter_universe(preload_prices())
+    codes = list(prices.columns)
+    if limit:
+        codes = codes[:limit]
+    print(f"universe: {len(codes)} stocks (total panel {prices.shape})", flush=True)
+    q = OpenQuoteContext(host="127.0.0.1", port=11111)
+    ok = fail = skip = 0
+    try:
+        for i, code in enumerate(codes):
+            fp = OUT / f"{code.replace('.', '_')}.csv"
+            if fp.exists() and fp.stat().st_size > 100:
+                skip += 1
+                continue
+            _throttle()
+            ret, _, hk = q.get_daily_short_volume(code, num=num)
+            if ret != RET_OK:
+                fail += 1
+                if fail <= 10:
+                    print(f"{code}: FAIL {_}", flush=True)
+                continue
+            hk.to_csv(fp, index=False)
+            ok += 1
+            if ok % 25 == 0:
+                print(f"[{i+1}/{len(codes)}] ok={ok} skip={skip} fail={fail}", flush=True)
+    finally:
+        q.close()
+    print(f"DONE ok={ok} skip={skip} fail={fail} -> {OUT}", flush=True)
+
+
+if __name__ == "__main__":
+    main(limit=int(sys.argv[1]) if len(sys.argv) > 1 else None,
+         num=int(sys.argv[2]) if len(sys.argv) > 2 else 50)

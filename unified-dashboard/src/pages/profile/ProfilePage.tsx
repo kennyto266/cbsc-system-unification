@@ -1,0 +1,48 @@
+import React from 'react'
+import { Card, Descriptions, Avatar, Tag } from 'antd'
+import { UserOutlined } from '@ant-design/icons'
+
+const ProfilePage: React.FC = () => {
+  return (
+    <div style={{ padding: 24 }}>
+      <h2 style={{ marginBottom: 16 }}>👤 個人資料</h2>
+      <Card>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
+          <Avatar size={64} icon={<UserOutlined />} style={{ background: '#00d4ff', marginRight: 16 }} />
+          <div>
+            <h3 style={{ margin: 0 }}>Admin</h3>
+            <Tag color="blue">個人使用</Tag>
+            <Tag color="green">本地部署</Tag>
+          </div>
+        </div>
+        <Descriptions column={1} bordered size="small">
+          <Descriptions.Item label="用戶名">admin</Descriptions.Item>
+          <Descriptions.Item label="使用模式">本地電腦運行（個人使用，無需登入）</Descriptions.Item>
+          <Descriptions.Item label="富途戶口">DEMO SIMULATE (HK CASH, acc_id 17372476)</Descriptions.Item>
+          <Descriptions.Item label="期貨戶口">HK FUTURES SIMULATE (acc_id 9721673)</Descriptions.Item>
+          <Descriptions.Item label="OpenD">127.0.0.1:1130（本地模式，唔需要 RSA 加密）</Descriptions.Item>
+          <Descriptions.Item label="後端">FastAPI port 3006（含 CBSC + Unified + Analytics API）</Descriptions.Item>
+          <Descriptions.Item label="前端">React + Vite port 3000（dark mode Bloomberg 風格）</Descriptions.Item>
+          <Descriptions.Item label="回測引擎">VectorBT 1.0 + Joblib 32 核心並行</Descriptions.Item>
+          <Descriptions.Item label="數據存儲">Parquet 分區（symbol/freq/year）</Descriptions.Item>
+          <Descriptions.Item label="策略庫">hkptrc 19 個策略 + 動態 Rolling Pair Trade</Descriptions.Item>
+          <Descriptions.Item label="知識庫">53 條 YouTube 片 + 19 個策略文檔</Descriptions.Item>
+          <Descriptions.Item label="創建日期">2026-06-20</Descriptions.Item>
+          <Descriptions.Item label="最後更新">2026-06-23</Descriptions.Item>
+        </Descriptions>
+      </Card>
+      <Card title="系統健康狀態" size="small" style={{ marginTop: 16 }}>
+        <Descriptions column={2} bordered size="small">
+          <Descriptions.Item label="OpenD 連線">✅ 正常（127.0.0.1:1130）</Descriptions.Item>
+          <Descriptions.Item label="後端服務">✅ 運行中（port 3006）</Descriptions.Item>
+          <Descriptions.Item label="前端服務">✅ 運行中（port 3000）</Descriptions.Item>
+          <Descriptions.Item label="富途 API">✅ 行情 + 交易已連線</Descriptions.Item>
+          <Descriptions.Item label="Parquet 存儲">✅ 正常</Descriptions.Item>
+          <Descriptions.Item label="每日自動更新">✅ Windows Task Scheduler 16:15</Descriptions.Item>
+        </Descriptions>
+      </Card>
+    </div>
+  )
+}
+
+export default ProfilePage

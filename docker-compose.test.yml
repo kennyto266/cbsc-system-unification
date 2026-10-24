@@ -1,0 +1,203 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for Testing
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: cbsc_postgres_test
+    environment:
+      POSTGRES_DB: cbsc_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./tests/integration/init-test-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d cbsc_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test_network
+
+  # Redis for Testing
+  redis-test:
+    image: redis:7-alpine
+    container_name: cbsc_redis_test
+    ports:
+      - "6380:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_test_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test_network
+
+  # Main Application (Testing Mode)
+  app-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: cbsc_app_test
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://test_user:test_password@postgres-test:5432/cbsc_test
+      - REDIS_URL=redis://redis-test:6379
+      - JWT_SECRET=test_jwt_secret_key_for_testing_only
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+      - LOG_LEVEL=DEBUG
+      - TESTING=true
+      - MOCK_EXTERNAL_APIS=true
+    ports:
+      - "3004:8000"
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - test_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - test_network
+
+  # Frontend (Testing Mode)
+  frontend-test:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.test
+    container_name: cbsc_frontend_test
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:3004
+      - REACT_APP_WS_URL=ws://localhost:3004
+      - REACT_APP_ENVIRONMENT=test
+      - REACT_APP_MOCK_API=false
+      - REACT_APP_LOG_LEVEL=debug
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - frontend_build:/app/build
+    depends_on:
+      - app-test
+    networks:
+      - test_network
+
+  # Test Runner Service
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test-runner
+    container_name: cbsc_test_runner
+    environment:
+      - NODE_ENV=test
+      - TEST_DATABASE_URL=postgresql://test_user:test_password@postgres-test:5432/cbsc_test
+      - TEST_REDIS_URL=redis://redis-test:6379
+      - APP_BASE_URL=http://app-test:8000
+      - FRONTEND_BASE_URL=http://frontend-test:3000
+      - PARALLEL_WORKERS=4
+      - TEST_TIMEOUT=300000
+      - COVERAGE_THRESHOLD=70
+    volumes:
+      - ./tests:/app/tests
+      - ./frontend/src:/app/frontend/src
+      - test_reports:/app/reports
+      - test_coverage:/app/coverage
+    depends_on:
+      app-test:
+        condition: service_healthy
+      frontend-test:
+        condition: service_started
+    networks:
+      - test_network
+    command: tail -f /dev/null  # Keep container running
+
+  # Mock External Services
+  mock-services:
+    image: mockserver/mockserver:latest
+    container_name: cbsc_mock_services
+    ports:
+      - "1080:1080"
+    environment:
+      - MOCKSERVER_PROPERTY_FILE=/config/mockserver.properties
+    volumes:
+      - ./tests/mocks:/config
+    networks:
+      - test_network
+
+  # Performance Monitoring
+  prometheus-test:
+    image: prom/prometheus:latest
+    container_name: cbsc_prometheus_test
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./tests/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_test_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - test_network
+
+  # Grafana for Test Metrics
+  grafana-test:
+    image: grafana/grafana:latest
+    container_name: cbsc_grafana_test
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=test123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_test_data:/var/lib/grafana
+      - ./tests/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./tests/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus-test
+    networks:
+      - test_network
+
+  # Jaeger for Tracing
+  jaeger-test:
+    image: jaegertracing/all-in-one:latest
+    container_name: cbsc_jaeger_test
+    ports:
+      - "16687:16686"
+      - "14269:14268"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - test_network
+
+volumes:
+  postgres_test_data:
+  redis_test_data:
+  test_logs:
+  test_reports:
+  test_coverage:
+  frontend_build:
+  prometheus_test_data:
+  grafana_test_data:
+
+networks:
+  test_network:
+    driver: bridge

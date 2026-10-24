@@ -1,0 +1,204 @@
+"""
+hkptrc #18 策略：SEC 13F 大戶持倉
+
+用 SEC EDGAR API 拎大戶季度持倉（巴郡、橋水等）。
+分析持倉變化：新買入/加倉 → 買入信號。
+
+注意：SEC 13F 只涵蓋美股。港股無直接對應。
+但大戶美股持倉變化反映全球風險偏好，可作為港股訊號。
+
+出處：[ZtW7Zsn4wx0](https://www.youtube.com/watch?v=ZtW7Zsn4wx0)
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, __file__.rsplit("\\", 1)[0])
+
+from common import *
+import numpy as np
+import pandas as pd
+import requests
+
+SEC_HEADERS = {"User-Agent": "ZCode Research research@example.com"}
+
+
+def get_ticker_cik_map():
+    """SEC ticker-CIK 對照表。"""
+    try:
+        resp = requests.get(
+            "https://www.sec.gov/files/company_tickers.json",
+            headers=SEC_HEADERS, timeout=15)
+        data = resp.json()
+        return {v["ticker"]: v["cik_str"] for v in data.values()}
+    except Exception as e:
+        print("ticker map fail: {}".format(str(e)[:50]))
+        return {}
+
+
+def get_recent_13f(cik):
+    """拎某大戶最近嘅 13F 持倉。"""
+    try:
+        resp = requests.get(
+            "https://data.sec.gov/submissions/CIK{:010d}.json".format(int(cik)),
+            headers=SEC_HEADERS, timeout=15)
+        data = resp.json()
+
+        # 搵最近嘅 13F filing
+        filings = data.get("filings", {}).get("recent", {})
+        forms = filings.get("form", [])
+        dates = filings.get("filingDate", [])
+        accession = filings.get("accessionNo", [])
+
+        idx_13f = []
+        for i, form in enumerate(forms):
+            if form == "13F-HR":
+                idx_13f.append(i)
+
+        if not idx_13f:
+            return None
+
+        # 最近 4 個季度
+        recent = idx_13f[:4]
+        results = []
+        for i in recent:
+            acc = accession[i].replace("-", "")
+            date = dates[i]
+            results.append({"date": date, "accession": acc})
+
+        return results
+    except Exception as e:
+        print("13F query fail: {}".format(str(e)[:50]))
+        return None
+
+
+def get_13f_holdings(cik, accession):
+    """拎某份 13F 嘅持倉明細。"""
+    try:
+        url = "https://data.sec.gov/api/xbrl/companyconcept/CIK{:010d}/us-gaap/Assets.json".format(int(cik))
+        # 簡化：用 submissions API 嘅事實數據
+        # 實際 13F 持倉要 parse XML，太複雜
+        # 改用更簡單嘅方法：拎大戶總資產變化作為信心指標
+        resp = requests.get(url, headers=SEC_HEADERS, timeout=15)
+        if resp.status_code == 200:
+            data = resp.json()
+            units = data.get("units", {}).get("USD", [])
+            if units:
+                # 最近幾季嘅總資產
+                recent = sorted(units, key=lambda x: x.get("end", ""))[-8:]
+                return pd.DataFrame(recent)
+        return None
+    except Exception:
+        return None
+
+
+def get_big_player_sentiment():
+    """大戶信心指標：用 SEC 數據近似。
+
+    用巴郡 + 橋水 + BlackRock 嘅總 AUM 變化作為大戶信心。
+    AUM 上升 = 大戶加倉 = 風險偏好上升。
+    """
+    big_players = {
+        "BRK": "0001067983",   # Berkshire Hathaway
+        "BLK": "0001364742",   # BlackRock
+    }
+
+    sentiment_series = []
+    for ticker, cik in big_players.items():
+        try:
+            resp = requests.get(
+                "https://data.sec.gov/api/xbrl/companyconcept/CIK{}/us-gaap/Assets.json".format(cik),
+                headers=SEC_HEADERS, timeout=15)
+            if resp.status_code == 200:
+                data = resp.json()
+                units = data.get("units", {}).get("USD", [])
+                for u in units:
+                    if u.get("form") == "10-Q" or u.get("form") == "10-K":
+                        # 修正 look-ahead: 用 filed (申報日期, 數據公開日) 而唔係 end (期末日, 未公開 40-90日)
+                        filed = u.get("filed") or u.get("end")
+                        sentiment_series.append({
+                            "date": filed,
+                            "player": ticker,
+                            "assets": u.get("val"),
+                        })
+        except Exception:
+            continue
+
+    if not sentiment_series:
+        return None
+
+    df = pd.DataFrame(sentiment_series)
+    df["date"] = pd.to_datetime(df["date"])
+    # 修正: 每個 player 分別計 AUM 變化 (唔好 groupby 混合 BRK/BLK)
+    df = df.sort_values(["player", "date"])
+    df["assets_change_pct"] = df.groupby("player")["assets"].pct_change() * 100
+    # 合併多 player: 同日取平均變化率
+    df = df.groupby("date")["assets_change_pct"].mean().dropna()
+    return df.to_frame("assets_change_pct")
+
+
+def strategy_18_sec_sentiment(prices, stock, z_window=60, entry_z=1.5):
+    """#18 SEC 大戶信心策略。
+
+    大戶 AUM 增長 Z-Score > 1.5 → 買入（大戶加倉）
+    Z-Score < -1.5 → 沽出
+    """
+    close = prices[stock].dropna()
+    sentiment = get_big_player_sentiment()
+
+    if sentiment is None or len(sentiment) < 4:
+        return None
+
+    # 重採樣到日頻（季度數據 forward fill）
+    sentiment = sentiment.reindex(close.index, method="ffill")
+
+    z = compute_zscore(sentiment["assets_change_pct"], z_window)
+
+    entries = (z > entry_z).fillna(False)
+    exits = (z < 0).fillna(False)
+    short_entries = (z < -entry_z).fillna(False)
+    short_exits = (z > 0).fillna(False)
+
+    if not entries.any() and not short_entries.any():
+        return None
+
+    pf = backtest_signals(close, entries, exits, short_entries, short_exits)
+    return extract_metrics(pf, "18_SEC_Sentiment", stock)
+
+
+def run_strategy_18(prices, stocks=None):
+    stocks = stocks or TEST_STOCKS
+    results = []
+
+    print("\n運行 #18 SEC 大戶信心策略 ...")
+    print("  拎大戶 AUM 數據（BRK + BLK）...")
+    sentiment = get_big_player_sentiment()
+    if sentiment is not None:
+        print("  ✓ {} 個季度數據".format(len(sentiment)))
+    else:
+        print("  ✗ 無法取得 SEC 數據")
+        return []
+
+    for stock in stocks:
+        if stock not in prices.columns:
+            continue
+        try:
+            r = strategy_18_sec_sentiment(prices, stock)
+            if r:
+                results.append(r)
+                print("  {} ✓ Sharpe={:.2f}".format(stock, r["sharpe"]))
+        except Exception as e:
+            print("  {} ✗ {}".format(stock, str(e)[:50]))
+
+    return results
+
+
+if __name__ == "__main__":
+    print("=" * 95)
+    print("📊 hkptrc #18: SEC 13F 大戶信心策略")
+    print("=" * 95)
+
+    prices = load_prices(250)
+    print("數據: {} 日 × {} 股".format(len(prices), prices.shape[1]))
+
+    results = run_strategy_18(prices)
+    print_results_table(results, "#18 SEC 大戶信心")
+    save_results(results, "strategy_18_sec.csv")

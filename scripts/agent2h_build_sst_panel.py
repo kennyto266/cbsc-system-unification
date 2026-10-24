@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+"""agent2-H 2026-08-24 [thesis sstx] 沽空成交比率日更 — factor_store/sst_ratio.parquet.
+
+[2026-09-25 G42505] 倉庫優先: futu prescan OpenD 8/24 起斷流, 原全量 to_parquet
+覆寫會沖走官方數 (09-24 _a2h_sstl_dssr 合併嘅 09-23 被 09-25 14:19 COLLECTORS
+輪沖返 08-24)。改官方倉庫 short_selling_full.csv (hkex_full_crawler 日更)
+起池股 panel 優先, futu prescan combine_first 填窿 — 口徑照 _a2h_sstl_dssr.py:146。
+panel 唔讀舊 OUT, 每輪由源檔重算 (COLLECTORS 重跑 idempotent, 唔再有累積沖走)。
+
+sst_ratio = short_sell_shares_traded / shares_traded (日度)。
+之後 factor 用 ranking rank(-sst_ratio.rolling(21).mean()) — rolling 喺掃描層做。
+"""
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+ROOT = Path(r"C:/Users/Penguin8n/ZCodeProject")
+SRC = ROOT / "cbsc-system-unification/data/new_sources/futu_short_prescan"
+FULL = ROOT / "cbsc-system-unification/data/raw_hkex/short_selling_full.csv"
+OUT = ROOT / "cbsc-system-unification/data/factor_store/sst_ratio.parquet"
+
+
+def build_futu_panel(src: Path) -> pd.DataFrame:
+    """futu prescan CSVs → wide panel (OpenD 死後凍結 08-24, 保留做歷史填窿)."""
+    frames = []
+    for fp in sorted(Path(src).glob("HK_*.csv")):
+        code = fp.stem.replace("_", ".")
+        df = pd.read_csv(fp, usecols=["timestamp_str", "shares_traded",
+                                      "short_sell_shares_traded"])
+        df["date"] = pd.to_datetime(df["timestamp_str"].str[:10])
+        df = df[df["shares_traded"] > 0]
+        df["sst_ratio"] = df["short_sell_shares_traded"] / df["shares_traded"]
+        frames.append(df.set_index("date")["sst_ratio"].rename(code))
+    return pd.concat(frames, axis=1).sort_index()
+
+
+def build_official_panel(full_csv: Path, pool_cols: dict) -> pd.DataFrame:
+    """官方倉庫 short_selling_full.csv → 池股 panel (口徑照 _a2h_sstl_dssr)."""
+    full = pd.read_csv(full_csv, dtype={"code": str})
+    full["code"] = full["code"].str.zfill(5)
+    sub = full[full["code"].isin(pool_cols) & (full["total_shares"] > 0)].copy()
+    sub["sst_ratio"] = sub["short_shares"] / sub["total_shares"]
+    sub["col"] = sub["code"].map(pool_cols)
+    panel = sub.pivot_table(index="date", columns="col", values="sst_ratio",
+                            aggfunc="last")
+    panel.index = pd.to_datetime(panel.index)
+    return panel.sort_index()
+
+
+def build_panel(src: Path, full_csv: Path, pool_cols: dict) -> pd.DataFrame:
+    """官方倉庫優先, futu prescan 填官方冇嘅位 (G42505 修復核心)."""
+    futu = build_futu_panel(src)
+    official = build_official_panel(full_csv, pool_cols)
+    return official.combine_first(futu).sort_index()
+
+
+def main() -> int:
+    sys.path.insert(0, r"C:/Users/Penguin8n/ZCodeProject/backtests")
+    from llm_cs_adapter import _load_prices_and_rets
+    prices, _ = _load_prices_and_rets()
+    pool_cols = {c.split(".")[1]: c for c in prices.columns}
+
+    panel = build_panel(SRC, FULL, pool_cols)
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_bytes(panel.to_parquet())
+    print(f"panel {panel.shape} {panel.index.min():%Y-%m-%d} ~ {panel.index.max():%Y-%m-%d} "
+          f"non-NaN {int(panel.notna().sum().sum())} -> {OUT}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

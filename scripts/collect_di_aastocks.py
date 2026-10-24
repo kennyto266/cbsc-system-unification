@@ -1,0 +1,118 @@
+"""collect_di_aastocks.py — T3 director_insider_buying backfill.
+
+AAStocks 權益披露 per-stock 頁 (server-rendered HTML table, 可直接 curl):
+  https://www.aastocks.com/tc/stock/InterestsDisclosure.aspx?symbol=XXXXXX&shareholder=&page=N
+歷史深度: 實測 00700 去到 2019 (page 500 cap)。
+
+欄位語義 (對照 HKEX DI notice):
+  date 公告日 / holder 主要股東 / avg_price / notice_type (1201=增持好倉, 1316=涉及)
+  shares_traded (L=好倉) / shares_after / pct_after
+amount_hkd = avg_price * shares_traded (avg 缺時為空)
+
+Output: data/new_sources/di_aastocks_raw.csv
+Checkpoint: di_aastocks_ckpt.json
+"""
+import csv
+import json
+import re
+import time
+import urllib.request
+from datetime import datetime
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+OUT_DIR = BASE / "data" / "new_sources"
+RAW = OUT_DIR / "di_aastocks_raw.csv"
+CKPT = OUT_DIR / "di_aastocks_ckpt.json"
+
+CODES = ['00001','00002','00003','00005','00006','00012','00016','00017','00020','00027',
+'00066','00101','00175','00241','00268','00285','00291','00386','00388','00688','00700','00762',
+'00823','00883','00939','00941','00992','01024','01038','01088','01109','01211','01299','01398',
+'01801','01810','01876','01928','02013','02269','02318','02388','02628','02899','03690','06862',
+'09618','09888','09988','09992','09999']
+
+HDRS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36"}
+DATE_RE = re.compile(r"^20\d\d/\d\d/\d\d$")
+log = lambda *a: print(datetime.now().strftime("%H:%M:%S"), *a, flush=True)
+
+
+def fetch(url, tries=3):
+    for i in range(tries):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=HDRS), timeout=25) as r:
+                return r.read().decode("utf-8", "replace")
+        except Exception:
+            if i == 2:
+                raise
+            time.sleep(3)
+
+
+def parse(html):
+    rows = []
+    for t in re.findall(r"<table[^>]*>(.*?)</table>", html, re.S):
+        if "權益披露" not in t:
+            continue
+        for tr in re.findall(r"<tr[^>]*>(.*?)</tr>", t, re.S):
+            cells = [re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", c)).strip()
+                     for c in re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", tr, re.S)]
+            if len(cells) >= 8 and DATE_RE.match(cells[0]):
+                date, holder, avg, ntype, traded, pct_chg, after, pct_after = cells[:8]
+                def clean(s):
+                    m = re.match(r"([\d\.,]+)\(L\)", s)
+                    return m.group(1).replace(",", "") if m else ""
+                rows.append([date, holder, avg or "", ntype.split(" ")[0],
+                             clean(traded), clean(after), pct_after.split("(L)")[0]])
+        if rows:
+            break
+    return rows
+
+
+def crawl_code(code):
+    out, page = [], 1
+    while page <= 200:
+        url = f"https://www.aastocks.com/tc/stock/InterestsDisclosure.aspx?symbol={code}&shareholder=&page={page}"
+        rows = parse(fetch(url))
+        if not rows:
+            break
+        out.extend(rows)
+        if rows[-1][0] < "2021/08":
+            break
+        page += 1
+        time.sleep(0.5)
+    return out
+
+
+def main():
+    ckpt = json.loads(CKPT.read_text()) if CKPT.exists() else {"done": {}}
+    exists = RAW.exists()
+    f = open(RAW, "a", newline="", encoding="utf-8")
+    w = csv.writer(f)
+    if not exists:
+        w.writerow(["stock_code", "date", "holder", "avg_price", "notice_type",
+                    "shares_traded_l", "shares_after_l", "pct_after_l"])
+    for code in CODES:
+        if ckpt["done"].get(code):
+            continue
+        try:
+            rows = crawl_code(code)
+        except Exception as e:
+            log(code, "FAIL", e)
+            time.sleep(3)
+            continue
+        seen = set()
+        for r in rows:
+            k = tuple(r)
+            if k not in seen:
+                seen.add(k)
+                w.writerow([code] + r)
+        f.flush()
+        ckpt["done"][code] = len(rows)
+        CKPT.write_text(json.dumps(ckpt))
+        log(code, len(rows), "rows, last", rows[-1][0] if rows else "-")
+        time.sleep(0.8)
+    f.close()
+    log("DONE")
+
+
+if __name__ == "__main__":
+    main()

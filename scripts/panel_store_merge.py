@@ -1,0 +1,49 @@
+# -*- coding: utf-8 -*-
+"""panel_store_merge.py — wide panel store 共用 merge helper (09-15 T3 DRY).
+
+build_ah_premium_store / build_tp_store 兩份 09-15 G50843 抄寫嘅同一套 merge:
+dedup keep-last → union 日期軸 → 新值覆蓋 (combine_first) → 排序。
+呢度抽成純函數共用, 語義不變:
+- 舊表保留全部欄/日; 新表值覆蓋舊值, 新表 NaN 位 fall back 舊值;
+- 舊表冇嘅新欄/新日照加 (舊日期對新欄 NaN 係 wide panel 正常語義);
+- 冪等: 同樣 input 重跑 output 一樣。
+純函數: 唔掂檔案、唔改傳入嘅 df。
+"""
+import pandas as pd
+
+
+def _norm_cols(df):
+    """欄名標準化: 裸 5 位數字代碼 (02899) → HK.02899.
+
+    [09-15 agent2-H] 增量 collector 交裸名、歷史爬交 HK. 名, merge 各自為政
+    令同股雙欄並存 (ah_premium 10 對, broker_conc_sdw 51 對) — rank
+    cross-section 一股兩票。因子鏈 wide 表慣例 = HK.XXXXX, 呢度統一。
+    非數字代碼欄 (long-format 欄如 'code') 唔郁, 原樣過。
+    norm 撞名 (同 frame 02899+HK.02899) → 每欄一份: 取最後非空值
+    (groupby.last 跳 NaN), 同 merge 本身「新值蓋舊值、NaN fallback」語義一致。
+    """
+    out = df.rename(columns=lambda c: f"HK.{c}" if str(c).isdigit() else c)
+    if out.columns.duplicated().any():
+        out = out.T.groupby(level=0).last().T
+    return out
+
+
+def merge_wide(old_df, fresh_df):
+    """舊 store wide 表 ∪ 新鮮 wide 表 → merged (DatetimeIndex, 已排序).
+
+    old_df: 現有 store parquet (DatetimeIndex); None 或 0 行 = 當冇舊表,
+            直接回 fresh (dedup+norm+排序後副本)。
+    fresh_df: 新鮮 wide csv 讀入 (DatetimeIndex; 唔使預先 dedup/排序 — 呢度做埋,
+              重複日 keep-last, 同 build_tp_store 原語義)。
+    欄名: 兩邊都過 _norm_cols — 裸代碼欄 norm 做 HK. 前綴, 杜絕同股雙欄
+          (同一 frame 內撞名 keep-last, 同日期 dedup 語義一致)。
+    """
+    fresh = _norm_cols(fresh_df[~fresh_df.index.duplicated(keep="last")].sort_index())
+    if old_df is None or not len(old_df):
+        return fresh
+    old = _norm_cols(old_df[~old_df.index.duplicated(keep="last")])
+    merged = old.reindex(old.index.union(fresh.index))
+    for col in fresh.columns:
+        nv = fresh[col].reindex(merged.index)
+        merged[col] = nv.combine_first(merged[col]) if col in merged.columns else nv
+    return merged.sort_index()

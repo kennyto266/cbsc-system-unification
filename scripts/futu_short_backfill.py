@@ -1,0 +1,94 @@
+"""Futu HK short-selling history backfill — get_daily_short_volume via OpenD.
+
+每隻股票逐頁 (num=50) 用 next_key 向舊翻,直到盡頭 (~2021)。
+寫入 cbsc-system-unification/data/raw_hkex/futu_short_history/<code>.csv
+"""
+import sys, time
+from pathlib import Path
+
+import pandas as pd
+from futu import OpenQuoteContext, RET_OK
+
+ROOT = Path(r'C:/Users/Penguin8n/ZCodeProject')
+OUT = ROOT / 'cbsc-system-unification/data/raw_hkex/futu_short_history'
+OUT.mkdir(parents=True, exist_ok=True)
+sys.path.insert(0, str(ROOT / 'backtests'))
+sys.path.insert(0, str(ROOT))
+
+import bootstrap  # noqa: F401 — trading_core path fix
+from trading_core.universe import filter_universe
+from backtests.full_revalidate import preload_prices
+
+
+_REQ_TS: list[float] = []
+
+def _throttle():
+    """30 req / 30s — 滑動窗口限流。"""
+    global _REQ_TS
+    now = time.time()
+    _REQ_TS = [t for t in _REQ_TS if now - t < 31]
+    if len(_REQ_TS) >= 28:
+        wait = 31 - (now - _REQ_TS[0])
+        if wait > 0:
+            time.sleep(wait + 0.5)
+    _REQ_TS.append(time.time())
+
+def backfill_one(qctx, code: str) -> tuple[int, str] | None:
+    next_key = None
+    total = []
+    for page in range(60):  # 60頁×50 = 3000日 cap
+        for attempt in range(3):
+            _throttle()
+            ret, us_df, hk_df = qctx.get_daily_short_volume(code, next_key=next_key, num=50)
+            if ret == RET_OK:
+                break
+            msg = str(us_df)
+            if '频率太高' in msg or 'rate' in msg.lower():
+                print(f'    rate-limited {code} p{page}, wait 32s (attempt {attempt+1})', flush=True)
+                time.sleep(32)
+                continue
+            print(f'    ERR {code}: {msg[:80]}', flush=True)
+            return None
+        else:
+            return None
+        if hk_df is None or not len(hk_df):
+            break
+        total.append(hk_df)
+        next_key = hk_df.attrs.get('next_key')
+        if next_key in (None, '-1', -1):
+            break
+    if not total:
+        return None
+    df = pd.concat(total).drop_duplicates(subset=['timestamp']).sort_values('timestamp')
+    df.to_csv(OUT / f"{code.replace('.', '_')}.csv", index=False, encoding='utf-8')
+    return len(df), f"{df.iloc[0]['timestamp_str'][:10]}~{df.iloc[-1]['timestamp_str'][:10]}"
+
+
+def main():
+    u = filter_universe(preload_prices())
+    codes = list(u.columns)
+    print(f'universe: {len(codes)} stocks', flush=True)
+    qctx = OpenQuoteContext(host='127.0.0.1', port=11111)
+    ok = fail = 0
+    try:
+        for i, code in enumerate(codes, 1):
+            fp = OUT / f"{code.replace('.', '_')}.csv"
+            if fp.exists():
+                ok += 1
+                continue
+            _throttle()
+            r = backfill_one(qctx, code)
+            if r:
+                print(f'[{i}/{len(codes)}] {code}: {r[0]} days ({r[1]})', flush=True)
+                ok += 1
+            else:
+                print(f'[{i}/{len(codes)}] {code}: FAIL', flush=True)
+                fail += 1
+            time.sleep(0.35)
+    finally:
+        qctx.close()
+    print(f'DONE ok={ok} fail={fail}', flush=True)
+
+
+if __name__ == '__main__':
+    main()

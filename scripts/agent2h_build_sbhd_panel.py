@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+"""agent2h_build_sbhd_panel.py — thesis sbhd: 南向持股% panel (月度歷史 + 日度近段).
+
+2026-08-23 agent2-H. 三層合併 (由新到舊, 每格只取最細優先級源):
+  L1 (新→)  sdw_hold_pct.parquet 日度 — HKEX canonical 2025-08→ + EM HOLDRANKS 2024-08→
+  L2 (舊)   em_hold_det_monthly.csv  月度採樣 2022-04→2024-08 (RPT_MUTUAL_HOLD_DET)
+
+月度採樣 reindex 落日曆用 ffill (thesis 明言), 採樣日分佈會 print 審計.
+Output: data/factor_store/sbhd.parquet — wide date × HK.xxxxx, value = 南向持股佔已發行%.
+"""
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+NS = BASE / "data" / "new_sources"
+FS = BASE / "data" / "factor_store"
+
+# L1: existing daily panel (already validated by build_sdw_hold_pct.py)
+daily = pd.read_parquet(FS / "sdw_hold_pct.parquet")
+
+# L2: monthly HOLD_DET
+mon = pd.read_csv(NS / "em_hold_det_monthly.csv", dtype={"stock_code": str})
+mon["date"] = pd.to_datetime(mon["date"])
+mon["stock"] = "HK." + mon["stock_code"].str.zfill(5)
+# HOLD_DET 每採樣日有滬/深兩個 CSDCC org 行 — 要 sum 唔係 mean
+n_org = mon.groupby(["date", "stock"]).size()
+print(f"org rows per date-stock: min={n_org.min()} max={n_org.max()}")
+monthly = mon.groupby(["date", "stock"])["hold_shares_ratio"].sum().unstack("stock").sort_index()
+
+print(f"daily: {daily.shape} {daily.index.min().date()}->{daily.index.max().date()}")
+print(f"monthly: {monthly.shape} {monthly.index.min().date()}->{monthly.index.max().date()} "
+      f"({len(monthly)} sample dates)")
+
+# 口徑對照: 重疊期 monthly vs daily (同採樣日)
+ov = monthly.index[(monthly.index >= daily.index.min())]
+if len(ov):
+    common = daily.columns.intersection(monthly.columns)
+    diffs = []
+    for d in ov:
+        a, b = monthly.loc[d, common], daily.loc[d, common]
+        m = a.notna() & b.notna()
+        if m.sum():
+            diffs.append((a[m] - b[m]).abs())
+    if diffs:
+        dd = pd.concat(diffs)
+        print(f"overlap audit: {len(dd)} cells mean|d|={dd.mean():.4f}pp "
+              f"max|d|={dd.max():.4f}pp frac<0.05pp={(dd < 0.05).mean():.3f}")
+
+# merge: daily wins; monthly fills pre-daily era
+out = daily.copy()
+pre = monthly[monthly.index < daily.index.min()]
+if len(pre):
+    out = pd.concat([pre.reindex(out.columns, axis=1), out]).sort_index()
+    # audit: which columns actually gained pre-era coverage
+    gained = pre.reindex(columns=out.columns).notna().sum()
+    gained = gained[gained > 0]
+    print(f"pre-era fill: {len(gained)} stocks gained, "
+          f"median {gained.median():.0f} monthly obs each")
+
+# ffill monthly samples onto calendar (only within pre-era span; daily stays untouched)
+pre_start = pre.index.min() if len(pre) else None
+if pre_start is not None:
+    cal = pd.bdate_range(pre_start, out.index.max())
+    out = out.reindex(cal.union(out.index)).sort_index()
+    era = out.index < daily.index.min()
+    out.loc[era] = out.loc[era].ffill()
+
+out.to_parquet(FS / "sbhd.parquet")
+print(f"sbhd: {out.shape} cells={int(out.notna().sum().sum())} "
+      f"{out.index.min().date()}->{out.index.max().date()}")
+for y in sorted(set(out.index.year)):
+    sub = out[out.index.year == y]
+    print(f"  {y}: {int(sub.notna().any(axis=1).sum())} active days, "
+          f"mean coverage {sub.notna().sum(axis=1).mean():.1f}/{out.shape[1]} stocks")

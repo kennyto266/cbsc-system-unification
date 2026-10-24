@@ -1,0 +1,218 @@
+"""Round 4c: Try fundamentally different alpha types.
+- Sector rotation (sector relative strength)
+- Lead-lag (big cap leads small cap)
+- Overnight-only return (skip daytime)
+"""
+import sys
+sys.path = [p for p in sys.path if 'CODEX' not in p]
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\backtests')
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts')
+import warnings
+warnings.filterwarnings('ignore')
+import numpy as np, pandas as pd
+from pathlib import Path
+from vbt_data import FACTOR_STOCKS
+
+DATA_5Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y')
+DATA_10Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr')
+SPLIT = pd.Timestamp('2024-01-01')
+
+# Load full OHLCV panels
+ohlcv_cache = {}
+close_all = {}; open_all = {}; vol_all = {}
+for s in FACTOR_STOCKS:
+    fname = s.replace('.', '_')
+    for d in [DATA_10Y, DATA_5Y]:
+        p = d / f'{fname}.csv'
+        if p.exists():
+            df = pd.read_csv(p, parse_dates=['time_key']).set_index('time_key').sort_index()
+            ohlcv_cache[s] = df
+            close_all[s] = df['close'].astype(float)
+            open_all[s] = df['open'].astype(float)
+            vol_all[s] = df['volume'].astype(float)
+            break
+close_panel = pd.DataFrame(close_all); open_panel = pd.DataFrame(open_all)
+vol_panel = pd.DataFrame(vol_all); ret_panel = close_panel.pct_change()
+print(f'Panel: {close_panel.shape[1]} stocks')
+
+
+def ts_portfolio(entry_func, hold=5):
+    all_rets = {}
+    for stock, df in ohlcv_cache.items():
+        if len(df) < 400: continue
+        close = df['close'].astype(float)
+        try:
+            entries = entry_func(close, df)
+            if entries is None: continue
+            ret1 = close.pct_change()
+            pos = pd.Series(0, index=close.index); in_pos=False; dl=0
+            for i in range(len(close)):
+                if entries.iloc[i] and not in_pos: in_pos=True; dl=hold
+                pos.iloc[i]=1 if in_pos else 0
+                if in_pos:
+                    dl-=1
+                    if dl<=0: in_pos=False
+            all_rets[stock] = (pos.shift(1)*ret1).dropna()
+        except: pass
+    if not all_rets: return None
+    return pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+
+
+def report(name, result):
+    if result is None: return
+    oos = result[result.index >= SPLIT].dropna()
+    if len(oos) < 20: return
+    sr = oos.mean()/oos.std()*np.sqrt(252) if oos.std()>0 else 0
+    ret = (1+oos).cumprod().iloc[-1]-1
+    dd = ((1+oos).cumprod()/(1+oos).cumprod().cummax()-1).min()
+    tag = '🟢' if sr > 1.0 else '✨' if sr > 0.7 else '  ' if sr > 0.4 else '❌'
+    print(f'  {tag} {name}: OOS={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')
+
+
+print('\n' + '='*65)
+print('E1: Overnight Return (open/prev_close - 1) as signal')
+print('='*65)
+# Overnight return predictive of next day
+overnight = (open_panel / close_panel.shift(1) - 1)
+for z_t in [-0.02, -0.03, -0.04]:
+    all_entries = {}
+    for stock in ohlcv_cache:
+        if stock not in overnight.columns: continue
+        on = overnight[stock]
+        # Big negative overnight gap → buy (gap down exhaustion)
+        all_entries[stock] = (on < z_t).shift(1).fillna(False)
+    # portfolio
+    all_rets = {}
+    for stock, entries in all_entries.items():
+        close = close_panel[stock].dropna()
+        entries = entries.reindex(close.index).fillna(False)
+        ret1 = close.pct_change()
+        pos = pd.Series(0, index=close.index); in_pos=False; dl=0
+        for i in range(len(close)):
+            if entries.iloc[i] and not in_pos: in_pos=True; dl=3
+            pos.iloc[i]=1 if in_pos else 0
+            if in_pos:
+                dl-=1
+                if dl<=0: in_pos=False
+        all_rets[stock] = (pos.shift(1)*ret1).dropna()
+    if all_rets:
+        daily = pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+        report(f'Overnight<{z_t:.0%}', daily)
+
+# Positive overnight = momentum continuation
+for z_t in [0.02, 0.03]:
+    all_rets = {}
+    for stock in ohlcv_cache:
+        on = overnight.get(stock)
+        if on is None: continue
+        close = close_panel[stock].dropna()
+        entries = (on > z_t).shift(1).reindex(close.index).fillna(False)
+        ret1 = close.pct_change()
+        pos = pd.Series(0, index=close.index); in_pos=False; dl=0
+        for i in range(len(close)):
+            if entries.iloc[i] and not in_pos: in_pos=True; dl=3
+            pos.iloc[i]=1 if in_pos else 0
+            if in_pos:
+                dl-=1
+                if dl<=0: in_pos=False
+        all_rets[stock] = (pos.shift(1)*ret1).dropna()
+    if all_rets:
+        daily = pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+        report(f'Overnight>{z_t:.0%}', daily)
+
+print('\n' + '='*65)
+print('E2: Lead-Lag (index leads individual stocks)')
+print('='*65)
+# Market return predicts individual stock next day
+mkt_ret = ret_panel.mean(axis=1)  # equal-weight market
+for lag in [1, 2, 3]:
+    for z_t in [0.01, 0.015]:
+        all_rets = {}
+        for stock in ohlcv_cache:
+            close = close_panel[stock].dropna()
+            mkt_aligned = mkt_ret.reindex(close.index)
+            # Market up significantly → buy next day (lead-lag)
+            entries = (mkt_aligned > z_t).shift(lag-1).fillna(False)
+            ret1 = close.pct_change()
+            pos = pd.Series(0, index=close.index); in_pos=False; dl=0
+            for i in range(len(close)):
+                if entries.iloc[i] and not in_pos: in_pos=True; dl=3
+                pos.iloc[i]=1 if in_pos else 0
+                if in_pos:
+                    dl-=1
+                    if dl<=0: in_pos=False
+            all_rets[stock] = (pos.shift(1)*ret1).dropna()
+        if all_rets:
+            daily = pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+            report(f'MktUp>{z_t:.1%} lag{lag}', daily)
+
+print('\n' + '='*65)
+print('E3: Volume-Weighted Return Divergence')
+print('='*65)
+# VWAP vs close: when close >> vwap, strong; when close << vwap, weak
+for stock in list(ohlcv_cache.keys())[:3]:
+    df = ohlcv_cache[stock]
+    typical = (df['high'] + df['low'] + df['close']) / 3
+    vwap = (typical * df['volume']).rolling(20).sum() / df['volume'].rolling(20).sum()
+    print(f'  {stock} sample: close={df["close"].iloc[-1]:.2f} vwap={vwap.iloc[-1]:.2f}')
+    break
+
+# VWAP divergence portfolio
+all_rets = {}
+for stock, df in ohlcv_cache.items():
+    if len(df) < 400: continue
+    close = df['close'].astype(float)
+    typical = (df['high'].astype(float) + df['low'].astype(float) + close) / 3
+    vol = df['volume'].astype(float)
+    vwap = (typical * vol).rolling(10).sum() / vol.rolling(10).sum().replace(0, np.nan)
+    div = (close - vwap) / vwap
+    div_z = (div - div.rolling(60).mean()) / div.rolling(60).std().replace(0, np.nan)
+    # Close well below VWAP → buy (reversion)
+    entries = (div_z < -1.5).shift(1).fillna(False)
+    ret1 = close.pct_change()
+    pos = pd.Series(0, index=close.index); in_pos=False; dl=0
+    for i in range(len(close)):
+        if entries.iloc[i] and not in_pos: in_pos=True; dl=3
+        pos.iloc[i]=1 if in_pos else 0
+        if in_pos:
+            dl-=1
+            if dl<=0: in_pos=False
+    all_rets[stock] = (pos.shift(1)*ret1).dropna()
+if all_rets:
+    daily = pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+    report('VWAP_revert_z<-1.5', daily)
+
+print('\n' + '='*65)
+print('E4: High-Low Range Predictor')
+print('='*65)
+# Wide range = volatility; narrow range predicts breakout
+for stock, df in list(ohlcv_cache.items())[:1]:
+    high, low = df['high'].astype(float), df['low'].astype(float)
+    rng = (high - low) / close_panel[stock]
+    rng_rank = rng.rolling(60).rank(pct=True)
+    print(f'  Range rank sample: {rng_rank.iloc[-5:].values}')
+
+# Narrow range breakout
+all_rets = {}
+for stock, df in ohlcv_cache.items():
+    if len(df) < 400: continue
+    close = df['close'].astype(float)
+    high, low = df['high'].astype(float), df['low'].astype(float)
+    rng = (high - low) / close
+    rng_rank = rng.rolling(60).rank(pct=True)
+    narrow = rng_rank < 0.2  # bottom 20% range
+    sma = close.rolling(10).mean()
+    breakout = close > sma
+    entries = (narrow & breakout).shift(1).fillna(False)
+    ret1 = close.pct_change()
+    pos = pd.Series(0, index=close.index); in_pos=False; dl=0
+    for i in range(len(close)):
+        if entries.iloc[i] and not in_pos: in_pos=True; dl=3
+        pos.iloc[i]=1 if in_pos else 0
+        if in_pos:
+            dl-=1
+            if dl<=0: in_pos=False
+    all_rets[stock] = (pos.shift(1)*ret1).dropna()
+if all_rets:
+    daily = pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+    report('NarrowRange+breakout', daily)

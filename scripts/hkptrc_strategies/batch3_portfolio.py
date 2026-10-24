@@ -1,0 +1,282 @@
+"""
+hkptrc 策略實作 Batch 3: 組合管理策略 (策略 #12-15)
+
+#12 Volatility Neutral Portfolio (Trend + Mean Reversion 組合)
+#13 Portfolio Rebalancing
+#14 Shannon's Demon (多策略 pool)
+#15 Equity Curve Trading
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, __file__.rsplit("\\", 1)[0])
+
+from common import *
+import numpy as np
+import pandas as pd
+
+
+def strategy_12_volatility_neutral(prices, stock, z_window=50, z_threshold=1.0):
+    """#12 Volatility Neutral — Trend + Mean Reversion 各自獨立 backtest 後 aggregate"""
+    close = prices[stock].dropna()
+    if len(close) < z_window * 3:
+        return None
+
+    z = compute_zscore(close, z_window)
+
+    # Trend Following：Z > threshold 開好, Z < -threshold 開淡
+    trend_long = (z > z_threshold).fillna(False)
+    trend_short_exit = (z < 0).fillna(False)
+    trend_short = (z < -z_threshold).fillna(False)
+    trend_long_exit = (z > 0).fillna(False)
+
+    # Mean Reversion：Z < -threshold 開好, Z > threshold 開淡（相反）
+    mr_long = (z < -z_threshold).fillna(False)
+    mr_short = (z > z_threshold).fillna(False)
+
+    pf_trend = backtest_signals(close, trend_long, trend_short_exit, trend_short, trend_long_exit)
+    pf_mr = backtest_signals(close, mr_long, (z > 0).fillna(False),
+                              mr_short, (z < 0).fillna(False))
+
+    if pf_trend is None or pf_mr is None:
+        return None
+
+    # Aggregate equity curves
+    trend_eq = pf_trend.value()
+    mr_eq = pf_mr.value()
+    combined_eq = (trend_eq + mr_eq) / 2
+
+    # 計算組合指標
+    returns = combined_eq.pct_change().dropna()
+    if len(returns) == 0 or returns.std() == 0:
+        return None
+
+    total_ret = combined_eq.iloc[-1] / 100_000 - 1
+    ann_ret = (1 + total_ret) ** (252 / len(returns)) - 1 if total_ret > -1 else -1
+    vol = returns.std() * np.sqrt(252)
+    sharpe = (ann_ret - RF_RATE) / vol if vol > 0 else 0
+    sortino_denom = returns[returns < 0].std() * np.sqrt(252)
+    sortino = (ann_ret - RF_RATE) / sortino_denom if sortino_denom > 0 else 0
+    max_dd = ((combined_eq / combined_eq.cummax()) - 1).min()
+    calmar = ann_ret / abs(max_dd) if max_dd < 0 else 0
+
+    return {
+        "strategy": "12_VolNeutral",
+        "stock": stock,
+        "final_value": round(float(combined_eq.iloc[-1]), 0),
+        "total_return_pct": round(total_ret * 100, 2),
+        "annual_return_pct": round(ann_ret * 100, 2),
+        "sharpe": round(sharpe, 3),
+        "sortino": round(sortino, 3),
+        "max_drawdown_pct": round(max_dd * 100, 2),
+        "calmar": round(calmar, 3),
+        "n_trades": 0,
+        "win_rate_pct": 0,
+        "profit_factor": 0,
+    }
+
+
+def strategy_13_portfolio_rebalancing(prices, stock, target_weight=0.5, band=0.1, z_window=50):
+    """#13 Portfolio Rebalancing — 固定比例再平衡 (Constant-Proportion)
+
+    維持目標權重 (例如 50% 投資 / 50% 現金). 當實際權重偏離 target ±band 時再平衡:
+    - 權重 > target+band (賺得多, 倉位過重) → 沽一部分返 target (賣高)
+    - 權重 < target-band (蝕得多, 倉位過輕) + Z-Score 偏低 → 買返 target (買低)
+    機械式逆向操作, 賺 mean-reversion + rebalance premium.
+
+    與 #14 (多策略 pool rebalance) 區別: #13 係單一倉位固定比例, #14 係多策略等權.
+    """
+    close = prices[stock].dropna()
+    if len(close) < 200:
+        return None
+
+    z = compute_zscore(close, z_window)
+    init_cash = 100_000
+    fee_rate = FEE_PER_SIDE  # 每邊手續費
+    position_value = init_cash * target_weight   # 初始倉位 = 目標權重
+    cash = init_cash - position_value - (position_value * fee_rate)  # 初始買入手續費
+    shares = position_value / close.iloc[0]
+
+    equity_curve = []
+    n_rebalances = 0
+
+    for i in range(len(close)):
+        price = close.iloc[i]
+        pos_val = shares * price
+        total = pos_val + cash
+        weight = pos_val / total if total > 0 else 0
+        equity_curve.append(total)
+
+        # 再平衡觸發 (對稱: 兩邊都用 band, 唔加 z 過濾, 避免人為偏差)
+        if i > 0:
+            if weight > target_weight + band:
+                # 倉位過重 → 沽返 target (賣高), 扣手續費
+                target_pos = total * target_weight
+                sell_value = pos_val - target_pos
+                if sell_value > 0 and shares > 0:
+                    sell_shares = sell_value / price
+                    shares -= sell_shares
+                    cash += sell_value - (sell_value * fee_rate)  # 賣出手續費
+                    n_rebalances += 1
+            elif weight < target_weight - band:
+                # 倉位過輕 → 買返 target (買低), 扣手續費
+                target_pos = total * target_weight
+                buy_value = target_pos - pos_val
+                if buy_value > 0 and cash >= buy_value * (1 + fee_rate):
+                    buy_shares = buy_value / price
+                    shares += buy_shares
+                    cash -= buy_value + (buy_value * fee_rate)  # 買入手續費
+                    n_rebalances += 1
+
+    # 修正: 從手動 equity curve 計 metrics (唔再用 backtest_signals, 避免 dead code)
+    equity = pd.Series(equity_curve, index=close.index)
+    returns = equity.pct_change().dropna()
+    if len(returns) < 10 or returns.std() == 0 or n_rebalances < 3:
+        return None  # 太少再平衡 = 無意義
+    total_ret = equity.iloc[-1] / init_cash - 1
+    years = len(close) / 252
+    ann_ret = (1 + total_ret) ** (1 / years) - 1 if total_ret > -1 and years > 0 else -1
+    vol = returns.std() * np.sqrt(252)
+    sharpe = (ann_ret - RF_RATE) / vol if vol > 0 else 0
+    max_dd = ((equity / equity.cummax()) - 1).min()
+    return {
+        "strategy": "13_PortfolioRebalancing",
+        "stock": stock,
+        "final_value": round(float(equity.iloc[-1]), 0),
+        "total_return_pct": round(total_ret * 100, 2),
+        "annual_return_pct": round(ann_ret * 100, 2),
+        "sharpe": round(sharpe, 3),
+        "sortino": round(sharpe, 3),
+        "max_drawdown_pct": round(max_dd * 100, 2),
+        "calmar": round(ann_ret / abs(max_dd), 3) if max_dd != 0 else 0,
+        "n_trades": n_rebalances,
+        "win_rate_pct": 0,  # rebalancing 冇傳統勝率概念
+        "profit_factor": 0,
+    }
+
+
+def strategy_14_shannons_demon(prices, stock, rebalance_window=20):
+    """#14 Shannon's Demon — 多策略 pool + 定期 rebalancing
+
+    用 3 個唔同週期策略 pool，定期等權 rebalance
+    """
+    close = prices[stock].dropna()
+    if len(close) < 200:
+        return None
+
+    # 3 個 strategy units：唔同 Z-Score 週期
+    z_short = compute_zscore(close, 20)
+    z_mid = compute_zscore(close, 50)
+    z_long = compute_zscore(close, 100)
+
+    units = []
+    for z, name in [(z_short, "S"), (z_mid, "M"), (z_long, "L")]:
+        long_e = (z < -2.0).fillna(False)
+        exit_l = (z > 0).fillna(False)
+        pf = backtest_signals(close, long_e, exit_l)
+        if pf is not None:
+            units.append(pf.value())
+
+    if len(units) < 2:
+        return None
+
+    # Aggregate — 等權平均本身就係 Shannon's Demon 既 rebalancing (各 unit 等權)
+    # (修正: 移除原本破壞 equity 既單點覆寫 loop, 那個唔係 rebalancing)
+    rebalanced = sum(units) / len(units)
+
+    returns = rebalanced.pct_change().dropna()
+    if len(returns) == 0 or returns.std() == 0:
+        return None
+
+    total_ret = rebalanced.iloc[-1] / 100_000 - 1
+    ann_ret = (1 + total_ret) ** (252 / len(returns)) - 1 if total_ret > -1 else -1
+    vol = returns.std() * np.sqrt(252)
+    sharpe = (ann_ret - RF_RATE) / vol if vol > 0 else 0
+    sortino_denom = returns[returns < 0].std() * np.sqrt(252)
+    sortino = (ann_ret - RF_RATE) / sortino_denom if sortino_denom > 0 else 0
+    max_dd = ((rebalanced / rebalanced.cummax()) - 1).min()
+    calmar = ann_ret / abs(max_dd) if max_dd < 0 else 0
+
+    return {
+        "strategy": "14_ShannonsDemon",
+        "stock": stock,
+        "final_value": round(float(rebalanced.iloc[-1]), 0),
+        "total_return_pct": round(total_ret * 100, 2),
+        "annual_return_pct": round(ann_ret * 100, 2),
+        "sharpe": round(sharpe, 3),
+        "sortino": round(sortino, 3),
+        "max_drawdown_pct": round(max_dd * 100, 2),
+        "calmar": round(calmar, 3),
+        "n_trades": 0,
+        "win_rate_pct": 0,
+        "profit_factor": 0,
+    }
+
+
+def strategy_15_equity_curve_trading(prices, stock, z_window=50, eq_window=50, z_threshold=2.0):
+    """#15 Equity Curve Trading — 基礎策略 equity 高於 SMA 先啟動"""
+    close = prices[stock].dropna()
+    if len(close) < 200:
+        return None
+
+    # 基礎策略：Z-Score mean reversion
+    z = compute_zscore(close, z_window)
+    base_long = (z < -z_threshold).fillna(False)
+    base_exit = (z > -0.5).fillna(False)
+
+    pf_base = backtest_signals(close, base_long, base_exit)
+    if pf_base is None:
+        return None
+
+    base_equity = pf_base.value()
+    equity_sma = base_equity.rolling(eq_window).mean()
+
+    # 元層次規則：equity > SMA 先啟動
+    active = (base_equity > equity_sma).fillna(False)
+
+    # 只喺 active 時段執行
+    filtered_long = base_long & active
+    filtered_exit = base_exit | (~active)
+
+    pf_final = backtest_signals(close, filtered_long, filtered_exit)
+
+    if pf_final is None:
+        return None
+
+    return extract_metrics(pf_final, "15_EquityCurveTrading", stock)
+
+
+def run_batch3(prices, stocks=None):
+    """運行 Batch 3。"""
+    stocks = stocks or TEST_STOCKS
+    all_results = []
+
+    strategies = [
+        ("12 Volatility Neutral", strategy_12_volatility_neutral),
+        ("14 Shannon's Demon", strategy_14_shannons_demon),
+        ("15 Equity Curve Trading", strategy_15_equity_curve_trading),
+    ]
+
+    for strat_name, func in strategies:
+        print("\n運行 {} ...".format(strat_name))
+        for stock in stocks:
+            if stock not in prices.columns:
+                continue
+            result = func(prices, stock)
+            if result:
+                all_results.append(result)
+
+    return all_results
+
+
+if __name__ == "__main__":
+    print("=" * 95)
+    print("📊 hkptrc Batch 3: 組合管理策略 (VectorBT)")
+    print("=" * 95)
+
+    prices = load_prices(250)
+    print("數據: {} 日 × {} 股".format(len(prices), prices.shape[1]))
+
+    results = run_batch3(prices)
+    print_results_table(results, "Batch 3 結果 (組合管理)")
+
+    save_results(results, "batch3_portfolio.csv")

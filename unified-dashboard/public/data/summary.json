@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-10-16T10:09:52.240862",
+  "hkex_latest": {
+    "date": "2026-10-15",
+    "hsi_close": 24062.72,
+    "turnover_hkd": 224164565414,
+    "advanced": 4414,
+    "declined": 6937
+  },
+  "stock_connect_latest": {
+    "date": "2026-10-15",
+    "total_mil": 80137.53,
+    "net_mil": -5080.23
+  }
+}

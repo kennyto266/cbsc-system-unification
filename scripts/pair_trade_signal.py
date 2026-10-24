@@ -1,0 +1,242 @@
+#!/usr/bin/env python3
+"""
+Pair Trade 即時信號 — 計算 Top pairs 嘅最新 z-score，輸出買邊隻沽邊隻。
+
+策略邏輯（z-score mean-reversion）：
+- z > +2.0：A 相對 B 太貴 → 沽 A、買 B（short spread）
+- z < -2.0：A 相對 B 太平 → 買 A、沽 B（long spread）
+- |z| < 0.5：平倉 / 觀望
+- 其他：持有现有倉位
+
+用法:
+    python scripts/pair_trade_signal.py              # 預設 Top 10 pair
+    python scripts/pair_trade_signal.py --top 20     # Top 20
+    python scripts/pair_trade_signal.py --days 60    # 用 60 日數據計 z-score
+"""
+import os
+import sys
+import json
+import argparse
+from pathlib import Path
+from datetime import datetime
+
+sys.path = [p for p in sys.path if "CODEX" not in p]
+
+import numpy as np
+import pandas as pd
+
+ROOT = Path(__file__).parent.parent
+DATA_DIR = ROOT / "data"
+FUTU_HOST = os.getenv("FUTU_OPEND_HOST", "127.0.0.1")
+FUTU_PORT = int(os.getenv("FUTU_OPEND_PORT", "1130"))
+
+ENTRY_Z = 2.0
+EXIT_Z = 0.5
+LOOKBACK = 20  # 短期 z-score 更敏感
+
+
+def fetch_recent_prices(days=60):
+    """攞最近 N 日收盤價。"""
+    import futu
+    cache = DATA_DIR / "hsi_prices.pkl"
+    if cache.exists():
+        prices = pd.read_pickle(cache).tail(days)
+        if len(prices) >= 20:
+            return prices
+    # 重新攞
+    ctx = futu.OpenQuoteContext(host=FUTU_HOST, port=FUTU_PORT)
+    try:
+        ret, data = ctx.get_plate_stock("HK.800000")
+        stocks = [(r["code"], r.get("stock_name", ""))
+                  for _, r in data.iterrows()
+                  if r["code"].startswith("HK.0") or r["code"].startswith("HK.9")]
+        all_data = {}
+        for code, name in stocks:
+            try:
+                result = ctx.request_history_kline(
+                    code, ktype=futu.KLType.K_DAY, autype=futu.AuType.QFQ, max_count=days)
+                if len(result) == 3:
+                    ret, df, _ = result
+                else:
+                    ret, df = result
+                if ret == futu.RET_OK and not df.empty:
+                    ts = pd.to_datetime(df["time_key"])
+                    all_data[code] = pd.Series(df["close"].values, index=ts, name=code)
+            except Exception:
+                pass
+    finally:
+        ctx.close()
+    prices = pd.DataFrame(all_data).sort_index().dropna(how="all")
+    return prices.tail(days)
+
+
+def compute_signal(prices, code_a, code_b):
+    """計算一個 pair 嘅最新 z-score 同信號。"""
+    a = np.log(prices[code_a])
+    b = np.log(prices[code_b])
+    common = pd.concat([a, b], axis=1, join="inner").dropna()
+    if len(common) < LOOKBACK + 5:
+        return None
+
+    lookback = min(LOOKBACK, len(common) - 5)
+    a_v = common.iloc[:, 0]
+    b_v = common.iloc[:, 1]
+
+    from scipy import stats
+    slope, intercept, _, _, _ = stats.linregress(b_v.values, a_v.values)
+    spread = a_v - (intercept + slope * b_v)
+
+    roll_mean = spread.rolling(lookback).mean()
+    roll_std = spread.rolling(lookback).std().replace(0, np.nan)
+    z_series = (spread - roll_mean) / roll_std
+
+    z_now = float(z_series.iloc[-1])
+    if np.isnan(z_now):
+        return None
+
+    # 最新價格
+    last_a = float(prices[code_a].dropna().iloc[-1])
+    last_b = float(prices[code_b].dropna().iloc[-1])
+
+    # 信號判斷
+    if z_now > ENTRY_Z:
+        action = "SHORT_A_LONG_B"
+        action_cn = "沽 {} / 買 {}".format(code_a, code_b)
+        strength = "強" if z_now > 3 else "中"
+    elif z_now < -ENTRY_Z:
+        action = "LONG_A_SHORT_B"
+        action_cn = "買 {} / 沽 {}".format(code_a, code_b)
+        strength = "強" if z_now < -3 else "中"
+    elif abs(z_now) < EXIT_Z:
+        action = "CLOSE"
+        action_cn = "平倉 / 觀望"
+        strength = "-"
+    elif z_now > 0:
+        action = "HOLD_SHORT_A"
+        action_cn = "持有 (偏 沽{})".format(code_a)
+        strength = "弱"
+    else:
+        action = "HOLD_LONG_A"
+        action_cn = "持有 (偏 買{})".format(code_a)
+        strength = "弱"
+
+    # z-score 歷史（最近 5 日趨勢）
+    z_recent = z_series.tail(5).tolist()
+
+    return {
+        "code_a": code_a,
+        "code_b": code_b,
+        "price_a": round(last_a, 2),
+        "price_b": round(last_b, 2),
+        "hedge_ratio": round(float(slope), 4),
+        "z_score": round(z_now, 3),
+        "action": action,
+        "action_cn": action_cn,
+        "strength": strength,
+        "z_recent": [round(z, 2) for z in z_recent if not np.isnan(z)],
+        "last_date": str(common.index[-1].date()),
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Pair Trade 即時信號")
+    parser.add_argument("--top", type=int, default=10, help="分析 Top N pair")
+    parser.add_argument("--days", type=int, default=60, help="z-score 計算天數")
+    args = parser.parse_args()
+
+    print("=" * 75)
+    print("📡 Pair Trade 即時信號 (z-score mean-reversion)")
+    print("=" * 75)
+    print("時間: {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    print("策略: z>+2 沽A買B | z<-2 買A沽B | |z|<0.5 平倉")
+    print("")
+
+    # 讀取回測結果嘅 Top pairs
+    results_path = DATA_DIR / "pair_trade_vbt" / "vbt_pair_trade_results.csv"
+    if not results_path.exists():
+        print("❌ 搵唔到回測結果，請先運行 pair_trade_vbt.py")
+        return
+
+    results = pd.read_csv(results_path)
+    results = results.replace([np.inf, -np.inf], np.nan)
+    top_pairs = results[results["n_trades"] > 0].sort_values("sharpe", ascending=False).head(args.top)
+    print("分析 Top {} pair（按歷史 Sharpe）\n".format(len(top_pairs)))
+
+    # 攞最新價格
+    print("正在攞取最新行情...")
+    prices = fetch_recent_prices(days=args.days)
+    print("✓ {} 個交易日數據\n".format(len(prices)))
+
+    signals = []
+    for _, row in top_pairs.iterrows():
+        sig = compute_signal(prices, row["code_a"], row["code_b"])
+        if sig:
+            sig["historical_sharpe"] = round(float(row["sharpe"]), 2)
+            sig["correlation"] = round(float(row["correlation"]), 3)
+            signals.append(sig)
+
+    # 排序：有明確信號嘅排前面
+    priority = {"SHORT_A_LONG_B": 0, "LONG_A_SHORT_B": 1, "CLOSE": 2, "HOLD_SHORT_A": 3, "HOLD_LONG_A": 4}
+    signals.sort(key=lambda x: (priority.get(x["action"], 9), -abs(x["z_score"])))
+
+    # 打印信號表
+    print("{:<4} {:<22} {:>7} {:>7} {:>30} {:<4}".format(
+        "#", "Pair", "z-score", "HistSR", "信號 (買/沽)", "強度"))
+    print("-" * 85)
+
+    actionable = []
+    for i, s in enumerate(signals, 1):
+        pair = "{}-{}".format(s["code_a"], s["code_b"])
+        z_marker = ""
+        if s["z_score"] > ENTRY_Z:
+            z_marker = " ⚡偏高"
+        elif s["z_score"] < -ENTRY_Z:
+            z_marker = " ⚡偏低"
+
+        print("{:<4} {:<20} {:>7.2f}{} {:>7} {:<30} {:<4}".format(
+            i, pair, s["z_score"], z_marker, s["historical_sharpe"],
+            s["action_cn"], s["strength"]))
+
+        if s["action"] in ("SHORT_A_LONG_B", "LONG_A_SHORT_B"):
+            actionable.append(s)
+
+    # 詳細可操作信號
+    if actionable:
+        print("\n" + "=" * 75)
+        print("🎯 可操作信號（z-score 超過 ±2.0）")
+        print("=" * 75)
+        for s in actionable:
+            print("\n  ▸ {} ↔ {}".format(s["code_a"], s["code_b"]))
+            print("    z-score:     {} ({})".format(s["z_score"], "偏高" if s["z_score"]>0 else "偏低"))
+            print("    最新價:      {} @ {} | {} @ {}".format(
+                s["code_a"], s["price_a"], s["code_b"], s["price_b"]))
+            print("    hedge ratio: {} (每 1 股 B 配 {} 股 A)".format(s["hedge_ratio"], s["hedge_ratio"]))
+            print("    ★ 建議:      {}".format(s["action_cn"]))
+            print("    歷史 Sharpe: {} | 相關性: {}".format(s["historical_sharpe"], s["correlation"]))
+            if s["z_recent"]:
+                trend = " → ".join(["{:+.2f}".format(z) for z in s["z_recent"]])
+                print("    z 趨勢(5日): {}".format(trend))
+    else:
+        print("\n  目前冇 pair 超過 ±2.0 信號門檻，建議觀望。")
+
+    # 儲存
+    output = DATA_DIR / "pair_trade_vbt" / "live_signals.json"
+    with open(output, "w", encoding="utf-8") as f:
+        json.dump({
+            "timestamp": datetime.now().isoformat(),
+            "entry_z": ENTRY_Z,
+            "exit_z": EXIT_Z,
+            "signals": signals,
+        }, f, indent=2, ensure_ascii=False, default=str)
+    print("\n✓ 信號儲存: {}".format(output.name))
+
+    # 免責聲明
+    print("\n" + "-" * 75)
+    print("⚠️ 以上信號基於統計模型（z-score mean-reversion），僅供研究參考。")
+    print("   實際交易需考慮：流動性、交易成本、市場衝擊、止損紀律。")
+    print("   建議先用 DEMO 戶口驗證。")
+    print("-" * 75)
+
+
+if __name__ == "__main__":
+    main()

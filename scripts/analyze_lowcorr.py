@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+"""analyze_lowcorr.py — 分析 lowcorr scan 結果, 揀最佳 cross-asset alpha + 計 correlation."""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings
+warnings.filterwarnings("ignore")
+import numpy as np, pandas as pd
+from pathlib import Path
+from lowcorr_alpha_scan import _load_factor_series, make_signals, _run_signal
+import kol_alpha_strategies as kol
+from kol_alpha_strategies import KOL_REGISTRY, _compute_regime
+from vbt_data import load_stock_close, FACTOR_STOCKS
+
+OUT = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports")
+SPLIT = "2024-01-01"
+
+# cross-asset 候選 (file, col, 預期 logic from scan)
+CROSS_ASSET = [
+    ("gold.csv", "close", "gold", "regime"),
+    ("sp500.csv", "close", "sp500", "regime"),
+    ("mstr_btc.csv", "close", "mstr_btc", "z_follow"),
+    ("copper.csv", "close", "copper", "z_follow"),
+    ("btcd.csv", "close", "btcd", "regime"),
+    ("a_shares.csv", "close", "a_shares", "regime"),
+]
+
+def capture_alpha_returns(close_full, alpha_id, stock):
+    """攔截 portfolio daily returns for correlation 計算."""
+    prices = pd.DataFrame({stock: close_full})
+    func = KOL_REGISTRY[alpha_id][2]
+    orig_bs = kol.backtest_signals
+    cap = {"pf": None}
+    def spy(close, entries, exits, se=None, sx=None):
+        pf = orig_bs(close, entries, exits, se, sx)
+        if pf is not None: cap["pf"] = pf
+        return pf
+    try:
+        import common as _cm; _cm_o = _cm.backtest_signals; _cm.backtest_signals = spy
+    except: _cm_o = None
+    kol.backtest_signals = spy
+    try: m = func(prices, stock)
+    except: m = None
+    finally:
+        kol.backtest_signals = orig_bs
+        if _cm_o is not None: _cm.backtest_signals = _cm_o
+    if m is None or cap["pf"] is None: return None
+    try:
+        r = cap["pf"].returns()
+        r = r.iloc[:,0] if isinstance(r, pd.DataFrame) else r
+        if getattr(r.index, 'tz', None) is not None: r.index = r.index.tz_localize(None)
+        return r.rename(stock)
+    except: return None
+
+def capture_crossasset_returns(close_full, file, col, logic, sma, z_win, th, holding, stock):
+    """跑 cross-asset factor signal, 攔截 returns."""
+    factor = _load_factor_series(file, col)
+    if factor is None: return None
+    common = factor.index.intersection(close_full.index)
+    if len(common) < 200: return None
+    fc = factor.reindex(common).ffill()
+    cl = close_full.reindex(common)
+    params = {"sma": sma} if logic in ("regime","trend") else {"z_win": z_win, "th": th}
+    sig = make_signals(fc, logic, **params)
+    if sig is None: return None
+    # build entries/exits inline + run backtest capturing pf
+    entry, exit_c = sig
+    ec = entry.reindex(common).fillna(False).values
+    xc = exit_c.reindex(common).fillna(False).values
+    n = len(fc); entries = np.zeros(n, dtype=bool); exits = np.zeros(n, dtype=bool)
+    for i in range(n-1):
+        if ec[i]:
+            ei = min(i+1+holding, n-1)
+            for j in range(i+2, ei):
+                if j<n and xc[j]: ei=j; break
+            entries[i+1]=True; exits[ei]=True
+    if not entries.any(): return None
+    pf = kol.backtest_signals(cl, pd.Series(entries,index=common), pd.Series(exits,index=common), None, None)
+    if pf is None or pf.trades.count()==0: return None
+    try:
+        r = pf.returns()
+        r = r.iloc[:,0] if isinstance(r, pd.DataFrame) else r
+        if getattr(r.index,'tz',None) is not None: r.index = r.index.tz_localize(None)
+        return r.rename(stock)
+    except: return None
+
+def main():
+    stocks = sorted(FACTOR_STOCKS)[:30]
+    print("="*70)
+    print("📊 Cross-asset alpha correlation 分析 (vs 現有 8 alpha)")
+    print("="*70, flush=True)
+
+    # 1. 收集現有 8 alpha returns
+    print("\n1️⃣ 收集現有 8 alpha returns...", flush=True)
+    REAL = [27, 74, 131, 132, 136, 137, 139, 140]
+    existing_rets = {}  # alpha_id -> combined return (avg across stocks)
+    for aid in REAL:
+        rets = []
+        for s in stocks:
+            c = load_stock_close(s)
+            if c is None or len(c)<400: continue
+            r = capture_alpha_returns(c, aid, s)
+            if r is not None and len(r)>=30: rets.append(r)
+        if rets:
+            existing_rets[aid] = pd.concat(rets, axis=1).mean(axis=1)
+            print(f"   A{aid}: {len(rets)} 股", flush=True)
+
+    # 2. 收集 cross-asset candidate returns (用 scan 最佳 config)
+    print("\n2️⃣ 收集 cross-asset candidate returns...", flush=True)
+    ca_rets = {}
+    for file, col, tag, logic in CROSS_ASSET:
+        rets = []
+        sma = 70 if logic in ("regime","trend") else 60
+        for s in stocks:
+            c = load_stock_close(s)
+            if c is None or len(c)<400: continue
+            r = capture_crossasset_returns(c, file, col, logic, sma, 60, 1.5, 10, s)
+            if r is not None and len(r)>=30: rets.append(r)
+        if rets:
+            ca_rets[tag] = pd.concat(rets, axis=1).mean(axis=1)
+            print(f"   {tag}: {len(rets)} 股", flush=True)
+
+    # 3. Correlation matrix (existing + cross-asset)
+    print("\n3️⃣ Full correlation matrix...", flush=True)
+    all_rets = {}
+    for aid in REAL: all_rets[f"A{aid}"] = existing_rets.get(aid)
+    for tag in ca_rets: all_rets[tag] = ca_rets[tag]
+    df = pd.DataFrame(all_rets)
+    corr = df.corr()
+    print(corr.round(2).to_string())
+    # 現有 8 之間 avg corr
+    real_cols = [f"A{a}" for a in REAL if f"A{a}" in corr.columns]
+    existing_avg = corr.loc[real_cols, real_cols].where(~np.eye(len(real_cols),dtype=bool)).stack().mean()
+    print(f"\n現有 8 alpha 之間 avg corr: {existing_avg:.2f}")
+    # cross-asset vs existing avg
+    print(f"\nCross-asset vs 現有 alpha avg corr:")
+    for tag in ca_rets:
+        if tag in corr.columns:
+            v = corr.loc[tag, real_cols].mean()
+            verdict = "🟢低相關(加入有益)" if v < 0.4 else ("🟡中" if v < 0.6 else "🔴高(同質)")
+            print(f"  {tag:12s}: {v:.2f} → {verdict}")
+
+    corr.to_csv(OUT / "full_alpha_correlation_matrix.csv")
+    print(f"\nCorrelation: {OUT / 'full_alpha_correlation_matrix.csv'}")
+
+if __name__ == "__main__":
+    main()

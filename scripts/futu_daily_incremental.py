@@ -1,0 +1,208 @@
+# -*- coding: utf-8 -*-
+"""futu_daily_incremental — 真正嘅日更 (對比 futu_all_backfill 只係一次性 backfill, 檔案存在即 skip).
+
+每個 source 只攞最近幾日, 同現有 CSV dedup merge append:
+  short_volume       get_daily_short_volume num=5          (dedup timestamp)
+  short_interest     get_short_interest num=50 第一頁       (dedup timestamp)
+  iv_hv              get_option_underlying_his_volatility 今年窗 (dedup time)
+  shareholder_changes get_shareholders_holding_changes num=50 (全欄 dedup)
+  brokers            get_top_ten_buy_sell_brokers days_before=0..4  (dedup 全欄)
+
+用法: python futu_daily_incremental.py [source ...]   (預設全部)
+"""
+import sys
+import time
+from pathlib import Path
+
+import pandas as pd
+from futu import OpenQuoteContext
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "backtests"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from full_revalidate import preload_prices          # noqa: E402
+from trading_core.universe import filter_universe   # noqa: E402
+from futu_all_backfill import call_retry            # noqa: E402
+
+DATABASE = ROOT / "cbsc-system-unification" / "data" / "futu_history"
+
+
+def _merge_append(fp: Path, new_df: pd.DataFrame, dedup_subset) -> str:
+    """new_df 同現有檔 dedup merge, 按排序 key 排好寫返。返 'status' 描述."""
+    if fp.exists():
+        old = pd.read_csv(fp)
+        # 只 keep new_df 有嘅欄位形狀一致先 merge (舊檔欄位係權威)
+        cols = [c for c in old.columns if c in new_df.columns]
+        if not cols:
+            cols = list(new_df.columns)
+        combined = pd.concat([old[cols], new_df[cols]], ignore_index=True)
+    else:
+        combined = new_df.copy()
+    before = len(combined)
+    combined = combined.drop_duplicates(subset=dedup_subset, keep="last")
+    added = len(combined) - before + (0 if fp.exists() else 0)
+    sort_col = dedup_subset if isinstance(dedup_subset, list) and len(dedup_subset) == 1 else dedup_subset
+    try:
+        combined = combined.sort_values(sort_col)
+    except Exception:
+        pass
+    if fp.suffix == ".parquet":
+        combined.to_parquet(fp)
+    else:
+        combined.to_csv(fp, index=False)
+    return f"{len(combined)} rows (+{added})"
+
+
+def upd_short_volume(qctx, codes):
+    # 真正嘅 short_volume 存儲係 raw_hkex/futu_short_history (futu_short_backfill.py 同源)
+    outdir = DATABASE.parent / "raw_hkex" / "futu_short_history"
+    outdir.mkdir(parents=True, exist_ok=True)
+    for i, code in enumerate(codes, 1):
+        fp = outdir / f"{code.replace('.', '_')}.csv"
+        try:
+            ret, us_df, hk_df = qctx.get_daily_short_volume(code, num=5)
+            df = hk_df if hk_df is not None and len(hk_df) else (us_df if us_df is not None and len(us_df) else None)
+            if df is None or not len(df):
+                print(f"[{i}/{len(codes)}] SV {code}: no data", flush=True)
+                continue
+            s = _merge_append(fp, df, ["timestamp"])
+            print(f"[{i}/{len(codes)}] SV {code}: {s}", flush=True)
+        except Exception as e:
+            print(f"[{i}/{len(codes)}] SV {code}: ERR {str(e)[:80]}", flush=True)
+        time.sleep(0.25)
+
+
+def upd_short_interest(qctx, codes):
+    outdir = DATABASE / "short_interest"
+    outdir.mkdir(parents=True, exist_ok=True)
+    for i, code in enumerate(codes, 1):
+        fp = outdir / f"{code.replace('.', '_')}.csv"
+        try:
+            r = call_retry(qctx, qctx.get_short_interest, code, num=50)
+            hk = r[2] if r and len(r) > 2 else None
+            if (hk is None or not len(hk)) and r and isinstance(r[1], pd.DataFrame):
+                hk = r[1]
+            if hk is None or not len(hk):
+                print(f"[{i}/{len(codes)}] SI {code}: no data", flush=True)
+                continue
+            s = _merge_append(fp, hk, ["timestamp"])
+            print(f"[{i}/{len(codes)}] SI {code}: {s}", flush=True)
+        except Exception as e:
+            print(f"[{i}/{len(codes)}] SI {code}: ERR {str(e)[:80]}", flush=True)
+        time.sleep(0.25)
+
+
+def upd_iv_hv(qctx, codes):
+    import datetime as _dt
+    outdir = DATABASE / "iv_hv"
+    outdir.mkdir(parents=True, exist_ok=True)
+    y = _dt.date.today().year
+    b, e = f"{y}-01-01", f"{y}-12-31"
+    for i, code in enumerate(codes, 1):
+        fp = outdir / f"{code.replace('.', '_')}.csv"
+        try:
+            rows = []
+            page = None
+            for _ in range(10):
+                r = call_retry(qctx, qctx.get_option_underlying_his_volatility,
+                               code, begin_time=b, end_time=e, page_req_key=page)
+                if r is None:
+                    break
+                df = r[1]
+                if df is not None and len(df):
+                    rows.append(df)
+                page = r[2] if len(r) > 2 else None
+                if page in (None, "", "-1"):
+                    break
+            if not rows:
+                print(f"[{i}/{len(codes)}] IV {code}: no data", flush=True)
+                continue
+            df = pd.concat(rows)
+            s = _merge_append(fp, df, ["time"])
+            print(f"[{i}/{len(codes)}] IV {code}: {s}", flush=True)
+        except Exception as e:
+            print(f"[{i}/{len(codes)}] IV {code}: ERR {str(e)[:80]}", flush=True)
+        time.sleep(0.25)
+
+
+def upd_shareholder_changes(qctx, codes):
+    outdir = DATABASE / "shareholder_changes"
+    outdir.mkdir(parents=True, exist_ok=True)
+    for i, code in enumerate(codes, 1):
+        fp = outdir / f"{code.replace('.', '_')}.csv"
+        try:
+            r = call_retry(qctx, qctx.get_shareholders_holding_changes, code=code, num=50)
+            df = r[1] if r else None
+            if df is None or not len(df):
+                print(f"[{i}/{len(codes)}] SHC {code}: no data", flush=True)
+                continue
+            s = _merge_append(fp, df, None)
+            print(f"[{i}/{len(codes)}] SHC {code}: {s}", flush=True)
+        except Exception as e:
+            print(f"[{i}/{len(codes)}] SHC {code}: ERR {str(e)[:80]}", flush=True)
+        time.sleep(0.25)
+
+
+def upd_brokers(qctx, codes, days=(0, 1, 2, 3, 4)):
+    outdir = DATABASE / "brokers"
+    outdir.mkdir(parents=True, exist_ok=True)
+    for i, code in enumerate(codes, 1):
+        fp = outdir / f"{code.replace('.', '_')}.parquet"
+        try:
+            frames = []
+            for d in days:
+                r = call_retry(qctx, qctx.get_top_ten_buy_sell_brokers, code, days_before=d)
+                if r is None:
+                    continue
+                df = r[1]
+                if df is None or not len(df):
+                    continue
+                df = df.copy()
+                df["days_before"] = d
+                frames.append(df)
+            if not frames:
+                print(f"[{i}/{len(codes)}] BRK {code}: no data", flush=True)
+                continue
+            new_df = pd.concat(frames)
+            old = pd.read_parquet(fp) if fp.exists() else None
+            if old is not None:
+                combined = pd.concat([old, new_df], ignore_index=True).drop_duplicates(keep="last")
+            else:
+                combined = new_df.drop_duplicates(keep="last")
+            combined.to_parquet(fp)
+            print(f"[{i}/{len(codes)}] BRK {code}: {len(combined)} rows (+{len(combined) - (len(old) if old is not None else 0)})", flush=True)
+        except Exception as e:
+            print(f"[{i}/{len(codes)}] BRK {code}: ERR {str(e)[:80]}", flush=True)
+        time.sleep(0.25)
+
+
+TASKS = {
+    "short_volume": upd_short_volume,
+    "short_interest": upd_short_interest,
+    "iv_hv": upd_iv_hv,
+    "shareholder_changes": upd_shareholder_changes,
+    "brokers": upd_brokers,
+}
+
+
+def main():
+    which = sys.argv[1:] or list(TASKS)
+    u = filter_universe(preload_prices())
+    codes = list(u.columns)
+    print(f"universe: {len(codes)} | daily-incremental: {which}", flush=True)
+    qctx = OpenQuoteContext(host="127.0.0.1", port=11111)
+    try:
+        for name in which:
+            if name not in TASKS:
+                print(f"unknown source: {name}", flush=True)
+                continue
+            print(f"\n===== {name} =====", flush=True)
+            TASKS[name](qctx, codes)
+    finally:
+        qctx.close()
+    print("\nDAILY INCREMENTAL DONE", flush=True)
+
+
+if __name__ == "__main__":
+    main()

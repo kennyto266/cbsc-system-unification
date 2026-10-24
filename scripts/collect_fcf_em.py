@@ -1,0 +1,148 @@
+# [2026-08-25 agent2-H] thesis cs_fcfy 自由現金流收益率 panel
+# 1) 東財 RPT_HKF10_FN_CASHFLOW_PC per-stock 全季度: 003999 經營現金流淨額
+#    - 005005 購建固定資產 - 005007 購建無形資產 = 累計 FCF
+# 2) 東財 RPT_HKF10_FN_MAININDICATOR: ISSUED_COMMON_SHARES (總股本)
+# 3) 增量季→TTM rolling 4Q, avail=report_date+60日 (同 pb panel PIT 口徑)
+# 4) fcf_yield = FCF_TTM / (shares*close_unadj)
+# 產出: new_sources/fcf_em_raw.csv, factor_store/fcf_yield.parquet (wide),
+#       factor_store/fcf_yield_mkt.parquet (market 橫截面 mean, 1-col)
+import json, time, urllib.request, csv, os, sys
+import pandas as pd
+from datetime import datetime
+
+CODES_HK = ['00001','00002','00003','00005','00006','00012','00016','00017','00020','00027',
+'00066','00101','00175','00241','00268','00285','00291','00386','00388','00688','00700','00762',
+'00823','00883','00939','00941','00992','01024','01038','01088','01109','01211','01299','01398',
+'01801','01810','01876','01928','02013','02269','02318','02388','02628','02899','03690','06862',
+'09618','09888','09988','09992','09999']
+
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.path.join(BASE, 'data')
+OUT_CLOSE = os.path.join(DATA, 'futu_history', 'close_unadj')
+OUT_NEW = os.path.join(DATA, 'new_sources')
+OUT_FS = os.path.join(DATA, 'factor_store')
+RAW = os.path.join(OUT_NEW, 'fcf_em_raw.csv')
+
+log = lambda *a: print(datetime.now().strftime('%H:%M:%S'), *a, flush=True)
+
+def em_get(url):
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0',
+        'Referer': 'https://emweb.securities.eastmoney.com/'})
+    return json.loads(urllib.request.urlopen(req, timeout=25).read().decode('utf-8'))
+
+# ---------- 1) collect (with checkpoint) ----------
+rows = []  # (code, report_date, ocf, capex_fix, capex_int, shares)
+if os.path.exists(RAW):
+    old = pd.read_csv(RAW, dtype={'code': str})
+    old['code'] = old['code'].str.zfill(5)
+    rows = [tuple(r) for r in old[['code','report_date','ocf','capex_fix','capex_int','shares']].itertuples(index=False)]
+done = set(r[0] for r in rows)
+
+CAP_ITEMS = {'003999': 'ocf', '005005': 'capex_fix', '005007': 'capex_int'}
+for c in CODES_HK:
+    if c in done:
+        continue
+    rec = {}
+    try:
+        pg = 1
+        n_rows = 0
+        while pg <= 4:
+            u = ('https://datacenter.eastmoney.com/securities/api/data/v1/get?'
+                 'reportName=RPT_HKF10_FN_CASHFLOW_PC&columns=ALL'
+                 '&filter=(SECURITY_CODE%3D%22' + c + '%22)&pageSize=500&pageNumber=' + str(pg)
+                 + '&sortColumns=REPORT_DATE&sortTypes=-1')
+            data = em_get(u).get('result') or {}
+            page_rows = data.get('data') or []
+            n_rows += len(page_rows)
+            for r in page_rows:
+                k = CAP_ITEMS.get(r['STD_ITEM_CODE'])
+                if k and r.get('AMOUNT') is not None:
+                    d = r['REPORT_DATE'][:10]
+                    rec.setdefault(d, {})[k] = r['AMOUNT']
+            pages = data.get('pages') or 1
+            if pg >= pages:
+                break
+            pg += 1
+            time.sleep(0.2)
+        # shares
+        u2 = ('https://datacenter.eastmoney.com/securities/api/data/v1/get?'
+              'reportName=RPT_HKF10_FN_MAININDICATOR&columns=SECURITY_CODE,STD_REPORT_DATE,ISSUED_COMMON_SHARES'
+              f'&filter=(SECURITY_CODE%3D%22{c}%22)&pageSize=500&sortColumns=STD_REPORT_DATE&sortTypes=-1')
+        for r in em_get(u2)['result']['data']:
+            if r.get('ISSUED_COMMON_SHARES'):
+                rec.setdefault(r['STD_REPORT_DATE'][:10], {})['shares'] = r['ISSUED_COMMON_SHARES']
+        got = [(c, d, v.get('ocf'), v.get('capex_fix'), v.get('capex_int'), v.get('shares'))
+               for d, v in rec.items()]
+        rows.extend(got)
+        n_ocf = sum(1 for g in got if g[2] is not None)
+        log('EM', c, len(got), 'ocf_q', n_ocf, 'rows', n_rows)
+    except Exception as e:
+        log('EM FAIL', c, repr(e)[:90])
+    # checkpoint each stock
+    with open(RAW, 'w', newline='') as f:
+        w = csv.writer(f)
+        w.writerow(['code', 'report_date', 'ocf', 'capex_fix', 'capex_int', 'shares'])
+        w.writerows(rows)
+    time.sleep(0.3)
+
+log('collect done', len(rows))
+
+# ---------- 2) build TTM FCF per stock ----------
+df = pd.DataFrame(rows, columns=['code', 'report_date', 'ocf', 'capex_fix', 'capex_int', 'shares'])
+df['report_date'] = pd.to_datetime(df['report_date'])
+df['fcf_cum'] = df['ocf'] - df['capex_fix'].fillna(0) - df['capex_int'].fillna(0)
+
+recs = []
+for c, g in df.groupby('code'):
+    g = g.sort_values('report_date').drop_duplicates('report_date', keep='last')
+    g['shares'] = g['shares'].ffill()
+    # [2026-08-25 fix] 東財 HK 現金流 Q1/Q3 (3-31/9-30) 冇 capex 欄位, 淨係 6-30/12-31 有
+    # 累計口徑 → 淨用半年報 + 年報構造 TTM:
+    #   TTM@12-31 = FY 累計;  TTM@6-30 = 前FY + H1累計 − 前H1累計
+    g = g[g['report_date'].dt.month.isin([6, 12])].dropna(subset=['fcf_cum'])
+    g = g.reset_index(drop=True)
+    ttm = {}
+    for i, row in g.iterrows():
+        if row['report_date'].month == 12:
+            ttm[i] = row['fcf_cum']
+        else:
+            prev_fy = g[(g['report_date'] < row['report_date'])
+                        & (g['report_date'].dt.month == 12)]
+            prev_h1 = g[(g['report_date'] < row['report_date'])
+                        & (g['report_date'].dt.month == 6)]
+            if len(prev_fy) and len(prev_h1):
+                ttm[i] = prev_fy['fcf_cum'].iloc[-1] + row['fcf_cum'] \
+                         - prev_h1['fcf_cum'].iloc[-1]
+            else:
+                ttm[i] = float('nan')
+    g['fcf_ttm'] = pd.Series(ttm)
+    g['avail'] = g['report_date'] + pd.Timedelta(days=60)
+    fp = os.path.join(OUT_CLOSE, f'HK.{c}.csv')
+    if not os.path.exists(fp):
+        continue
+    px = pd.read_csv(fp, parse_dates=['time_key']).sort_values('time_key')
+    g2 = g.dropna(subset=['fcf_ttm', 'shares']).sort_values('avail')[['avail', 'fcf_ttm', 'shares']]
+    if g2.empty:
+        continue
+    m = pd.merge_asof(px, g2, left_on='time_key', right_on='avail')
+    m = m.dropna(subset=['fcf_ttm'])
+    mktcap = m['shares'] * m['close']
+    val = m['fcf_ttm'] / mktcap.where(mktcap > 0)
+    for d, v in zip(m['time_key'], val):
+        if pd.notna(v):
+            recs.append((d.strftime('%Y-%m-%d'), f'HK.{c}', float(v)))
+
+panel = pd.DataFrame(recs, columns=['date', 'code', 'value'])
+panel['date'] = pd.to_datetime(panel['date'])
+wide = panel.pivot_table(index='date', columns='code', values='value').sort_index()
+wide = wide[~wide.index.duplicated(keep='last')]
+wide.to_parquet(os.path.join(OUT_FS, 'fcf_yield.parquet'))
+mkt = wide.mean(axis=1).to_frame('MKT').dropna(how='all')
+mkt.to_parquet(os.path.join(OUT_FS, 'fcf_yield_mkt.parquet'))
+panel.to_csv(os.path.join(OUT_NEW, 'fcf_yield_panel.csv'), index=False)
+log('panel', wide.shape, 'cells', int(wide.notna().sum().sum()))
+log('range', wide.index.min(), wide.index.max())
+per = wide.notna().sum()
+log('stocks with data', int((per > 0).sum()),
+    '| min per-stock days', int(per[per > 0].min()) if (per > 0).any() else 'NA')
+log('DONE')

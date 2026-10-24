@@ -1,0 +1,173 @@
+#!/usr/bin/env python3
+"""因子篩選器 — 自動搵邊個因子預測港股"""
+from __future__ import annotations
+import sys, json
+from pathlib import Path
+from datetime import datetime
+import numpy as np
+import pandas as pd
+from scipy import stats
+
+ROOT = Path(__file__).parent.parent.parent
+FACTORS_DIR = ROOT / "data" / "factors"
+OUTPUT_DIR = FACTORS_DIR
+
+def load_hsif():
+    """載入恆指期貨數據"""
+    # 先試阿程嘅 CSV
+    a_path = Path(r"C:\Users\Penguin8n\Desktop\阿程\HSIF_USDCNH_201009_202412.csv")
+    if a_path.exists():
+        df = pd.read_csv(a_path, parse_dates=["Date"])
+        df = df.rename(columns={"Date": "date", "HSIF_close": "close"}).set_index("date")
+        return df["close"]
+    # fallback: HSI prices
+    pkl = ROOT / "data" / "hsi_prices.pkl"
+    if pkl.exists():
+        prices = pd.read_pickle(pkl)
+        # 用第一隻成分股近似
+        return prices.iloc[:, 0]
+    return None
+
+def granger_test(factor_ret, hsif_ret, maxlag=5):
+    """Granger 因果檢定"""
+    try:
+        from statsmodels.tsa.stattools import grangercausalitytests
+        data = pd.DataFrame({"hsif": hsif_ret, "factor": factor_ret}).dropna()
+        if len(data) < 50: return None
+        results = grangercausalitytests(data[["hsif", "factor"]], maxlag=maxlag, verbose=False)
+        best_p = 1.0; best_lag = 0
+        for lag in range(1, maxlag + 1):
+            if lag in results:
+                p = results[lag][0]["ssr_ftest"][1]
+                if p < best_p: best_p = p; best_lag = lag
+        return {"best_lag": best_lag, "p_value": round(best_p, 4)}
+    except Exception: return None
+
+def conditional_return(factor, hsif, n_days=4, threshold=0.004, holding=14):
+    """阿程式條件回報分析"""
+    factor_ret = factor.pct_change()
+    hsif_ret = hsif.pct_change()
+    cum_ret = factor / factor.shift(n_days - 1) - 1
+
+    results = {"bull_signals": 0, "bull_avg": 0, "bear_signals": 0, "bear_avg": 0, "win_rate": 0}
+    bull_returns = []; bear_returns = []
+
+    factor_vals = factor_ret.values
+    cum_vals = cum_ret.values
+    hsif_vals = hsif_ret.values
+    n = len(factor_vals)
+
+    for i in range(n - holding):
+        if i < n_days: continue
+        window = factor_vals[i-n_days+1:i+1]
+        cum = cum_vals[i]
+        if np.isnan(cum): continue
+        all_pos = bool(np.all(window > 0))
+        all_neg = bool(np.all(window < 0))
+        if all_pos and cum > threshold:
+            r = np.nansum(hsif_vals[i+1:i+1+holding])
+            if not np.isnan(r): bear_returns.append(-r)
+            results["bull_signals"] += 1
+        elif all_neg and cum < -threshold:
+            r = np.nansum(hsif_vals[i+1:i+1+holding])
+            if not np.isnan(r): bull_returns.append(r)
+            results["bear_signals"] += 1
+
+    all_returns = bull_returns + bear_returns
+    if all_returns:
+        results["bull_avg"] = round(np.mean(bull_returns) * 100, 3) if bull_returns else 0
+        results["bear_avg"] = round(np.mean(bear_returns) * 100, 3) if bear_returns else 0
+        results["win_rate"] = round(sum(1 for r in all_returns if r > 0) / len(all_returns) * 100, 1)
+    return results
+
+def lag_correlation(factor_ret, hsif_ret, lags=[1, 2, 3, 5, 10]):
+    """領先期相關性"""
+    results = {}
+    for lag in lags:
+        try:
+            shifted = factor_ret.shift(lag)
+            aligned = pd.concat([shifted, hsif_ret], axis=1).dropna()
+            if len(aligned) > 30:
+                r, p = stats.pearsonr(aligned.iloc[:, 0], aligned.iloc[:, 1])
+                results[lag] = {"corr": round(r, 4), "p_value": round(p, 4)}
+        except Exception: pass
+    return results
+
+def discover_factors():
+    """主函數 — 篩選所有因子"""
+    print("=" * 65)
+    print("🔍 因子篩選 — 邊個因子對港股有預測力？")
+    print("=" * 65)
+
+    hsif = load_hsif()
+    if hsif is None:
+        print("❌ 搵唔到恆指數據"); return
+
+    hsif_ret = hsif.pct_change().dropna()
+    print(f"恆指數據: {len(hsif)} 日 ({hsif.index[0].date()} ~ {hsif.index[-1].date()})\n")
+
+    # 載入所有因子
+    from src.cbsc_cli.factor_collector import load_all_factors
+    factors = load_all_factors()
+
+    if not factors:
+        print("❌ 冇因子數據。請先運行: python cbsc.py update --factors"); return
+
+    results = []
+    print(f"{'因子':<14} {'Granger_p':>10} {'最佳lag':>8} {'相關性':>8} {'條件勝率':>8} {'信號數':>6}")
+    print("-" * 65)
+
+    for name, factor in factors.items():
+        factor_ret = factor.pct_change().dropna()
+
+        # 對齊
+        common = factor_ret.index.intersection(hsif_ret.index)
+        fr = factor_ret.reindex(common)
+        hr = hsif_ret.reindex(common)
+
+        # Granger
+        gc = granger_test(fr, hr)
+
+        # 相關性
+        try:
+            corr, _ = stats.pearsonr(fr.dropna(), hr.reindex(fr.dropna().index).fillna(0))
+        except Exception:
+            corr = 0
+
+        # 條件回報
+        cond = conditional_return(factor.reindex(common), hsif.reindex(common))
+
+        signal_count = cond["bull_signals"] + cond["bear_signals"]
+
+        print(f"{name:<14} {gc['p_value'] if gc else '-':>10} {gc['best_lag'] if gc else '-':>8} {corr:>8.4f} {cond['win_rate']:>7.1f}% {signal_count:>6}")
+
+        results.append({
+            "factor": name,
+            "granger_p": gc["p_value"] if gc else None,
+            "best_lag": gc["best_lag"] if gc else None,
+            "correlation": round(corr, 4),
+            "win_rate": cond["win_rate"],
+            "signals": signal_count,
+            "bull_avg": cond["bull_avg"],
+            "bear_avg": cond["bear_avg"],
+        })
+
+    # 排名（按 win_rate）
+    results.sort(key=lambda x: x["win_rate"], reverse=True)
+
+    print(f"\n🏆 因子排名（按條件勝率）：")
+    for i, r in enumerate(results[:5], 1):
+        significance = "✅ 顯著" if r["granger_p"] and r["granger_p"] < 0.05 else "⚠️ 唔顯著"
+        print(f"  {i}. {r['factor']:<14} 勝率={r['win_rate']:.1f}% 相關={r['correlation']:+.3f} {significance}")
+
+    # 儲存
+    df = pd.DataFrame(results)
+    output = OUTPUT_DIR / "discovery_report.csv"
+    df.to_csv(output, index=False)
+    print(f"\n✓ 儲存: {output.relative_to(ROOT)}")
+
+def main(args=None):
+    discover_factors()
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,138 @@
+"""
+HTTP Fetcher 基類
+
+統一所有爬蟲嘅 HTTP 請求邏輯：
+- 統一 headers
+- encoding 處理（Big5/UTF-8）
+- retry with backoff
+- 404-as-holiday 語義
+- JS-JSON 提取
+"""
+import time
+import json
+import logging
+import requests
+from typing import Optional, Dict, Any
+
+from .config import DEFAULT_HEADERS
+
+logger = logging.getLogger(__name__)
+
+
+class HttpFetcher:
+    """HTTP 請求基類，所有爬蟲繼承。
+
+    統一處理：
+    - User-Agent / Referer headers
+    - encoding（Big5 for HKEX, UTF-8 default）
+    - retry with exponential backoff
+    - HTTP 404 視為「假日/無數據」（唔係錯誤）
+    """
+
+    def __init__(self, headers: Dict = None, encoding: str = "utf-8",
+                 timeout: int = 15, max_retries: int = 3,
+                 retry_backoff: float = 1.0):
+        self.headers = headers or DEFAULT_HEADERS
+        self.encoding = encoding
+        self.timeout = timeout
+        self.max_retries = max_retries
+        self.retry_backoff = retry_backoff
+        self.session = requests.Session()
+
+    def get(self, url: str, params: Dict = None,
+            headers: Dict = None) -> Optional[str]:
+        """GET 請求，返回 text 或 None。
+
+        HTTP 404 → 返回 "" （空字串，代表假日/無數據）
+        其他錯誤 → retry，最後返回 None
+        """
+        hdrs = {**self.headers, **(headers or {})}
+        for attempt in range(self.max_retries):
+            try:
+                resp = self.session.get(
+                    url, params=params, headers=hdrs, timeout=self.timeout)
+                if resp.status_code == 404:
+                    return ""  # 假日/無數據
+                resp.raise_for_status()
+                if self.encoding:
+                    resp.encoding = self.encoding
+                return resp.text
+            except requests.RequestException as e:
+                if attempt < self.max_retries - 1:
+                    wait = self.retry_backoff * (2 ** attempt)
+                    logger.warning("GET 失敗 (attempt {}/{}): {} — {}s 後重試".format(
+                        attempt + 1, self.max_retries, str(e)[:50], wait))
+                    time.sleep(wait)
+                else:
+                    logger.error("GET 最終失敗: {}".format(str(e)[:80]))
+                    return None
+        return None
+
+    def post(self, url: str, data: Dict = None,
+             headers: Dict = None) -> Optional[str]:
+        """POST 請求，返回 text 或 None。"""
+        hdrs = {**self.headers, **(headers or {})}
+        for attempt in range(self.max_retries):
+            try:
+                resp = self.session.post(
+                    url, data=data, headers=hdrs, timeout=self.timeout)
+                if resp.status_code == 404:
+                    return ""
+                resp.raise_for_status()
+                if self.encoding:
+                    resp.encoding = self.encoding
+                return resp.text
+            except requests.RequestException as e:
+                if attempt < self.max_retries - 1:
+                    wait = self.retry_backoff * (2 ** attempt)
+                    time.sleep(wait)
+                else:
+                    logger.error("POST 最終失敗: {}".format(str(e)[:80]))
+                    return None
+        return None
+
+    def get_json(self, url: str, params: Dict = None,
+                 headers: Dict = None) -> Optional[Dict]:
+        """GET 請求，直接解析 JSON。"""
+        text = self.get(url, params=params, headers=headers)
+        if text is None or text == "":
+            return None
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError as e:
+            logger.error("JSON 解析失敗: {}".format(str(e)[:50]))
+            return None
+
+    @staticmethod
+    def extract_js_json(text: str) -> Optional[list]:
+        """從 JS 文件提取 JSON 數組。
+
+        港交所 JS 文件格式：`var data = [{...}, {...}];`
+        提取第一個 `[` 到最後一個 `]` 之間嘅內容。
+        """
+        if not text:
+            return None
+        first_bracket = text.find("[")
+        last_bracket = text.rfind("]")
+        if first_bracket == -1 or last_bracket == -1:
+            return None
+        try:
+            return json.loads(text[first_bracket:last_bracket + 1])
+        except json.JSONDecodeError:
+            return None
+
+    @staticmethod
+    def parse_number(text: str) -> Optional[float]:
+        """從格式化字串提取數字（去逗號、貨幣符號）。"""
+        if text is None:
+            return None
+        import re
+        cleaned = re.sub(r"[,$€£¥HKD\s]", "", str(text))
+        try:
+            return float(cleaned)
+        except ValueError:
+            return None
+
+    def close(self):
+        """關閉 session。"""
+        self.session.close()

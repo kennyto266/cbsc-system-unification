@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+"""scan_kol_parallel.py — multiprocessing 版 leaderboard scan (32 workers).
+
+83 alpha × 65 股 = 5395 combos, 用全部 CPU 並行跑.
+單線程 ~27 分鐘 → 32 workers ~2 分鐘.
+"""
+import sys
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings
+warnings.filterwarnings("ignore")
+import os
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from multiprocessing import Pool, cpu_count
+
+from kol_alpha_strategies import KOL_REGISTRY
+from vbt_data import FACTOR_STOCKS, load_stock_close
+import vectorbt as vbt
+
+OUT_CSV = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports\kol_leaderboard.csv")
+
+
+def run_one(args):
+    """跑一個 (alpha_id, stock) combo. 單獨函數俾 multiprocessing pickle."""
+    aid, stock = args
+    name, kol_name, func, dtype = KOL_REGISTRY.get(aid, ("?", "?", None, "?"))
+    if func is None:
+        return None
+    try:
+        close = load_stock_close(stock)
+        if close is None:
+            return None
+        prices = pd.DataFrame({stock: close})
+        m = func(prices, stock)
+        if not m:
+            return None
+        try:
+            bh_pf = vbt.Portfolio.from_holding(close.dropna(), init_cash=100000, freq="1D")
+            bh_sharpe = float(bh_pf.sharpe_ratio())
+        except Exception:
+            bh_sharpe = float("nan")
+        return {
+            "Alpha": aid, "名稱": name, "KOL": kol_name,
+            "股票": stock, "Sharpe": m["sharpe"],
+            "B&H Sharpe": round(bh_sharpe, 2),
+            "Alpha值": round(m["sharpe"] - bh_sharpe, 2),
+            "回報%": m["total_return_pct"], "MDD%": m["max_drawdown_pct"],
+            "勝率%": m["win_rate_pct"], "PF": m["profit_factor"],
+            "交易數": m["n_trades"],
+        }
+    except Exception:
+        return None
+
+
+def main():
+    combos = [(aid, s) for aid in KOL_REGISTRY for s in FACTOR_STOCKS]
+    n_workers = min(cpu_count(), 32)
+    print(f"掃 {len(KOL_REGISTRY)} 個 alpha × {len(FACTOR_STOCKS)} 股 = {len(combos)} combos")
+    print(f"用 {n_workers} workers 並行...", flush=True)
+
+    rows = []
+    with Pool(n_workers) as pool:
+        # chunksize 提升 IPC 效率
+        for i, r in enumerate(pool.imap_unordered(run_one, combos, chunksize=20)):
+            if r is not None:
+                rows.append(r)
+            if (i + 1) % 500 == 0:
+                print(f"  [{i+1}/{len(combos)}] {len(rows)} 有效", flush=True)
+
+    if not rows:
+        print("❌ 無有效結果")
+        return
+    df = pd.DataFrame(rows)
+
+    # 清垃圾 + 過濾
+    df = df.replace([np.inf, -np.inf], np.nan)
+    df = df.dropna(subset=["Sharpe"])
+    df = df[df["交易數"] >= 10]
+    df = df[df["MDD%"] < 0]
+    df = df[(df["Sharpe"] > -50) & (df["Sharpe"] < 50)]
+    df = df[df["Alpha值"] > 0]
+    df = df.sort_values("Alpha值", ascending=False).reset_index(drop=True)
+
+    OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(OUT_CSV, index=False)
+    print(f"\n✅ 存到: {OUT_CSV}")
+    print(f"有效結果: {len(df)} 行")
+    print(f"Sharpe>0: {(df['Sharpe']>0).sum()}")
+    print(f"Sharpe>1: {(df['Sharpe']>1).sum()}")
+    print(f"Sharpe>2: {(df['Sharpe']>2).sum()}")
+
+    # 新 alpha (50-83) 表現
+    new_df = df[df["Alpha"].isin(range(50, 84))]
+    print(f"\n=== 新 Alpha (50-83) 入榜: {len(new_df)} 對 ===")
+    if not new_df.empty:
+        for _, r in new_df.sort_values("Sharpe", ascending=False).head(15).iterrows():
+            print(f"  A{r['Alpha']} {r['名稱']} @ {r['股票']}: SR={r['Sharpe']} α={r['Alpha值']} ret={r['回報%']}%")
+
+    print("\n=== Top 25 ===")
+    print(df.head(25).to_string(index=False))
+
+    # Telegram
+    try:
+        from vbt_telegram import TelegramNotifier
+        tg = TelegramNotifier()
+        if tg.ready:
+            tg.send_leaderboard("🏆 KOL Alpha 排行榜 (83策略×65股)", df, top_n=5)
+            print("📨 已推送到 Telegram")
+    except Exception as e:
+        print(f"(Telegram 跳過: {e})")
+
+
+if __name__ == "__main__":
+    main()

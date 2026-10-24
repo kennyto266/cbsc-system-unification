@@ -1,0 +1,82 @@
+"""One-off crawl: Futu OpenD corporate actions dividends for 51-stock pool.
+Rate-limit aware (30 req/30s per Futu OpenD), incremental with jsonl checkpoint."""
+import json, os, time
+import pandas as pd
+from futu import OpenQuoteContext, RET_OK
+
+POOL = ["00001","00002","00003","00005","00006","00012","00016","00017","00020","00027",
+        "00066","00101","00175","00241","00268","00285","00291","00386","00388","00688",
+        "00700","00762","00823","00883","00939","00941","00992","01024","01038","01088",
+        "01109","01211","01299","01398","01801","01810","01876","01928","02013","02269",
+        "02318","02388","02628","02899","03690","06862","09618","09888","09988","09992",
+        "09999"]
+
+CKPT = "data/new_sources/dividends_futu_checkpoint.jsonl"
+RAW = "data/new_sources/dividends_futu_raw.csv"
+
+def is_rate_limited(msg):
+    return "频率太高" in str(msg) or "too frequent" in str(msg).lower()
+
+def main():
+    done = set()
+    if os.path.exists(CKPT):
+        with open(CKPT, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    rec = json.loads(line)
+                    if rec.get("status") == "ok":
+                        done.add(rec["code"])
+                except Exception:
+                    pass
+    print(f"already done: {len(done)}", flush=True)
+    q = OpenQuoteContext(host="127.0.0.1", port=11111)
+    ck = open(CKPT, "a", encoding="utf-8")
+    fail = {}
+    for i, c in enumerate(POOL):
+        code = "HK." + c
+        if code in done:
+            continue
+        ok = False
+        for attempt in range(4):
+            try:
+                ret, df = q.get_corporate_actions_dividends(code)
+                payload = df
+                rows = None
+                if ret == RET_OK and isinstance(payload, pd.DataFrame):
+                    rows = payload.to_dict("records")
+                elif isinstance(payload, dict) and "dividend_list" in payload:
+                    rows = payload["dividend_list"] or []
+                if rows is not None:
+                    ck.write(json.dumps({"code": code, "status": "ok", "rows": rows}, ensure_ascii=False) + "\n")
+                    ck.flush()
+                    print(f"{i+1}/51 {code}: {len(rows)} rows", flush=True)
+                    ok = True
+                    break
+                if is_rate_limited(df):
+                    print(f"{code}: rate-limited, sleep 32s", flush=True)
+                    time.sleep(32)
+                else:
+                    print(f"{code}: ret!=OK {df}", flush=True)
+                    time.sleep(3)
+            except Exception as e:
+                print(f"{code}: EXC {e}", flush=True)
+                time.sleep(3)
+        if not ok:
+            fail[c] = "4 attempts failed"
+        time.sleep(1.2)
+    q.close(); ck.close()
+    # assemble
+    frames = []
+    with open(CKPT, encoding="utf-8") as f:
+        for line in f:
+            rec = json.loads(line)
+            if rec.get("status") == "ok" and rec.get("rows"):
+                d = pd.DataFrame(rec["rows"]); d["code"] = rec["code"]; frames.append(d)
+    if frames:
+        all_df = pd.concat(frames, ignore_index=True)
+        all_df.to_csv(RAW, index=False)
+        print("SAVED", RAW, len(all_df), "rows", flush=True)
+    print("FAILS", json.dumps(fail), flush=True)
+
+if __name__ == "__main__":
+    main()

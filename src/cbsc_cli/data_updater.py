@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+"""CBSC 每日數據更新器 — 復用現有爬蟲腳本"""
+from __future__ import annotations
+import subprocess, sys
+from datetime import datetime, timedelta
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+SCRIPTS = ROOT / "scripts"
+DATA = ROOT / "data"
+PYTHON = sys.executable
+
+def _log(msg):
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
+
+def _run_script(name, args=None):
+    cmd = [PYTHON, str(SCRIPTS / name)] + (args or [])
+    _log(f"  $ {' '.join(cmd[-3:])}")
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT), encoding="utf-8", errors="replace")
+        return r.returncode, (r.stdout or "") + (r.stderr or "")
+    except FileNotFoundError as e:
+        return 127, str(e)
+
+def _accumulate_sentiment():
+    import pandas as pd
+    xlsx = DATA / "raw_hkex" / "hkex_sentiment.xlsx"
+    csv_path = DATA / "sentiment" / "sentiment_history.csv"
+    if not xlsx.exists(): _log("  ⚠ hkex_sentiment.xlsx 不存在"); return
+    try: new = pd.read_excel(xlsx, sheet_name="散戶牛熊情緒")
+    except: _log("  ⚠ Excel 冇散戶牛熊情緒 sheet"); return
+    if new.empty: return
+    new["date"] = pd.to_datetime(new["date"])
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    if csv_path.exists():
+        old = pd.read_csv(csv_path, parse_dates=["date"])
+        combined = pd.concat([old, new], ignore_index=True).drop_duplicates(subset=["date"], keep="last").sort_values("date")
+    else:
+        combined = new.sort_values("date")
+    combined.to_csv(csv_path, index=False, encoding="utf-8-sig")
+    _log(f"  情緒歷史: {len(combined)} 天")
+
+def update_hkex(days=7):
+    today = datetime.now().strftime("%Y%m%d")
+    start = (datetime.now() - timedelta(days=days)).strftime("%Y%m%d")
+    _log(f"📥 HKEX 完整日報表（牛熊情緒+沽空）回填 {days} 天...")
+    code, out = _run_script("hkex_full_crawler.py", ["--start", start, "--end", today, "--excel", str(DATA / "raw_hkex" / "hkex_sentiment.xlsx")])
+    _log("  ✅ HKEX 完成" if code == 0 else f"  ⚠ HKEX 異常 (exit={code})")
+    _log("🐂 累積牛熊情緒...")
+    try: _accumulate_sentiment()
+    except Exception as e: _log(f"  ⚠ 情緒累積失敗: {e}")
+    return code == 0
+
+def update_stock_connect(days=7):
+    today = datetime.now().strftime("%Y%m%d")
+    start = (datetime.now() - timedelta(days=days)).strftime("%Y%m%d")
+    _log("💰 南北水資金流向...")
+    code, out = _run_script("stock_connect_crawler.py", ["--start", start, "--end", today])
+    _log("  ✅ 南北水完成" if code == 0 else f"  ⚠ 南北水異常 (exit={code})")
+    return code == 0
+
+def update_dashboard():
+    _log("📊 導出 Dashboard JSON...")
+    code, out = _run_script("export_dashboard_data.py")
+    _log("  ✅ Dashboard JSON 已生成" if code == 0 else f"  ⚠ Dashboard 異常 (exit={code})")
+    return code == 0
+
+def update_all(days=7):
+    _log("=" * 60); _log("🚀 CBSC 每日數據更新開始"); _log("=" * 60)
+    try: update_hkex(days)
+    except Exception as e: _log(f"❌ update_hkex: {e}")
+    try: update_stock_connect(days)
+    except Exception as e: _log(f"❌ update_stock_connect: {e}")
+    try: update_dashboard()
+    except Exception as e: _log(f"❌ update_dashboard: {e}")
+    _log("=" * 60); _log("✅ 每日更新完成！"); _log("=" * 60)
+
+def main(args=None):
+    days = getattr(args, "days", 7) if args else 7
+    update_all(days)
+
+if __name__ == "__main__":
+    main()

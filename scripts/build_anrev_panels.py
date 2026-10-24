@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""build_anrev_panels.py — anrev thesis: 東财评级事件史 → consensus revision panels.
+
+輸入: data/new_sources/analyst_ratings_em_raw.csv (2013→2026, 51股, ~5157 研報事件)
+  欄: stock_code, date, broker, rating, target_price, price_at_note
+輸出: data/factor_store/anrev_eps.parquet  — consensus 目標價 (90日窗口 PIT mean, ffill)
+      data/factor_store/anrev_n.parquet    — 覆蓋廣度 (90日窗口內研報數)
+
+註: 原 crawl_spec 想要 consensus EPS 預測 (東财 profitforecast 接口不存在 — 已實證多個
+reportName 404/空)。EPS 改用 consensus TP (同一 expectations 軸嘅可得代理), anrev_n = 研報數。
+anrev_eps 名保留 (同 ranking_metric 變數名一致)。
+"""
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "analyst_ratings_em_raw.csv"
+OUT_DIR = BASE / "data" / "factor_store"
+START = "2021-01-01"
+
+df = pd.read_csv(RAW, dtype={"stock_code": str})
+df["date"] = pd.to_datetime(df["date"])
+df["target_price"] = pd.to_numeric(df["target_price"], errors="coerce")
+df = df[df["target_price"].notna() & (df["date"] >= START)]
+
+# 日曆: 全部 51 股交易日 (用 close_unadj union)
+cal = set()
+for f in (BASE / "data" / "futu_history" / "close_unadj").glob("*.csv"):
+    c = pd.read_csv(f, usecols=["time_key"])
+    cal.update(pd.to_datetime(c["time_key"]).dt.normalize())
+cal = pd.DatetimeIndex(sorted(cal))
+cal = cal[cal >= pd.Timestamp(START)]
+
+codes = sorted(df["stock_code"].unique())
+idx = pd.Index(cal, name="date")
+
+eps = pd.DataFrame(np.nan, index=idx, columns=["HK." + c for c in codes])
+nrev = pd.DataFrame(0.0, index=idx, columns=["HK." + c for c in codes])
+
+for code, g in df.groupby("stock_code"):
+    g = g.sort_values("date").set_index("date")
+    col = "HK." + code
+    last_eps = np.nan
+    for d in idx:
+        win = g.loc[:d].last("90D")
+        if len(win):
+            last_eps = float(win["target_price"].mean())
+            eps.loc[d, col] = last_eps
+            nrev.loc[d, col] = float(len(win))
+        elif not np.isnan(last_eps):
+            # 冇新研報 — 共識沿用 (ffill), 廣度歸 0 (唔 active)
+            eps.loc[d, col] = last_eps
+            nrev.loc[d, col] = 0.0
+        # 由第一份研報前嘅日子保持 NaN (tie-safe, 唻 fillna 廣播)
+
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+eps.to_parquet(OUT_DIR / "anrev_eps.parquet")
+nrev.to_parquet(OUT_DIR / "anrev_n.parquet")
+print(f"anrev_eps: {eps.shape}, active cells {int(eps.notna().sum().sum())}, "
+      f"range {eps.index.min().date()}→{eps.index.max().date()}")
+print(f"anrev_n:   {nrev.shape}, mean active {nrev[nrev>0].stack().mean():.1f} notes/90d")

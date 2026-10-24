@@ -1,0 +1,24 @@
+{
+  "name": "cbsc-performance-tests",
+  "version": "1.0.0",
+  "description": "Performance testing suite for CBSC Quantitative Trading Strategy Management System",
+  "scripts": {
+    "test:performance": "node performance-tests.js",
+    "test:lighthouse": "node lighthouse-runner.js",
+    "test:bundle": "webpack-bundle-analyzer dist/static/js/*.js",
+    "test:memory": "node memory-tests.js",
+    "test:load": "artillery run load-tests.yml",
+    "test:perf:report": "node generate-report.js"
+  },
+  "devDependencies": {
+    "@lhci/cli": "^0.12.0",
+    "artillery": "^2.0.0",
+    "chrome-launcher": "^1.1.0",
+    "lighthouse": "^11.4.0",
+    "puppeteer": "^21.6.1",
+    "webpack-bundle-analyzer": "^4.9.0",
+    "clinic": "^12.1.0",
+    "autocannon": "^7.12.0",
+    "0x": "^5.7.0"
+  }
+}

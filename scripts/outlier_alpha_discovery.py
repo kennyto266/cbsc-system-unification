@@ -1,0 +1,304 @@
+#!/usr/bin/env python3
+"""Outlier Alpha 探索分析 (錢琛《以 outlier 找出 alpha》)
+
+目標: 用數據確認邊個因子真係有「outlier cluster 方向相反」現象,
+     唔盲目假設. 有數據支撐先整 ALPHA-23.
+
+3 個檢測方法:
+  1. HDBSCAN cluster detection (錢琛首推): 自動搵 scatter 既 cluster,
+     如果 ≥2 個 cluster 既 X→Y 相關性方向相反 = 可 monetise
+  2. IQR outlier split: Q3+3*IQR 做 outlier bound, 對比 normal vs outlier 既相關性
+  3. Z-score regime: |z|>2 既極端值, 對比相關性
+
+對每個 (factor, stock) pair 計:
+  X = 因子 5 日變動 (pct_change 5)
+  Y = 資產 5 日未來回報 (shift -5)
+  然後做 cluster / outlier 檢測
+
+輸出:
+  - data/factors/outlier_alpha_discovery.csv  (全部 pair 結果)
+  - data/factors/outlier_alpha_discovery.md   (報告 + scatter 圖)
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from scipy.stats import pearsonr, spearmanr
+import hdbscan
+
+from vbt_data import load_stock_close, load_factor_close, FACTOR_STOCKS
+
+OUT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors")
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# 因子列表 (同 dashboard FACTORS 一致)
+FACTORS = ["dxy", "usdcnh", "vix", "gold", "copper", "sp500", "a_shares", "us_10y_yield"]
+# 藍籌 + 流動性好 (subset, 唔使跑全部 65 隻)
+BLUE_CHIPS = ["HK.00700", "HK.09988", "HK.03690", "HK.01810", "HK.01211",
+              "HK.00005", "HK.00939", "HK.00388", "HK.00941", "HK.01299"]
+FORWARD_DAYS = 5  # 未來 5 日回報 (Y)
+FACTOR_LAG = 5    # 因子 5 日變動 (X)
+
+
+def compute_xy(factor_name, stock_code):
+    """計 X (因子 5 日變動) 同 Y (資產 5 日未來回報), 對齊 + dropna."""
+    factor = load_factor_close(factor_name)
+    close = load_stock_close(stock_code)
+    if factor is None or close is None:
+        return None, None
+    factor = factor.reindex(close.index).ffill()
+    # X = 因子 5 日變動
+    x = factor.pct_change(FACTOR_LAG)
+    # Y = 資產 5 日未來回報 (forward return)
+    y = close.pct_change(FORWARD_DAYS).shift(-FORWARD_DAYS)
+    df = pd.DataFrame({"x": x, "y": y}).dropna()
+    if len(df) < 200:
+        return None, None
+    return df["x"].values, df["y"].values
+
+
+def hdbscan_cluster_analysis(x, y, min_cluster_size=30):
+    """HDBSCAN cluster detection. 返 {n_clusters, clusters:[{n, corr, dir}], reversed}.
+
+    reversed=True = 有 ≥2 cluster 方向相反 (可 monetise 的 outlier alpha).
+    """
+    if len(x) < min_cluster_size * 3:
+        return None
+    # 標準化 (HDBSCAN 對 scale 敏感)
+    xz = (x - x.mean()) / (x.std() + 1e-9)
+    yz = (y - y.mean()) / (y.std() + 1e-9)
+    data = np.column_stack([xz, yz])
+    try:
+        clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, min_samples=5)
+        labels = clusterer.fit_predict(data)
+    except Exception:
+        return None
+    unique = sorted(set(labels) - {-1})  # -1 = noise
+    if len(unique) < 2:
+        return None
+    clusters = []
+    for c in unique:
+        mask = labels == c
+        if mask.sum() < 10:
+            continue
+        cx, cy = x[mask], y[mask]
+        if np.std(cx) < 1e-9 or np.std(cy) < 1e-9:
+            continue
+        corr, p = pearsonr(cx, cy)
+        clusters.append({"label": c, "n": int(mask.sum()), "corr": corr,
+                         "p": p, "dir": "pos" if corr > 0 else "neg"})
+    if len(clusters) < 2:
+        return None
+    # 檢查方向相反
+    dirs = [c["dir"] for c in clusters]
+    has_pos = "pos" in dirs
+    has_neg = "neg" in dirs
+    reversed_flag = has_pos and has_neg
+    # 最大 cluster (主) vs 其他 (outlier)
+    clusters_sorted = sorted(clusters, key=lambda c: -c["n"])
+    main = clusters_sorted[0]
+    outlier_clusters = clusters_sorted[1:]
+    return {
+        "n_clusters": len(clusters),
+        "main_n": main["n"], "main_corr": main["corr"], "main_dir": main["dir"],
+        "outlier_n": sum(c["n"] for c in outlier_clusters),
+        "outlier_corr": np.mean([c["corr"] for c in outlier_clusters]) if outlier_clusters else 0,
+        "outlier_dir": "pos" if np.mean([c["corr"] for c in outlier_clusters]) > 0 else "neg",
+        "reversed": reversed_flag,
+        "direction_flip": main["dir"] != (clusters_sorted[1]["dir"] if len(clusters_sorted) > 1 else main["dir"]),
+        "clusters": clusters,
+    }
+
+
+def iqr_outlier_split(x, y, iqr_mult=3.0):
+    """IQR 法 outlier detection: Q3 + 3*IQR 做 upper, Q1 - 3*IQR 做 lower.
+    對比 normal vs outlier 既 X→Y 相關性. 返 {normal_corr, outlier_corr, direction_flip}.
+    """
+    q1, q3 = np.percentile(x, [25, 75])
+    iqr = q3 - q1
+    upper = q3 + iqr_mult * iqr
+    lower = q1 - iqr_mult * iqr
+    normal_mask = (x >= lower) & (x <= upper)
+    outlier_mask = ~normal_mask
+    result = {"upper_bound": upper, "lower_bound": lower,
+              "n_normal": int(normal_mask.sum()), "n_outlier": int(outlier_mask.sum())}
+    if normal_mask.sum() > 30 and np.std(x[normal_mask]) > 1e-9 and np.std(y[normal_mask]) > 1e-9:
+        c, p = pearsonr(x[normal_mask], y[normal_mask])
+        result["normal_corr"] = c
+        result["normal_p"] = p
+    else:
+        result["normal_corr"] = np.nan
+    if outlier_mask.sum() > 15 and np.std(x[outlier_mask]) > 1e-9 and np.std(y[outlier_mask]) > 1e-9:
+        c, p = pearsonr(x[outlier_mask], y[outlier_mask])
+        result["outlier_corr"] = c
+        result["outlier_p"] = p
+    else:
+        result["outlier_corr"] = np.nan
+    # 方向相反?
+    nc, oc = result["normal_corr"], result["outlier_corr"]
+    if not np.isnan(nc) and not np.isnan(oc):
+        result["direction_flip"] = (nc > 0) != (oc > 0)
+        result["corr_diff"] = abs(nc - oc)
+    else:
+        result["direction_flip"] = False
+        result["corr_diff"] = 0
+    return result
+
+
+def zscore_regime_split(x, y, z_threshold=2.0):
+    """Z-score regime: |z|>threshold 既極端值, 對比相關性."""
+    z = (x - x.mean()) / (x.std() + 1e-9)
+    normal_mask = np.abs(z) <= z_threshold
+    outlier_mask = np.abs(z) > z_threshold
+    result = {"z_threshold": z_threshold, "n_normal": int(normal_mask.sum()),
+              "n_outlier": int(outlier_mask.sum())}
+    if normal_mask.sum() > 30 and np.std(x[normal_mask]) > 1e-9:
+        c, _ = pearsonr(x[normal_mask], y[normal_mask])
+        result["normal_corr"] = c
+    else:
+        result["normal_corr"] = np.nan
+    if outlier_mask.sum() > 15 and np.std(x[outlier_mask]) > 1e-9:
+        c, _ = pearsonr(x[outlier_mask], y[outlier_mask])
+        result["outlier_corr"] = c
+    else:
+        result["outlier_corr"] = np.nan
+    nc, oc = result["normal_corr"], result["outlier_corr"]
+    if not np.isnan(nc) and not np.isnan(oc):
+        result["direction_flip"] = (nc > 0) != (oc > 0)
+    else:
+        result["direction_flip"] = False
+    return result
+
+
+def run_discovery():
+    rows = []
+    print("=" * 75)
+    print(f"Outlier Alpha 探索分析 ({len(FACTORS)} 因子 × {len(BLUE_CHIPS)} 藍籌)")
+    print(f"HDBSCAN + IQR + Z-score 三方法檢測「cluster 方向相反」現象")
+    print("=" * 75)
+
+    for fi, factor_name in enumerate(FACTORS):
+        for stock in BLUE_CHIPS:
+            x, y = compute_xy(factor_name, stock)
+            if x is None:
+                continue
+            row = {"factor": factor_name, "stock": stock, "n": len(x)}
+            # 全局相關性 (baseline)
+            if np.std(x) > 1e-9 and np.std(y) > 1e-9:
+                gcorr, gp = pearsonr(x, y)
+                row["global_corr"] = round(gcorr, 3)
+                row["global_p"] = round(gp, 4)
+            # 1. HDBSCAN
+            hd = hdbscan_cluster_analysis(x, y)
+            if hd:
+                row["hdbscan_clusters"] = hd["n_clusters"]
+                row["hdbscan_main_corr"] = round(hd["main_corr"], 3)
+                row["hdbscan_outlier_corr"] = round(hd["outlier_corr"], 3)
+                row["hdbscan_outlier_n"] = hd["outlier_n"]
+                row["hdbscan_flip"] = "🔄" if hd["direction_flip"] else "—"
+            else:
+                row["hdbscan_clusters"] = 1
+                row["hdbscan_flip"] = "—"
+            # 2. IQR
+            iqr = iqr_outlier_split(x, y)
+            row["iqr_normal_corr"] = round(iqr["normal_corr"], 3) if not np.isnan(iqr["normal_corr"]) else ""
+            row["iqr_outlier_corr"] = round(iqr["outlier_corr"], 3) if not np.isnan(iqr["outlier_corr"]) else ""
+            row["iqr_outlier_n"] = iqr["n_outlier"]
+            row["iqr_flip"] = "🔄" if iqr["direction_flip"] else "—"
+            row["iqr_corr_diff"] = round(iqr["corr_diff"], 3)
+            # 3. Z-score
+            zs = zscore_regime_split(x, y)
+            row["z_normal_corr"] = round(zs["normal_corr"], 3) if not np.isnan(zs["normal_corr"]) else ""
+            row["z_outlier_corr"] = round(zs["outlier_corr"], 3) if not np.isnan(zs["outlier_corr"]) else ""
+            row["z_outlier_n"] = zs["n_outlier"]
+            row["z_flip"] = "🔄" if zs["direction_flip"] else "—"
+            # 綜合 score: 幾多個方法檢測到 flip
+            flips = sum([row["hdbscan_flip"] == "🔄", row["iqr_flip"] == "🔄", row["z_flip"] == "🔄"])
+            row["flip_count"] = flips
+            row["monetisable"] = "✅" if flips >= 2 else ("⚠️" if flips == 1 else "—")
+            rows.append(row)
+        if (fi + 1) % 2 == 0:
+            print(f"  [{factor_name}] ✓")
+
+    df = pd.DataFrame(rows)
+    csv_path = OUT_DIR / "outlier_alpha_discovery.csv"
+    df.to_csv(csv_path, index=False)
+    print(f"\n✅ CSV: {csv_path} ({len(df)} rows)")
+
+    # === 匯總 ===
+    monetisable = df[df["monetisable"] == "✅"].sort_values("flip_count", ascending=False)
+    print(f"\n{'='*75}")
+    print(f"📊 匯總: {len(df)} 個 pair, {len(monetisable)} 個有 ≥2 方法檢測到方向反轉")
+    print(f"{'='*75}")
+
+    # 按因子匯總
+    print("\n=== 按因子 (邊個因子最多 flip) ===")
+    factor_summary = df.groupby("factor").agg(
+        total_pairs=("stock", "count"),
+        monetisable=("monetisable", lambda s: (s == "✅").sum()),
+        hdbscan_flips=("hdbscan_flip", lambda s: (s == "🔄").sum()),
+        iqr_flips=("iqr_flip", lambda s: (s == "🔄").sum()),
+        z_flips=("z_flip", lambda s: (s == "🔄").sum()),
+    ).sort_values("monetisable", ascending=False)
+    print(factor_summary.to_string())
+
+    if len(monetisable) > 0:
+        print(f"\n=== 🎯 可 monetise 既 outlier alpha pair (≥2 方法 flip) ===")
+        cols = ["factor", "stock", "global_corr", "hdbscan_main_corr", "hdbscan_outlier_corr",
+                "iqr_normal_corr", "iqr_outlier_corr", "z_normal_corr", "z_outlier_corr",
+                "flip_count", "monetisable"]
+        cols = [c for c in cols if c in monetisable.columns]
+        print(monetisable[cols].head(20).to_string(index=False))
+
+    _write_report(df, monetisable, factor_summary, OUT_DIR / "outlier_alpha_discovery.md")
+    print(f"\n✅ 報告: {OUT_DIR / 'outlier_alpha_discovery.md'}")
+    return df, monetisable
+
+
+def _write_report(df, monetisable, factor_summary, path):
+    lines = [
+        "# 🔍 Outlier Alpha 探索分析報告",
+        "",
+        f"> 靈感: 錢琛《以 outlier 找出 alpha》(2024-08-31)",
+        f"> 方法: HDBSCAN cluster + IQR outlier + Z-score regime, 檢測「因子→回報 關係反轉」",
+        f"> 數據: {len(df)} 個 (因子 × 藍籌) pair, X=因子5日變動, Y=資產5日未來回報",
+        f"> 日期: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}",
+        "",
+        "## 🎯 核心發現: 可 monetise 既 outlier alpha",
+        "",
+        f"**{len(monetisable)} 個 pair** 有 ≥2 個方法檢測到「正常 vs 極端 regime 相關性方向反轉」:",
+        "",
+        (monetisable.to_markdown(index=False) if len(monetisable) else "*(無 pair 同時被 ≥2 方法確認方向反轉)*"),
+        "",
+        "## 📊 按因子匯總",
+        "",
+        factor_summary.to_markdown(),
+        "",
+        "## 📖 方法論",
+        "",
+        "1. **HDBSCAN** (錢琛首推): 自動 clustering scatter plot, 搵分離既 cluster. 如果主 cluster 同 outlier cluster 既 X→Y 相關性方向相反 = 可分拆兩個策略.",
+        "2. **IQR outlier**: Q3+3*IQR / Q1-3*IQR 做 outlier bound, 對比 normal vs outlier 相關性.",
+        "3. **Z-score regime**: |z|>2 既極端值做 regime split.",
+        "",
+        "- **🔄 flip** = normal regime 同 outlier regime 既相關性方向相反",
+        "- **✅ monetisable** = ≥2 個方法都檢測到 flip (較可信)",
+        "- **flip_count** = 3 個方法中幾多個檢測到 flip",
+        "",
+        "## 💡 策略啟示",
+        "",
+        "如果某個 pair 顯著 flip (✅), 可以整 ALPHA-23:",
+        "- 正常 regime (因子喺 IQR 範圍內): 跟主 cluster 方向",
+        "- 極端 regime (outlier): 反轉方向",
+        "- 呢個「regime-switching」比單一線性策略能 capture 更多 alpha",
+        "",
+    ]
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+if __name__ == "__main__":
+    run_discovery()

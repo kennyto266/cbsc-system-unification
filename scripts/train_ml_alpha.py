@@ -1,0 +1,299 @@
+#!/usr/bin/env python3
+"""train_ml_alpha.py — 通用 ML Transformer 訓練, 接收 factor list.
+
+用 A27 嘅方法學非線性交互, 但用唔同 factor 子集.
+用法: python train_ml_alpha.py <model_name> <factor1> <factor2> ...
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings; warnings.filterwarnings("ignore")
+
+import math, numpy as np, pandas as pd
+from pathlib import Path
+import torch, torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
+from vbt_data import load_stock_close, load_factor_close, TOTAL_COST, SLIPPAGE, INIT_CASH_FACTOR
+import vectorbt as vbt
+
+DATA_10YR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr")
+FACT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors")
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+STOCKS = ["HK.00700","HK.09988","HK.03690","HK.01810","HK.01211",
+          "HK.00005","HK.00939","HK.00388","HK.00941","HK.01299",
+          "HK.02313","HK.02018","HK.06862","HK.02688","HK.01093"]
+# Cross-sectional: 100 股 from ohlcv_5y (大幅增加樣本量)
+DATA_5YR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y")
+STOCKS_100 = []
+for f in sorted(DATA_5YR.glob("*.csv")):
+    # HK_00700.csv → HK.00700
+    code = f.stem.replace("_", ".", 1)
+    STOCKS_100.append(code)
+LOOKBACK = 20; FORWARD = 5
+TRAIN_END = "2022-12-31"; TEST_START = "2023-01-01"
+D_MODEL = 64; N_HEAD = 4; N_LAYERS = 3; DROPOUT = 0.1
+BATCH_SIZE = 256; EPOCHS = 80; LR = 1e-4; WD = 1e-4; PATIENCE = 10
+
+# Factor file mapping (name → csv, col)
+FACTOR_FILES = {
+    "dxy": ("dxy.csv", "close"), "usdcnh": ("usdcnh.csv", "close"),
+    "vix": ("vix.csv", "close"), "gold": ("gold.csv", "close"),
+    "copper": ("copper.csv", "close"), "sp500": ("sp500.csv", "close"),
+    "us10y": ("us_10y_yield.csv", "close"), "hibor": ("hibor.csv", "close"),
+    "dgs2": ("fred_dgs2.csv", "close"), "dgs10": ("fred_dgs10.csv", "close"),
+    "fedfunds": ("fred_fedfunds.csv", "close"), "walcl": ("fred_walcl.csv", "close"),
+    "t10yie": ("fred_t10yie.csv", "close"), "baa10y": ("fred_baa10y.csv", "close"),
+    "nfci": ("fred_nfci.csv", "close"),
+    "discwin": ("discount_window.csv", "disc_win_base_rate"),  # base_rate 有100%覆蓋 (usage 得0.2%)
+    "closing_bal": ("market-operation-daily.csv", "closing_balance"),
+    "eeri_usd": ("er-eeri-daily.csv", "usd"),
+    "fer_12m": ("hkd-fer-daily.csv", "hkd_fer_12m"),
+    "agg_bal": ("monetary-base-daily.csv", "aggr_balance_bf_disc_win"),
+    "efbn_yield": ("efbn-yield-daily.csv", "close"),
+    "a_shares": ("a_shares.csv", "close"),
+    "mstr_btc": ("mstr_btc.csv", "close"), "btcd": ("btcd.csv", "close"),
+}
+
+
+def _load_factor(name):
+    """Load factor by name from FACTOR_FILES or load_factor_close."""
+    if name in FACTOR_FILES:
+        f, col = FACTOR_FILES[name]
+        p = FACT_DIR / f
+        if not p.exists(): return None
+        df = pd.read_csv(p)
+        dc = next((c for c in df.columns if c.lower() in ("date","end_of_day","datetime","time","time_key")), df.columns[0])
+        if col not in df.columns:
+            for c in df.columns:
+                if c == dc: continue
+                try: df[c].astype(float); col = c; break
+                except: continue
+        df[dc] = pd.to_datetime(df[dc], errors="coerce")
+        df = df.dropna(subset=[dc, col]).sort_values(dc).drop_duplicates(subset=dc, keep="last")
+        s = pd.Series(df[col].astype(float).values, index=pd.to_datetime(df[dc].values), name=name)
+        if getattr(s.index, "tz", None) is not None: s.index = s.index.tz_localize(None)
+        return s
+    return load_factor_close(name)
+
+
+def _z(series, window=120):
+    return (series - series.rolling(window).mean()) / series.rolling(window).std().replace(0, np.nan)
+
+
+def build_features(stock, factor_names):
+    """Build feature matrix: N factor z-scores + 6 technicals.
+    Auto-detect 10yr or 5y ohlcv."""
+    fname = stock.replace(".", "_")
+    # 優先 10yr (更長歷史), fallback 5y
+    p = DATA_10YR / f"{fname}.csv"
+    if not p.exists():
+        p = DATA_5YR / f"{fname}.csv"
+    if p.exists():
+        df = pd.read_csv(p, parse_dates=["time_key"]).set_index("time_key").sort_index()
+        close = df["close"].astype(float)
+    else:
+        close = load_stock_close(stock)
+    if close is None or len(close) < 500: return None, None
+
+    features = pd.DataFrame(index=close.index)
+    for fn in factor_names:
+        f = _load_factor(fn)
+        if f is not None:
+            features[f"{fn}_z"] = _z(f.reindex(close.index).ffill())
+
+    features["ret_1d"] = close.pct_change(1)
+    features["ret_5d"] = close.pct_change(5)
+    features["ret_20d"] = close.pct_change(20)
+    features["vol_20d"] = close.pct_change().rolling(20).std()
+    features["sma_ratio"] = close / close.rolling(50).mean() - 1
+    features["high_low_ratio"] = (close.rolling(20).max() - close.rolling(20).min()) / close
+
+    fwd = close.pct_change(FORWARD).shift(-FORWARD)
+    label = (fwd > fwd.rolling(252).median()).astype(float)
+    valid = features.dropna().index.intersection(label.dropna().index)
+    return features.loc[valid], label.loc[valid]
+
+
+def create_sequences(features, label, lookback=LOOKBACK):
+    X, y = [], []
+    for i in range(lookback, len(features)):
+        X.append(features.iloc[i - lookback:i].values)
+        y.append(label.iloc[i])
+    return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32)
+
+
+class PosEnc(nn.Module):
+    def __init__(self, d_model, max_len=500):
+        super().__init__()
+        pe = torch.zeros(max_len, d_model)
+        pos = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(pos * div); pe[:, 1::2] = torch.cos(pos * div)
+        self.register_buffer('pe', pe.unsqueeze(0))
+    def forward(self, x): return x + self.pe[:, :x.size(1)]
+
+
+class TransformerModel(nn.Module):
+    def __init__(self, input_dim, d_model=D_MODEL, nhead=N_HEAD, num_layers=N_LAYERS, dropout=DROPOUT):
+        super().__init__()
+        self.input_proj = nn.Linear(input_dim, d_model)
+        self.pos_enc = PosEnc(d_model, max_len=LOOKBACK + 10)
+        el = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=d_model*4,
+                                        dropout=dropout, batch_first=True, activation="gelu")
+        self.encoder = nn.TransformerEncoder(el, num_layers=num_layers)
+        self.head = nn.Sequential(nn.Linear(d_model, 32), nn.GELU(), nn.Dropout(dropout), nn.Linear(32, 1), nn.Sigmoid())
+    def forward(self, x):
+        x = self.input_proj(x); x = self.pos_enc(x); x = self.encoder(x)
+        return self.head(x[:, -1, :]).squeeze(-1)
+
+
+def train_and_eval(model_name, factor_names, model_path, use_100_stocks=False):
+    stock_list = STOCKS_100 if use_100_stocks else STOCKS
+    print(f"\n{'='*70}")
+    print(f"🧠 {model_name}: {len(factor_names)} factors + 6 tech = {len(factor_names)+6} dims")
+    print(f"   Factors: {', '.join(factor_names)}")
+    print(f"   Stocks: {len(stock_list)} ({'cross-sectional 100股' if use_100_stocks else '15股'})")
+    print(f"{'='*70}")
+
+    print("\n1️⃣ 構建特徵...", flush=True)
+    all_Xtr, all_ytr, all_Xte, all_yte, test_data = [], [], [], [], {}
+    for stock in stock_list:
+        features, label = build_features(stock, factor_names)
+        if features is None: continue
+        n_feat = features.shape[1]
+        X, y = create_sequences(features, label)
+        dates = features.index[LOOKBACK:]
+        close = load_stock_close(stock)
+        if close is None: continue
+        da = dates.values if hasattr(dates, 'values') else np.array(dates)
+        tr = da < np.datetime64(TRAIN_END); te = da >= np.datetime64(TEST_START)
+        if tr.sum() > 100: all_Xtr.append(X[tr]); all_ytr.append(y[tr])
+        if te.sum() > 50: all_Xte.append(X[te]); all_yte.append(y[te]); test_data[stock] = (close, dates[te])
+        print(f"  {stock}: train={tr.sum()} test={te.sum()} feats={n_feat}", flush=True)
+
+    if not all_Xtr or not all_Xte:
+        print("❌ 數據不足"); return None
+    X_train = np.concatenate(all_Xtr); y_train = np.concatenate(all_ytr)
+    X_test = np.concatenate(all_Xte); y_test = np.concatenate(all_yte)
+    vs = int(len(X_train) * 0.15)
+    X_val, y_val = X_train[-vs:], y_train[-vs:]
+    X_tr, y_tr = X_train[:-vs], y_train[:-vs]
+    print(f"  訓練={len(X_tr)} 驗證={len(X_val)} 測試={len(X_test)} dims={X_train.shape[2]}")
+
+    print(f"\n2️⃣ 訓練 Transformer...", flush=True)
+    model = TransformerModel(X_tr.shape[2]).to(DEVICE)
+    opt = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WD)
+    sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=EPOCHS)
+    crit = nn.BCELoss()
+    tr_dl = DataLoader(TensorDataset(torch.FloatTensor(X_tr), torch.FloatTensor(y_tr)), batch_size=BATCH_SIZE, shuffle=True)
+    va_dl = DataLoader(TensorDataset(torch.FloatTensor(X_val), torch.FloatTensor(y_val)), batch_size=BATCH_SIZE)
+    best_v, best_s, pat = float("inf"), None, 0
+    for ep in range(EPOCHS):
+        model.train()
+        for xb, yb in tr_dl:
+            xb, yb = xb.to(DEVICE), yb.to(DEVICE)
+            opt.zero_grad(); loss = crit(model(xb), yb); loss.backward(); opt.step()
+        sch.step()
+        model.eval(); vl = 0
+        with torch.no_grad():
+            for xb, yb in va_dl: vl += crit(model(xb.to(DEVICE)), yb.to(DEVICE)).item()
+        vl /= len(va_dl)
+        if (ep+1) % 10 == 0: print(f"  Epoch {ep+1}: val={vl:.4f}", flush=True)
+        if vl < best_v: best_v = vl; best_s = {k:v.clone() for k,v in model.state_dict().items()}; pat = 0
+        else:
+            pat += 1
+            if pat >= PATIENCE: print(f"  ⏹️ Early stop @ {ep+1}", flush=True); break
+    if best_s: model.load_state_dict(best_s)
+    torch.save(model.state_dict(), model_path)
+    print(f"💾 Saved: {model_path}", flush=True)
+
+    print(f"\n3️⃣ OOS 回測...", flush=True)
+    model.eval(); results = []
+    with torch.no_grad():
+        for stock, (close, dates) in test_data.items():
+            features, label = build_features(stock, factor_names)
+            if features is None: continue
+            X, y = create_sequences(features, label)
+            idx = features.index[LOOKBACK:]
+            ia = idx.values if hasattr(idx, 'values') else np.array(idx)
+            te = ia >= np.datetime64(TEST_START)
+            Xs = X[te]; ds = idx[te]
+            if len(Xs) == 0: continue
+            preds = model(torch.FloatTensor(Xs).to(DEVICE)).cpu().detach().numpy()
+            ct = close.reindex(ds).dropna()
+            n = min(len(preds), len(ct))
+            e = pd.Series(preds[:n] > 0.5, index=ct.index[:n]).shift(1).fillna(False)
+            x = e.shift(5).fillna(False)
+            if not e.any(): continue
+            pf = vbt.Portfolio.from_signals(close=ct.iloc[:n], entries=e, exits=x,
+                                            fees=TOTAL_COST/2, slippage=SLIPPAGE, freq="1D", init_cash=INIT_CASH_FACTOR)
+            sr = float(pf.sharpe_ratio()); ret = float(pf.total_return())
+            results.append({"stock": stock, "sharpe": sr, "return": ret})
+
+    if not results: print("❌ 無結果"); return None
+    df = pd.DataFrame(results)
+    print(f"\n{'='*70}")
+    print(f"📊 {model_name} OOS 結果")
+    print(f"{'='*70}")
+    print(f"  正 Sharpe: {(df['sharpe']>0).sum()}/{len(df)}")
+    print(f"  SR>1.0: {(df['sharpe']>1.0).sum()}/{len(df)}")
+    print(f"  平均 Sharpe: {df['sharpe'].mean():.3f}")
+    print(f"  中位 Sharpe: {df['sharpe'].median():.3f}")
+    print(df.sort_values("sharpe", ascending=False).to_string(index=False))
+    return df
+
+
+# ============================================================
+# 4 個 Model 定義
+# ============================================================
+MODELS = {
+    "A153_HK流動性": {
+        "factors": ["eeri_usd", "fer_12m", "agg_bal", "closing_bal", "discwin", "hibor"],
+        "path": Path(r"C:\Users\Penguin8n\ZCodeProject\backtests\ml_a153.pt"),
+    },
+    "A154_中美互動": {
+        "factors": ["a_shares", "sp500", "dgs10", "t10yie", "usdcnh", "gold"],
+        "path": Path(r"C:\Users\Penguin8n\ZCodeProject\backtests\ml_a154.pt"),
+    },
+    "A155_信用壓力": {
+        "factors": ["baa10y", "vix", "walcl", "btcd", "t10yie", "usdcnh"],
+        "path": Path(r"C:\Users\Penguin8n\ZCodeProject\backtests\ml_a155.pt"),
+    },
+    "A156_HK流動性": {
+        "factors": ["eeri_usd", "discwin", "dgs10", "usdcnh", "a_shares", "gold"],
+        "path": Path(r"C:\Users\Penguin8n\ZCodeProject\backtests\ml_a156.pt"),
+    },
+    # Cross-sectional 100 股版 (大幅增加樣本量)
+    "A153cn100": {"factors": ["a_shares", "sp500", "dgs10", "t10yie", "usdcnh", "gold"],
+                  "path": Path(r"C:\Users\Penguin8n\ZCodeProject\backtests\ml_a153cn100.pt"), "use100": True},
+    "A154all100": {"factors": ["dxy", "usdcnh", "vix", "gold", "copper", "sp500", "us10y", "hibor",
+                               "dgs2", "dgs10", "fedfunds", "walcl", "t10yie", "baa10y", "nfci",
+                               "discwin", "closing_bal", "eeri_usd", "fer_12m", "agg_bal", "efbn_yield",
+                               "a_shares", "mstr_btc", "btcd"],
+                   "path": Path(r"C:\Users\Penguin8n\ZCodeProject\backtests\ml_a154all100.pt"), "use100": True},
+    "A155cr100": {"factors": ["baa10y", "vix", "walcl", "btcd", "t10yie", "usdcnh"],
+                  "path": Path(r"C:\Users\Penguin8n\ZCodeProject\backtests\ml_a155cr100.pt"), "use100": True},
+}
+
+
+if __name__ == "__main__":
+    print(f"🖥️ Device: {DEVICE}" + (f" ({torch.cuda.get_device_name(0)})" if DEVICE == "cuda" else ""))
+    targets = sys.argv[1:] if len(sys.argv) > 1 else list(MODELS.keys())
+    all_results = {}
+    for name in targets:
+        if name not in MODELS: continue
+        cfg = MODELS[name]
+        use100 = cfg.get("use100", False)
+        df = train_and_eval(name, cfg["factors"], cfg["path"], use_100_stocks=use100)
+        if df is not None:
+            all_results[name] = df
+
+    # 總結
+    print(f"\n\n{'='*70}")
+    print("🏁 全部 Model 總結")
+    print(f"{'='*70}")
+    print(f"{'Model':<20} {'平均SR':>7} {'中位SR':>7} {'正%':>5} {'SR>1':>4}")
+    for name, df in all_results.items():
+        print(f"{name:<20} {df['sharpe'].mean():>+6.3f} {df['sharpe'].median():>+6.3f} {(df['sharpe']>0).mean():>4.0%} {(df['sharpe']>1).sum():>3}")

@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""_probe_hkma_endpoints.py — discover working HKMA API endpoint paths for
+catalog datasets, by testing candidate path shapes derived from the dataset
+id/name. Output: a list of (dataset_id, working_endpoint) for seeding
+endpoint_map.json.
+
+Run from cbsc-system-unification/scripts/.
+"""
+import sqlite3
+import time
+import requests
+
+HOST = "https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/"
+CONN = sqlite3.connect("../data/datagov_hk.db")
+
+def test(path):
+    """Return (ok, n_records). path after /public/.../monthly-statistical-bulletin/"""
+    url = HOST + path
+    try:
+        r = requests.get(url, params={"pagesize": 2, "offset": 0},
+                         timeout=15, headers={"User-Agent": "Mozilla/5.0"})
+    except Exception as e:
+        return False, str(e)[:60]
+    if r.status_code != 200:
+        return False, f"HTTP {r.status_code}"
+    try:
+        n = len(r.json().get("result", {}).get("records", []))
+    except Exception:
+        return False, "no json"
+    return True, n
+
+def main():
+    rows = CONN.execute(
+        "SELECT id, name_en FROM dataset_catalog WHERE provider='hk-hkma' ORDER BY id"
+    ).fetchall()
+    hits = []
+    # Strategy: the known-working one is 'er-ir/hk-interbank-ir-daily'.
+    # Many datasets are table-chart. Test a few path conventions per id slug.
+    print(f"testing {len(rows)} HKMA datasets...")
+    for did, name in rows:
+        slug = did.replace("hk-hkma-", "")
+        # candidate paths derived from slug
+        cands = set()
+        # e.g. t02-t0201currency -> try 'money/currency/t0201currency', 't02/t0201currency'
+        parts = slug.split("-")
+        if len(parts) >= 2:
+            tbl = parts[0]  # t01, t02...
+            rest = "-".join(parts[1:])
+            cands.add(f"{tbl}/{rest}")
+            cands.add(rest)
+        ok_path = None
+        for c in cands:
+            ok, info = test(c)
+            if ok:
+                ok_path = c
+                hits.append((did, c, info))
+                break
+            time.sleep(0.05)
+        mark = "OK " if ok_path else ".. "
+        if ok_path:
+            print(f"{mark}{did:52} -> {ok_path} (recs={info})")
+    print(f"\n=== {len(hits)} working endpoints found ===")
+    for did, p, n in hits:
+        print(f'  "{did}": "/public/market-data-and-statistics/monthly-statistical-bulletin/{p}"')
+    CONN.close()
+
+if __name__ == "__main__":
+    main()

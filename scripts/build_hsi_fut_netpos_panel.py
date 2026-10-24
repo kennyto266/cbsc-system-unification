@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""build_hsi_fut_netpos_panel.py — dtop_hsi_daily.csv → hsi_fut_netpos.parquet.
+
+輸入: data/new_sources/dtop_hsi/dtop_hsi_daily.csv
+  (collect_hsi_fut_netpos.py 落 — date, net_total, gross_total, net_spot, n_contracts;
+  date=YYYY-MM-DD, 每日一行)
+輸出: data/factor_store/hsi_fut_netpos.parquet
+  index=date (datetime64), 欄 hsi_fut_netpos = 每日 net_total
+  (恒指期貨全市場 NET open interest — DTOP 冇 participant 分類,
+  crawl_spec 明文認可嘅總市場代理; 語義把關歸驗證部門)。
+
+下游: backtests/factor_panels.py register_panel("hsi_fut_netpos", ...) →
+  llm_cs_adapter 自動注入 hsi_fut_netpos_mkt (futp 期指大戶倉順風閘 thesis)。
+
+[09-27 TG哨兵重建] 原檔 01:58 P0 data root 清空事故被剷 (worktree-local
+untracked, 全機零副本滅絕 — G46794/G47932); 由 parquet 黃金樣板 (1721 行,
+≡csv.net_total 100% 對值) 反推重建。冪等: 同一輸入重跑輸出一致。
+Wired: backtests/_factor_store_refresh.py COLLECTORS (collector + builder 鏈)。
+"""
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "dtop_hsi" / "dtop_hsi_daily.csv"
+OUT = BASE / "data" / "factor_store" / "hsi_fut_netpos.parquet"
+
+
+def main() -> int:
+    if not RAW.exists():
+        print(f"raw 缺: {RAW} — 先行 collect_hsi_fut_netpos.py", file=sys.stderr)
+        return 1
+    df = pd.read_csv(RAW)
+    df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d", errors="coerce")
+    df = df[df["date"].notna()]
+    df["net_total"] = pd.to_numeric(df["net_total"], errors="coerce")
+    df = df[df["net_total"].notna()]
+    # 每日一行 (收集器契約); 防禦性去重 — 同日重複取最後一行
+    df = df.sort_values("date").drop_duplicates(subset=["date"], keep="last")
+    panel = df.set_index("date")[["net_total"]].rename(
+        columns={"net_total": "hsi_fut_netpos"}).sort_index()
+    panel = panel[~panel.index.duplicated(keep="last")]
+    print(f"raw {len(df)} 行 → panel {panel.shape}")
+    print(f"  日期: {panel.index.min().date()} → {panel.index.max().date()}")
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    panel.to_parquet(OUT)
+    print(f"→ {OUT}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

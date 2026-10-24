@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+"""autonomous_alpha_scan.py — 自主 for-loop alpha 掃描 (基於論文研究).
+
+研究方向 (from WebSearch):
+  1. 短期反轉: 5日/10日 return 極端 → 做多 (HK overreaction 研究)
+  2. 量大反轉: volume z + return direction → 反轉
+  3. 隔夜 gap: open vs prev_close 極端 → 反轉 (A156 已用, 試更多參數)
+  4. 日內波幅: high-low/close 極端 → 反轉
+  5. Cross-sectional momentum: 個股 vs HSI 相對強弱 → follow
+  6. Volume trend: 成交量趨勢變化 → 跟勢
+  7. Turnover ratio: turnover/volume 變化 → 流動性訊號
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings; warnings.filterwarnings("ignore")
+import numpy as np, pandas as pd
+from pathlib import Path
+import kol_alpha_strategies as kol
+from vbt_data import load_stock_close, FACTOR_STOCKS
+
+DATA_5Y = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y")
+DATA_10Y = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr")
+SPLIT = pd.Timestamp("2024-01-01")
+STOCKS = sorted(FACTOR_STOCKS)[:50]  # 50 股快速掃
+
+
+def load_ohlcv(stock):
+    fname = stock.replace(".", "_")
+    for d in [DATA_10Y, DATA_5Y]:
+        p = d / f"{fname}.csv"
+        if p.exists():
+            return pd.read_csv(p, parse_dates=["time_key"]).set_index("time_key").sort_index()
+    return None
+
+
+def test_signal(close, entry, holding=5, direction="long"):
+    """Quick backtest: entry → hold N days. Return SR or None."""
+    exit_c = entry.shift(holding).fillna(False)
+    entry_s = entry.shift(1).fillna(False)
+    try:
+        if direction == "long":
+            pf = kol.backtest_signals(close, entry_s, exit_c)
+        else:
+            pf = kol.backtest_signals(close, None, None, entry_s, exit_c)
+        if pf and pf.trades.count() > 3:
+            sr = float(pf.sharpe_ratio())
+            return sr if not np.isnan(sr) else None
+    except:
+        pass
+    return None
+
+
+def scan():
+    results = []
+    print("="*70)
+    print(f"🔬 自主 Alpha 掃描 — 7 方向 × 多參數 × {len(STOCKS)} 股")
+    print("="*70)
+
+    for stock in STOCKS:
+        df = load_ohlcv(stock)
+        if df is None or len(df) < 300: continue
+        close = df["close"].astype(float)
+        has_open = "open" in df.columns
+        has_vol = "volume" in df.columns
+        has_high_low = "high" in df.columns and "low" in df.columns
+        has_turnover = "turnover" in df.columns
+
+        # === 1. 短期反轉 (5d/10d return 極端) ===
+        for ret_window in [3, 5, 10]:
+            ret = close.pct_change(ret_window)
+            z = (ret - ret.rolling(60).mean()) / ret.rolling(60).std()
+            for threshold in [1.5, 2.0, 2.5]:
+                for holding in [3, 5]:
+                    # 暴跌 → 抄底
+                    entry = z < -threshold
+                    sr = test_signal(close, entry, holding, "long")
+                    if sr is not None:
+                        results.append({"stock": stock, "type": "short_rev", "params": f"rw={ret_window},z<-{threshold},h={holding}", "sr": sr, "dir": "long"})
+                    # 暴升 → 做淡
+                    entry_s = z > threshold
+                    sr_s = test_signal(close, entry_s, holding, "short")
+                    if sr_s is not None:
+                        results.append({"stock": stock, "type": "short_rev", "params": f"rw={ret_window},z>{threshold},h={holding}", "sr": sr_s, "dir": "short"})
+
+        # === 2. 量大反轉 ===
+        if has_vol:
+            vol = df["volume"].astype(float)
+            vol_z = (vol - vol.rolling(20).mean()) / vol.rolling(20).std()
+            ret1 = close.pct_change()
+            for vz in [2.0, 2.5]:
+                for holding in [3, 5]:
+                    # 量大+升 → 做淡
+                    entry = (vol_z > vz) & (ret1 > 0)
+                    sr = test_signal(close, entry, holding, "short")
+                    if sr: results.append({"stock": stock, "type": "vol_rev", "params": f"vz>{vz}+up,h={holding}", "sr": sr, "dir": "short"})
+                    # 量大+跌 → 抄底
+                    entry2 = (vol_z > vz) & (ret1 < 0)
+                    sr2 = test_signal(close, entry2, holding, "long")
+                    if sr2: results.append({"stock": stock, "type": "vol_rev", "params": f"vz>{vz}+dn,h={holding}", "sr": sr2, "dir": "long"})
+
+        # === 3. 日內波幅 ===
+        if has_high_low:
+            intraday_range = (df["high"].astype(float) - df["low"].astype(float)) / close
+            ir_z = (intraday_range - intraday_range.rolling(60).mean()) / intraday_range.rolling(60).std()
+            for threshold in [2.0, 2.5]:
+                for holding in [3, 5]:
+                    # 波幅極端大 → 反轉做多
+                    entry = ir_z > threshold
+                    sr = test_signal(close, entry, holding, "long")
+                    if sr: results.append({"stock": stock, "type": "range_rev", "params": f"ir_z>{threshold},h={holding}", "sr": sr, "dir": "long"})
+
+        # === 4. Volume trend ===
+        if has_vol:
+            vol = df["volume"].astype(float)
+            vol_ma_ratio = vol / vol.rolling(20).mean()
+            vt_z = (vol_ma_ratio - vol_ma_ratio.rolling(60).mean()) / vol_ma_ratio.rolling(60).std()
+            for threshold in [1.5, 2.0]:
+                for holding in [5, 10]:
+                    # 成交量趨勢向上 + 價升 → 跟勢做多
+                    ret5 = close.pct_change(5)
+                    entry = (vt_z > threshold) & (ret5 > 0)
+                    sr = test_signal(close, entry, holding, "long")
+                    if sr: results.append({"stock": stock, "type": "vol_trend", "params": f"vt_z>{threshold}+up,h={holding}", "sr": sr, "dir": "long"})
+
+        # === 5. 隔夜 gap (更多參數) ===
+        if has_open:
+            opn = df["open"].astype(float)
+            gap = opn / close.shift(1) - 1
+            gap_z = (gap - gap.rolling(60).mean()) / gap.rolling(60).std()
+            for threshold in [1.5, 2.0, 2.5, 3.0]:
+                for holding in [3, 5, 10]:
+                    # gap up 極端 → 做淡
+                    entry = gap_z > threshold
+                    sr = test_signal(close, entry, holding, "short")
+                    if sr: results.append({"stock": stock, "type": "gap", "params": f"gap_z>{threshold},h={holding}", "sr": sr, "dir": "short"})
+                    # gap down 極端 → 抄底
+                    entry2 = gap_z < -threshold
+                    sr2 = test_signal(close, entry2, holding, "long")
+                    if sr2: results.append({"stock": stock, "type": "gap", "params": f"gap_z<-{threshold},h={holding}", "sr": sr2, "dir": "long"})
+
+    return pd.DataFrame(results)
+
+
+def analyze(df):
+    """Aggregate results: find configs with high median SR + high positive %."""
+    if df.empty: print("無結果"); return
+    print(f"\n總測試: {len(df)} 個 stock×config")
+
+    # Group by type + params
+    grouped = df.groupby(["type", "params", "dir"]).agg(
+        n=("sr", "count"),
+        sr_med=("sr", "median"),
+        sr_mean=("sr", "mean"),
+        pct_pos=("sr", lambda x: (x > 0).mean()),
+    ).reset_index()
+
+    # Filter: n >= 10, sr_med > 0.3, pct_pos > 0.6
+    winners = grouped[(grouped["n"] >= 10) & (grouped["sr_med"] > 0.3) & (grouped["pct_pos"] > 0.6)]
+    winners = winners.sort_values("sr_med", ascending=False)
+
+    print(f"\n{'='*80}")
+    print(f"🏆 通過 (SR_med>0.3 + 正>60%): {len(winners)} 個 config")
+    print(f"{'='*80}")
+    if len(winners) > 0:
+        print(f"{'type':<12} {'params':<30} {'dir':<6} {'n':>4} {'SR_med':>7} {'SR_mean':>7} {'正%':>5}")
+        print("-"*80)
+        for _, r in winners.head(20).iterrows():
+            print(f"{r['type']:<12} {r['params']:<30} {r['dir']:<6} {r['n']:>4} {r['sr_med']:>+6.2f} {r['sr_mean']:>+6.2f} {r['pct_pos']:>4.0%}")
+    else:
+        print("  冇 config 通過")
+        # 顯示 top 10 最接近嘅
+        near = grouped[grouped["n"] >= 10].sort_values("sr_med", ascending=False).head(10)
+        print(f"\nTop 10 最接近:")
+        for _, r in near.iterrows():
+            print(f"  {r['type']:<12} {r['params']:<30} {r['dir']:<6} n={r['n']:>3} SR_med={r['sr_med']:>+.2f} 正={r['pct_pos']:.0%}")
+
+
+if __name__ == "__main__":
+    df = scan()
+    analyze(df)

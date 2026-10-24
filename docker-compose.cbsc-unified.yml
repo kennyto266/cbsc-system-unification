@@ -1,0 +1,392 @@
+version: '3.8'
+
+services:
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: cbsc-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL for user management and system data
+  postgres:
+    image: postgres:15-alpine
+    container_name: cbsc-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: cbsc_system
+      POSTGRES_USER: cbsc_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cbsc_secure_2024}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+      - ./database/postgres.conf:/etc/postgresql/postgresql.conf
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cbsc_admin -d cbsc_system"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway - Main entry point
+  api-gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: cbsc-api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_URL=postgresql://cbsc_admin:${POSTGRES_PASSWORD:-cbsc_secure_2024}@postgres:5432/cbsc_system
+      - GATEWAY_SECRET_KEY=${GATEWAY_SECRET_KEY:-cbsc_gateway_secret_2024}
+      - QUANT_SYSTEM_URL=http://quant-system:8001
+      - USER_MANAGEMENT_URL=http://user-management:3004
+      - STRATEGY_DASHBOARD_URL=http://strategy-dashboard:3003
+      - CONFIG_SERVICE_URL=http://config-service:3005
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./gateway/logs:/app/logs
+      - ./gateway/config:/app/config
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # User Management API Service
+  user-management:
+    build:
+      context: ./src/api
+      dockerfile: Dockerfile
+    container_name: cbsc-user-management
+    ports:
+      - "3004:3004"
+    environment:
+      - DATABASE_URL=postgresql://cbsc_admin:${POSTGRES_PASSWORD:-cbsc_secure_2024}@postgres:5432/cbsc_system
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-cbsc_jwt_secret_2024}
+      - API_HOST=0.0.0.0
+      - API_PORT=3004
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./src/api/logs:/app/logs
+      - ./src/api/uploads:/app/uploads
+      - ./src/api/config:/app/config
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Strategy Dashboard Service
+  strategy-dashboard:
+    build:
+      context: ./src/dashboard
+      dockerfile: Dockerfile
+    container_name: cbsc-strategy-dashboard
+    ports:
+      - "3003:3003"
+    environment:
+      - DATABASE_URL=postgresql://cbsc_admin:${POSTGRES_PASSWORD:-cbsc_secure_2024}@postgres:5432/cbsc_system
+      - REDIS_URL=redis://redis:6379
+      - API_HOST=0.0.0.0
+      - API_PORT=3003
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./src/dashboard/logs:/app/logs
+      - ./src/dashboard/data:/app/data
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Quant System Backend
+  quant-system:
+    build:
+      context: ./src/quant
+      dockerfile: Dockerfile
+    container_name: cbsc-quant-system
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql://cbsc_admin:${POSTGRES_PASSWORD:-cbsc_secure_2024}@postgres:5432/cbsc_system
+      - REDIS_URL=redis://redis:6379
+      - API_HOST=0.0.0.0
+      - API_PORT=8001
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./src/quant/logs:/app/logs
+      - ./src/quant/models:/app/models
+      - ./src/quant/data:/app/data
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Configuration Service
+  config-service:
+    build:
+      context: ./src/config
+      dockerfile: Dockerfile
+    container_name: cbsc-config-service
+    ports:
+      - "3005:3005"
+    environment:
+      - DATABASE_URL=postgresql://cbsc_admin:${POSTGRES_PASSWORD:-cbsc_secure_2024}@postgres:5432/cbsc_system
+      - REDIS_URL=redis://redis:6379
+      - API_HOST=0.0.0.0
+      - API_PORT=3005
+      - CONFIG_PATH=/app/config
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./src/config/logs:/app/logs
+      - ./config:/app/config
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Dashboard (React)
+  frontend-dashboard:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cbsc-frontend-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8000/api
+      - REACT_APP_WS_URL=ws://localhost:8000/ws
+      - REACT_APP_ENV=development
+      - PORT=3000
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+    depends_on:
+      - api-gateway
+
+  # Unified Dashboard (Next.js/Vite)
+  unified-dashboard:
+    build:
+      context: ./unified-dashboard
+      dockerfile: Dockerfile
+    container_name: cbsc-unified-dashboard
+    ports:
+      - "3001:3001"
+    environment:
+      - API_BASE_URL=http://localhost:8000/api
+      - WS_URL=ws://localhost:8000/ws
+      - NODE_ENV=development
+      - PORT=3001
+    volumes:
+      - ./unified-dashboard/src:/app/src
+      - ./unified-dashboard/public:/app/public
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+    depends_on:
+      - api-gateway
+
+  # Nginx Load Balancer / Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: cbsc-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/logs:/var/log/nginx
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+    depends_on:
+      - api-gateway
+      - frontend-dashboard
+      - unified-dashboard
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cbsc-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/rules:/etc/prometheus/rules
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cbsc-grafana
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_DOMAIN=localhost
+      - GF_SERVER_ROOT_URL=http://localhost:3002
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  # Jaeger Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: cbsc-jaeger
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+
+  # ELK Stack for centralized logging
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+    container_name: cbsc-elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.1
+    container_name: cbsc-logstash
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    volumes:
+      - ./logging/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./logging/logstash.yml:/usr/share/logstash/config/logstash.yml
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.1
+    container_name: cbsc-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - cbsc-network
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+
+# Named volumes for data persistence
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+# Networks
+networks:
+  cbsc-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

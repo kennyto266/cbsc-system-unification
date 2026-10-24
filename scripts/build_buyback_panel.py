@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""build_buyback_panel.py — T-capy: 回購公告 raw → buyback_yield panel.
+
+輸入: data/new_sources/buyback_raw.csv
+  (doc_date, stock_code, news_id, pdf_url, trading_date, shares_repurchased, aggregate_price_hkd)
+  ⚠ 審計發現 (2026-08-22): 只有 14/51 股有回購紀錄 — 37 股五年零回購 (經濟現實, 非數據缺漏),
+  且 trading_date 最早 2024-05 (W1/W2 冇覆蓋, 只能做 W3/近窗因子或 tilt 配角).
+
+輸出: data/factor_store/buyback_yield.parquet — wide (date × HK.XXXXX)
+  值 = rolling 252d 回購金額總和 / 市值 (市值用 close × shares_outstanding 近似;
+  無 shares outstanding 時序 → 用 panel 期間每股市值變化比例做縮放:
+  簡化版 = rolling 回購金額 / (close × 常數股本), 常數由最近 snapshot 股本得出)
+"""
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "buyback_raw.csv"
+OUT = BASE / "data" / "factor_store" / "buyback_yield.parquet"
+
+BT = BASE.parent / "backtests"
+sys.path.insert(0, str(BT))
+
+
+def main() -> int:
+    df = pd.read_csv(RAW)
+    df["td"] = pd.to_datetime(df["trading_date"], errors="coerce", dayfirst=True)
+    df = df[df["td"].notna()]
+    df["amt"] = pd.to_numeric(df["aggregate_price_hkd"], errors="coerce")
+    df["code5"] = df["stock_code"].astype(str).str.zfill(5)
+    print(f"raw {len(df)} 行, {df['code5'].nunique()} 股, {df['td'].min().date()} → {df['td'].max().date()}")
+
+    # 日度回購金額 (每組 announcement 內 trading_date 可能重複 — sum)
+    daily = df.groupby(["td", "code5"])["amt"].sum().reset_index()
+    amt = daily.pivot(index="td", columns="code5", values="amt").sort_index()
+    amt = amt[~amt.index.duplicated(keep="last")]
+
+    # 價格 (市值縮放)
+    from llm_cs_adapter import _load_prices_and_rets
+    prices, _ = _load_prices_and_rets()
+    prices.index = pd.to_datetime(prices.index)
+
+    cols = {}
+    for c in amt.columns:
+        hk = "HK." + c
+        if hk not in prices.columns:
+            continue
+        a = amt[c].reindex(prices.index).fillna(0.0)
+        cl = prices[hk]
+        # 市值近似: close × 股本常數 (normalize 掉) → yield ∝ 252d回購額/close
+        # 股本唔同股唔同 → 用「回購額 / close」做 proxy, 跨股比較要除返股本.
+        # 股本由 futu snapshot 拎唔到就先用金額/close, panel 命名 buyback_yield (proxy)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            y = a.rolling(252, min_periods=21).sum() / cl
+        cols[hk] = y
+    panel = pd.DataFrame(cols)
+    print(f"buyback_yield panel: {panel.shape}, 非NaN={int(panel.notna().sum().sum())}")
+    print(f"  覆蓋股: {list(panel.columns)[:8]}...")
+    panel.to_parquet(OUT)
+    print(f"→ {OUT}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

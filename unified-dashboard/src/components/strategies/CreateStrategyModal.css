@@ -1,0 +1,226 @@
+/* Create Strategy Modal Styles */
+.strategy-steps {
+  margin-bottom: 24px;
+}
+
+.steps-content {
+  min-height: 300px;
+  padding: 16px 0;
+}
+
+.step-content {
+  padding: 16px;
+  background-color: #fafafa;
+  border-radius: 8px;
+}
+
+/* Form styling */
+.ant-form-item-label > label {
+  font-weight: 500;
+  color: #262626;
+}
+
+.ant-form-item-explain-error {
+  font-size: 12px;
+}
+
+/* Slider custom styling */
+.ant-slider {
+  margin: 16px 0 8px 0;
+}
+
+.ant-slider-mark-text {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+/* Custom card styling */
+.step-content .ant-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.step-content .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.step-content .ant-card-head-title {
+  font-weight: 600;
+  color: #262626;
+}
+
+/* Parameter config specific styles */
+.parameter-section {
+  margin-bottom: 24px;
+}
+
+.parameter-section .ant-card-head {
+  background-color: #fafafa;
+}
+
+.parameter-section .ant-form-item {
+  margin-bottom: 16px;
+}
+
+/* Risk control specific styles */
+.risk-section {
+  margin-bottom: 24px;
+}
+
+.risk-preset-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.risk-preset-card:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+.risk-preset-card.active {
+  border-color: #1890ff;
+  background-color: #f6ffed;
+}
+
+.risk-preset-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.risk-preset-content .ant-tag {
+  align-self: center;
+}
+
+/* Template selection styles */
+.template-selection {
+  padding: 16px;
+  background-color: #e6f7ff;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+/* Warning and info styles */
+.ant-alert {
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.ant-alert-with-description {
+  padding: 12px 16px;
+}
+
+/* Progress indicators */
+.progress-indicator {
+  margin: 16px 0;
+}
+
+.progress-indicator .ant-progress-text {
+  font-size: 12px;
+}
+
+/* Custom button styles */
+.ant-btn-primary {
+  font-weight: 500;
+}
+
+.ant-btn-dashed {
+  border-style: dashed;
+  color: #1890ff;
+  background-color: #fafafa;
+}
+
+.ant-btn-dashed:hover {
+  color: #40a9ff;
+  background-color: #f0f8ff;
+  border-color: #40a9ff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .steps-content {
+    min-height: 200px;
+    padding: 8px 0;
+  }
+
+  .step-content {
+    padding: 12px;
+  }
+
+  .ant-col {
+    margin-bottom: 12px;
+  }
+}
+
+/* Animation classes */
+.slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  border-radius: 8px;
+}
+
+/* Form validation feedback */
+.ant-form-item-has-error .ant-input,
+.ant-form-item-has-error .ant-input-number,
+.ant-form-item-has-error .ant-select-selector {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+.ant-form-item-has-success .ant-input,
+.ant-form-item-has-success .ant-input-number,
+.ant-form-item-has-success .ant-select-selector {
+  border-color: #52c41a;
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.2);
+}
+
+/* Custom tooltip styles */
+.custom-tooltip {
+  max-width: 300px;
+}
+
+.custom-tooltip .ant-tooltip-inner {
+  background-color: #001529;
+  border-radius: 6px;
+}

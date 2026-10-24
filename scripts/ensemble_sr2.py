@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+"""ensemble_sr2.py — 推 SR>=2: SR 加權 + regime gating + 子集搜索."""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import numpy as np, pandas as pd
+from pathlib import Path
+from vbt_data import FACTOR_STOCKS, load_stock_close
+from hkptrc_strategies.common import compute_zscore, backtest_signals, extract_metrics
+from kol_alpha_strategies import _load_factor_csv
+from itertools import combinations
+DATA = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data")
+
+SR_WEIGHTS = {9:1.29,10:1.33,15:1.44,17:0.76,21:0.76,26:1.25,27:0.81,31:1.14,
+              36:1.12,39:0.75,43:0.80,45:0.95,47:1.47,58:1.17,59:0.91,62:1.22,
+              66:0.78,69:1.35,71:0.84,74:1.18,88:0.70}
+
+def build_factors(close, stock):
+    ret = close.pct_change()
+    vol20 = ret.rolling(20).std()
+    vol_z = compute_zscore(vol20.dropna(), 120).reindex(close.index).fillna(0)
+    signals = {}
+    yld = _load_factor_csv("us_10y_yield"); dxy = _load_factor_csv("dxy"); vix = _load_factor_csv("vix")
+    hibor = _load_factor_csv("hibor")
+
+    if yld is not None:
+        yz = compute_zscore(yld.reindex(close.index).ffill().pct_change().dropna(),60).reindex(close.index).fillna(0)
+        signals[9] = (yz < -1.0).fillna(False); signals[47] = (yz < -1.0).fillna(False)
+    if dxy is not None:
+        dz = compute_zscore(dxy.reindex(close.index).ffill().pct_change(20).dropna(),120).reindex(close.index).fillna(0)
+        signals[10] = (dz < -0.8).fillna(False)
+    sma250 = close.rolling(250).mean()
+    signals[15] = ((close > sma250) & (yz < 0 if yld is not None else False)).fillna(False)
+    rz60 = compute_zscore(ret.dropna(), 60).reindex(close.index).fillna(0)
+    signals[17] = (rz60 < -0.8).fillna(False); signals[21] = (rz60 < -1.0).fillna(False)
+    if vix is not None and dxy is not None:
+        vz = compute_zscore(vix.reindex(close.index).ffill().dropna(),120).reindex(close.index).fillna(0)
+        signals[26] = (((-vz + -dz)/2) > 0.5).fillna(False)
+    else: signals[26] = pd.Series(False, index=close.index)
+    rz31 = compute_zscore(close.pct_change(5).dropna(),120).reindex(close.index).fillna(0)
+    signals[31] = (rz31 < -1.0).fillna(False)
+    signals[36] = (vol_z > 1.0).fillna(False); signals[39] = (vol_z > 1.5).fillna(False)
+    sz = compute_zscore(ret.rolling(60).skew().dropna(),120).reindex(close.index).fillna(0)
+    signals[43] = (sz > 1.0).fillna(False)
+    sma120 = close.rolling(120).mean()
+    signals[45] = ((close > sma120) & (vol_z < 1.0)).fillna(False)
+    signals[58] = (vol_z < 0).fillna(False)
+    # Leader corr
+    lp = DATA / "ohlcv_5y" / "HK_00700.csv"
+    if lp.exists() and stock != "HK.00700":
+        lc = pd.read_csv(lp, parse_dates=["time_key"]).set_index("time_key")["close"]
+        lc = lc.reindex(close.index).dropna()
+        if len(lc) > 100:
+            cz = compute_zscore(ret.rolling(60).corr(lc.pct_change()).dropna(),120).reindex(close.index).fillna(0)
+            signals[59] = (cz > 0.6).fillna(False); signals[62] = (cz > 0.6).fillna(False)
+        else: signals[59] = signals[62] = pd.Series(False, index=close.index)
+    else: signals[59] = signals[62] = pd.Series(False, index=close.index)
+    signals[66] = pd.Series(False, index=close.index)
+    if vix is not None:
+        gc = ret.rolling(60).corr(vix.reindex(close.index).ffill().pct_change().shift(2))
+        signals[69] = (compute_zscore(gc.dropna(),120).reindex(close.index).fillna(0) > 1.0).fillna(False)
+    else: signals[69] = pd.Series(False, index=close.index)
+    vovz = compute_zscore(vol20.pct_change(20).rolling(20).std().dropna(),120).reindex(close.index).fillna(0)
+    signals[71] = (vovz > 0.8).fillna(False)
+    signals[74] = (compute_zscore(close.pct_change(20).dropna(),120).reindex(close.index).fillna(0) > 0.8).fillna(False)
+    if hibor is not None:
+        ho = hibor.reindex(close.index).ffill()
+        s70 = ho.rolling(70).mean()
+        d88 = compute_zscore(((ho-s70)/s70.rolling(70).std().replace(0,np.nan)).dropna(),70).reindex(close.index).fillna(0)
+        signals[88] = ((ho < s70) & (d88 < -0.5)).fillna(False)
+    else: signals[88] = pd.Series(False, index=close.index)
+    signals[27] = pd.Series(False, index=close.index)
+    return signals
+
+def version_A(close, signals, thresh=3.0):
+    """SR 加權投票."""
+    weighted = pd.DataFrame({k: v.astype(float) * SR_WEIGHTS.get(k,1.0) for k,v in signals.items()})
+    score = weighted.sum(axis=1)
+    entries = (score > thresh).shift(1).fillna(False)
+    exits = (score < thresh*0.3).shift(1).fillna(False)
+    pf = backtest_signals(close, entries, exits)
+    return pf
+
+def version_B(close, signals):
+    """Regime gating."""
+    vix = _load_factor_csv("vix"); dxy = _load_factor_csv("dxy")
+    if vix is not None:
+        vz = compute_zscore(vix.reindex(close.index).ffill().dropna(),120).reindex(close.index).fillna(0)
+    else:
+        vz = pd.Series(0, index=close.index)
+    if dxy is not None:
+        dz = compute_zscore(dxy.reindex(close.index).ffill().pct_change(20).dropna(),120).reindex(close.index).fillna(0)
+    else:
+        dz = pd.Series(0, index=close.index)
+    risk_on = (vz < 0) & (dz < 0)
+    risk_off = (vz > 1) & (dz > 0)
+    on_ids = [9,10,15,26,47,88,69,74]; off_ids = [17,21,31,36,39,43,45,58]
+    vote = pd.Series(0.0, index=close.index)
+    for a in on_ids:
+        if a in signals: vote += signals[a].astype(float) * risk_on.astype(float) * SR_WEIGHTS.get(a,1)
+    for a in off_ids:
+        if a in signals: vote += signals[a].astype(float) * risk_off.astype(float) * SR_WEIGHTS.get(a,1)
+    entries = (vote > 1.5).shift(1).fillna(False)
+    exits = (vote < 0.5).shift(1).fillna(False)
+    return backtest_signals(close, entries, exits)
+
+def version_C(close, signals, subset, thresh=2.0):
+    """最優子集 + SR 加權."""
+    weighted = pd.DataFrame({k: signals[k].astype(float) * SR_WEIGHTS.get(k,1) for k in subset if k in signals})
+    if weighted.empty: return None
+    score = weighted.sum(axis=1)
+    entries = (score > thresh).shift(1).fillna(False)
+    exits = (score < thresh*0.3).shift(1).fillna(False)
+    return backtest_signals(close, entries, exits)
+
+def main():
+    stocks = FACTOR_STOCKS[:20]
+    print("="*65)
+    print("SR>=2 推進: A(SR加權) B(regime) C(子集搜索)")
+    print("="*65)
+
+    # Build factor cache
+    cache = {}
+    for stock in stocks:
+        close = load_stock_close(stock)
+        if close is None: continue
+        cache[stock] = (close, build_factors(close, stock))
+
+    # Version A: try different thresholds
+    print("\n--- A: SR 加權投票 ---")
+    for th in [2.0, 2.5, 3.0, 4.0]:
+        srs = []
+        for stock, (close, sig) in cache.items():
+            pf = version_A(close, sig, thresh=th)
+            if pf and pf.trades.count() > 0: srs.append(float(pf.sharpe_ratio()))
+        if srs:
+            print(f"  th={th}: SR={np.mean(srs):.2f} best={max(srs):.2f} pos={sum(1 for s in srs if s>0)}/{len(srs)}", flush=True)
+
+    # Version B
+    print("\n--- B: Regime gating ---")
+    srs = []
+    for stock, (close, sig) in cache.items():
+        pf = version_B(close, sig)
+        if pf and pf.trades.count() > 0:
+            sr = float(pf.sharpe_ratio())
+            srs.append(sr)
+            if sr > 1.5: print(f"  🎯 {stock}: SR={sr:.2f}", flush=True)
+    if srs: print(f"  平均 SR={np.mean(srs):.2f} best={max(srs):.2f}", flush=True)
+
+    # Version C: top subsets (greedy — start with best SR alpha, add one at a time)
+    print("\n--- C: 貪婪子集搜索 ---")
+    ranked = sorted(SR_WEIGHTS.keys(), key=lambda a: -SR_WEIGHTS[a])
+    best_subset = []
+    best_sr = 0
+    for candidate in ranked:
+        trial = best_subset + [candidate]
+        srs = []
+        for stock, (close, sig) in list(cache.items())[:10]:
+            pf = version_C(close, sig, trial)
+            if pf and pf.trades.count() > 0: srs.append(float(pf.sharpe_ratio()))
+        mean_sr = np.mean(srs) if srs else 0
+        if mean_sr >= best_sr:
+            best_subset = trial
+            best_sr = mean_sr
+            print(f"  +A{candidate}: subset={len(best_subset)} SR={best_sr:.2f}", flush=True)
+    print(f"\n  最優子集 ({len(best_subset)}): {best_subset}")
+    print(f"  SR={best_sr:.2f}")
+
+    # Final test on all stocks with best subset
+    print(f"\n--- 最優子集全面測試 ---")
+    srs = []
+    for stock, (close, sig) in cache.items():
+        pf = version_C(close, sig, best_subset)
+        if pf and pf.trades.count() > 0: srs.append(float(pf.sharpe_ratio()))
+    if srs:
+        print(f"  SR: mean={np.mean(srs):.2f} best={max(srs):.2f} pos={sum(1 for s in srs if s>0)}/{len(srs)}")
+
+if __name__ == "__main__":
+    main()

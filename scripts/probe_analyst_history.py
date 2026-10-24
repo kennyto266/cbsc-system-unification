@@ -1,0 +1,31 @@
+"""probe_analyst_history.py — 探測 yfinance 分析師目標價有冇歷史 (thesis T-tpd-01 backfill 可行性).
+
+yfinance.info 只出今日值。此腳本試兩條路:
+  1) Futu OpenD (port 11111) — 有冇目標價/評級類 API
+  2) aastocks 個股頁 — 睇有冇歷史目標價
+"""
+import sys
+CODES = ['00005', '0700', '0941']
+
+# --- 1) Futu probe ---
+try:
+    from futu import OpenQuoteContext, SubType  # noqa
+    q = OpenQuoteContext(host='127.0.0.1', port=11111)
+    # 試 snapshot: 冇歷史目標價 API, 只確認連線 + 試 market snapshot 有冇欄位
+    ret, df = q.get_market_snapshot(['HK.00700'])
+    if ret == 0:
+        cols = [c for c in df.columns if any(k in c.lower() for k in ('target', 'rating', 'estimat', 'eps'))]
+        print('FUTU snapshot analyst-related cols:', cols)
+    else:
+        print('FUTU snapshot fail:', df)
+    q.close()
+except Exception as e:
+    print('FUTU probe fail:', e)
+
+# --- 2) yfinance: 確認 info 無時間軸 ---
+try:
+    import yfinance as yf
+    tk = yf.Ticker('0005.HK')
+    print('yf targetMeanPrice (today only):', tk.info.get('targetMeanPrice'))
+except Exception as e:
+    print('yf probe fail:', e)

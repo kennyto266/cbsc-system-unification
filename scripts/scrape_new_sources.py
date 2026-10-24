@@ -1,0 +1,80 @@
+"""scrape_new_sources.py — yfinance 新數據源日收集器.
+
+13 指標 × 52 股, 唔使 browser. 代碼要 4-digit (0005.HK 唔係 00005.HK).
+Output: data/new_sources/<name>_panel.csv
+"""
+import sys, time
+from pathlib import Path
+from datetime import datetime
+
+# [fix 08-26] vbt_data (HK_UNIVERSE) 住喺 ZCodeProject/backtests/, 但 scheduler
+# 用 cwd=repo root 行呢支 script → ModuleNotFoundError 秒死 (斷糧 3 日根因之二).
+# 嵌絕對路徑 (同 auto_scheduler pipeline fix 同款哲學 — 唔靠 cwd).
+_REPO = Path(__file__).resolve().parents[2]  # cbsc-system-unification/scripts/.. /..
+sys.path.insert(0, str(_REPO / "backtests"))
+
+DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "new_sources"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+import yfinance as yf
+import pandas as pd
+
+METRICS = {
+    "pegRatio": "peg_ratio",
+    "bookValue": "book_value_per_share",
+    "profitMargins": "profit_margin",
+    "revenueGrowth": "revenue_growth",
+    "debtToEquity": "debt_to_equity",
+    "currentRatio": "current_ratio",
+    "freeCashflow": "free_cash_flow",
+    "targetMeanPrice": "analyst_target",
+    "heldPercentInstitutions": "institutional_pct",
+    "shortPercentOfFloat": "short_float_pct",
+    "grossMargins": "gross_margin",
+    "returnOnEquity": "roe",
+    "revenuePerShare": "revenue_per_share",
+}
+
+
+def collect(stocks=None):
+    from vbt_data import HK_UNIVERSE
+    stocks = stocks or HK_UNIVERSE
+    today = datetime.now().strftime("%Y-%m-%d")
+    all_data = {}
+    for stock in stocks:
+        num = int(stock.replace("HK.", ""))
+        code = f"{num:04d}.HK"  # 4-digit, Yahoo 唔識 5-digit
+        try:
+            info = yf.Ticker(code).info
+            if not info or len(info) < 50:
+                continue
+            for yk, name in METRICS.items():
+                v = info.get(yk)
+                if v is not None and isinstance(v, (int, float)):
+                    all_data.setdefault(name, {})[stock] = float(v)
+            rec = info.get("recommendationKey", "")
+            if rec:
+                rm = {"strong_buy": 5, "buy": 4, "hold": 3, "underperform": 2, "sell": 1}
+                all_data.setdefault("analyst_rating_num", {})[stock] = rm.get(rec, 3)
+        except Exception:
+            pass
+        time.sleep(0.2)
+    for metric, vals in all_data.items():
+        if not vals:
+            continue
+        fp = DATA_DIR / f"{metric}_panel.csv"
+        rows = [{"date": today, "code": k, "value": v} for k, v in vals.items()]
+        df = pd.DataFrame(rows)
+        if fp.exists():
+            old = pd.read_csv(fp)
+            old = old[old["date"] != today]
+            df = pd.concat([old, df], ignore_index=True)
+        df.to_csv(fp, index=False)
+    return all_data
+
+
+if __name__ == "__main__":
+    r = collect()
+    print(f"collected {len(r)} metrics")
+    for m, vals in sorted(r.items()):
+        print(f"  {m}: {len(vals)} stocks")

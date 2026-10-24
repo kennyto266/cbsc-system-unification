@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""build_sdw_panels.py — T-sbag: SDW 南向持股 raw → factor_store panels.
+
+輸入: data/new_sources/southbound_sdw_raw.csv (date, stock_code, name, shares, pct)
+  (name 可能帶引號逗號; pct 佔已發行股本%)
+輸出: data/factor_store/sdw_south.parquet — wide (date × HK.XXXXX), 值 = pct
+
+51 股池過濾: 只保留核心池代號 (其他股留喺 raw 遲啲擴 universe 用).
+"""
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "southbound_sdw_raw.csv"
+OUT = BASE / "data" / "factor_store" / "sdw_south.parquet"
+
+POOL = ['00001','00002','00003','00005','00006','00012','00016','00017','00020','00027',
+'00066','00101','00175','00241','00268','00285','00291','00386','00388','00688','00700','00762',
+'00823','00883','00939','00941','00992','01024','01038','01088','01109','01211','01299','01398',
+'01801','01810','01876','01928','02013','02269','02318','02388','02628','02899','03690','06862',
+'09618','09888','09988','09992','09999']
+
+
+def _read_sdw_raw(p):
+    """[G93276 修] HKEX 原始 CSV 嘅 name 自带未加引號逗號 (…LIMITED, THE) —
+    pd.read_csv 欄數爆胎。位置式重組: 頭2欄+尾2欄固定, 中間全部食落 name。
+    (同 build_sdw_south_full 同款修法)"""
+    rows = []
+    for ln in p.read_text(encoding="utf-8", errors="replace").splitlines()[1:]:
+        if not ln.strip():
+            continue
+        f = ln.split(",")
+        if len(f) > 5:
+            f = f[:2] + [",".join(f[2:-2])] + f[-2:]
+        rows.append(f)
+    return pd.DataFrame(rows, columns=["date", "stock_code", "name", "shares", "pct"])
+
+
+def main() -> int:
+    if not RAW.exists():
+        print("raw 不存在")
+        return 1
+    df = _read_sdw_raw(RAW)
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df[df["date"].notna()]
+    df["code5"] = df["stock_code"].astype(str).str.zfill(5)
+    df["pct"] = pd.to_numeric(df["pct"], errors="coerce")
+    n_raw = len(df)
+
+    # 全場 panel (159+ 股) — 檢查覆蓋
+    full = df.pivot_table(index="date", columns="code5", values="pct").sort_index()
+    full = full[~full.index.duplicated(keep="last")]
+
+    # 51 股池 panel
+    cols = [c for c in POOL if c in full.columns]
+    panel = full[cols]
+    panel.columns = ["HK." + c for c in panel.columns]
+
+    # 前向填寫 (持股係存量, 停牌/假期 ffill 合理, 最多 5 日)
+    panel = panel.ffill(limit=5)
+
+    print(f"raw {n_raw} 行 → full panel {full.shape} → pool panel {panel.shape}")
+    print(f"  日期: {panel.index.min().date()} → {panel.index.max().date()}")
+    print(f"  pool 覆蓋: {len(cols)}/51 股")
+    nonnan = panel.notna().sum()
+    print(f"  每股中位數有效日: {int(nonnan.median())}")
+    panel.to_parquet(OUT)
+    print(f"→ {OUT}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

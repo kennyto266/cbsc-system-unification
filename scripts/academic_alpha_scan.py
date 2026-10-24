@@ -1,0 +1,230 @@
+#!/usr/bin/env python3
+"""academic_alpha_scan.py — 基於學術論文嘅 for-loop alpha 掃描.
+
+3 個方向 × 多個參數組合 × 多股:
+  1. Overnight return (Lou-Polk-Skouras 2019)
+  2. Amihud illiquidity (Amihud 2025)
+  3. Volume shock reversal
+
+每個候選 → vbt 全股 backtest → OOS split → 報告 SR.
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings; warnings.filterwarnings("ignore")
+import numpy as np, pandas as pd
+from pathlib import Path
+import kol_alpha_strategies as kol
+from vbt_data import load_stock_close, FACTOR_STOCKS, TOTAL_COST
+
+DATA_5Y = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y")
+DATA_10Y = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr")
+SPLIT = pd.Timestamp("2024-01-01")
+STOCKS = sorted(FACTOR_STOCKS)[:30]  # 30 股快速掃
+
+
+def load_ohlcv(stock):
+    """Load OHLCV with open/close/volume."""
+    fname = stock.replace(".", "_")
+    for d in [DATA_10Y, DATA_5Y]:
+        p = d / f"{fname}.csv"
+        if p.exists():
+            df = pd.read_csv(p, parse_dates=["time_key"]).set_index("time_key").sort_index()
+            return df
+    return None
+
+
+def sharpe_ret(r):
+    if r is None or len(r) < 20 or r.std() == 0: return 0.0
+    return r.mean() / r.std() * np.sqrt(252)
+
+
+# ============================================================
+# 1. OVERNIGHT RETURN (Lou-Polk-Skouras 2019)
+# ============================================================
+def scan_overnight():
+    """Overnight return = open / prev_close - 1.
+    Thesis: 高 overnight return → 機構看好 → 做多.
+    """
+    print(f"\n{'='*65}")
+    print("🌙 1. Overnight Return Alpha (Lou-Polk-Skouras 2019)")
+    print(f"{'='*65}")
+    results = []
+
+    for z_threshold in [1.0, 1.5, 2.0, 2.5]:
+        for holding in [3, 5, 10]:
+            for direction in ["follow", "contrarian"]:
+                all_sr = []
+                for stock in STOCKS:
+                    df = load_ohlcv(stock)
+                    if df is None or len(df) < 300: continue
+                    close = df["close"].astype(float)
+                    opn = df["open"].astype(float) if "open" in df.columns else None
+                    if opn is None: continue
+                    # overnight return
+                    overnight = opn / close.shift(1) - 1
+                    z = (overnight - overnight.rolling(60).mean()) / overnight.rolling(60).std()
+                    entry = z > z_threshold if direction == "follow" else z < -z_threshold
+                    exit_c = entry.shift(holding).fillna(False)  # holding-based exit
+                    try:
+                        pf = kol.backtest_signals(close, entry.shift(1).fillna(False), exit_c.shift(1).fillna(False))
+                        if pf and pf.trades.count() > 0:
+                            sr = float(pf.sharpe_ratio())
+                            if not np.isnan(sr): all_sr.append(sr)
+                    except: pass
+
+                if len(all_sr) < 5: continue
+                med_sr = float(np.median(all_sr))
+                pct_pos = (np.array(all_sr) > 0).mean()
+                tag = "🟢" if med_sr > 0.3 and pct_pos > 0.6 else ""
+                if tag:
+                    print(f"  z>{z_threshold} hold={holding}d dir={direction[:3]}: "
+                          f"SR_med={med_sr:+.2f} pos={pct_pos:.0%} n={len(all_sr)} {tag}")
+                    results.append(("overnight", z_threshold, holding, direction, med_sr, pct_pos))
+    return results
+
+
+# ============================================================
+# 2. AMIHUD ILLIQUIDITY (Amihud 2025)
+# ============================================================
+def scan_amihud():
+    """Amihud illiquidity = |ret| / volume.
+    Thesis: 高 illiquidity → 流動性溢價 → 做多.
+    """
+    print(f"\n{'='*65}")
+    print("💧 2. Amihud Illiquidity Alpha (Amihud 2025)")
+    print(f"{'='*65}")
+    results = []
+
+    for z_threshold in [1.0, 1.5, 2.0]:
+        for holding in [5, 10, 14]:
+            for smooth_window in [10, 20]:
+                all_sr = []
+                for stock in STOCKS:
+                    df = load_ohlcv(stock)
+                    if df is None or len(df) < 300: continue
+                    close = df["close"].astype(float)
+                    vol = df["volume"].astype(float) if "volume" in df.columns else None
+                    if vol is None or (vol == 0).all(): continue
+                    ret = close.pct_change().abs()
+                    amihud = (ret / vol.replace(0, np.nan)).rolling(smooth_window).mean()
+                    z = (amihud - amihud.rolling(60).mean()) / amihud.rolling(60).std()
+                    entry = z > z_threshold  # 高 illiquidity → 做多 (溢價)
+                    exit_c = z < 0
+                    try:
+                        pf = kol.backtest_signals(close, entry.shift(1).fillna(False),
+                                                  exit_c.shift(1).fillna(False))
+                        if pf and pf.trades.count() > 0:
+                            sr = float(pf.sharpe_ratio())
+                            if not np.isnan(sr): all_sr.append(sr)
+                    except: pass
+
+                if len(all_sr) < 5: continue
+                med_sr = float(np.median(all_sr))
+                pct_pos = (np.array(all_sr) > 0).mean()
+                tag = "🟢" if med_sr > 0.3 and pct_pos > 0.6 else ""
+                if tag:
+                    print(f"  z>{z_threshold} hold={holding}d smooth={smooth_window}d: "
+                          f"SR_med={med_sr:+.2f} pos={pct_pos:.0%} n={len(all_sr)} {tag}")
+                    results.append(("amihud", z_threshold, holding, smooth_window, med_sr, pct_pos))
+    return results
+
+
+# ============================================================
+# 3. VOLUME SHOCK REVERSAL
+# ============================================================
+def scan_volume_shock():
+    """Volume shock = volume z-score extreme.
+    Thesis: 成交量異常放大 → 散戶追漲殺跌 → 短期反轉.
+    """
+    print(f"\n{'='*65}")
+    print("📊 3. Volume Shock Reversal Alpha")
+    print(f"{'='*65}")
+    results = []
+
+    for z_threshold in [2.0, 2.5, 3.0]:
+        for holding in [3, 5, 7]:
+            for vol_window in [10, 20]:
+                all_sr = []
+                for stock in STOCKS:
+                    df = load_ohlcv(stock)
+                    if df is None or len(df) < 300: continue
+                    close = df["close"].astype(float)
+                    vol = df["volume"].astype(float) if "volume" in df.columns else None
+                    if vol is None: continue
+                    vol_z = (vol - vol.rolling(vol_window).mean()) / vol.rolling(vol_window).std()
+                    # volume shock + price up → 反轉做空 (contrarian)
+                    ret = close.pct_change()
+                    entry = (vol_z > z_threshold) & (ret > 0)  # 量大+升 → 做淡
+                    exit_c = vol_z < 0
+                    try:
+                        pf = kol.backtest_signals(close, None, None,
+                                                  entry.shift(1).fillna(False),
+                                                  exit_c.shift(1).fillna(False))
+                        if pf and pf.trades.count() > 0:
+                            sr = float(pf.sharpe_ratio())
+                            if not np.isnan(sr): all_sr.append(sr)
+                    except: pass
+
+                if len(all_sr) < 5: continue
+                med_sr = float(np.median(all_sr))
+                pct_pos = (np.array(all_sr) > 0).mean()
+                tag = "🟢" if med_sr > 0.3 and pct_pos > 0.6 else ""
+                if tag:
+                    print(f"  z>{z_threshold} hold={holding}d vol_win={vol_window}d: "
+                          f"SR_med={med_sr:+.2f} pos={pct_pos:.0%} n={len(all_sr)} {tag}")
+                    results.append(("vol_shock", z_threshold, holding, vol_window, med_sr, pct_pos))
+
+                # 也試 volume shock + price DOWN → 做多 (抄底)
+                all_sr2 = []
+                for stock in STOCKS:
+                    df = load_ohlcv(stock)
+                    if df is None or len(df) < 300: continue
+                    close = df["close"].astype(float)
+                    vol = df["volume"].astype(float) if "volume" in df.columns else None
+                    if vol is None: continue
+                    vol_z = (vol - vol.rolling(vol_window).mean()) / vol.rolling(vol_window).std()
+                    ret = close.pct_change()
+                    entry = (vol_z > z_threshold) & (ret < 0)  # 量大+跌 → 抄底
+                    exit_c = vol_z < 0
+                    try:
+                        pf = kol.backtest_signals(close, entry.shift(1).fillna(False),
+                                                  exit_c.shift(1).fillna(False))
+                        if pf and pf.trades.count() > 0:
+                            sr = float(pf.sharpe_ratio())
+                            if not np.isnan(sr): all_sr2.append(sr)
+                    except: pass
+                if len(all_sr2) < 5: continue
+                med_sr2 = float(np.median(all_sr2))
+                pct_pos2 = (np.array(all_sr2) > 0).mean()
+                tag2 = "🟢" if med_sr2 > 0.3 and pct_pos2 > 0.6 else ""
+                if tag2:
+                    print(f"  z>{z_threshold} hold={holding}d vol_win={vol_window}d (抄底): "
+                          f"SR_med={med_sr2:+.2f} pos={pct_pos2:.0%} n={len(all_sr2)} {tag2}")
+                    results.append(("vol_shock_buy", z_threshold, holding, vol_window, med_sr2, pct_pos2))
+    return results
+
+
+def main():
+    print("="*65)
+    print("🔬 學術論文 Alpha 批量掃描")
+    print(f"   3 方向 × 多參數 × {len(STOCKS)} 股")
+    print("="*65)
+
+    r1 = scan_overnight()
+    r2 = scan_amihud()
+    r3 = scan_volume_shock()
+
+    print(f"\n{'='*65}")
+    print(f"🏁 掃描完成")
+    print(f"{'='*65}")
+    total = len(r1) + len(r2) + len(r3)
+    print(f"通過 (SR>0.3 + 正>60%): {total} 個")
+    if r1: print(f"  Overnight: {len(r1)} 個")
+    if r2: print(f"  Amihud: {len(r2)} 個")
+    if r3: print(f"  Volume shock: {len(r3)} 個")
+
+
+if __name__ == "__main__":
+    main()

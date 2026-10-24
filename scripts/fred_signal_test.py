@@ -1,0 +1,206 @@
+#!/usr/bin/env python3
+"""fred_signal_test.py — FRED 數據 alpha thesis 測試.
+
+7 個全新宏觀因子 → 預檢 + OOS backtest.
+每個試 regime + z-score + divergence 三種訊號.
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings; warnings.filterwarnings("ignore")
+import numpy as np, pandas as pd
+from pathlib import Path
+from thesis_precheck import g1_data_vitality, g2_signal_activity, g3_sign_sanity, g4_subperiod_stability
+
+FACT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors")
+HSIF_PATH = Path(r"C:\Users\Penguin8n\Desktop\阿程\HSIF_USDCNH_201009_202412.csv")
+SPLIT = pd.Timestamp("2024-01-01")
+
+
+def load_col(file, col="close"):
+    p = FACT_DIR / file
+    if not p.exists(): return None
+    df = pd.read_csv(p)
+    dc = next((c for c in df.columns if c.lower() in ("date","end_of_day","datetime","time")), df.columns[0])
+    df[dc] = pd.to_datetime(df[dc], errors="coerce")
+    df = df.dropna(subset=[dc, col]).sort_values(dc).drop_duplicates(subset=dc, keep="last")
+    s = pd.Series(df[col].astype(float).values, index=pd.to_datetime(df[dc].values), name=col)
+    if getattr(s.index, "tz", None) is not None: s.index = s.index.tz_localize(None)
+    return s
+
+
+def z_score(series, window=60):
+    return (series - series.rolling(window).mean()) / series.rolling(window).std()
+
+
+def load_hsif():
+    df = pd.read_csv(HSIF_PATH, parse_dates=["Date"])
+    df = df.sort_values("Date").drop_duplicates(subset="Date", keep="last").set_index("Date")
+    return df["HSIF_close"]
+
+
+def fwd_ret(price, h=10):
+    return price.shift(-h) / price - 1
+
+
+def precheck(name, factor, target_fwd, signal, expected_dir):
+    fa = factor.reindex(target_fwd.index).ffill().dropna()
+    sig = signal.reindex(target_fwd.index).ffill().fillna(False).astype(bool)
+    common = fa.index.intersection(target_fwd.dropna().index)
+    fa = fa.reindex(common); sig = sig.reindex(common).fillna(False)
+    tg = target_fwd.reindex(common)
+    res = []
+    res.append(("G1", g1_data_vitality(fa, name)))
+    res.append(("G2", g2_signal_activity(sig, name)))
+    res.append(("G3", g3_sign_sanity(fa, tg, expected_dir, name)))
+    res.append(("G4", g4_subperiod_stability(fa, tg, name=name)))
+    n_fail = sum(1 for _,(s,_) in res if s=="FAIL")
+    for g,(s,m) in res:
+        print(f"    {'✅' if s=='PASS' else '⚠️ ' if s=='WARN' else '❌'} {g}: {m}")
+    verdict = "PASS" if n_fail==0 else "FAIL"
+    print(f"    → {verdict}")
+    return verdict == "PASS"
+
+
+def oos_backtest(hsif, signal, direction, holding=10):
+    import kol_alpha_strategies as kol
+    sig = signal.reindex(hsif.index).ffill().fillna(False).astype(bool)
+    entries = sig & (~sig.shift(1).fillna(False))
+    exits = entries.shift(holding).fillna(False)
+    is_mask = hsif.index < SPLIT; oos_mask = ~is_mask
+    empty = pd.Series(False, index=hsif.index)
+    def sharpe(mask):
+        if mask.sum() < 50: return None
+        cl = hsif[mask]; e = entries.reindex(cl.index).fillna(False); x = exits.reindex(cl.index).fillna(False)
+        try:
+            if direction == 1: pf = kol.backtest_signals(cl, e, x)
+            else: pf = kol.backtest_signals(cl, empty.reindex(cl.index), empty.reindex(cl.index), e, x)
+            if pf is None or pf.trades.count() == 0: return None
+            s = pf.sharpe_ratio(); return float(s) if not np.isnan(s) else None
+        except: return None
+    return sharpe(is_mask), sharpe(oos_mask)
+
+
+def main():
+    hsif = load_hsif()
+    target = fwd_ret(hsif, 10)
+    print("="*65)
+    print("🇺🇸 FRED 數據 Alpha Thesis 測試")
+    print("="*65)
+
+    # Load 7 FRED factors
+    dgs2 = load_col("fred_dgs2.csv")
+    dgs10 = load_col("fred_dgs10.csv")
+    fedfunds = load_col("fred_fedfunds.csv")
+    walcl = load_col("fred_walcl.csv")
+    t10yie = load_col("fred_t10yie.csv")
+    baa10y = load_col("fred_baa10y.csv")
+    nfci = load_col("fred_nfci.csv")
+
+    passed = []
+
+    # === 收益率曲線 (2y10y spread) ===
+    print(f"\n{'='*65}\n📊 收益率曲線\n{'='*65}")
+    # F1: 2y10y 倒掛 regime (息差倒掛 → 衰退 → 做淡)
+    print("\n[F1] 2y10y 息差 regime: spread < 0 → 做淡")
+    if dgs2 is not None and dgs10 is not None:
+        spread = (dgs10.reindex(hsif.index).ffill() - dgs2.reindex(hsif.index).ffill()).dropna()
+        f1_sig = spread < 0  # 倒掛
+        if precheck("F1_2y10y倒掛", spread, target, f1_sig, -1):
+            is_sr, oos_sr = oos_backtest(hsif, f1_sig, -1)
+            print(f"    OOS: IS={is_sr} OOS={oos_sr}")
+            if oos_sr and oos_sr > 0.3:
+                passed.append(("F1_2y10y倒掛", spread, f1_sig, -1, oos_sr)); print("    🟢 通過!")
+
+    # F2: 10年息 regime (息高 → 做淡)
+    print("\n[F2] 10年息 regime: DGS10 > SMA60 → 做淡")
+    if dgs10 is not None:
+        fa = dgs10.reindex(hsif.index).ffill()
+        sma = fa.rolling(60).mean()
+        f2_sig = fa > sma
+        if precheck("F2_10Y息regime", fa, target, f2_sig, -1):
+            is_sr, oos_sr = oos_backtest(hsif, f2_sig, -1)
+            print(f"    OOS: IS={is_sr} OOS={oos_sr}")
+            if oos_sr and oos_sr > 0.3:
+                passed.append(("F2_10Y息regime", fa, f2_sig, -1, oos_sr)); print("    🟢 通過!")
+
+    # === 聯儲局 ===
+    print(f"\n{'='*65}\n🏛️ 聯儲局政策\n{'='*65}")
+    # F3: Fed資產負債表 trend (縮表 → 做淡)
+    print("\n[F3] Fed縮表 regime: WALCL < SMA120 → 做淡")
+    if walcl is not None:
+        fa = walcl.reindex(hsif.index).ffill()
+        sma = fa.rolling(120).mean()
+        f3_sig = fa < sma  # 縮表
+        if precheck("F3_Fed縮表", fa, target, f3_sig, -1):
+            is_sr, oos_sr = oos_backtest(hsif, f3_sig, -1)
+            print(f"    OOS: IS={is_sr} OOS={oos_sr}")
+            if oos_sr and oos_sr > 0.3:
+                passed.append(("F3_Fed縮表", fa, f3_sig, -1, oos_sr)); print("    🟢 通過!")
+
+    # === 信用/通脹 ===
+    print(f"\n{'='*65}\n💰 信用 + 通脹\n{'='*65}")
+    # F4: BAA信用利差 regime (利差闊 → 信用風險 → 做淡)
+    print("\n[F4] BAA利差 regime: BAA10Y > SMA60 → 做淡")
+    if baa10y is not None:
+        fa = baa10y.reindex(hsif.index).ffill()
+        sma = fa.rolling(60).mean()
+        f4_sig = fa > sma
+        if precheck("F4_BAA利差", fa, target, f4_sig, -1):
+            is_sr, oos_sr = oos_backtest(hsif, f4_sig, -1)
+            print(f"    OOS: IS={is_sr} OOS={oos_sr}")
+            if oos_sr and oos_sr > 0.3:
+                passed.append(("F4_BAA利差", fa, f4_sig, -1, oos_sr)); print("    🟢 通過!")
+
+    # F5: 通脹預期 regime (通脹升 → 金價升 → 利好, 同 A145 呼應)
+    print("\n[F5] 通脹預期 regime: T10YIE > SMA60 → 做多")
+    if t10yie is not None:
+        fa = t10yie.reindex(hsif.index).ffill()
+        sma = fa.rolling(60).mean()
+        f5_sig = fa > sma
+        if precheck("F5_通脹預期", fa, target, f5_sig, +1):
+            is_sr, oos_sr = oos_backtest(hsif, f5_sig, 1)
+            print(f"    OOS: IS={is_sr} OOS={oos_sr}")
+            if oos_sr and oos_sr > 0.3:
+                passed.append(("F5_通脹預期", fa, f5_sig, +1, oos_sr)); print("    🟢 通過!")
+
+    # === 金融壓力 ===
+    print(f"\n{'='*65}\n📉 金融壓力\n{'='*65}")
+    # F6: NFCI mean-reversion (金融壓力極端 → 反轉做多)
+    print("\n[F6] NFCI 恐慌反轉: z(NFCI) > 2.0 → 做多 (恐慌見底)")
+    if nfci is not None:
+        fa = nfci.reindex(hsif.index).ffill()
+        z = z_score(fa, 60)
+        f6_sig = z > 2.0  # 金融壓力極端
+        if precheck("F6_NFCI恐慌反", z, target, f6_sig, +1):
+            is_sr, oos_sr = oos_backtest(hsif, f6_sig, 1)
+            print(f"    OOS: IS={is_sr} OOS={oos_sr}")
+            if oos_sr and oos_sr > 0.3:
+                passed.append(("F6_NFCI恐慌反", z, f6_sig, +1, oos_sr)); print("    🟢 通過!")
+
+    # === Divergence: 通脹 vs 信用 ===
+    print(f"\n{'='*65}\n📐 FRED Divergence\n{'='*65}")
+    # F7: 通脹-BAA利差 divergence (通脹升但信用好 → 做多)
+    print("\n[F7] 通脹-信用 divergence: z(T10YIE) - z(BAA10Y) > 1.5 → 做多")
+    if t10yie is not None and baa10y is not None:
+        ta = t10yie.reindex(hsif.index).ffill()
+        ba = baa10y.reindex(hsif.index).ffill()
+        div = z_score(ta) - z_score(ba)
+        f7_sig = div > 1.5  # 通脹升 + 信用好 = 樂觀
+        if precheck("F7_通脹信用div", div, target, f7_sig, +1):
+            is_sr, oos_sr = oos_backtest(hsif, f7_sig, 1)
+            print(f"    OOS: IS={is_sr} OOS={oos_sr}")
+            if oos_sr and oos_sr > 0.3:
+                passed.append(("F7_通脹信用div", div, f7_sig, +1, oos_sr)); print("    🟢 通過!")
+
+    # === 總結 ===
+    print(f"\n{'='*65}")
+    print(f"🏁 FRED 結果: {len(passed)}/7 候選通過")
+    print(f"{'='*65}")
+    for name, factor, sig, d, oos_sr in passed:
+        print(f"  🟢 {name}: OOS SR={oos_sr:+.2f} (dir={'多' if d>0 else '淡'})")
+
+
+if __name__ == "__main__":
+    main()

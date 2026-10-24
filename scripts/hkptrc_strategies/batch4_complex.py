@@ -1,0 +1,147 @@
+"""
+hkptrc 策略實作 Batch 4: 複雜算法策略 (策略 #4, #5)
+
+#4  PIP 背馭演算法
+#5  Extrema + Threshold（瀘尿牛丸）
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, __file__.rsplit("\\", 1)[0])
+
+from common import *
+import numpy as np
+import pandas as pd
+
+
+def strategy_04_pip_divergence(prices, stock, order_pips=5, window_size=50, rsi_period=14):
+    """#4 PIP 背馭 — 對角線測距搵重要點，對比 RSI 搵背馭"""
+    close = prices[stock].dropna()
+    if len(close) < window_size * 4:
+        return None
+
+    rsi = compute_rsi(close, rsi_period)
+
+    # Rolling PIP divergence detection
+    entries = pd.Series(False, index=close.index)
+    exits = pd.Series(False, index=close.index)
+    short_entries = pd.Series(False, index=close.index)
+    short_exits = pd.Series(False, index=close.index)
+
+    # 每 window_size 根 K 線計一次 PIP
+    for i in range(window_size * 2, len(close) - window_size, 10):
+        window_close = close.iloc[i-window_size:i]
+        window_rsi = rsi.iloc[i-window_size:i]
+
+        if len(window_close) < order_pips + 2 or window_rsi.isna().all():
+            continue
+
+        # 搵 PIP
+        pips = find_pips(window_close, order=order_pips)
+        if len(pips) < 4:
+            continue
+
+        # 取最後兩個 PIP
+        pip_prices = window_close.iloc[pips]
+        pip_rsis = window_rsi.iloc[pips]
+
+        if len(pip_prices) < 2 or len(pip_rsis) < 2:
+            continue
+
+        # 底背馭：價格 PIP 差唔多但 RSI PIP 上升
+        price_diff = abs(pip_prices.iloc[-1] - pip_prices.iloc[-2]) / max(pip_prices.iloc[-2], 1e-9)
+        rsi_diff = pip_rsis.iloc[-1] - pip_rsis.iloc[-2]
+
+        idx = close.index[i]
+        if price_diff < 0.03 and rsi_diff > 5:
+            # 底背馭 → 買入
+            entries.loc[idx] = True
+            # 出場：5 日後或 RSI > 70
+            exit_idx = min(i + 5, len(close) - 1)
+            exits.loc[close.index[exit_idx]] = True
+
+        # 頂背馭：價格上升但 RSI 冇跟住升
+        elif pip_prices.iloc[-1] > pip_prices.iloc[-2] * 1.02 and rsi_diff < 0:
+            short_entries.loc[idx] = True
+            exit_idx = min(i + 5, len(close) - 1)
+            short_exits.loc[close.index[exit_idx]] = True
+
+    if not entries.any() and not short_entries.any():
+        return None
+
+    pf = backtest_signals(close, entries, exits, short_entries, short_exits)
+    return extract_metrics(pf, "04_PIP_Divergence", stock)
+
+
+def strategy_05_extrema_threshold(prices, stock, order=15, threshold_pct=0.10):
+    """#5 Extrema + Threshold — 轉角位偵測"""
+    close = prices[stock].dropna()
+    if len(close) < order * 4:
+        return None
+
+    df = pd.DataFrame({"close": close})
+    # 近似 high/low
+    atr = close.diff().abs().rolling(14).mean()
+    df["high"] = close + atr * 0.5
+    df["low"] = close - atr * 0.5
+
+    is_maxima, is_minima = find_extrema(df, order=order, threshold_pct=threshold_pct)
+
+    # 策略：偵測到 minima 後買入，maxima 後沽出
+    entries = is_minima.copy()
+    exits = pd.Series(False, index=close.index)
+    short_entries = is_maxima.copy()
+    short_exits = pd.Series(False, index=close.index)
+
+    # 出場：5 日後
+    for i in range(len(close)):
+        if is_minima.iloc[i]:
+            exit_i = min(i + 5, len(close) - 1)
+            exits.iloc[exit_i] = True
+        if is_maxima.iloc[i]:
+            exit_i = min(i + 5, len(close) - 1)
+            short_exits.iloc[exit_i] = True
+
+    if not entries.any() and not short_entries.any():
+        return None
+
+    pf = backtest_signals(close, entries, exits, short_entries, short_exits)
+    return extract_metrics(pf, "05_Extrema_Threshold", stock)
+
+
+def run_batch4(prices, stocks=None):
+    """運行 Batch 4。"""
+    stocks = stocks or TEST_STOCKS
+    all_results = []
+
+    strategies = [
+        ("04 PIP Divergence", strategy_04_pip_divergence),
+        ("05 Extrema + Threshold", strategy_05_extrema_threshold),
+    ]
+
+    for strat_name, func in strategies:
+        print("\n運行 {} ...".format(strat_name))
+        for stock in stocks:
+            if stock not in prices.columns:
+                continue
+            try:
+                result = func(prices, stock)
+                if result:
+                    all_results.append(result)
+            except Exception as e:
+                print("  {} 失敗: {}".format(stock, str(e)[:50]))
+
+    return all_results
+
+
+if __name__ == "__main__":
+    print("=" * 95)
+    print("📊 hkptrc Batch 4: 複雜算法策略 (VectorBT)")
+    print("=" * 95)
+
+    prices = load_prices(250)
+    print("數據: {} 日 × {} 股".format(len(prices), prices.shape[1]))
+
+    results = run_batch4(prices)
+    print_results_table(results, "Batch 4 結果 (PIP + Extrema)")
+
+    save_results(results, "batch4_complex.csv")

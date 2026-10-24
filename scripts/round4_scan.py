@@ -1,0 +1,223 @@
+"""Round 4: hunt for 5th low-correlation alpha.
+Directions: southbound flow, cross-asset, intraday patterns, calendar.
+"""
+import sys
+sys.path = [p for p in sys.path if 'CODEX' not in p]
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\backtests')
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts')
+import warnings
+warnings.filterwarnings('ignore')
+import numpy as np, pandas as pd
+from pathlib import Path
+from vbt_data import FACTOR_STOCKS
+
+DATA_5Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y')
+DATA_10Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr')
+SPLIT = pd.Timestamp('2024-01-01')
+FAC = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors')
+SC = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\stock_connect')
+
+ohlcv_cache = {}
+for s in FACTOR_STOCKS:
+    fname = s.replace('.', '_')
+    for d in [DATA_10Y, DATA_5Y]:
+        p = d / f'{fname}.csv'
+        if p.exists():
+            ohlcv_cache[s] = pd.read_csv(p, parse_dates=['time_key']).set_index('time_key').sort_index()
+            break
+
+# ===== Load factors =====
+def load_factor(name):
+    p = FAC / f'{name}.csv'
+    if not p.exists(): return None
+    df = pd.read_csv(p)
+    dc = [c for c in df.columns if 'date' in c.lower() or c.lower() in ['time','ds']][0]
+    df = df.set_index(pd.to_datetime(df[dc])).sort_index()
+    for c in df.columns:
+        if c != dc and df[c].dtype in [np.float64, np.int64, float, int]:
+            return df[c].astype(float)
+    return df.iloc[:,0].astype(float)
+
+factors = {}
+for f in ['gold','copper','vix','fred_dgs10','fred_dgs2','fred_walcl','fred_t10yie',
+          'fred_baa10y','fred_nfci','a_shares','usdcnh','fred_fedfunds']:
+    s = load_factor(f)
+    if s is not None: factors[f] = s
+
+# Load southbound
+sc_path = SC / 'sc_full.csv'
+sc_data = None
+if sc_path.exists():
+    sc_df = pd.read_csv(sc_path)
+    dc = [c for c in sc_df.columns if 'date' in c.lower() or c.lower() in ['time','ds']][0]
+    sc_df = sc_df.set_index(pd.to_datetime(sc_df[dc])).sort_index()
+    print(f'Southbound loaded: {len(sc_df)} rows, cols={list(sc_df.columns)[:5]}')
+    for c in sc_df.columns:
+        if sc_df[c].dtype in [np.float64, np.int64, float, int]:
+            sc_data = sc_df[c].astype(float)
+            print(f'  Using column: {c}')
+            break
+
+print(f'Factors loaded: {list(factors.keys())}')
+print(f'OHLCV stocks: {len(ohlcv_cache)}')
+
+
+def compute_portfolio(entry_func, hold=5):
+    all_rets = {}
+    for stock, df in ohlcv_cache.items():
+        if len(df) < 400: continue
+        close = df['close'].astype(float)
+        try:
+            entries = entry_func(close, df)
+            if entries is None: continue
+            ret1 = close.pct_change()
+            pos = pd.Series(0, index=close.index)
+            in_pos = False; dl = 0
+            for i in range(len(close)):
+                if entries.iloc[i] and not in_pos: in_pos = True; dl = hold
+                pos.iloc[i] = 1 if in_pos else 0
+                if in_pos:
+                    dl -= 1
+                    if dl <= 0: in_pos = False
+            all_rets[stock] = (pos.shift(1) * ret1).dropna()
+        except Exception: pass
+    if not all_rets: return None
+    return pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+
+
+def report(name, result):
+    if result is None: return
+    oos = result[result.index >= SPLIT].dropna()
+    is_ = result[result.index < SPLIT].dropna()
+    if len(oos) < 20: return
+    oos_sr = oos.mean()/oos.std()*np.sqrt(252) if oos.std() > 0 else 0
+    is_sr = is_.mean()/is_.std()*np.sqrt(252) if is_.std() > 0 else 0
+    ret = (1+oos).cumprod().iloc[-1]-1
+    dd = ((1+oos).cumprod()/(1+oos).cumprod().cummax()-1).min()
+    tag = '🟢' if oos_sr > 1.0 else '✨' if oos_sr > 0.7 else '  ' if oos_sr > 0.4 else '❌'
+    print(f'  {tag} {name}: IS={is_sr:+.2f} OOS={oos_sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')
+
+
+print('\n' + '='*65)
+print('ROUND 4: 5th Low-Correlation Alpha Hunt')
+print('='*65)
+
+# ===== D28: Southbound Flow (sc_full) — net buying = bullish =====
+print('\n--- D28: Southbound Flow Signal ---')
+if sc_data is not None:
+    # sc_full is net buy amount; rising = inflow
+    for z_w in [20, 40, 60]:
+        for z_t in [1.0, 1.5, 2.0]:
+            def entry(close, df, sc=sc_data, zw=z_w, zt=z_t):
+                sc_a = sc.reindex(close.index).ffill()
+                z = (sc_a - sc_a.rolling(zw).mean()) / sc_a.rolling(zw).std().replace(0, np.nan)
+                # Heavy inflow → buy next day
+                return (z > zt).shift(1).fillna(False)
+            report(f'SC z>{z_t} w{z_w}', compute_portfolio(entry, hold=5))
+else:
+    print('  (no southbound data)')
+
+# ===== D29: Intraday — Close position in bar (high-close ratio) =====
+print('\n--- D29: Intraday Close Strength ---')
+for thresh in [0.7, 0.8, 0.9]:
+    def entry(close, df, t=thresh):
+        high = df['high'].astype(float)
+        low = df['low'].astype(float)
+        # Close in top t% of day's range = bullish
+        rng = high - low
+        close_pos = (close - low) / rng.replace(0, np.nan)
+        strong = close_pos > t
+        mom = close.pct_change(5) > 0
+        return (strong & mom).shift(1).fillna(False)
+    report(f'CloseTop{thresh:.0%}+mom', compute_portfolio(entry, hold=3))
+
+# ===== D30: Hammer / Reversal candle (long lower shadow) =====
+print('\n--- D30: Hammer Reversal ---')
+for shadow_r in [1.5, 2.0, 3.0]:
+    def entry(close, df, sr=shadow_r):
+        opn = df['open'].astype(float)
+        high = df['high'].astype(float)
+        low = df['low'].astype(float)
+        body = (close - opn).abs()
+        lower_shadow = (opn.clip(upper=close) - low)
+        avg_body = body.rolling(20).mean()
+        # Lower shadow >> body = hammer
+        hammer = (lower_shadow > body * sr) & (lower_shadow > avg_body)
+        return hammer.shift(1).fillna(False)
+    report(f'Hammer shadow×{shadow_r}', compute_portfolio(entry, hold=3))
+
+# ===== D31: Upper shadow rejection (shooting star short-avoid → buy dip) =====
+print('\n--- D31: Upper Shadow + Volume (institutional selling exhaustion) ---')
+for sr in [2.0, 3.0]:
+    def entry(close, df, s=sr):
+        opn = df['open'].astype(float)
+        high = df['high'].astype(float)
+        low = df['low'].astype(float)
+        vol = df['volume'].astype(float)
+        body = (close - opn).abs()
+        upper_shadow = (high - opn.clip(lower=close))
+        rejection = upper_shadow > body * s
+        vol_spike = vol > vol.rolling(20).mean() * 1.5
+        # Big upper shadow + volume → selling exhaustion → buy
+        return (rejection & vol_spike).shift(1).fillna(False)
+    report(f'UpRej×{sr}+vol', compute_portfolio(entry, hold=3))
+
+# ===== D32: Gap down + recovery (open low, close high) =====
+print('\n--- D32: Gap Down Recovery ---')
+for gd in [0.02, 0.03]:
+    def entry(close, df, g=gd):
+        opn = df['open'].astype(float)
+        high = df['high'].astype(float)
+        gap = opn / close.shift(1) - 1
+        # Gap down > g% but close above open (recovery)
+        recovered = close > opn
+        return ((gap < -g) & recovered).shift(1).fillna(False)
+    report(f'GapDown{gd:.0%}+recover', compute_portfolio(entry, hold=3))
+
+# ===== D33: Calendar — pre-holiday effect (last 3 trading days before month-end) =====
+print('\n--- D33: Pre-Month-End Rally ---')
+def entry(close, df):
+    day = close.index.day
+    # Buy on days 26-30 (pre month end)
+    return pd.Series((day >= 26) & (day <= 30), index=close.index).shift(1).fillna(False)
+report('Pre-month-end', compute_portfolio(entry, hold=3))
+
+# ===== D34: Copper momentum spillover =====
+print('\n--- D34: Copper Momentum Spillover ---')
+cu = factors.get('copper')
+if cu is not None:
+    for w in [5, 10, 20]:
+        def entry(close, df, c=cu, win=w):
+            c_a = c.reindex(close.index).ffill()
+            cu_up = c_a.pct_change(win) > 0
+            return cu_up.shift(1).fillna(False)
+        report(f'Cu mom {w}d', compute_portfolio(entry, hold=5))
+
+# ===== D35: BAA spread widening reversal =====
+print('\n--- D35: Credit Spread Mean Reversion ---')
+baa = factors.get('fred_baa10y')
+if baa is not None:
+    for zw in [60, 120]:
+        for zt in [1.0, 1.5]:
+            def entry(close, df, b=baa, w=zw, t=zt):
+                b_a = b.reindex(close.index).ffill()
+                z = (b_a - b_a.rolling(w).mean()) / b_a.rolling(w).std().replace(0, np.nan)
+                # Spread blowout → contrarian buy
+                return (z > t).shift(1).fillna(False)
+            report(f'BAA z>{zt} w{zw}', compute_portfolio(entry, hold=5))
+
+# ===== D36: High volume + doji (indecision → continuation) =====
+print('\n--- D36: Volume Doji Breakout ---')
+for body_r in [0.3, 0.5]:
+    def entry(close, df, br=body_r):
+        opn = df['open'].astype(float)
+        vol = df['volume'].astype(float)
+        high = df['high'].astype(float)
+        low = df['low'].astype(float)
+        rng = high - low
+        body = (close - opn).abs()
+        doji = body < rng * br  # small body
+        vol_high = vol > vol.rolling(20).mean() * 1.3
+        mom = close.pct_change(5) > 0
+        return (doji & vol_high & mom).shift(1).fillna(False)
+    report(f'Doji body<{body_r:.0%}+vol+mom', compute_portfolio(entry, hold=3))

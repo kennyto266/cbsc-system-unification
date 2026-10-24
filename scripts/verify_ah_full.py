@@ -1,0 +1,43 @@
+"""verify_ah_full.py — AH panel 驗證: 行數/欄位 + 抽3日同獨立來源(新浪 kline)對照"""
+import json, urllib.request
+import pandas as pd
+from pathlib import Path
+
+NS = Path(__file__).resolve().parent.parent / "data" / "new_sources"
+raw = pd.read_csv(NS / "ah_premium_full_raw.csv", dtype={"code_h": str, "code_a": str})
+print("rows", len(raw), "stocks", raw.code_h.nunique(), "days", raw.date.nunique())
+print("cols", list(raw.columns))
+print("null premium:", raw.ah_premium.isna().sum(), "| premium range", raw.ah_premium.min(), raw.ah_premium.max())
+print("premium quantiles", raw.ah_premium.quantile([0.05, 0.5, 0.95]).round(3).tolist())
+
+
+def sina_kline(market, code, n=20):
+    sym = ("sh" if market == 1 else "sz") + code
+    u = f"https://quotes.sina.cn/cn/api/jsonp_v2.php/x=/CN_MarketDataService.getKLineData?symbol={sym}&scale=240&ma=no&datalen={n}"
+    t = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"}), timeout=20).read().decode()
+    j = json.loads(t[t.index("["): t.rindex("]") + 1])
+    return {k["day"]: float(k["close"]) for k in j}
+
+
+samples = [
+    ("2026-08-21", "00941"),  # 中移動 A 600941
+    ("2025-06-30", "02318"),  # 平安 A 601318
+    ("2023-03-15", "01211"),  # 比亞迪 A 002594
+]
+ok = True
+for d, h in samples:
+    r = raw[(raw.date == d) & (raw.code_h == h)]
+    if r.empty:
+        print(d, h, "MISSING"); ok = False; continue
+    r = r.iloc[0]
+    mkt = 1 if r.code_a.startswith("6") else 0
+    s = sina_kline(mkt, r.code_a)
+    # sina day = exact date
+    sv = s.get(d)
+    if sv is None:
+        print(d, h, "sina no bar", list(s)[-3:]); ok = False; continue
+    diff = abs(sv - r.a_close_cny)
+    print(f"{d} {h} A={r.code_a}: ours={r.a_close_cny} sina={sv} diff={diff:.3f} "
+          f"({'OK' if diff/max(sv,1)<0.005 else 'MISMATCH'}) h_hkd={r.h_close_hkd} prem={r.ah_premium}")
+    ok = ok and diff / max(sv, 1) < 0.005
+print("VERIFY", "PASS" if ok else "FAIL")

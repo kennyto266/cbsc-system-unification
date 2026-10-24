@@ -1,0 +1,319 @@
+#!/usr/bin/env python3
+"""
+Long-only Pair Trade 回測（CASH 戶口版）
+
+對比三種策略：
+1. 完整 pair trade（買A沽B）— 理論最優但 DEMO 做唔到
+2. Long-only（只買信號股）— CASH 戶口做到
+3. Buy & Hold 基準
+
+用 VectorBT 回測，rf=4%, 成本 0.23%
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+import os
+import json
+import argparse
+from pathlib import Path
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
+import vectorbt as vbt
+from scipy import stats
+
+ROOT = Path(__file__).parent.parent
+DATA_DIR = ROOT / "data"
+OUTPUT_DIR = DATA_DIR / "pair_trade_vbt"
+OUTPUT_DIR.mkdir(exist_ok=True)
+
+FUTU_HOST = os.getenv("FUTU_OPEND_HOST", "127.0.0.1")
+FUTU_PORT = int(os.getenv("FUTU_OPEND_PORT", "1130"))
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "backtests"))
+from vbt_data import STAMP_DUTY, COMMISSION, PER_SIDE_FEES as FEE_PER_SIDE, RF_RATE
+ENTRY_Z = 2.0
+EXIT_Z = 0.5
+LOOKBACK = 20
+
+
+def fetch_prices(days=250):
+    cache = DATA_DIR / "hsi_prices.pkl"
+    if cache.exists():
+        return pd.read_pickle(cache).tail(days)
+    raise FileNotFoundError("請先運行 pair_trade_vbt.py")
+
+
+def compute_signals(prices, code_a, code_b, lookback=LOOKBACK):
+    """計算 z-score 序列。"""
+    a = np.log(prices[code_a])
+    b = np.log(prices[code_b])
+    common = pd.concat([a, b], axis=1, join="inner").dropna()
+    if len(common) < lookback + 10:
+        return None
+    lb = min(lookback, len(common) - 5)
+    slope, intercept, _, _, _ = stats.linregress(common.iloc[:,1].values, common.iloc[:,0].values)
+    spread = common.iloc[:,0] - (intercept + slope * common.iloc[:,1])
+    roll_mean = spread.rolling(lb).mean()
+    roll_std = spread.rolling(lb).std().replace(0, np.nan)
+    z = (spread - roll_mean) / roll_std
+    return {"z": z, "common": common, "a": common.iloc[:,0], "b": common.iloc[:,1]}
+
+
+def backtest_full_pair(prices, code_a, code_b):
+    """完整 pair trade（買A沽B）— 用 spread 收益。"""
+    info = compute_signals(prices, code_a, code_b)
+    if info is None:
+        return None
+    z = info["z"]
+    spread = info["a"] - info["b"]  # 簡化 spread
+    spread_ret = spread.diff().fillna(0)
+    spread_price = (1 + spread_ret).cumprod()
+
+    long_entries = z < -ENTRY_Z
+    long_exits = z > -EXIT_Z
+    short_entries = z > ENTRY_Z
+    short_exits = z < EXIT_Z
+
+    try:
+        pf = vbt.Portfolio.from_signals(
+            close=spread_price, entries=long_entries, exits=long_exits,
+            short_entries=short_entries, short_exits=short_exits,
+            fees=FEE_PER_SIDE, freq="1D", init_cash=1_000_000)
+    except Exception:
+        return None
+    return _extract_metrics(pf, "full_pair", code_a, code_b)
+
+
+def backtest_long_only_a(prices, code_a, code_b):
+    """Long-only：z < -2 時買 A，z > -0.5 時平倉。"""
+    info = compute_signals(prices, code_a, code_b)
+    if info is None:
+        return None
+    z = info["z"]
+    price_a = prices[code_a].reindex(z.index).dropna()
+    z = z.reindex(price_a.index)
+
+    entries = z < -ENTRY_Z
+    exits = z > -EXIT_Z
+
+    try:
+        pf = vbt.Portfolio.from_signals(
+            close=price_a, entries=entries, exits=exits,
+            fees=FEE_PER_SIDE, freq="1D", init_cash=1_000_000)
+    except Exception:
+        return None
+    return _extract_metrics(pf, "long_only_A", code_a, code_b)
+
+
+def backtest_long_only_b(prices, code_a, code_b):
+    """Long-only：z > +2 時買 B（B 相對強），z < 0.5 時平倉。"""
+    info = compute_signals(prices, code_a, code_b)
+    if info is None:
+        return None
+    z = info["z"]
+    price_b = prices[code_b].reindex(z.index).dropna()
+    z = z.reindex(price_b.index)
+
+    entries = z > ENTRY_Z
+    exits = z < EXIT_Z
+
+    try:
+        pf = vbt.Portfolio.from_signals(
+            close=price_b, entries=entries, exits=exits,
+            fees=FEE_PER_SIDE, freq="1D", init_cash=1_000_000)
+    except Exception:
+        return None
+    return _extract_metrics(pf, "long_only_B", code_a, code_b)
+
+
+def backtest_long_only_both(prices, code_a, code_b):
+    """Long-only 雙向：z<-2 買A，z>+2 買B（輪流買）。"""
+    info = compute_signals(prices, code_a, code_b)
+    if info is None:
+        return None
+    z = info["z"]
+    # 統一 index
+    common_idx = info["common"].index
+    # 用 A 嘅價格做基準，但當 z>+2 時轉持 B
+    # 簡化：構造一個「輪換」收益率序列
+    ret_a = prices[code_a].reindex(common_idx).pct_change()
+    ret_b = prices[code_b].reindex(common_idx).pct_change()
+
+    position = pd.Series(0, index=common_idx)  # 0=空倉, 1=持A, 2=持B
+    pos = 0
+    for i in range(len(z)):
+        zv = z.iloc[i]
+        if np.isnan(zv):
+            continue
+        if pos == 0:
+            if zv < -ENTRY_Z:
+                pos = 1  # 持 A
+            elif zv > ENTRY_Z:
+                pos = 2  # 持 B
+        elif pos == 1:
+            if zv > -EXIT_Z:
+                pos = 0
+        elif pos == 2:
+            if zv < EXIT_Z:
+                pos = 0
+        position.iloc[i] = pos
+
+    # 構造合成收益序列
+    strategy_ret = pd.Series(0.0, index=common_idx)
+    strategy_ret[position == 1] = ret_a[position == 1]
+    strategy_ret[position == 2] = ret_b[position == 2]
+
+    # 轉做 price 系列
+    synth_price = (1 + strategy_ret.fillna(0)).cumprod()
+    try:
+        pf = vbt.Portfolio.from_orders(
+            close=synth_price, size=np.nan,
+            fees=FEE_PER_SIDE, freq="1D", init_cash=1_000_000,
+            cash_sharing=True)
+        # 用 from_holding 近似
+        pf = vbt.Portfolio.from_holding(synth_price, init_cash=1_000_000, fees=FEE_PER_SIDE, freq="1D")
+    except Exception:
+        return None
+    return _extract_metrics(pf, "long_both", code_a, code_b)
+
+
+def _extract_metrics(pf, strategy, code_a, code_b):
+    try:
+        total_ret = float(pf.total_return())
+        ann_ret = float(pf.annualized_return())
+        sharpe = float(pf.sharpe_ratio())
+        sortino = float(pf.sortino_ratio())
+        max_dd = float(pf.max_drawdown())
+        calmar = float(pf.calmar_ratio())
+        trades = pf.trades.records_readable
+        n_trades = len(trades)
+        if n_trades > 0 and "PnL" in trades.columns:
+            wins = (trades["PnL"] > 0).sum()
+            win_rate = float(wins / n_trades)
+            gp = float(trades[trades["PnL"] > 0]["PnL"].sum())
+            gl = abs(float(trades[trades["PnL"] < 0]["PnL"].sum()))
+            pf_ratio = gp / gl if gl > 0 else 99.0
+        else:
+            win_rate = 0
+            pf_ratio = 0
+    except Exception:
+        return None
+
+    # Sharpe 扣 rf
+    if sharpe != 0 and ann_ret != 0:
+        vol = ann_ret / sharpe
+        sharpe = (ann_ret - RF_RATE) / vol if vol > 0 else sharpe
+
+    return {
+        "strategy": strategy,
+        "code_a": code_a, "code_b": code_b,
+        "total_return_pct": round(total_ret * 100, 2),
+        "annual_return_pct": round(ann_ret * 100, 2),
+        "sharpe": round(sharpe, 3),
+        "sortino": round(sortino, 3),
+        "max_drawdown_pct": round(max_dd * 100, 2),
+        "calmar": round(calmar, 3),
+        "n_trades": n_trades,
+        "win_rate_pct": round(win_rate * 100, 1),
+        "profit_factor": round(pf_ratio, 2),
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Long-only vs Full Pair Trade 回測對比")
+    parser.add_argument("--days", type=int, default=250)
+    parser.add_argument("--max-pairs", type=int, default=20)
+    args = parser.parse_args()
+
+    print("=" * 80)
+    print("📊 Long-only vs Full Pair Trade 回測對比 (VectorBT, rf=4%)")
+    print("=" * 80)
+    print("時間: {}\n".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+
+    prices = fetch_prices(days=args.days)
+    print("數據: {} 日 × {} 股\n".format(len(prices), prices.shape[1]))
+
+    high_corr = pd.read_csv(OUTPUT_DIR / "correlation_high_pairs.csv")
+    candidates = high_corr.head(args.max_pairs)
+
+    all_results = []
+    for i, (_, row) in enumerate(candidates.iterrows()):
+        a, b = row["stock_a"], row["stock_b"]
+        if a not in prices.columns or b not in prices.columns:
+            continue
+
+        full = backtest_full_pair(prices, a, b)
+        long_a = backtest_long_only_a(prices, a, b)
+        long_b = backtest_long_only_b(prices, a, b)
+
+        if full and long_a and long_b:
+            for r in [full, long_a, long_b]:
+                r["correlation"] = round(float(row["correlation"]), 3)
+                all_results.append(r)
+
+        if (i + 1) % 10 == 0:
+            print("  進度: {}/{}".format(i+1, len(candidates)))
+
+    if not all_results:
+        print("❌ 冇成功嘅回測結果")
+        return
+
+    df = pd.DataFrame(all_results)
+
+    # 對比表
+    print("\n" + "=" * 80)
+    print("🏆 策略對比（每個 pair 嘅 3 個版本）")
+    print("=" * 80)
+    print("\n{:<22} {:<12} {:>7} {:>8} {:>7} {:>8} {:>5} {:>6}".format(
+        "Pair", "策略", "Sharpe", "AnnRet%", "MaxDD%", "Sortino", "Trd", "Win%"))
+    print("-" * 80)
+
+    for pair_key, grp in df.groupby(lambda x: df.iloc[x]["code_a"] + "-" + df.iloc[x]["code_b"]):
+        for _, r in grp.iterrows():
+            pair = "{}-{}".format(r["code_a"], r["code_b"])
+            strat = {"full_pair": "完整(買A沽B)", "long_only_A": "Long A only", "long_only_B": "Long B only"}.get(r["strategy"], r["strategy"])
+            print("{:<22} {:<12} {:>7.2f} {:>7.1f}% {:>6.1f}% {:>8.2f} {:>5} {:>5}%".format(
+                pair, strat, r["sharpe"], r["annual_return_pct"],
+                r["max_drawdown_pct"], r["sortino"], r["n_trades"], int(r["win_rate_pct"])))
+        print()
+
+    # 匯總統計
+    print("=" * 80)
+    print("📊 匯總統計（各策略中位數）")
+    print("=" * 80)
+    print("\n{:<16} {:>8} {:>8} {:>8} {:>8} {:>8}".format(
+        "策略", "Sharpe", "AnnRet%", "MaxDD%", "Sortino", "Win%"))
+    print("-" * 60)
+    for strat in ["full_pair", "long_only_A", "long_only_B"]:
+        sub = df[df["strategy"] == strat]
+        if sub.empty:
+            continue
+        name = {"full_pair": "完整 pair", "long_only_A": "Long A", "long_only_B": "Long B"}.get(strat, strat)
+        print("{:<16} {:>8.2f} {:>7.1f}% {:>7.1f}% {:>8.2f} {:>7.0f}%".format(
+            name, sub["sharpe"].median(), sub["annual_return_pct"].median(),
+            sub["max_drawdown_pct"].median(), sub["sortino"].median(),
+            sub["win_rate_pct"].median()))
+
+    # 結論
+    full_med = df[df["strategy"]=="full_pair"]["sharpe"].median()
+    longa_med = df[df["strategy"]=="long_only_A"]["sharpe"].median()
+    longb_med = df[df["strategy"]=="long_only_B"]["sharpe"].median()
+    print("\n💡 結論:")
+    print("   完整 pair Sharpe 中位數: {:.2f}".format(full_med))
+    print("   Long A  Sharpe 中位數:   {:.2f}".format(longa_med))
+    print("   Long B  Sharpe 中位數:   {:.2f}".format(longb_med))
+    if full_med > max(longa_med, longb_med):
+        print("   → 完整 pair 明顯較優（對沖降低風險）")
+        ratio = full_med / max(longa_med, longb_med) if max(longa_med, longb_med) > 0 else 0
+        print("   → 完整 pair 嘅 Sharpe 係 Long-only 嘅 {:.1f} 倍".format(ratio))
+    else:
+        print("   → Long-only 表現接近甚至更好（喺呢段期間）")
+
+    # 儲存
+    df.to_csv(OUTPUT_DIR / "long_vs_full_comparison.csv", index=False)
+    print("\n✓ 儲存: long_vs_full_comparison.csv")
+
+
+if __name__ == "__main__":
+    main()

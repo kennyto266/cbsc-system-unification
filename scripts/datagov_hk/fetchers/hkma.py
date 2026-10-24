@@ -1,0 +1,81 @@
+"""HKMA 數據 API fetcher:分頁拉 records → long-format rows。
+沿用 hibor_update.py 的 pagesize/offset 分頁模式。"""
+import time
+from datetime import datetime
+
+import requests
+
+HKMA_HOST = "https://api.hkma.gov.hk"
+
+# record 內常見的日期欄位(優先序)
+DATE_FIELDS = ("end_of_day", "end_of_month", "end_of_quarter",
+               "end_of_period", "date", "year")
+
+
+def _obs_date(rec: dict):
+    for f in DATE_FIELDS:
+        if rec.get(f):
+            return str(rec[f])
+    return None
+
+
+class HKMAFetcher:
+    def __init__(self, dataset_id: str, endpoint: str,
+                 page_size: int = 100, max_pages: int = 200):
+        self.dataset_id = dataset_id
+        # endpoint 形如 /public/... 或 ...;統一加 /public 前綴
+        self.endpoint = endpoint if endpoint.startswith("/public") else "/public" + endpoint
+        self.page_size = page_size
+        self.max_pages = max_pages
+
+    def fetch(self, since=None) -> list:
+        url = HKMA_HOST + self.endpoint
+        params = {"pagesize": self.page_size, "offset": 0}
+        if since:
+            params["from"] = since
+        rows = []
+        for _ in range(self.max_pages):
+            try:
+                r = requests.get(url, params=params, timeout=20,
+                                 headers={"User-Agent": "Mozilla/5.0"})
+            except requests.RequestException as e:
+                raise RuntimeError(f"HKMA request error: {e}")
+            if r.status_code != 200:
+                raise RuntimeError(f"HKMA {r.status_code}: {r.text[:200]}")
+            j = r.json()
+            result = j.get("result", {})
+            records = result.get("records", [])
+            if not records:
+                break
+            for rec in records:
+                d = _obs_date(rec)
+                if not d:
+                    continue
+                for k, v in rec.items():
+                    if k in DATE_FIELDS or v is None:
+                        continue
+                    # 只收數值欄位
+                    try:
+                        fv = float(v)
+                    except (TypeError, ValueError):
+                        continue
+                    rows.append((self.dataset_id, d, k, fv, None))
+            params["offset"] += len(records)
+            if len(records) < self.page_size:
+                break
+            time.sleep(0.2)
+        return rows
+
+    def run(self, conn) -> int:
+        from .. import db
+        last = db.last_obs_date(conn, self.dataset_id)
+        try:
+            rows = self.fetch(since=last)
+        except Exception as e:
+            db.set_status(conn, self.dataset_id, f"error: {str(e)[:200]}")
+            return 0
+        if rows:
+            db.upsert_raw(conn, rows)
+        db.set_status(conn, self.dataset_id, "ok",
+                      last_fetched=datetime.utcnow().isoformat())
+        return len(rows)

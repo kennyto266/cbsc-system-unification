@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+"""param_grid_search.py — 對「可能」alpha 做參數網格搜索,揾通過 4 層驗證嘅最佳參數.
+
+策略:
+  1. 對每個 alpha 測多個 threshold × holding 組合
+  2. 每個組合跑 backtest (全部股票),記錄平均 SR + 正回報比例
+  3. 揾到最佳參數 (最高 SR 且 >30% 股票正回報)
+  4. 自動更新 kol_alpha_strategies.py 默認值
+"""
+import sys, warnings, inspect, re
+warnings.filterwarnings("ignore")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from multiprocessing import Pool, cpu_count
+
+from kol_alpha_strategies import KOL_REGISTRY
+from vbt_data import FACTOR_STOCKS, load_stock_close
+import vectorbt as vbt
+
+# 網格搜索目標 + 參數範圍
+# 格式: {alpha_id: {"threshold_param": name, "grid": [vals], "holding_grid": [vals]}}
+GRID_CONFIG = {
+    # Batch 1: 只差 L2 (threshold 放寬)
+    53: {"param": "threshold", "grid": [-0.5, -0.6, -0.7], "holding_grid": [21]},
+    81: {"param": "threshold", "grid": [0.6, 0.8, 1.0], "holding_grid": [7, 10]},
+    64: {"param": "threshold", "grid": [0.6, 0.8, 1.0], "holding_grid": [7, 10]},
+    79: {"param": "threshold", "grid": [0.6, 0.8, 1.0], "holding_grid": [7, 14]},
+    41: {"param": "threshold", "grid": [0.02, 0.025, 0.03], "holding_grid": [10]},
+    20: {"param": "threshold_pct", "grid": [0.06, 0.08, 0.10], "holding_grid": [5]},
+    # Batch 1: 只差 L4 (holding 延長)
+    77: {"param": None, "grid": [], "holding_grid": [21, 28]},
+    51: {"param": None, "grid": [], "holding_grid": [10, 14]},
+    32: {"param": None, "grid": [], "holding_grid": [10, 14, 21]},
+    28: {"param": None, "grid": [], "holding_grid": [10, 14, 21]},
+    23: {"param": None, "grid": [], "holding_grid": [7, 10, 14]},
+    # Batch 2: threshold=1.5 未優化 (threshold + holding)
+    7:  {"param": "threshold", "grid": [0.8, 1.0, 1.2], "holding_grid": [7, 10]},
+    55: {"param": "threshold", "grid": [0.8, 1.0, 1.2], "holding_grid": [5, 7]},
+    74: {"param": "threshold", "grid": [0.8, 1.0, 1.2], "holding_grid": [7, 10]},
+    69: {"param": "threshold", "grid": [0.8, 1.0, 1.2], "holding_grid": [7, 10]},
+    71: {"param": "threshold", "grid": [0.8, 1.0, 1.2], "holding_grid": [10, 14]},
+    10: {"param": "threshold", "grid": [0.8, 1.0, 1.2], "holding_grid": [7, 10]},
+    60: {"param": "threshold", "grid": [0.8, 1.0, 1.2], "holding_grid": [7, 10]},
+    52: {"param": "threshold", "grid": [0.8, 1.0, 1.2], "holding_grid": [5, 7]},
+    66: {"param": "threshold", "grid": [0.8, 1.0, 1.2], "holding_grid": [7, 10]},
+    6:  {"param": "threshold", "grid": [0.8, 1.0, 1.2], "holding_grid": [7, 10]},
+    13: {"param": "threshold", "grid": [0.8, 1.0, 1.2], "holding_grid": [5, 7]},
+    # Batch 3: 特殊參數
+    2:  {"param": "threshold", "grid": [1.5, 2.0, 2.5], "holding_grid": [7]},
+    1:  {"param": "div_threshold", "grid": [0.8, 1.0, 1.2], "holding_grid": [5]},
+    31: {"param": "threshold", "grid": [-0.03, -0.04, -0.05], "holding_grid": [5]},
+}
+
+
+def _eval_combo(args):
+    """Worker: 評估一個 (alpha_id, param_dict) 組合喺所有股票嘅平均 SR."""
+    aid, params = args
+    name, kol_name, func, dtype = KOL_REGISTRY.get(aid, ("?", "?", None, "?"))
+    if func is None:
+        return None
+    srs = []
+    for stock in FACTOR_STOCKS[:30]:  # 用頭 30 股快速評估
+        try:
+            close = load_stock_close(stock)
+            if close is None:
+                continue
+            prices = pd.DataFrame({stock: close})
+            m = func(prices, stock, **params) if params else func(prices, stock)
+            if m and m.get("sharpe") is not None:
+                srs.append(m["sharpe"])
+        except Exception:
+            pass
+    if not srs:
+        return {"aid": aid, "params": params, "mean_sr": -99, "n_positive": 0, "n_total": 0}
+    mean_sr = float(np.mean(srs))
+    n_pos = sum(1 for s in srs if s > 0)
+    return {"aid": aid, "params": params, "mean_sr": round(mean_sr, 3),
+            "n_positive": n_pos, "n_total": len(srs),
+            "pos_pct": round(n_pos / len(srs), 2)}
+
+
+def main():
+    print("=" * 65)
+    print("🔧 參數網格搜索 (28 alpha × 多組合)")
+    print("=" * 65)
+
+    # 構建所有測試組合
+    all_combos = []
+    for aid, cfg in GRID_CONFIG.items():
+        if cfg["param"]:
+            # threshold × holding 組合
+            for t in cfg["grid"]:
+                for h in cfg["holding_grid"]:
+                    all_combos.append((aid, {cfg["param"]: t, "holding": h}))
+        else:
+            # 只變 holding
+            for h in cfg["holding_grid"]:
+                all_combos.append((aid, {"holding": h}))
+
+    print(f"總共 {len(all_combos)} 個參數組合 × 30 股 = {len(all_combos)*30} backtests")
+    print(f"用 {min(cpu_count(), 32)} workers 並行...\n")
+
+    results = []
+    with Pool(min(cpu_count(), 32)) as pool:
+        for i, r in enumerate(pool.imap_unordered(_eval_combo, all_combos, chunksize=4)):
+            if r:
+                results.append(r)
+            if (i + 1) % 20 == 0:
+                print(f"  [{i+1}/{len(all_combos)}]", flush=True)
+
+    # 按 alpha 分組,搵最佳參數
+    df = pd.DataFrame(results)
+    print(f"\n{'='*65}")
+    print("📊 網格搜索結果 (每個 alpha 嘅最佳參數)")
+    print(f"{'='*65}")
+    print(f"{'ID':<5} {'name':<22} {'best SR':>8} {'pos%':>6} {'n':>4} {'best params'}")
+    print("-" * 80)
+
+    best_params = {}
+    for aid, cfg in GRID_CONFIG.items():
+        grp = df[df["aid"] == aid]
+        if grp.empty:
+            continue
+        name = KOL_REGISTRY[aid][0][:22]
+        # 揾最高 SR 且 pos_pct > 0.25
+        valid = grp[grp["pos_pct"] >= 0.25]
+        if valid.empty:
+            valid = grp  # fallback: 用最高 SR
+        best = valid.loc[valid["mean_sr"].idxmax()]
+        best_params[aid] = best["params"]
+        p_str = str(best["params"])
+        print(f"{aid:<5} {name:<22} {best['mean_sr']:>8.2f} {best['pos_pct']:>6.0%} "
+              f"{best['n_total']:>4} {p_str[:40]}")
+
+    # 存結果
+    out = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports\param_grid_results.csv")
+    df.to_csv(out, index=False)
+    print(f"\n💾 結果存到: {out}")
+
+    # 輸出最佳參數 (俾下一個步驟用)
+    print(f"\n{'='*65}")
+    print("🔧 最佳參數 (用於更新 kol_alpha_strategies.py)")
+    print(f"{'='*65}")
+    for aid, params in sorted(best_params.items()):
+        print(f"  A{aid}: {params}")
+
+
+if __name__ == "__main__":
+    main()

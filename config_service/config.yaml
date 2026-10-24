@@ -1,0 +1,252 @@
+# Configuration Service Settings
+# 配置服務設置
+
+# Service Configuration
+service:
+  name: "Configuration Service"
+  version: "1.0.0"
+  port: 8005
+  host: "0.0.0.0"
+  debug: false
+
+# Database Configuration
+database:
+  url: "postgresql://postgres:password@localhost:5432/config_service"
+  pool_size: 10
+  max_overflow: 20
+  pool_timeout: 30
+  pool_recycle: 3600
+
+# Redis Configuration
+redis:
+  url: "redis://localhost:6379/0"
+  max_connections: 20
+  socket_timeout: 5
+  socket_connect_timeout: 5
+
+# Security Configuration
+security:
+  encryption_key: "${CONFIG_ENCRYPTION_KEY}"  # Environment variable
+  jwt_secret_key: "${JWT_SECRET_KEY}"
+  jwt_algorithm: "HS256"
+  jwt_expiration: 3600
+
+# Cache Configuration
+cache:
+  default_ttl: 300  # 5 minutes
+  max_size: 10000
+  cleanup_interval: 60
+
+# API Configuration
+api:
+  title: "Configuration Service API"
+  description: "Centralized Configuration Management for Quantitative Trading Microservices"
+  version: "1.0.0"
+  docs_url: "/docs"
+  redoc_url: "/redoc"
+  openapi_url: "/openapi.json"
+
+# CORS Configuration
+cors:
+  allow_origins:
+    - "http://localhost:3000"
+    - "http://localhost:8001"
+    - "http://localhost:8002"
+    - "http://localhost:8003"
+    - "http://localhost:8004"
+  allow_credentials: true
+  allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allow_headers: ["*"]
+
+# Rate Limiting
+rate_limiting:
+  enabled: true
+  requests_per_minute: 100
+  burst_size: 20
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_path: "logs/config_service.log"
+  max_file_size: 10485760  # 10MB
+  backup_count: 5
+
+# Metrics Configuration
+metrics:
+  enabled: true
+  endpoint: "/metrics"
+  collect_interval: 30
+
+# Health Check Configuration
+health_check:
+  enabled: true
+  endpoint: "/health"
+  check_interval: 30
+
+# Environment Configuration
+environments:
+  - "development"
+  - "staging"
+  - "production"
+
+# Services Configuration
+services:
+  - "data"
+  - "analytics"
+  - "backtest"
+  - "notification"
+  - "config"
+  - "global"
+
+# Default Configurations
+default_configs:
+  # Database configurations
+  database_configs:
+    - key: "url"
+      value_type: "string"
+      description: "Database connection URL"
+      encrypted: true
+    - key: "pool_size"
+      value_type: "int"
+      default_value: 5
+      description: "Database connection pool size"
+    - key: "timeout"
+      value_type: "int"
+      default_value: 30
+      description: "Database connection timeout"
+
+  # Cache configurations
+  cache_configs:
+    - key: "redis_url"
+      value_type: "string"
+      description: "Redis connection URL"
+      encrypted: true
+    - key: "ttl"
+      value_type: "int"
+      default_value: 300
+      description: "Cache TTL in seconds"
+    - key: "max_size"
+      value_type: "int"
+      default_value: 1000
+      description: "Maximum cache size"
+
+  # API configurations
+  api_configs:
+    - key: "base_url"
+      value_type: "string"
+      description: "API base URL"
+    - key: "timeout"
+      value_type: "int"
+      default_value: 30
+      description: "API request timeout"
+    - key: "retry_attempts"
+      value_type: "int"
+      default_value: 3
+      description: "API retry attempts"
+
+  # GPU configurations
+  gpu_configs:
+    - key: "enabled"
+      value_type: "bool"
+      default_value: false
+      description: "Enable GPU acceleration"
+    - key: "memory_fraction"
+      value_type: "float"
+      default_value: 0.8
+      description: "GPU memory fraction"
+    - key: "auto_detect"
+      value_type: "bool"
+      default_value: true
+      description: "Auto-detect GPU devices"
+
+  # Monitoring configurations
+  monitoring_configs:
+    - key: "prometheus_url"
+      value_type: "string"
+      description: "Prometheus URL"
+    - key: "grafana_url"
+      value_type: "string"
+      description: "Grafana URL"
+    - key: "alert_webhook"
+      value_type: "string"
+      description: "Alert webhook URL"
+      encrypted: true
+
+# Configuration Templates
+templates:
+  # Data Service Template
+  data_service:
+    name: "Data Service Configuration"
+    service: "data"
+    description: "Default configuration for data service"
+    configs:
+      - key: "data_source.timeout"
+        value_type: "int"
+        default_value: 30
+      - key: "data_source.cache_ttl"
+        value_type: "int"
+        default_value: 300
+      - key: "data_source.retry_attempts"
+        value_type: "int"
+        default_value: 3
+
+  # Analytics Service Template
+  analytics_service:
+    name: "Analytics Service Configuration"
+    service: "analytics"
+    description: "Default configuration for analytics service"
+    configs:
+      - key: "computation.parallel_workers"
+        value_type: "int"
+        default_value: 4
+      - key: "computation.chunk_size"
+        value_type: "int"
+        default_value: 1000
+      - key: "computation.memory_limit"
+        value_type: "string"
+        default_value: "4GB"
+
+  # Backtest Service Template
+  backtest_service:
+    name: "Backtest Service Configuration"
+    service: "backtest"
+    description: "Default configuration for backtest service"
+    configs:
+      - key: "sharpe_ratio.risk_free_rate"
+        value_type: "float"
+        default_value: 0.03
+      - key: "max_drawdown.threshold"
+        value_type: "float"
+        default_value: 0.1
+      - key: "performance.annualization_factor"
+        value_type: "int"
+        default_value: 252
+
+# Configuration Validation Rules
+validation_rules:
+  # Value type rules
+  value_types:
+    - "string"
+    - "int"
+    - "float"
+    - "bool"
+    - "json"
+    - "yaml"
+
+  # Key naming rules
+  key_patterns:
+    - "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"  # section.key format
+    - "^[a-z][a-z0-9_]*$"                    # simple key format
+
+  # Value constraints
+  constraints:
+    timeout:
+      min: 1
+      max: 3600
+    retry_attempts:
+      min: 0
+      max: 10
+    memory_fraction:
+      min: 0.1
+      max: 1.0

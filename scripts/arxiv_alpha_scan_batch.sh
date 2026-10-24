@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# arxiv_alpha_scan_batch.sh — 分批跑 alpha 掃描, 每類別獨立 (避免 timeout)
+# 每類別 ~3 分鐘, 7 類別分 7 次 background 跑
+set -e
+cd "C:/Users/Penguin8n/ZCodeProject"
+
+SCRIPT="cbsc-system-unification/scripts/arxiv_alpha_scan.py"
+OUT="cbsc-system-unification/data/vbt_factor_reports/arxiv_alpha_scan"
+
+CATEGORIES=("q-fin" "econ.GN" "cs.LG" "cs.IT" "physics.soc-ph" "stat.ML" "nlin.AO")
+
+for CAT in "${CATEGORIES[@]}"; do
+    SAFE=$(echo "$CAT" | tr '.' '_')
+    echo "=== 掃描 [$CAT] → ${OUT}_${SAFE}.json ==="
+    python -u "$SCRIPT" --categories "$CAT" --max-papers 8 2>&1 | tail -25
+    # 每類別存獨立 JSON
+    if [ -f "${OUT}.json" ]; then
+        mv "${OUT}.json" "${OUT}_${SAFE}.json"
+        echo "💾 存到 ${OUT}_${SAFE}.json"
+    fi
+    echo ""
+done
+
+echo "=== 合併所有類別結果 ==="
+python -u -c "
+import json, glob, os
+pattern = '${OUT}_*.json'
+files = sorted(glob.glob(pattern))
+all_hits = []
+for f in files:
+    with open(f,'r',encoding='utf-8') as fh:
+        hits = json.load(fh)
+    all_hits.extend(hits)
+    print(f'  {os.path.basename(f)}: {len(hits)} hits')
+merged = '${OUT}_merged.json'
+with open(merged,'w',encoding='utf-8') as f:
+    json.dump(all_hits, f, ensure_ascii=False, indent=2)
+print(f'\\n✅ 合併: {len(all_hits)} alpha 候選 → {merged}')
+# 按 enhances_hkptrc 排序
+with_hk = [h for h in all_hits if h.get('enhances_hkptrc')]
+print(f'   有 HKPTRC 增強建議: {len(with_hk)}')
+for h in sorted(with_hk, key=lambda x: x.get('enhances_hkptrc',''))[:10]:
+    print(f'   [{h.get(\"enhances_hkptrc\",\"?\")}] {h.get(\"title\",\"?\")[:50]}')
+"

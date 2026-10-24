@@ -1,0 +1,137 @@
+"""Round 4b: Cross-sectional + southbound flow alpha (truly different dimension)."""
+import sys
+sys.path = [p for p in sys.path if 'CODEX' not in p]
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\backtests')
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts')
+import warnings
+warnings.filterwarnings('ignore')
+import numpy as np, pandas as pd
+from pathlib import Path
+from vbt_data import FACTOR_STOCKS
+
+DATA_5Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y')
+DATA_10Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr')
+SPLIT = pd.Timestamp('2024-01-01')
+SC = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\stock_connect')
+
+# Load all OHLCV as panels
+close_all = {}
+vol_all = {}
+for s in FACTOR_STOCKS:
+    fname = s.replace('.', '_')
+    for d in [DATA_10Y, DATA_5Y]:
+        p = d / f'{fname}.csv'
+        if p.exists():
+            df = pd.read_csv(p, parse_dates=['time_key']).set_index('time_key').sort_index()
+            close_all[s] = df['close'].astype(float)
+            vol_all[s] = df['volume'].astype(float)
+            break
+close_panel = pd.DataFrame(close_all)
+vol_panel = pd.DataFrame(vol_all)
+ret_panel = close_panel.pct_change()
+print(f'Panel: {close_panel.shape[1]} stocks, {len(close_panel)} days')
+
+# Southbound
+sc_path = SC / 'sc_full.csv'
+sc_df = pd.read_csv(sc_path)
+sc_df = sc_df.set_index(pd.to_datetime(sc_df['date'])).sort_index()
+print(f'Southbound columns: {list(sc_df.columns)}')
+print(f'Southbound shape: {sc_df.shape}')
+print(f'Sample:\n{sc_df.head()}')
+
+# The sc_full might have per-stock data (mutual_type/type_name = stock code?)
+print(f'\nmutual_type unique: {sc_df["mutual_type"].nunique()}')
+print(f'type_name unique: {sc_df["type_name"].nunique()}')
+print(f'type_name sample: {sc_df["type_name"].unique()[:10]}')
+
+
+def compute_portfolio_from_entries(all_entries, hold=5):
+    """all_entries: dict stock -> bool Series. Returns portfolio daily return."""
+    all_rets = {}
+    for stock, entries in all_entries.items():
+        if stock not in close_panel.columns: continue
+        close = close_panel[stock].dropna()
+        entries = entries.reindex(close.index).fillna(False)
+        ret1 = close.pct_change()
+        pos = pd.Series(0, index=close.index)
+        in_pos = False; dl = 0
+        for i in range(len(close)):
+            if entries.iloc[i] and not in_pos: in_pos = True; dl = hold
+            pos.iloc[i] = 1 if in_pos else 0
+            if in_pos:
+                dl -= 1
+                if dl <= 0: in_pos = False
+        all_rets[stock] = (pos.shift(1) * ret1).dropna()
+    if not all_rets: return None
+    return pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+
+
+def report(name, result):
+    if result is None: return
+    oos = result[result.index >= SPLIT].dropna()
+    if len(oos) < 20: return
+    sr = oos.mean()/oos.std()*np.sqrt(252) if oos.std() > 0 else 0
+    ret = (1+oos).cumprod().iloc[-1]-1
+    dd = ((1+oos).cumprod()/(1+oos).cumprod().cummax()-1).min()
+    tag = '🟢' if sr > 1.0 else '✨' if sr > 0.7 else '  ' if sr > 0.4 else '❌'
+    print(f'  {tag} {name}: OOS={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')
+
+
+print('\n' + '='*65)
+print('XS1: Cross-Sectional Rank (buy bottom-ranked stocks)')
+print('='*65)
+
+# XS reversal: rank stocks by 5-day return, buy bottom 20%
+for lookback in [3, 5, 10]:
+    for pct in [0.2, 0.3]:
+        ret_lookback = ret_panel.rolling(lookback).sum()
+        # Cross-sectional rank each day
+        rank = ret_lookback.rank(axis=1, pct=True)
+        # Bottom pct = oversold
+        all_entries = {}
+        for stock in close_panel.columns:
+            is_bottom = rank[stock] < pct
+            all_entries[stock] = is_bottom.shift(1).fillna(False)
+        report(f'XS_rev {lookback}d bot{pct:.0%}', compute_portfolio_from_entries(all_entries, hold=5))
+
+print('\n' + '='*65)
+print('XS2: Cross-Sectional Momentum (buy top-ranked)')
+print('='*65)
+for lookback in [5, 10, 20]:
+    for pct in [0.7, 0.8]:
+        ret_lookback = ret_panel.rolling(lookback).sum()
+        rank = ret_lookback.rank(axis=1, pct=True)
+        is_top = rank > pct
+        all_entries = {stock: is_top[stock].shift(1).fillna(False) for stock in close_panel.columns}
+        report(f'XS_mom {lookback}d top{pct:.0%}', compute_portfolio_from_entries(all_entries, hold=5))
+
+print('\n' + '='*65)
+print('XS3: Cross-Sectional Volume Rank')
+print('='*65)
+for lookback in [5, 20]:
+    vol_avg = vol_panel.rolling(lookback).mean()
+    vol_rank_today = vol_panel.rolling(1).sum()
+    # Rank volume spike cross-sectionally
+    vol_ratio = vol_panel / vol_avg
+    rank = vol_ratio.rank(axis=1, pct=True)
+    all_entries = {stock: (rank[stock] > 0.8).shift(1).fillna(False) for stock in close_panel.columns}
+    report(f'XS_vol {lookback}d top20%', compute_portfolio_from_entries(all_entries, hold=3))
+
+print('\n' + '='*65)
+print('SB1: Southbound Flow (aggregate net buy z-score)')
+print('='*65)
+# Aggregate sc by date
+sc_daily = sc_df.groupby(sc_df.index).agg({'net_buy': 'sum', 'buy': 'sum'}).sort_index()
+print(f'SC daily: {len(sc_daily)} days')
+print(f'net_buy stats: mean={sc_daily["net_buy"].mean():.0f} std={sc_daily["net_buy"].std():.0f}')
+print(f'Date range: {sc_daily.index[0].date()} to {sc_daily.index[-1].date()}')
+
+for zw in [20, 40, 60]:
+    for zt in [0.5, 1.0, 1.5, 2.0]:
+        z = (sc_daily['net_buy'] - sc_daily['net_buy'].rolling(zw).mean()) / sc_daily['net_buy'].rolling(zw).std().replace(0, np.nan)
+        all_entries = {}
+        for stock in close_panel.columns:
+            z_aligned = z.reindex(close_panel.index).ffill()
+            all_entries[stock] = (z_aligned > zt).shift(1).fillna(False)
+        result = compute_portfolio_from_entries(all_entries, hold=5)
+        report(f'SC z>{zt} w{zw}', result)

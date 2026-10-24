@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+"""collect_eastmoney_csdc.py — 東财 RPT_MUTUAL_HOLD_DET 中國結算 (CSDC) 持股 collector.
+
+來源 (2026-08-23 實證):
+  https://datacenter-web.eastmoney.com/api/data/v1/get
+  reportName=RPT_MUTUAL_HOLD_DET, ORG_NAME='CHINA SECURITIES DEPOSITORY AND CLEARING'
+  源頭只有 69 個採樣日/股 (2022-04-14 → now, 月度 + 近月日度) — 冇更多歷史。
+
+輸出: data/new_sources/eastmoney_csdc_raw.csv
+  欄: date, stock_code, name, shares (HOLD_NUM), pct (HOLD_SHARES_RATIO), close
+"""
+import csv
+import time
+import requests
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+OUT = BASE / "data" / "new_sources" / "eastmoney_csdc_raw.csv"
+UNIVERSE_SRC = BASE / "data" / "new_sources" / "analyst_ratings_em_raw.csv"
+
+URL = "https://datacenter-web.eastmoney.com/api/data/v1/get"
+PARAMS = {
+    "reportName": "RPT_MUTUAL_HOLD_DET",
+    "columns": "SECURITY_CODE,SECURITY_NAME_ABBR,HOLD_DATE,HOLD_NUM,HOLD_SHARES_RATIO,CLOSE_PRICE",
+    "filter": '(SECURITY_CODE="{code}")(ORG_NAME="CHINA SECURITIES DEPOSITORY AND CLEARING")',
+    "pageNumber": 1, "pageSize": 500,
+    "sortColumns": "HOLD_DATE", "sortTypes": "1",
+    "source": "WEB", "client": "WEB",
+}
+HDRS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+
+codes = sorted({r.split(",")[0] for r in UNIVERSE_SRC.read_text(encoding="utf-8").splitlines()[1:] if r.strip()})
+print(f"universe: {len(codes)} stocks")
+
+n_rows = 0
+with OUT.open("w", encoding="utf-8", newline="") as fh:
+    w = csv.writer(fh)
+    w.writerow(["date", "stock_code", "name", "shares", "pct", "close"])
+    for i, code in enumerate(codes, 1):
+        p = dict(PARAMS)
+        p["filter"] = PARAMS["filter"].format(code=code)
+        try:
+            res = requests.get(URL, params=p, headers=HDRS, timeout=30).json()["result"]
+        except Exception as e:
+            print(f"  {code} FAIL: {e}")
+            continue
+        rows = (res or {}).get("data") or []
+        for x in rows:
+            w.writerow([x["HOLD_DATE"][:10], code, x["SECURITY_NAME_ABBR"],
+                        x["HOLD_NUM"], x["HOLD_SHARES_RATIO"], x["CLOSE_PRICE"]])
+        n_rows += len(rows)
+        if i % 10 == 0:
+            print(f"  {i}/{len(codes)} … total {n_rows}")
+        time.sleep(0.4)
+
+print(f"DONE {n_rows} rows → {OUT.name}")

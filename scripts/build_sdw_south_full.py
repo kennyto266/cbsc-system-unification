@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""build_sdw_south_full.py — sdw_south_full panel (thesis: 南向 per-stock 21d 變化).
+
+合併兩源 (2026-08-23 實證, 日度 2021 歷史源頭唔存在 — HKEX SDW 12個月牆 + 東财 69採樣日):
+  1) data/new_sources/southbound_sdw_raw.csv — HKEX mutualmarket 日度 2025-08-25→now (密, 口徑=佔全已發行股本%)
+  2) data/new_sources/eastmoney_csdc_raw.csv — 東财 CSDC 月度採樣 2022-04→now (sparse)
+
+實證 (overlap 64日): 東财 HOLD_SHARES_RATIO 分母唔同 (A+H 股差 34-44pp, 神華 01088 44pp
+= 分母只計 H 股部分), 純 H 股都差 0.2-8pp。對策: 每股用重疊期 median(hk/em) 比例
+calibrate 東财舊段去 HKEX 口徑; 同日兩源都有 → HKEX 優先 (canonical)。
+
+輸出: data/factor_store/sdw_south_full.parquet — index=date (union 採樣日), cols=HK.xxxxx,
+      值 = 南向(CSDC)持股佔已發行股本 % (HKEX 口徑)。sparse 月度段唔插值 — 非採樣日 = NaN
+      (誠實), W1 (2021) 覆蓋不足 thesis falsification 已列明唔准測; 21d 變化 metric 只能
+      用 2025-08 之後日度段 (pre-scan 時自行 ffill 注意級別跳變已 calibrate 消除).
+"""
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+NS = BASE / "data" / "new_sources"
+OUT = BASE / "data" / "factor_store" / "sdw_south_full.parquet"
+
+uni = set(r.split(",")[0] for r in
+          (NS / "analyst_ratings_em_raw.csv").read_text(encoding="utf-8").splitlines()[1:] if r.strip())
+
+def _read_sdw_raw(p):
+    """[G93276 修] HKEX 原始 CSV 嘅 name 自带未加引號逗號 (…LIMITED, THE) —
+    pd.read_csv C parser 欄數爆胎 (172376 行實錄)。位置式重組: 頭2欄+尾2欄
+    固定, 中間全部食落 name。"""
+    rows = []
+    for ln in p.read_text(encoding="utf-8", errors="replace").splitlines()[1:]:
+        if not ln.strip():
+            continue
+        f = ln.split(",")
+        if len(f) > 5:
+            f = f[:2] + [",".join(f[2:-2])] + f[-2:]
+        rows.append(f)
+    df = pd.DataFrame(rows, columns=["date", "stock_code", "name", "shares", "pct"])
+    df["stock_code"] = df["stock_code"].astype(str)
+    df["shares"] = pd.to_numeric(df["shares"], errors="coerce")
+    df["pct"] = pd.to_numeric(df["pct"], errors="coerce")
+    return df
+
+
+em = pd.read_csv(NS / "eastmoney_csdc_raw.csv", dtype={"stock_code": str})
+hk = _read_sdw_raw(NS / "southbound_sdw_raw.csv")
+hk["stock_code"] = hk["stock_code"].str.zfill(5)  # HKEX source 無前導零
+em = em[em["stock_code"].isin(uni)]
+hk = hk[hk["stock_code"].isin(uni)]
+em["date"] = pd.to_datetime(em["date"])
+hk["date"] = pd.to_datetime(hk["date"])
+
+piv_em = em.pivot_table(index="date", columns="stock_code", values="pct", aggfunc="last")
+piv_hk = hk.pivot_table(index="date", columns="stock_code", values="pct", aggfunc="last")
+
+# ── calibration: 東财 → HKEX 口徑 (每股 median hk/em ratio on overlap) ──
+common = piv_em.index.intersection(piv_hk.index)
+if len(common):
+    ratio = (piv_hk.loc[common] / piv_em.loc[common]).median()
+    resid = (piv_hk.loc[common] - piv_em.loc[common] * ratio).abs()
+    stack = resid.stack().dropna()
+    print(f"calibration: {int(ratio.notna().sum())} stocks, overlap {len(common)}d, "
+          f"post-calib max resid {stack.max():.2f}pp / median {stack.median():.3f}pp")
+    piv_em = piv_em * ratio  # ratio=NaN (冇重疊) 股 → 全 NaN, 唔亂入
+
+# HKEX 優先, 東财補舊
+combined = piv_hk.combine_first(piv_em)
+combined.columns = ["HK." + c for c in combined.columns]
+combined = combined.sort_index()
+OUT.parent.mkdir(parents=True, exist_ok=True)
+combined.to_parquet(OUT)
+print(f"sdw_south_full: {combined.shape}, non-NaN {int(combined.notna().sum().sum())}, "
+      f"range {combined.index.min().date()}→{combined.index.max().date()}")
+for y in range(2022, 2027):
+    sub = combined[combined.index.year == y]
+    print(f"  {y}: {int(sub.notna().sum().sum())} cells, {int(sub.notna().any(axis=1).sum())} active days")

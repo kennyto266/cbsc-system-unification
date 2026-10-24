@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+"""verify_ah.py — AH premium panel 3日抽樣對照 (獨立來源: 東財 push2his A股 + 本地Futu H股)."""
+import json, time, urllib.request
+import pandas as pd
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+raw = pd.read_csv(BASE / "data/new_sources/ah_premium_raw.csv", dtype={"code_h": str, "code_a": str})
+AH = {"00386": ("1","600028"), "00883": ("1","601857"), "00939": ("1","601939"),
+      "00941": ("1","600941"), "01088": ("1","601088"), "01211": ("0","002594"),
+      "01398": ("1","601398"), "02318": ("1","601318"), "02628": ("1","601628"),
+      "02899": ("1","601899")}
+UA = {"User-Agent": "Mozilla/5.0"}
+
+def em_hist(secid, tries=5):
+    """騰訊獨立驗證源: ifzq 不復權日K + qt.gtimg 即時快照 (今日收市)."""
+    mkt, acode = secid.split(".")
+    sym = ("sh" if mkt == "1" else "sz") + acode
+    out = {}
+    url = (f"https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param={sym},day,2021-01-01,2026-08-23,640,qfq")
+    # 用 kline (不復權) 打兩段
+    for a, b in [("2021-01-01", "2023-12-31"), ("2024-01-01", "2026-08-23")]:
+        u = (f"https://web.ifzq.gtimg.cn/appstock/app/kline/kline?param={sym},day,{a},{b},1200,")
+        for i in range(tries):
+            try:
+                req = urllib.request.Request(u, headers=UA)
+                j = json.loads(urllib.request.urlopen(req, timeout=30).read())
+                break
+            except Exception as e:
+                print("  retry", i + 1, repr(e)[:60]); time.sleep(3)
+        else:
+            raise RuntimeError("tencent kline failed")
+        data = (j.get("data") or {}).get(sym, {})
+        for k in data.get("day") or data.get("qfqday") or []:
+            out[k[0]] = float(k[2])
+        time.sleep(1)
+    return out
+
+SAMPLE_DATES = ["2026-08-21", "2024-06-28", "2022-03-15"]
+ok = bad = 0
+for hcode, (mkt, acode) in AH.items():
+    a = em_hist(f"{mkt}.{acode}")
+    h = pd.read_csv(BASE / "data/ohlcv_5y" / f"HK_{hcode}.csv", parse_dates=["time_key"])
+    h["d"] = h.time_key.dt.tz_localize(None).dt.strftime("%Y-%m-%d")
+    hmap = dict(zip(h.d, h.close))
+    for d in SAMPLE_DATES:
+        r = raw[(raw.date == d) & (raw.code_h == hcode)]
+        if r.empty:
+            print(f"{hcode} {d}: MISSING in raw"); bad += 1; continue
+        row = r.iloc[0]
+        ea = a.get(d); eh = hmap.get(d)
+        checks = []
+        if ea is not None:
+            checks.append(("a_close", abs(ea - row.a_close_cny) < 0.005, f"{ea} vs {row.a_close_cny}"))
+        if eh is not None:
+            checks.append(("h_close", abs(eh - row.h_close_hkd) < 0.005, f"{eh} vs {row.h_close_hkd}"))
+        prem = (row.a_close_cny * row.fx_cny_hkd) / row.h_close_hkd - 1
+        checks.append(("premium_recalc", abs(prem - row.ah_premium) < 1e-4, f"{prem:.5f} vs {row.ah_premium:.5f}"))
+        status = "OK " if all(c[1] for c in checks) else "BAD"
+        if status == "OK ": ok += 1
+        else: bad += 1
+        det = "; ".join(f"{n}:{v}({r_})" for n, v, r_ in checks)
+        print(f"{hcode} {d} {status} {det}")
+    time.sleep(0.6)
+print(f"\nTOTAL ok={ok} bad={bad}")

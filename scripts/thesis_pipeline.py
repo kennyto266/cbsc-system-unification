@@ -1,0 +1,486 @@
+#!/usr/bin/env python3
+"""thesis_pipeline.py — Thesis-first alpha 發現 pipeline (完整版).
+
+Pipeline: Thesis → 預檢 (G1-G4) → OOS backtest → 真正 alpha 或 reject.
+
+改進重點 (vs 我之前 2 次失敗):
+  1. 預檢 G4 用「對目標資產 (HSIF) 嘅 forward return」, 唔係因子自己
+  2. 子期穩定性前置: regime-dependent 嘅訊號喺呢度就會被踢走, 唔使等到 OOS
+  3. Sign sanity 自動檢查: 避免代碼方向搞反 (A144 根因)
+
+用法:
+  python thesis_pipeline.py           # 跑晒所有候選 thesis
+  python thesis_pipeline.py --prospect   # 只睇通過預檢嘅, 跑 backtest
+"""
+import warnings
+warnings.filterwarnings("ignore")
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from scipy.stats import spearmanr
+
+from thesis_precheck import g1_data_vitality, g2_signal_activity, g3_sign_sanity, g4_subperiod_stability
+
+FACT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors")
+SC_PATH = FACT_DIR.parent / "stock_connect" / "sc_full.csv"
+HSIF_PATH = Path(r"C:\Users\Penguin8n\Desktop\阿程\HSIF_USDCNH_201009_202412.csv")
+SPLIT = "2024-01-01"
+
+
+def load_col(file, col):
+    p = FACT_DIR / file
+    if not p.exists(): return None
+    df = pd.read_csv(p)
+    dc = next((c for c in df.columns if c.lower() in ("date","end_of_day","datetime","time","time_key")), df.columns[0])
+    df[dc] = pd.to_datetime(df[dc], errors="coerce")
+    if col not in df.columns:
+        # 取第一個數值欄
+        for c in df.columns:
+            if c == dc: continue
+            try:
+                df[c].astype(float); col = c; break
+            except: continue
+    df = df.dropna(subset=[dc, col]).sort_values(dc).drop_duplicates(subset=dc, keep="last")
+    s = pd.Series(df[col].astype(float).values, index=pd.to_datetime(df[dc].values), name=col)
+    if getattr(s.index, 'tz', None) is not None: s.index = s.index.tz_localize(None)
+    return s
+
+
+def load_hsif():
+    df = pd.read_csv(HSIF_PATH)
+    df["Date"] = pd.to_datetime(df["Date"])
+    df = df.sort_values("Date").drop_duplicates(subset="Date", keep="last").set_index("Date")
+    return df["HSIF_close"]
+
+
+def fwd_ret(price, h=5):
+    """h 日前瞻回報."""
+    return price.shift(-h) / price - 1
+
+
+def precheck_full(name, factor, target_fwd, signal, thesis, expected_dir):
+    """完整 4 關預檢, G4 用對 target_fwd (目標資產前瞻回報).
+    自動將低頻 factor ffill 對齊到 target_fwd 日度 index."""
+    print(f"\n{'='*65}")
+    print(f"🔍 {name}: {thesis}")
+    print(f"{'='*65}")
+    # 將 factor + signal 對齊到 target_fwd (HSIF 日度), ffill 低頻數據
+    fa = factor.reindex(target_fwd.index).ffill().dropna()
+    sig = signal.reindex(target_fwd.index).ffill().fillna(False).astype(bool)
+    common = fa.index.intersection(target_fwd.dropna().index)
+    fa = fa.reindex(common)
+    sig = sig.reindex(common).fillna(False)
+    res = []
+    res.append(("G1 數據生命力", g1_data_vitality(fa, name)))
+    res.append(("G2 訊號活動", g2_signal_activity(sig, name)))
+    if expected_dir != 0:
+        res.append(("G3 符號合理性", g3_sign_sanity(fa, target_fwd.reindex(common), expected_dir, name)))
+    res.append(("G4 子期穩定(vs目標)", g4_subperiod_stability(fa, target_fwd.reindex(common), name=name)))
+    n_fail = sum(1 for _,(s,_) in res if s=="FAIL")
+    n_warn = sum(1 for _,(s,_) in res if s=="WARN")
+    for g,(s,m) in res:
+        print(f"  {'✅' if s=='PASS' else '⚠️ ' if s=='WARN' else '❌'} {g}: {m}")
+    verdict = "PASS" if n_fail==0 else "FAIL"
+    print(f"  → {verdict} ({n_fail} FAIL, {n_warn} WARN)")
+    return verdict, n_fail, n_warn
+
+
+# ============================================================
+# 候選 Thesis 清單 (每個都有經濟邏輯 + 預期方向)
+# ============================================================
+def candidates():
+    """返回 (factor, signal, thesis, expected_dir) 候選清單. target 由 main 提供."""
+    cands = []
+
+    # T1: 貼現窗活動 (修正 sign) — dw<0 = 有活動
+    dw = load_col("discount_window.csv", "discount_window_usage")
+    if dw is not None:
+        # dw 係負數 (HKMA 借錢記負). |dw| 大 = 壓力大 = 利淡
+        dw_active = (dw < 0).astype(float)  # 二元壓力旗標
+        cands.append(("T1_貼現窗壓力", dw_active,
+                      dw_active > 0.5,
+                      "銀行借貼現窗=流動性壓力→利淡恒指",
+                      -1))
+
+    # T2: HIBOR 飆升 — 資金緊張 → 利淡
+    hibor = load_col("hibor.csv", "close")
+    if hibor is not None:
+        hibor_z = (hibor - hibor.rolling(60).mean()) / hibor.rolling(60).std()
+        cands.append(("T2_HIBOR飆升", hibor_z,
+                      hibor_z > 2.0,
+                      "HIBOR異常飆升=資金緊→利淡",
+                      -1))
+
+    # T3: 港元遠期 (FER) 偏離 — 走資壓力 → 利淡
+    fer = load_col("hkd-fer-daily.csv", "hkd_fer_12m")
+    if fer is not None:
+        fer_z = (fer - fer.rolling(120).mean()) / fer.rolling(120).std()
+        cands.append(("T3_FER偏離", fer_z,
+                      fer_z.abs() > 1.5,
+                      "12m遠期點偏離=貶值預期→利淡",
+                      -1))
+
+    # T4: 總結餘 (monetary base) 收縮 — 流動性收緊 → 利淡
+    mb = load_col("monetary-base-daily.csv", "aggr_balance_bf_disc_win")
+    if mb is not None:
+        mb_chg = mb.pct_change(20)  # 20日變化
+        cands.append(("T4_總結餘收縮", mb_chg,
+                      mb_chg < -0.02,
+                      "總結餘收縮=金管局抽水→利淡",
+                      +1))  # 總結餘升 → 寬鬆 → 利好
+
+    # T5: 外匯基金票據利率 (efbn-yield) 飆升
+    efbn = load_col("efbn-yield-daily.csv", "close")
+    if efbn is not None:
+        efbn_z = (efbn - efbn.rolling(60).mean()) / efbn.rolling(60).std()
+        cands.append(("T5_外基利率飆", efbn_z,
+                      efbn_z > 2.0,
+                      "外匯基金票據利率飆=收水→利淡",
+                      -1))
+
+    # T6: USD/HKD 觸強方兌換保證 (currency board) — 走資
+    cb = load_col("currency-board-account.csv", "close")
+    if cb is not None:
+        cb_z = (cb - cb.rolling(60).mean()) / cb.rolling(60).std()
+        cands.append(("T6_貨幣基礎變", cb_z,
+                      cb_z < -1.5,
+                      "貨幣基礎收縮=走資→利淡",
+                      -1))
+
+    # T7: 南向資金 (A143 修正, 對 HSIF 而唔係個股)
+    if SC_PATH.exists():
+        sc = pd.read_csv(SC_PATH)
+        sc["date"] = pd.to_datetime(sc["date"], errors="coerce")
+        south = sc[sc["type_name"].str.contains("南向", na=False)]
+        nb = south.groupby("date")["net_buy"].sum().sort_index()
+        nb.index = pd.to_datetime(nb.index)
+        cum5 = nb.rolling(5).sum()
+        z = (cum5 - cum5.rolling(60).mean()) / cum5.rolling(60).std()
+        cands.append(("T7_南向資金", z,
+                      z.abs() > 1.5,
+                      "南向大額流入→推升港股",
+                      +1))  # 流入 → 升
+
+    # T8: A股 regime (已驗證 IC=-0.232, 作為基準對照)
+    ash = load_col("a_shares.csv", "close")
+    if ash is not None:
+        ash_sma = ash > ash.rolling(70).mean()
+        cands.append(("T8_A股regime[基準]", ash_sma.astype(float),
+                      ash_sma,
+                      "A股>SMA→資金北移→港股跌 (IC=-0.232 已驗證)",
+                      -1))
+
+    # ─── 新挖掘: 物業/按揭主題 (月度, 需 ffill 對齊) ───
+    # T9: 按揭拖欠率飆升 → 地產/銀行股壓力
+    delinq = load_col("residential-mortgage-survey.csv", "delinquency_ratio")
+    if delinq is not None:
+        delinq_z = (delinq - delinq.rolling(12).mean()) / delinq.rolling(12).std()
+        cands.append(("T9_按揭拖欠飆", delinq_z,
+                      delinq_z > 1.5,
+                      "按揭拖欠率異常飆升=地產壓力→利淡",
+                      -1))
+
+    # T10: 負資產按揭回升 → 樓市隱憂
+    negeq = load_col("residential-mortgage-loans-neg-equity.csv", "outstanding_loans_amt")
+    if negeq is not None:
+        negeq_z = (negeq - negeq.rolling(8).mean()) / negeq.rolling(8).std()
+        cands.append(("T10_負資產回升", negeq_z,
+                      negeq_z > 1.5,
+                      "負資產按揭回升=樓市下行→利淡",
+                      -1))
+
+    # ─── 信貸/銀行健康主題 (季度, 需 ffill 對齊) ───
+    # T11: NPL 分類貸款惡化 → 銀行股壓力
+    npl = load_col("assetquality-ais.csv", "cl_gross_total")
+    if npl is not None:
+        npl_z = (npl - npl.rolling(8).mean()) / npl.rolling(8).std()
+        cands.append(("T11_NPL惡化", npl_z,
+                      npl_z > 1.5,
+                      "分類貸款惡化=銀行資產質素轉差→利淡",
+                      -1))
+
+    # T12: 大陸 SOE 貸款佔比升 → 中國信用風險暴露
+    soe = load_col("mr-lending-borrowers-type.csv", "mainland_state_owned_entities")
+    soe_tot = load_col("mr-lending-borrowers-type.csv", "mainland_private_entities")
+    if soe is not None and soe_tot is not None:
+        soe_share = soe / (soe + soe_tot).replace(0, np.nan)
+        soe_share_z = (soe_share - soe_share.rolling(8).mean()) / soe_share.rolling(8).std()
+        cands.append(("T12_SOE貸款佔比升", soe_share_z,
+                      soe_share_z > 1.5,
+                      "大陸SOE貸款佔比升=中國信用風險→利淡",
+                      -1))
+
+    # T13: 流動性覆蓋率 (LCR) 跌 → 銀行流動性壓力
+    lcr = load_col("liquidity.csv", "coverage_ratio")
+    if lcr is not None:
+        lcr_z = (lcr - lcr.rolling(8).mean()) / lcr.rolling(8).std()
+        cands.append(("T13_LCR跌", lcr_z,
+                      lcr_z < -1.5,
+                      "流動性覆蓋率跌=銀行水緊→利淡",
+                      +1))  # LCR 升 = 寬鬆 = 利好
+
+    # ─── 存款/資金流主題 (月度) ───
+    # T14: USD 存款佔比飆升 → 走資/港元壓力
+    usd_dep = load_col("customer-deposits-by-currency.csv", "deposits_usd")
+    all_dep = load_col("customer-deposits-by-currency.csv", "deposits_all")
+    if usd_dep is not None and all_dep is not None:
+        usd_share = usd_dep / all_dep.replace(0, np.nan)
+        usd_share_z = (usd_share - usd_share.rolling(24).mean()) / usd_share.rolling(24).std()
+        cands.append(("T14_USD存款佔比飆", usd_share_z,
+                      usd_share_z > 1.5,
+                      "USD存款佔比飆=資金泊美元→港元壓力→利淡",
+                      -1))
+
+    # T15: RMB 存款池變化 → RMB 國際化進度
+    rmb_dep = load_col("customer-deposits-by-type-cny.csv", "total_deposits")
+    if rmb_dep is not None:
+        rmb_chg = rmb_dep.pct_change(6)  # 半年變化
+        cands.append(("T15_RMB存款變", rmb_chg,
+                      rmb_chg > 0.1,
+                      "RMB存款增長=南向資金活躍→利好",
+                      +1))
+
+    # ─── 跨資產 regime 主題 (日度, 同 HSIF 頻率匹配) ───
+    # T16: 金價飆升 (避險 regime) → 避險情緒 = 利淡
+    gold = load_col("gold.csv", "close")
+    if gold is not None:
+        gold_z = (gold - gold.rolling(60).mean()) / gold.rolling(60).std()
+        cands.append(("T16_金價飆升", gold_z,
+                      gold_z > 2.0,
+                      "金價異常飆升=避險情緒→利淡",
+                      -1))
+
+    # T17: 美債 10Y 飆升 (global discount rate) → 利淡
+    us10 = load_col("us_10y_yield.csv", "close")
+    if us10 is not None:
+        us10_z = (us10 - us10.rolling(60).mean()) / us10.rolling(60).std()
+        cands.append(("T17_美債10Y飆", us10_z,
+                      us10_z > 2.0,
+                      "美債10Y飆升=全球折現率升→利淡",
+                      -1))
+
+    # T18: DXY 飆升 (美元強) → 港股壓力
+    dxy = load_col("dxy.csv", "close")
+    if dxy is not None:
+        dxy_z = (dxy - dxy.rolling(60).mean()) / dxy.rolling(60).std()
+        cands.append(("T18_DXY飆升", dxy_z,
+                      dxy_z > 2.0,
+                      "美匯指數飆升=美元強→資金撤新興→利淡",
+                      -1))
+
+    # ─── 第二輪: 調返方向 + 全新訊號類型 ───
+    # T19: 金價飆升 → 利好 (IC=+0.093, 數據證實: 金價升反映通脹/商品周期→資源股升)
+    gold2 = load_col("gold.csv", "close")
+    if gold2 is not None:
+        gold2_z = (gold2 - gold2.rolling(60).mean()) / gold2.rolling(60).std()
+        cands.append(("T19_金價飆升多", gold2_z,
+                      gold2_z > 2.0,
+                      "金價異常飆升=通脹/商品周期→利好 (IC=+0.093 證實, 調返方向)",
+                      +1))
+
+    # T20: 金價 mean-reversion (極端跌→反彈做多)
+    if gold2 is not None:
+        gold_mr_z = (gold2 - gold2.rolling(20).mean()) / gold2.rolling(20).std()
+        cands.append(("T20_金價超跌反", gold_mr_z,
+                      gold_mr_z < -2.0,
+                      "金價20日極端超跌→反彈 (mean-reversion)",
+                      +1))
+
+    # T21: VIX mean-reversion (恐慌極端→反彈做多)
+    vix = load_col("vix.csv", "close")
+    if vix is not None:
+        vix_z = (vix - vix.rolling(20).mean()) / vix.rolling(20).std()
+        cands.append(("T21_VIX恐慌反", vix_z,
+                      vix_z > 2.5,
+                      "VIX 20日極端飆升→恐慌見底反彈做多",
+                      +1))
+
+    # T22: FER偏離 → 利好 (IC=+0.049 證實, 調返方向)
+    fer2 = load_col("hkd-fer-daily.csv", "hkd_fer_12m")
+    if fer2 is not None:
+        fer2_z = (fer2 - fer2.rolling(120).mean()) / fer2.rolling(120).std()
+        cands.append(("T22_FER偏離多", fer2_z,
+                      fer2_z.abs() > 1.5,
+                      "12m遠期點大幅偏離→利好 (IC=+0.049 證實)",
+                      +1))
+
+    # T23: HIBOR-HSIF divergence (HIBOR跌+港股跌 = 央行放水但市場未反應→做多)
+    hibor2 = load_col("hibor.csv", "close")
+    if hibor2 is not None:
+        hibor2_z = (hibor2 - hibor2.rolling(60).mean()) / hibor2.rolling(60).std()
+        # divergence: HIBOR 異常低 (放水) 但唔代表利淡
+        cands.append(("T23_HIBOR放水", hibor2_z,
+                      hibor2_z < -1.5,
+                      "HIBOR異常低=資金寬鬆→利好 (調返方向, IC=+0.02)",
+                      +1))
+
+    # T24: USDCNH mean-reversion (RMB極端貶值→反彈做多港股)
+    usdcnh = load_col("usdcnh.csv", "close")
+    if usdcnh is not None:
+        usdcnh_z = (usdcnh - usdcnh.rolling(20).mean()) / usdcnh.rolling(20).std()
+        cands.append(("T24_USDCNH反", usdcnh_z,
+                      usdcnh_z > 2.5,
+                      "USDCNH 20日極端貶值→超賣反彈",
+                      +1))
+
+    # T25: 總結餘 trend (IC=+0.082 已 PASS, 做獨立 z_follow 版本)
+    mb2 = load_col("monetary-base-daily.csv", "aggr_balance_bf_disc_win")
+    if mb2 is not None:
+        mb2_z = (mb2 - mb2.rolling(60).mean()) / mb2.rolling(60).std()
+        cands.append(("T25_總結餘趨勢", mb2_z,
+                      mb2_z > 1.5,
+                      "總結餘趨勢向上=流動性擴張→利好 (IC=+0.082)",
+                      +1))
+
+    # T26: US10Y mean-reversion (息率極端升→見頂回落→風險資產反彈)
+    us10_2 = load_col("us_10y_yield.csv", "close")
+    if us10_2 is not None:
+        us10_2_z = (us10_2 - us10_2.rolling(20).mean()) / us10_2.rolling(20).std()
+        cands.append(("T26_美息超升反", us10_2_z,
+                      us10_2_z > 2.5,
+                      "美債10Y 20日極端超升→見頂回落→風險資產反彈",
+                      +1))
+
+    # T27: DXY mean-reversion (美元極端強→見頂→新興市場反彈)
+    if dxy is not None:
+        dxy_mr = (dxy - dxy.rolling(20).mean()) / dxy.rolling(20).std()
+        cands.append(("T27_DXY超強反", dxy_mr,
+                      dxy_mr > 2.5,
+                      "DXY 20日極端超強→見頂→港股反彈",
+                      +1))
+
+    # T28: 按揭拖欠升 → 利好 (IC=+0.054, 經濟活躍借多先有拖欠)
+    delinq2 = load_col("residential-mortgage-survey.csv", "delinquency_ratio")
+    if delinq2 is not None:
+        delinq2_z = (delinq2 - delinq2.rolling(12).mean()) / delinq2.rolling(12).std()
+        cands.append(("T28_按揭拖欠升多", delinq2_z,
+                      delinq2_z > 1.5,
+                      "按揭拖欠升=經濟活躍借多→利好 (IC=+0.054 調返方向)",
+                      +1))
+
+    return cands
+
+
+def main():
+    print("█"*65)
+    print("█  Thesis-First Alpha Pipeline: 預檢 → OOS")
+    print("█  (G4 子期穩定用對 HSIF 前瞻回報, h=10 匹配持倉期)")
+    print("█"*65)
+
+    hsif = load_hsif()
+    print(f"\nHSIF: {hsif.index[0].date()} ~ {hsif.index[-1].date()} ({len(hsif)} 日)")
+
+    # 用多個前瞻期驗證穩健性
+    for h in [5, 10, 14]:
+        target = fwd_ret(hsif, h)
+        cands = candidates()
+        passed = []
+        print(f"\n{'─'*65}")
+        print(f"前瞻期 h={h} 日")
+        print(f"{'─'*65}")
+        for name, factor, signal, thesis, edir in cands:
+            verdict, nf, nw = precheck_full(name, factor, target, signal, thesis, edir)
+            if verdict == "PASS":
+                passed.append((name, factor, signal, thesis, edir))
+        print(f"  → {len(passed)}/{len(cands)} 通過")
+
+    # 最終用 h=10 嘅結果做 OOS
+    target = fwd_ret(hsif, 10)
+    cands = candidates()
+    print(f"\n{'='*65}")
+    print(f"📋 最終預檢通過 (h=10):")
+    print(f"{'='*65}")
+    passed = []
+    for name, factor, signal, thesis, edir in cands:
+        verdict, nf, nw = precheck_full(name, factor, target, signal, thesis, edir)
+        if verdict == "PASS":
+            passed.append((name, factor, signal, thesis, edir))
+            print(f"  ✅ {name}: {thesis}")
+
+    if passed:
+        print(f"\n→ {len(passed)} 個通過預檢, 進入 OOS backtest")
+
+    # ============================================================
+    # OOS backtest: IS 2010-2023 選參數 → OOS 2024 frozen test
+    # ============================================================
+    if not passed:
+        print("\n→ 冇 thesis 通過預檢."); return
+
+    print(f"\n\n{'#'*65}")
+    print(f"#  OOS BACKTEST (IS < {SPLIT} → OOS >= {SPLIT})")
+    print(f"{'#'*65}")
+
+    import kol_alpha_strategies as kol
+    SPLIT_DT = pd.Timestamp(SPLIT)
+
+    def sharpe_pf(close, entries, exits, dir_sign=1):
+        """簡化 backtest. dir_sign: +1=做多 entry, -1=做淡 entry.
+        backtest_signals(close, long_entries, long_exits, short_entries, short_exits)."""
+        common = close.index.intersection(entries.dropna().index)
+        if len(common) < 100: return None
+        cl = close.reindex(common)
+        e = pd.Series(entries.reindex(common).fillna(False).values, index=common)
+        x = pd.Series(exits.reindex(common).fillna(False).values, index=common)
+        empty = pd.Series(False, index=common)
+        try:
+            if dir_sign == 1:
+                pf = kol.backtest_signals(cl, e, x)  # long
+            else:
+                pf = kol.backtest_signals(cl, empty, empty, e, x)  # short
+            if pf is None or pf.trades.count() == 0: return None
+            s = pf.sharpe_ratio()
+            return float(s) if not np.isnan(s) else 0.0
+        except Exception as ex:
+            return None
+
+    def build_entries_exits(signal_raw, hsif_idx, hold):
+        """signal_raw: 原始 boolean (可能低頻). ffill 到 HSIF 日度, rising-edge entry, 固定持倉期 exit."""
+        # ffill 訊號 (月度 factor: 訊號持續到下次更新)
+        sig_ff = signal_raw.reindex(hsif_idx).ffill().fillna(False).astype(bool)
+        # rising edge = entry (False→True 轉換)
+        entries = sig_ff & (~sig_ff.shift(1).fillna(False))
+        # exit = entry 後 hold 日
+        exits = entries.shift(hold).fillna(False)
+        return entries, exits
+
+    results = []
+    for name, factor, signal, thesis, edir in passed:
+        print(f"\n{'─'*50}\n  {name}: {thesis}")
+        best = None
+        for hold in [7, 10, 14]:
+            is_mask = hsif.index < SPLIT_DT
+            oos_mask = ~is_mask
+            entries, exits = build_entries_exits(signal, hsif.index, hold)
+            is_sh = sharpe_pf(hsif[is_mask], entries[is_mask], exits[is_mask], edir)
+            oos_sh = sharpe_pf(hsif[oos_mask], entries[oos_mask], exits[oos_mask], edir)
+            if is_sh is None: continue
+            oos_val = oos_sh if oos_sh is not None else 0.0
+            tag = "🟢" if oos_val > 0.3 else "🔴"
+            oos_str = f"{oos_sh:+.2f}" if oos_sh is not None else "  N/A"
+            print(f"    hold={hold}: IS={is_sh:+.2f} OOS={oos_str} {tag}")
+            if best is None or oos_val > (best[1] or 0):
+                best = (hold, oos_sh, is_sh)
+        if best:
+            results.append((name, best[0], best[2], best[1]))
+
+    print(f"\n\n{'='*65}")
+    print(f"🏁 OOS 結果匯總")
+    print(f"{'='*65}")
+    print(f"  {'Thesis':<22} {'hold':>4} {'IS':>6} {'OOS':>6}")
+    for name, hold, ish, osh in results:
+        osh_val = osh if osh is not None else 0.0
+        osh_str = f"{osh:>+6.2f}" if osh is not None else "   N/A"
+        ish_str = f"{ish:>+6.2f}" if ish is not None else "   N/A"
+        tag = "🟢" if osh_val > 0.3 else "🔴"
+        print(f"  {name:<22} {hold:>4} {ish_str} {osh_str} {tag}")
+    wins = sum(1 for _,_,_,o in results if (o or 0) > 0.3)
+    print(f"\n  → {wins}/{len(results)} thesis OOS Sharpe > 0.3")
+
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,66 @@
+# codebase-memory-mcp project-specific exclusions (gitignore syntax)
+# Layers ON TOP OF .gitignore. Keep only core source code for graph indexing.
+
+# Build artifacts / packaging output (PyInstaller, webpack, etc.)
+dist/
+build/
+*.spec.bak
+graphify-out/
+graphify/
+*.bundle
+
+# Generated / derived data & results
+acquired_data/
+data/
+production_data/
+massive_optimization_results/
+optimization_results/
+test_data/
+test_results/
+reports/
+*.dat
+*.db
+*.sqlite3
+*.sqlite
+
+# Vendored / installed Python (in case any leaked past .gitignore)
+*/site-packages/
+.venv*/
+venv/
+env/
+ENV/
+__pycache__/
+
+# Node (defensive double-cover)
+node_modules/
+.next/
+.nuxt/
+
+# Dashboard demo bundle
+unified-dashboard/dist/
+unified-dashboard/demo/
+
+# Binary & assets (not useful for code graph)
+*.dll
+*.pyd
+*.so
+*.exe
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.ttf
+*.woff
+*.woff2
+*.qm
+*.enc
+*.gz
+*.zip
+*.map
+*.lock
+package-lock.json
+
+# Large notebooks / generated docs (optional - comment out to include)
+# *.ipynb

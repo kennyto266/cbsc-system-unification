@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>策略管理Dashboard - 专业级CBSC策略管理平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: #2c3e50;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 300;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .card-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            font-size: 1.2em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .strategy-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .strategy-item.active {
+            border-left-color: #4ade80;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+
+        .strategy-item.inactive {
+            border-left-color: #f87171;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        }
+
+        .strategy-item:hover {
+            transform: translateX(5px);
+        }
+
+        .strategy-info h4 {
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .strategy-info p {
+            font-size: 0.9em;
+            color: #6b7280;
+        }
+
+        .strategy-status {
+            text-align: center;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.active {
+            background: #4ade80;
+            color: white;
+        }
+
+        .status-badge.inactive {
+            background: #f87171;
+            color: white;
+        }
+
+        .signal-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #ddd;
+            font-size: 0.9em;
+        }
+
+        .signal-item.buy {
+            border-left-color: #22c55e;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+
+        .signal-item.sell {
+            border-left-color: #ef4444;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        }
+
+        .signal-item.hold {
+            border-left-color: #f59e0b;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        }
+
+        .signal-strength {
+            margin-left: auto;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .metric-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .agent-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .agent-item:hover {
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+        }
+
+        .agent-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-right: 15px;
+        }
+
+        .agent-info {
+            flex: 1;
+        }
+
+        .agent-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .agent-task {
+            font-size: 0.85em;
+            color: #6b7280;
+        }
+
+        .agent-metrics {
+            text-align: right;
+            font-size: 0.8em;
+        }
+
+        .performance-value {
+            font-weight: 600;
+            color: #4ade80;
+        }
+
+        .parameter-controls {
+            display: grid;
+            gap: 15px;
+        }
+
+        .parameter-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .parameter-label {
+            min-width: 120px;
+            font-weight: 500;
+        }
+
+        .parameter-slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .parameter-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            cursor: pointer;
+        }
+
+        .parameter-value {
+            min-width: 50px;
+            text-align: center;
+            font-weight: 600;
+            background: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+
+        .alert.success {
+            background: #f0fdf4;
+            border-left-color: #4ade80;
+            color: #166534;
+        }
+
+        .alert.warning {
+            background: #fffbeb;
+            border-left-color: #f59e0b;
+            color: #92400e;
+        }
+
+        .alert.error {
+            background: #fef2f2;
+            border-left-color: #ef4444;
+            color: #991b1b;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1>策略管理Dashboard</h1>
+                <p class="subtitle">专业级CBSC策略管理平台 - 实时监控与智能优化</p>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>系统运行中</span>
+                <span id="connection-count">连接: 0</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 控制面板 -->
+        <div class="controls">
+            <button class="btn btn-primary" onclick="refreshAllData()">🔄 刷新数据</button>
+            <button class="btn btn-secondary" onclick="toggleAutoUpdate()">⏸️ 暂停自动更新</button>
+            <button class="btn btn-primary" onclick="exportData()">📊 导出数据</button>
+        </div>
+
+        <!-- 主要Dashboard网格 -->
+        <div class="dashboard-grid">
+            <!-- 策略状态卡片 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">📈</span>
+                        策略状态监控
+                    </div>
+                    <button class="btn btn-primary" onclick="toggleStrategies()">切换所有</button>
+                </div>
+                <div id="strategies-container">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>加载策略数据中...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 实时信号卡片 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">⚡</span>
+                        实时策略信号
+                    </div>
+                    <span id="last-update" style="font-size: 0.9em; color: #6b7280;"></span>
+                </div>
+                <div id="signals-container">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>等待信号数据...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 性能指标卡片 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">💹</span>
+                        策略性能指标
+                    </div>
+                </div>
+                <div id="performance-container">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>计算性能指标...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent状态卡片 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">🤖</span>
+                        AI Agent状态
+                    </div>
+                </div>
+                <div id="agents-container">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>检查Agent状态...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 参数优化工作台 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="card-icon">⚙️</span>
+                    参数优化工作台
+                </div>
+                <button class="btn btn-primary" onclick="resetParameters()">重置参数</button>
+            </div>
+            <div id="parameters-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>加载参数配置...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 策略性能图表 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="card-icon">📊</span>
+                    策略性能对比
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="performance-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let websocket = null;
+        let autoUpdate = true;
+        let performanceChart = null;
+        let currentData = {
+            strategies: {},
+            signals: [],
+            performance: {},
+            agents: {}
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('策略管理Dashboard初始化...');
+            initWebSocket();
+            loadInitialData();
+            initPerformanceChart();
+        });
+
+        // WebSocket连接
+        function initWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+            try {
+                websocket = new WebSocket(wsUrl);
+
+                websocket.onopen = function(event) {
+                    console.log('WebSocket连接已建立');
+                    updateConnectionStatus(1);
+                    subscribeToUpdates();
+                };
+
+                websocket.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                };
+
+                websocket.onclose = function(event) {
+                    console.log('WebSocket连接已关闭');
+                    updateConnectionStatus(0);
+                    if (autoUpdate) {
+                        setTimeout(initWebSocket, 5000); // 5秒后重连
+                    }
+                };
+
+                websocket.onerror = function(error) {
+                    console.error('WebSocket错误:', error);
+                    updateConnectionStatus(0);
+                };
+            } catch (error) {
+                console.error('WebSocket连接失败:', error);
+                updateConnectionStatus(0);
+            }
+        }
+
+        // 订阅数据更新
+        function subscribeToUpdates() {
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                websocket.send(JSON.stringify({
+                    type: 'subscribe_strategies'
+                }));
+                websocket.send(JSON.stringify({
+                    type: 'request_performance'
+                }));
+            }
+        }
+
+        // 处理WebSocket消息
+        function handleWebSocketMessage(data) {
+            switch(data.type) {
+                case 'strategies_data':
+                    updateStrategiesDisplay(data.data);
+                    break;
+                case 'performance_data':
+                    updatePerformanceDisplay(data.data);
+                    break;
+                case 'new_signals':
+                    updateSignalsDisplay(data.signals);
+                    break;
+                case 'parameters_updated':
+                    showNotification('策略参数已更新', 'success');
+                    break;
+                case 'system_alert':
+                    showNotification(data.message, data.level || 'warning');
+                    break;
+            }
+        }
+
+        // 加载初始数据
+        async function loadInitialData() {
+            try {
+                await Promise.all([
+                    loadStrategies(),
+                    loadPerformance(),
+                    loadAgents()
+                ]);
+                updateLastUpdateTime();
+            } catch (error) {
+                console.error('加载初始数据失败:', error);
+                showNotification('数据加载失败', 'error');
+            }
+        }
+
+        // 加载策略数据
+        async function loadStrategies() {
+            try {
+                const response = await axios.get('/api/strategies');
+                currentData.strategies = response.data.strategies;
+                updateStrategiesDisplay(response.data.strategies);
+            } catch (error) {
+                console.error('加载策略数据失败:', error);
+            }
+        }
+
+        // 加载性能数据
+        async function loadPerformance() {
+            try {
+                const response = await axios.get('/api/performance/summary');
+                currentData.performance = response.data;
+                updatePerformanceDisplay(response.data);
+                updatePerformanceChart(response.data);
+            } catch (error) {
+                console.error('加载性能数据失败:', error);
+            }
+        }
+
+        // 加载Agent数据
+        async function loadAgents() {
+            try {
+                const response = await axios.get('/api/agents/status');
+                currentData.agents = response.data.agents;
+                updateAgentsDisplay(response.data.agents);
+            } catch (error) {
+                console.error('加载Agent数据失败:', error);
+            }
+        }
+
+        // 更新策略显示
+        function updateStrategiesDisplay(strategies) {
+            const container = document.getElementById('strategies-container');
+            const strategiesArray = Array.isArray(strategies) ? strategies : Object.values(strategies);
+
+            container.innerHTML = strategiesArray.map(strategy => `
+                <div class="strategy-item ${strategy.active ? 'active' : 'inactive'}">
+                    <div class="strategy-info">
+                        <h4>${strategy.name}</h4>
+                        <p>${strategy.type}</p>
+                    </div>
+                    <div class="strategy-status">
+                        <span class="status-badge ${strategy.active ? 'active' : 'inactive'}">
+                            ${strategy.active ? '运行中' : '已停止'}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 更新信号显示
+        function updateSignalsDisplay(signals) {
+            const container = document.getElementById('signals-container');
+            const signalsArray = Array.isArray(signals) ? signals : Object.values(signals);
+
+            container.innerHTML = signalsArray.slice(0, 10).map(signal => `
+                <div class="signal-item ${signal.signal_type}">
+                    <div>
+                        <strong>${signal.strategy_type}</strong>
+                        <span style="margin: 0 10px;">→</span>
+                        <span>${signal.signal_type.toUpperCase()}</span>
+                    </div>
+                    <div class="signal-strength">
+                        强度: ${signal.strength?.toFixed(1) || 'N/A'}%
+                    </div>
+                </div>
+            `).join('');
+
+            updateLastUpdateTime();
+        }
+
+        // 更新性能显示
+        function updatePerformanceDisplay(performanceData) {
+            const container = document.getElementById('performance-container');
+
+            if (performanceData.overall_metrics) {
+                const metrics = performanceData.overall_metrics;
+                container.innerHTML = `
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value">${(metrics.total_return || 0).toFixed(2)}%</div>
+                            <div class="metric-label">总收益率</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${(metrics.sharpe_ratio || 0).toFixed(2)}</div>
+                            <div class="metric-label">夏普比率</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${(metrics.max_drawdown || 0).toFixed(2)}%</div>
+                            <div class="metric-label">最大回撤</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // 更新Agent显示
+        function updateAgentsDisplay(agents) {
+            const container = document.getElementById('agents-container');
+            const agentsArray = Array.isArray(agents) ? agents : Object.values(agents);
+
+            container.innerHTML = agentsArray.map((agent, index) => `
+                <div class="agent-item">
+                    <div class="agent-avatar">${agent.agent_type.charAt(0)}</div>
+                    <div class="agent-info">
+                        <div class="agent-name">${agent.agent_type}</div>
+                        <div class="agent-task">${agent.current_task || '待命中'}</div>
+                    </div>
+                    <div class="agent-metrics">
+                        <div class="performance-value">
+                            ${(agent.performance_metrics?.efficiency || 0).toFixed(1)}%
+                        </div>
+                        <div>效率</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 初始化性能图表
+        function initPerformanceChart() {
+            const ctx = document.getElementById('performance-chart').getContext('2d');
+            performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: '策略收益曲线对比'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '收益率 (%)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '时间'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 更新性能图表
+        function updatePerformanceChart(performanceData) {
+            if (!performanceChart || !performanceData.strategies) return;
+
+            const strategies = performanceData.strategies;
+            const labels = ['当前']; // 可以扩展为时间序列
+            const datasets = Object.keys(strategies).map(strategyType => {
+                const strategy = strategies[strategyType];
+                return {
+                    label: strategyType,
+                    data: [strategy.total_return || 0],
+                    borderColor: getColorForStrategy(strategyType),
+                    backgroundColor: getColorForStrategy(strategyType, 0.1),
+                    tension: 0.1
+                };
+            });
+
+            performanceChart.data.labels = labels;
+            performanceChart.data.datasets = datasets;
+            performanceChart.update();
+        }
+
+        // 获取策略颜色
+        function getColorForStrategy(strategyType, alpha = 1) {
+            const colors = {
+                'direct_rsi': `rgba(59, 130, 246, ${alpha})`,        // 蓝色
+                'sentiment_momentum': `rgba(16, 185, 129, ${alpha})`, // 绿色
+                'composite_index': `rgba(245, 158, 11, ${alpha})`,   // 黄色
+                'volatility_adjusted': `rgba(239, 68, 68, ${alpha})` // 红色
+            };
+            return colors[strategyType] || `rgba(107, 114, 128, ${alpha})`;
+        }
+
+        // 刷新所有数据
+        function refreshAllData() {
+            showNotification('正在刷新数据...', 'warning');
+            loadInitialData();
+        }
+
+        // 切换自动更新
+        function toggleAutoUpdate() {
+            autoUpdate = !autoUpdate;
+            const btn = event.target;
+            btn.textContent = autoUpdate ? '⏸️ 暂停自动更新' : '▶️ 开启自动更新';
+
+            if (!autoUpdate && websocket) {
+                websocket.close();
+            } else if (autoUpdate && !websocket) {
+                initWebSocket();
+            }
+        }
+
+        // 切换所有策略
+        async function toggleStrategies() {
+            try {
+                const response = await axios.post('/api/strategies/toggle-all');
+                showNotification('策略状态已切换', 'success');
+                loadStrategies();
+            } catch (error) {
+                showNotification('切换策略失败', 'error');
+            }
+        }
+
+        // 重置参数
+        function resetParameters() {
+            if (confirm('确定要重置所有策略参数吗？')) {
+                // 实现参数重置逻辑
+                showNotification('参数已重置', 'success');
+            }
+        }
+
+        // 导出数据
+        function exportData() {
+            const dataStr = JSON.stringify(currentData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `strategy-dashboard-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 更新连接状态
+        function updateConnectionStatus(count) {
+            document.getElementById('connection-count').textContent = `连接: ${count}`;
+        }
+
+        // 更新最后更新时间
+        function updateLastUpdateTime() {
+            document.getElementById('last-update').textContent =
+                `最后更新: ${new Date().toLocaleTimeString()}`;
+        }
+
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `alert ${type}`;
+            notification.textContent = message;
+
+            document.querySelector('.container').insertBefore(
+                notification,
+                document.querySelector('.dashboard-grid')
+            );
+
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        // 页面卸载时清理资源
+        window.addEventListener('beforeunload', function() {
+            if (websocket) {
+                websocket.close();
+            }
+        });
+    </script>
+</body>
+</html>

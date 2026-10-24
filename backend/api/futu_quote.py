@@ -1,0 +1,362 @@
+"""
+富途 OpenAPI 行情服務 - 提供實時港股報價、K 線、買賣盤
+
+基於 Futu OpenD (port 1130)，行情 API 不受交易加密限制。
+個人本地使用，無需認證。
+
+數據來源：富途 OpenD 行情接口（實時、官方、免費 LV2）
+替代 yfinance 的港股延遲數據。
+
+Author: CBSC Quantitative Platform
+Date: 2026-06-20
+"""
+
+import os
+import logging
+from datetime import datetime
+from typing import List, Optional, Dict, Any
+
+from fastapi import APIRouter, HTTPException, Query
+
+logger = logging.getLogger(__name__)
+router = APIRouter(tags=["富途實時行情"])
+
+# ============================================================
+# Futu SDK 連線（延遲初始化，避免 OpenD 未啟動時整個後端崩潰）
+# ============================================================
+
+FUTU_HOST = os.getenv("FUTU_OPEND_HOST", "127.0.0.1")
+FUTU_PORT = int(os.getenv("FUTU_OPEND_PORT", "1130"))  # GUI OpenD 預設 API port
+
+_quote_ctx = None
+_futu_available = None  # None=未檢測, True/False=檢測結果
+
+
+def _get_quote_ctx():
+    """延遲初始化富途行情上下文，單例。OpenD 未啟動時返回 None。"""
+    global _quote_ctx, _futu_available
+    if _quote_ctx is not None:
+        return _quote_ctx
+    if _futu_available is False:
+        return None
+    try:
+        import futu
+        _quote_ctx = futu.OpenQuoteContext(host=FUTU_HOST, port=FUTU_PORT)
+        _futu_available = True
+        logger.info(f"富途行情連線成功 {FUTU_HOST}:{FUTU_PORT} (SDK {futu.__version__})")
+        return _quote_ctx
+    except Exception as e:
+        _futu_available = False
+        logger.warning(f"富途行情連線失敗 (OpenD 是否啟動?): {e}")
+        return None
+
+
+def _require_ctx():
+    """取得上下文，失敗時拋 503。"""
+    ctx = _get_quote_ctx()
+    if ctx is None:
+        raise HTTPException(
+            status_code=503,
+            detail="富途 OpenD 未連線。請啟動 FutuOpenD 並確認監聽 127.0.0.1:1130。",
+        )
+    return ctx
+
+
+def _normalize_code(symbol: str) -> str:
+    """將各種格式統一為富途格式 HK.00700。
+
+    支援輸入：00700, 0700, 700.HK, 00700.HK, HK.00700
+    """
+    s = symbol.strip().upper()
+    if s.startswith("HK."):
+        return s
+    # 去除 .HK 後綴
+    if s.endswith(".HK"):
+        s = s[:-3]
+    # 補零至 5 位
+    try:
+        num = int(s)
+        return f"HK.{num:05d}"
+    except ValueError:
+        # 已是 HK.xxxxx 或無法解析，原樣返回
+        return s if "." in s else f"HK.{s}"
+
+
+def _safe(val, default=None):
+    """處理富途返回的 NaN/None。"""
+    if val is None:
+        return default
+    try:
+        import math
+        f = float(val)
+        if math.isnan(f) or math.isinf(f):
+            return default
+        return f
+    except (ValueError, TypeError):
+        return default
+
+
+# ============================================================
+# API 路由
+# ============================================================
+
+@router.get("/health")
+async def futu_health():
+    """檢查富途 OpenD 連線狀態。"""
+    ctx = _get_quote_ctx()
+    return {
+        "success": True,
+        "data": {
+            "connected": ctx is not None,
+            "host": FUTU_HOST,
+            "port": FUTU_PORT,
+        },
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+@router.get("/quote/{symbol}")
+async def get_realtime_quote(symbol: str):
+    """取得個股實時報價快照（無需訂閱，即查即有）。
+
+    富途 LV2 實時數據，比 yfinance 延遲數據更準確。
+    """
+    import futu
+    ctx = _require_ctx()
+    code = _normalize_code(symbol)
+    try:
+        ret, data = ctx.get_market_snapshot([code])
+        if ret != futu.RET_OK:
+            raise HTTPException(status_code=502, detail=f"富途查詢失敗: {data}")
+        if data is None or data.empty:
+            raise HTTPException(status_code=404, detail=f"找不到股票 {code}")
+
+        row = data.iloc[0]
+        last_price = _safe(row.get("last_price"))
+        prev_close = _safe(row.get("prev_close_price"))
+        change = (last_price - prev_close) if (last_price and prev_close) else None
+        change_pct = (change / prev_close * 100) if (change is not None and prev_close) else None
+
+        quote = {
+            "symbol": symbol,
+            "code": code,
+            "name": row.get("name", ""),
+            "last_price": last_price,
+            "open_price": _safe(row.get("open_price")),
+            "high_price": _safe(row.get("high_price")),
+            "low_price": _safe(row.get("low_price")),
+            "prev_close": prev_close,
+            "change": change,
+            "change_percent": change_pct,
+            "volume": _safe(row.get("volume"), 0),
+            "turnover": _safe(row.get("turnover"), 0),
+            "amplitude": _safe(row.get("amplitude")),
+            "suspension": bool(row.get("suspension", False)),
+            "update_time": str(row.get("update_time", "")),
+            "currency": "HKD",
+            "lot_size": int(_safe(row.get("lot_size"), 0) or 0),
+            "market_cap": _safe(row.get("total_market_val")),
+            "pe_ratio": _safe(row.get("pe_ratio")),
+            "pe_ttm": _safe(row.get("pe_ttm_ratio")),
+            "pb_ratio": _safe(row.get("pb_ratio")),
+            "dividend_yield": _safe(row.get("dividend_ratio_ttm")),
+            "avg_price": _safe(row.get("avg_price")),
+            "bid_ask_ratio": _safe(row.get("bid_ask_ratio")),
+            "volume_ratio": _safe(row.get("volume_ratio")),
+            "data_source": "futu_opend",
+            "fetched_at": datetime.now().isoformat(),
+        }
+        return {"success": True, "data": quote, "timestamp": datetime.now().isoformat()}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("get_realtime_quote error")
+        raise HTTPException(status_code=500, detail=f"行情查詢失敗: {e}")
+
+
+@router.get("/quotes")
+async def get_batch_quotes(
+    symbols: str = Query(..., description="逗號分隔的股票代碼，如 00700,09988,01810"),
+):
+    """批次取得多隻股票實時報價（富途限制單次最多 400 隻）。"""
+    import futu
+    ctx = _require_ctx()
+    sym_list = [s.strip() for s in symbols.split(",") if s.strip()]
+    if not sym_list:
+        raise HTTPException(status_code=400, detail="請提供至少一個股票代碼")
+    if len(sym_list) > 400:
+        raise HTTPException(status_code=400, detail="單次最多 400 隻股票")
+
+    codes = [_normalize_code(s) for s in sym_list]
+    try:
+        ret, data = ctx.get_market_snapshot(codes)
+        if ret != futu.RET_OK:
+            raise HTTPException(status_code=502, detail=f"富途批次查詢失敗: {data}")
+
+        quotes = []
+        if data is not None and not data.empty:
+            for _, row in data.iterrows():
+                last_price = _safe(row.get("last_price"))
+                prev_close = _safe(row.get("prev_close_price"))
+                change = (last_price - prev_close) if (last_price and prev_close) else None
+                change_pct = (change / prev_close * 100) if (change is not None and prev_close) else None
+                quotes.append({
+                    "code": row.get("code", ""),
+                    "name": row.get("name", ""),
+                    "last_price": last_price,
+                    "change": change,
+                    "change_percent": change_pct,
+                    "volume": _safe(row.get("volume"), 0),
+                    "turnover": _safe(row.get("turnover"), 0),
+                    "high_price": _safe(row.get("high_price")),
+                    "low_price": _safe(row.get("low_price")),
+                    "open_price": _safe(row.get("open_price")),
+                    "pe_ratio": _safe(row.get("pe_ratio")),
+                })
+        return {
+            "success": True,
+            "data": quotes,
+            "count": len(quotes),
+            "timestamp": datetime.now().isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("get_batch_quotes error")
+        raise HTTPException(status_code=500, detail=f"批次行情查詢失敗: {e}")
+
+
+@router.get("/kline/{symbol}")
+async def get_kline(
+    symbol: str,
+    ktype: str = Query("1d", description="K線類型: 1m,5m,15m,30m,60m,1d,1w,1M"),
+    num: int = Query(100, ge=1, le=1000, description="K線數量"),
+):
+    """取得歷史 K 線數據。"""
+    import futu
+    ctx = _require_ctx()
+    code = _normalize_code(symbol)
+
+    ktype_map = {
+        "1m": futu.KLType.K_1M,
+        "3m": futu.KLType.K_3M,
+        "5m": futu.KLType.K_5M,
+        "15m": futu.KLType.K_15M,
+        "30m": futu.KLType.K_30M,
+        "60m": futu.KLType.K_60M,
+        "1d": futu.KLType.K_DAY,
+        "1w": futu.KLType.K_WEEK,
+        "1M": futu.KLType.K_MON,
+    }
+    kl = ktype_map.get(ktype)
+    if kl is None:
+        raise HTTPException(status_code=400, detail=f"不支援的 K 線類型: {ktype}")
+
+    try:
+        # request_history_kline 在 SDK 10.7 返回 (ret_code, DataFrame, page_key)
+        result = ctx.request_history_kline(code, start=None, end=None, ktype=kl, autype=None, max_count=num)
+        if len(result) == 3:
+            ret, data, _page_key = result
+        else:
+            ret, data = result
+        if ret != futu.RET_OK:
+            # 部分情況用 get_cur_kline
+            ret, data = ctx.get_cur_kline(code, num=num, ktype=kl)
+            if ret != futu.RET_OK:
+                raise HTTPException(status_code=502, detail=f"富途 K 線查詢失敗: {data}")
+
+        klines = []
+        if data is not None and not data.empty:
+            for _, row in data.iterrows():
+                klines.append({
+                    "time": str(row.get("time_key", "")),
+                    "open": _safe(row.get("open")),
+                    "close": _safe(row.get("close")),
+                    "high": _safe(row.get("high")),
+                    "low": _safe(row.get("low")),
+                    "volume": _safe(row.get("volume"), 0),
+                    "turnover": _safe(row.get("turnover"), 0),
+                    "change_rate": _safe(row.get("change_rate")),
+                })
+        return {
+            "success": True,
+            "data": {
+                "symbol": symbol,
+                "code": code,
+                "ktype": ktype,
+                "klines": klines,
+            },
+            "count": len(klines),
+            "timestamp": datetime.now().isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("get_kline error")
+        raise HTTPException(status_code=500, detail=f"K 線查詢失敗: {e}")
+
+
+@router.get("/orderbook/{symbol}")
+async def get_orderbook(
+    symbol: str,
+    depth: int = Query(10, ge=1, le=10, description="檔位數 1-10"),
+):
+    """取得實時買賣盤（擺盤）數據。"""
+    import futu
+    ctx = _require_ctx()
+    code = _normalize_code(symbol)
+    try:
+        ret, data = ctx.get_order_book(code, num=depth)
+        if ret != futu.RET_OK:
+            raise HTTPException(status_code=502, detail=f"富途擺盤查詢失敗: {data}")
+
+        # 富途返回格式：Ask/Bid 是 list of [price, volume, order_count]
+        asks_raw = data.get("Ask", []) if hasattr(data, "get") else []
+        bids_raw = data.get("Bid", []) if hasattr(data, "get") else []
+
+        asks = [{"price": _safe(a[0]), "volume": _safe(a[1], 0), "orders": _safe(a[2], 0)} for a in asks_raw if a]
+        bids = [{"price": _safe(b[0]), "volume": _safe(b[1], 0), "orders": _safe(b[2], 0)} for b in bids_raw if b]
+
+        return {
+            "success": True,
+            "data": {
+                "symbol": symbol,
+                "code": code,
+                "asks": asks,  # 賣盤（高→低）
+                "bids": bids,  # 買盤（高→低）
+            },
+            "timestamp": datetime.now().isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("get_orderbook error")
+        raise HTTPException(status_code=500, detail=f"擺盤查詢失敗: {e}")
+
+
+# 常用港股預設清單（藍籌 + 科技龍頭）
+DEFAULT_WATCHLIST = [
+    "00700",  # 騰訊
+    "09988",  # 阿里巴巴
+    "03690",  # 美團
+    "01810",  # 小米
+    "09618",  # 京東
+    "09888",  # 百度
+    "09999",  # 網易
+    "01024",  # 快手
+    "01211",  # 比亞迪
+    "00981",  # 中芯國際
+    "00020",  # 商湯
+    "02318",  # 中國平安
+    "00388",  # 港交所
+    "00939",  # 建設銀行
+    "01288",  # 農業銀行
+    "00005",  # 匯豐
+]
+
+
+@router.get("/watchlist")
+async def get_watchlist():
+    """取得預設觀察名單實時報價（港股藍籌 + 科技龍頭）。"""
+    symbols = ",".join(DEFAULT_WATCHLIST)
+    return await get_batch_quotes(symbols)

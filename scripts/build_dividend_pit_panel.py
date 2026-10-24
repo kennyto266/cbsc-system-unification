@@ -1,0 +1,90 @@
+"""Build PIT rolling 12m dividend yield panel from Futu corporate actions raw crawl.
+
+Input : data/new_sources/dividends_futu_raw.csv  (Futu get_corporate_actions_dividends, 51 pool)
+Output: data/new_sources/dividend_events_pit.csv   (code, ex_div_date, dps_per_share_hkd, special_flag, currency, statement)
+        data/new_sources/div_yield_pit_panel.csv   (date, code, value) — trailing-365d HKD DPS / unadjusted close
+PIT rule: only records with ex_div_date <= t are used (ex_date is the date price first trades without the dividend).
+"""
+import re
+import pandas as pd
+
+RAW = "data/new_sources/dividends_futu_raw.csv"
+CLOSE_DIR = "data/futu_history/close_unadj"
+EVENTS_OUT = "data/new_sources/dividend_events_pit.csv"
+PANEL_OUT = "data/new_sources/div_yield_pit_panel.csv"
+
+AMOUNT_RE = re.compile(r"([0-9]+(?:\.[0-9]+)?)\s*(港元|美元|人民币|人民幣)")
+
+def parse_statement(stmt: str):
+    """Return (dps_hkd, currency, special_flag). Non-HKD recorded but excluded from HKD dps."""
+    if not isinstance(stmt, str):
+        return None, None, False
+    special = bool(re.search(r"特别|特別", stmt))
+    amounts = AMOUNT_RE.findall(stmt)
+    if not amounts:
+        return None, None, special
+    vals = {cur: sum(float(v) for v, c in amounts if c == cur) for v, cur in amounts}
+    hkd = vals.get("港元")
+    cur = "HKD" if hkd else ("USD" if vals.get("美元") else ("CNY" if (vals.get("人民币") or vals.get("人民幣")) else None))
+    return hkd, cur, special
+
+def main():
+    raw = pd.read_csv(RAW)
+    recs = []
+    for _, row in raw.iterrows():
+        stmt = row.get("statement")
+        dps, cur, special = parse_statement(stmt)
+        recs.append({
+            "code": row["code"],
+            "ex_div_date": row.get("ex_date"),
+            "dps_per_share_hkd": dps,
+            "currency": cur,
+            "special_flag": special,
+            "pub_date": row.get("pub_date"),
+            "statement": stmt,
+        })
+    ev = pd.DataFrame(recs)
+    ev["ex_div_date"] = pd.to_datetime(ev["ex_div_date"], format="mixed", errors="coerce")
+    ev = ev.dropna(subset=["ex_div_date"]).sort_values(["code", "ex_div_date"])
+    ev.to_csv(EVENTS_OUT, index=False)
+    print(f"events: {len(ev)} total, {ev['dps_per_share_hkd'].notna().sum()} HKD-parsable, "
+          f"{(ev['currency']=='USD').sum()} USD-only, {(ev['currency']=='CNY').sum()} CNY-only, "
+          f"{ev['special_flag'].sum()} special")
+
+    # close panel (unadjusted)
+    closes = {}
+    import os
+    for f in os.listdir(CLOSE_DIR):
+        code = f.replace("HK.", "").replace(".csv", "")
+        code = "HK." + code
+        df = pd.read_csv(os.path.join(CLOSE_DIR, f))
+        dcol = df.columns[0]
+        ccol = [c for c in df.columns if "close" in c.lower()][0]
+        s = pd.Series(df[ccol].values, index=pd.to_datetime(df[dcol]))
+        closes[code] = s
+
+    hkd = ev[ev["currency"] == "HKD"].copy()
+    out = []
+    for code, grp in hkd.groupby("code"):
+        if code not in closes:
+            print("no close:", code); continue
+        px = closes[code].dropna()
+        px = px[px.index >= "2018-06-01"]
+        if px.empty:
+            continue
+        g = grp.set_index("ex_div_date")["dps_per_share_hkd"].sort_index()
+        # trailing 365d cumulative DPS as of each trading day (inclusive of ex_date that day)
+        cum = g.cumsum()
+        def yield_at(t):
+            lo = g.index.searchsorted(t - pd.Timedelta(days=365), side="right")
+            hi = g.index.searchsorted(t, side="right")
+            return g.iloc[lo:hi].sum()
+        vals = [yield_at(t) / px.loc[t] for t in px.index]
+        out.append(pd.DataFrame({"date": px.index.strftime("%Y-%m-%d"), "code": code, "value": vals}))
+    panel = pd.concat(out, ignore_index=True)
+    panel.to_csv(PANEL_OUT, index=False)
+    print(f"panel: {len(panel)} rows, {panel['code'].nunique()} codes, "
+          f"{panel['date'].min()} .. {panel['date'].max()}")
+
+if __name__ == "__main__":
+    main()

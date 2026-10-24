@@ -1,0 +1,285 @@
+"""
+富途 OpenAPI 統一數據介面
+
+封裝所有富途 API 調用，提供統一嘅數據獲取介面。
+解決而家只有 close 嘅問題 — 返回完整 OHLCV。
+
+用法:
+    from src.data.unified import FutuAdapter
+
+    futu = FutuAdapter()
+    ohlcv = futu.get_ohlcv("HK.00700", days=250)
+    snapshot = futu.get_snapshot(["HK.00700", "HK.00005"])
+    flow = futu.get_capital_flow("HK.00700", days=60)
+    constituents = futu.get_constituents("HSI")
+"""
+import os
+import sys
+import time
+import logging
+from typing import List, Optional, Dict
+from pathlib import Path
+
+import pandas as pd
+import numpy as np
+
+sys.path = [p for p in sys.path if "CODEX" not in p]
+
+from .config import FUTU_HOST, FUTU_PORT
+from .storage import store
+
+logger = logging.getLogger(__name__)
+
+
+class FutuAdapter:
+    """富途 OpenAPI 統一數據介面。
+
+    所有富途 API 調用嘅單一入口。
+    自動處理連線管理、重試、數據清理。
+    """
+
+    def __init__(self, host: str = None, port: int = None):
+        self.host = host or FUTU_HOST
+        self.port = port or FUTU_PORT
+        self._quote_ctx = None
+        self._futu = None
+
+    def _connect(self):
+        """延遲初始化富途連線。"""
+        if self._quote_ctx is not None:
+            return self._quote_ctx
+        import futu
+        self._futu = futu
+        self._quote_ctx = futu.OpenQuoteContext(host=self.host, port=self.port)
+        logger.info("富途連線: {}:{}".format(self.host, self.port))
+        return self._quote_ctx
+
+    def close(self):
+        """關閉連線。"""
+        if self._quote_ctx:
+            self._quote_ctx.close()
+            self._quote_ctx = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+    # ============================================================
+    # OHLCV 歷史數據（核心）
+    # ============================================================
+
+    def get_ohlcv(self, symbol: str, days: int = 250,
+                  freq: str = "1d", adjust: str = "qfq") -> pd.DataFrame:
+        """取得完整 OHLCV 歷史數據。
+
+        Args:
+            symbol: HK.00700 格式
+            days: 歷史天數
+            freq: 1d / 5m / 15m / 30m / 60m / 1m / 1w / 1M
+            adjust: qfq(前復權) / hfq(後復權) / none
+
+        Returns:
+            DataFrame: date, open, high, low, close, volume, turnover, pe_ratio, change_rate
+        """
+        ctx = self._connect()
+        futu = self._futu
+
+        ktype_map = {
+            "1d": futu.KLType.K_DAY, "1w": futu.KLType.K_WEEK,
+            "1M": futu.KLType.K_MON, "1m": futu.KLType.K_1M,
+            "3m": futu.KLType.K_3M, "5m": futu.KLType.K_5M,
+            "15m": futu.KLType.K_15M, "30m": futu.KLType.K_30M,
+            "60m": futu.KLType.K_60M,
+        }
+        kl = ktype_map.get(freq)
+        if kl is None:
+            raise ValueError("不支援嘅頻率: {}".format(freq))
+
+        autype_map = {"qfq": futu.AuType.QFQ, "hfq": futu.AuType.HFQ, "none": None}
+        au = autype_map.get(adjust, futu.AuType.QFQ)
+
+        result = ctx.request_history_kline(
+            symbol, ktype=kl, autype=au, max_count=days)
+        if len(result) == 3:
+            ret, df, _ = result
+        else:
+            ret, df = result
+
+        if ret != futu.RET_OK or df.empty:
+            logger.warning("get_ohlcv 失敗 {}: {}".format(symbol, df))
+            return pd.DataFrame()
+
+        # 清理 + 標準化欄位
+        df = df.copy()
+        df["date"] = pd.to_datetime(df["time_key"])
+        cols = ["date", "open", "high", "low", "close", "volume",
+                "turnover", "pe_ratio", "turnover_rate", "change_rate", "last_close"]
+        available = [c for c in cols if c in df.columns]
+        df = df[available].sort_values("date").reset_index(drop=True)
+        return df
+
+    def get_ohlcv_batch(self, symbols: List[str], days: int = 250,
+                        freq: str = "1d", delay: float = 0.1) -> Dict[str, pd.DataFrame]:
+        """批次取得多隻股票 OHLCV。"""
+        results = {}
+        total = len(symbols)
+        for i, sym in enumerate(symbols):
+            df = self.get_ohlcv(sym, days=days, freq=freq)
+            if not df.empty:
+                results[sym] = df
+            if (i + 1) % 10 == 0:
+                logger.info("OHLCV 進度: {}/{}".format(i + 1, total))
+            time.sleep(delay)
+        return results
+
+    # ============================================================
+    # 即時報價
+    # ============================================================
+
+    def get_snapshot(self, symbols: List[str]) -> pd.DataFrame:
+        """取得即時報價快照。"""
+        ctx = self._connect()
+        futu = self._futu
+        ret, data = ctx.get_market_snapshot(symbols)
+        if ret != futu.RET_OK or data.empty:
+            return pd.DataFrame()
+        return data
+
+    def get_orderbook(self, symbol: str, depth: int = 10) -> dict:
+        """取得實時擺盤。"""
+        ctx = self._connect()
+        futu = self._futu
+        ret, data = ctx.get_order_book(symbol, num=depth)
+        if ret != futu.RET_OK:
+            return {}
+        asks = data.get("Ask", []) if hasattr(data, "get") else []
+        bids = data.get("Bid", []) if hasattr(data, "get") else []
+        return {
+            "asks": [{"price": float(a[0]), "volume": float(a[1])} for a in asks if a],
+            "bids": [{"price": float(b[0]), "volume": float(b[1])} for b in bids if b],
+        }
+
+    # ============================================================
+    # 另類數據
+    # ============================================================
+
+    def get_capital_flow(self, symbol: str, days: int = 250) -> pd.DataFrame:
+        """取得資金流向（大戶手影）。
+
+        返回每日資金流入流出，含超大單/大單/中單/細單。
+        """
+        ctx = self._connect()
+        futu = self._futu
+        ret, data = ctx.get_capital_flow(symbol)
+        if ret != futu.RET_OK or data.empty:
+            return pd.DataFrame()
+
+        data = data.copy()
+        data["date"] = pd.to_datetime(data["capital_flow_item_time"]).dt.date
+        daily = data.groupby("date").last().reset_index()
+        daily["date"] = pd.to_datetime(daily["date"])
+        daily = daily.sort_values("date").tail(days).reset_index(drop=True)
+        return daily
+
+    def get_capital_distribution(self, symbol: str) -> dict:
+        """取得即時資金分佈（大戶 vs 散戶比例）。"""
+        ctx = self._connect()
+        futu = self._futu
+        ret, data = ctx.get_capital_distribution(symbol)
+        if ret != futu.RET_OK:
+            return {}
+        return data
+
+    # ============================================================
+    # 成分股
+    # ============================================================
+
+    def get_constituents(self, index: str = "HSI") -> List[Dict]:
+        """取得指數成分股。
+
+        Args:
+            index: HSI（恒指）/ HSCEI（國指）
+
+        Returns:
+            [{"code": "HK.00700", "name": "騰訊控股"}, ...]
+        """
+        ctx = self._connect()
+        futu = self._futu
+
+        plate_map = {"HSI": "HK.800000", "HSCEI": "HK.800100"}
+        plate = plate_map.get(index, "HK.800000")
+
+        ret, data = ctx.get_plate_stock(plate)
+        if ret != futu.RET_OK:
+            return []
+
+        stocks = []
+        for _, row in data.iterrows():
+            code = row.get("code", "")
+            if code.startswith("HK.0") or code.startswith("HK.9"):
+                stocks.append({"code": code, "name": row.get("stock_name", "")})
+        return stocks
+
+    # ============================================================
+    # 存儲整合
+    # ============================================================
+
+    def fetch_and_store(self, symbol: str, days: int = 250,
+                        freq: str = "1d") -> dict:
+        """攞 OHLCV 數據並自動存入 Parquet。"""
+        from .incremental import IncrementalUpdater
+
+        df = self.get_ohlcv(symbol, days=days, freq=freq)
+        if df.empty:
+            return {"success": False, "reason": "no_data"}
+
+        freq_map = {"1d": "daily", "1m": "1min", "5m": "5min",
+                    "15m": "15min", "30m": "30min", "60m": "60min"}
+        store_freq = freq_map.get(freq, "daily")
+
+        updater = IncrementalUpdater("market_data", symbol, store_freq)
+        return updater.update(df)
+
+    def fetch_and_store_batch(self, symbols: List[str], days: int = 250,
+                              freq: str = "1d") -> Dict[str, dict]:
+        """批次攞 + 存。"""
+        results = {}
+        for i, sym in enumerate(symbols):
+            results[sym] = self.fetch_and_store(sym, days=days, freq=freq)
+            if (i + 1) % 10 == 0:
+                logger.info("批次存儲進度: {}/{}".format(i + 1, len(symbols)))
+        return results
+
+
+if __name__ == "__main__":
+    # 快速測試
+    logging.basicConfig(level=logging.INFO)
+    print("=" * 70)
+    print("富途 API Adapter 測試")
+    print("=" * 70)
+
+    with FutuAdapter() as futu:
+        # OHLCV
+        print("\n1. get_ohlcv HK.00700 (5日)")
+        df = futu.get_ohlcv("HK.00700", days=5)
+        print(df[["date", "open", "high", "low", "close", "volume"]].to_string(index=False))
+
+        # Snapshot
+        print("\n2. get_snapshot")
+        snap = futu.get_snapshot(["HK.00700", "HK.00005"])
+        if not snap.empty:
+            print(snap[["code", "last_price", "volume"]].to_string(index=False))
+
+        # Capital flow
+        print("\n3. get_capital_flow (3日)")
+        flow = futu.get_capital_flow("HK.00700", days=3)
+        if not flow.empty:
+            print(flow[["date", "in_flow", "super_in_flow"]].to_string(index=False))
+
+        # Constituents
+        print("\n4. get_constituents HSI")
+        stocks = futu.get_constituents("HSI")
+        print("成分股數:", len(stocks))
+        print("前 3:", stocks[:3])

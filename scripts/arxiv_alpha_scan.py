@@ -1,0 +1,200 @@
+#!/usr/bin/env python3
+"""arxiv_alpha_scan.py — 用 webclaw + GLM-5.2 掃描 ArXiv 跨學科論文搵 alpha.
+
+alpha 唔限 finance 領域 — 網絡科學、行為心理、物理動力系統、ML 都可能轉化為交易 edge.
+KOL (錢琛/蔡嘉民) 講過: 最好嘅 alpha 來自跨學科洞察.
+
+用法:
+  python arxiv_alpha_scan.py                    # 掃 q-fin + cs.LG 最近論文
+  python arxiv_alpha_scan.py --categories q-fin econ.GN cs.LG  # 自訂類別
+  python arxiv_alpha_scan.py --max-papers 30    # 限制掃描數量
+"""
+import argparse
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+# webclaw CLI 路徑
+WEBCRAW = Path(r"C:\Users\Penguin8n\ZCodeProject\tools\webclaw-bin"
+               r"\webclaw-v0.6.13-x86_64-pc-windows-msvc\webclaw.exe")
+
+# GLM-5.2 環境 (coding plan endpoint)
+ENV = {
+    **os.environ,
+    "OPENAI_API_KEY": "2b67972a5bb1498898ed1ab0d5c4e778.7tXffBAwFfDLae15",
+    "OPENAI_BASE_URL": "https://open.bigmodel.cn/api/coding/paas/v4",
+    "WEBCLAW_LLM_PROVIDER": "openai",
+    "WEBCLAW_LLM_MODEL": "glm-5.2",
+}
+
+# 跨學科類別 — alpha 來自四方八面, 唔限 finance
+# PIP 背馡 = 電腦圖像學轉化; Shannon's Demon = 資訊理論轉化;
+# Permutation Entropy = 物理動力系統轉化. 呢啲都證明跨學科 alpha 真實存在.
+DEFAULT_CATEGORIES = [
+    "q-fin",           # 量化金融 (直接)
+    "econ.GN",         # 經濟學 (宏觀/行為)
+    "cs.LG",           # 機器學習 (預測模型 → forecasting)
+    "cs.IT",           # 資訊理論 (entropy, Shannon → regime detection)
+    "physics.soc-ph",  # 社會物理 (人群行為 → 市場動力)
+    "stat.ML",         # 統計 ML (異常檢測 → alpha signal)
+    "nlin.AO",         # 非線性動力學 (混沌/分叉 → 市場轉折)
+]
+
+# HKPTRC 已知策略 (cross-pollination 種子 — 揾論文能否強化呢啲策略)
+HKPTRC_STRATEGIES = [
+    "Extrema 轉角位 (find_local_extrema: 局部最高/最低點 → 轉勢信號)",
+    "Efficiency Ratio 濾網 (趨勢順利度 → Momentum 濾網)",
+    "Volume Profile (Max Volume Price Level → 支撐/阻力)",
+    "Z-Score 均值回歸 (偏離均值 → 反轉)",
+    "Permutation Entropy (複雜度 → regime detection)",
+    "Bayes 濾網 (條件概率 → 增強信號)",
+    "Shannon's Demon (rebalancing premium → 定期再平衡 alpha)",
+    "Equity Curve Trading (用權益曲線 SMA 做 on/off 開關)",
+    "藍籌領先股 (龍頭股帶動 → 跟勢)",
+    "SEC 13F (大戶持倉變動 → 跟大戶)",
+    "CCASS (中央結算持倉變動 → 跟莊家)",
+    "SD-ATR Spread (波動率結構 → 壓縮/擴張 regime)",
+]
+
+# 「論文→策略」成功轉化案例 (教 GLM 識別同類機會)
+# 呢啲係 HKPTRC 已經成功將學術方法轉化為交易策略嘅真實案例
+CROSS_POLLINATION_EXAMPLES = [
+    "PIP (Perceptually Important Points): IEEE time-series data mining 論文 → 背馡演算法 (搵重要價格點 + RSI 對比)",
+    "Shannon's Demon: 資訊理論 entropy → rebalancing premium (定期再平衡產生 alpha)",
+    "Permutation Entropy: 物理動力系統排列熵 → regime detection (高 entropy 後趨勢)",
+    "Bayes Theorem: 概率論 → 信號濾網 (條件概率增強訊號準確度)",
+    "Efficiency Ratio: 流體力學效率概念 → 趨勢順利度量度 (Momentum 濾網)",
+    "Volume Profile: 市場微結構 → 支撐阻力位 (Max Volume Price Level 濾網)",
+]
+
+# extract prompt — 闊 criteria + cross-pollination + HKPTRC 增強
+# 用真實轉化案例教 GLM 識別「唔關 finance 但可轉化」嘅論文
+POLLINATION_CONTEXT = (
+    "已知成功轉化案例 (學術方法→交易策略):\n"
+    + "\n".join(f"  - {e}" for e in CROSS_POLLINATION_EXAMPLES)
+    + "\n\nHKPTRC 已知策略 (判斷論文能否強化):\n"
+    + "\n".join(f"  - {s}" for s in HKPTRC_STRATEGIES)
+)
+
+EXTRACT_SCHEMA = json.dumps({
+    "title": "string",
+    "field": "string (cs/physics/finance/math/econ/etc)",
+    "applicable": "boolean (true = 方法/發現能轉化為股票交易strategy, 無論原本領域. 參考上面成功案例: IEEE data mining→PIP背馡, 資訊理論→Shannon's Demon 等)",
+    "alpha_idea": "string (核心: 點樣轉化為交易edge? 1-2句. 空=唔得)",
+    "data_needed": "string (需要咩data: 價格/流量/文本/網絡. 空=唔適用)",
+    "direction": "string (long/short/long-short/market-neutral/空)",
+    "enhances_hkptrc": "string (邊個HKPTRC策略可以強化? 空=唔適用)",
+    "source_analogy": "string (同邊個成功轉化案例類似? 例如 '類似 PIP: 將X方法轉為Y策略'. 空=唔適用)",
+}, ensure_ascii=False)
+
+
+def scrape_paper_ids(category, limit=15):
+    """用 webclaw scrape ArXiv 類別頁, 拎論文 ID."""
+    url = f"https://arxiv.org/list/{category}/recent"
+    try:
+        r = subprocess.run(
+            [str(WEBCRAW), url, "--format", "text", "--only-main-content"],
+            capture_output=True, text=True, timeout=30, env=ENV,
+        )
+        ids = []
+        for line in r.stdout.split("\n"):
+            # 格式: arXiv:2606.27335
+            if "arXiv:" in line:
+                for part in line.split():
+                    if part.startswith("arXiv:") and len(part) > 10:
+                        ids.append(part.replace("arXiv:", ""))
+        return ids[:limit]
+    except Exception as e:
+        print(f"⚠️ scrape {category} 失敗: {e}", file=sys.stderr)
+        return []
+
+
+def extract_alpha(paper_id):
+    """用 webclaw + GLM extract 論文, 判斷有冭 alpha (extract-json 快過 extract-prompt).
+
+    cross-pollination context 放入 schema description (extract-json 會連 schema 一齊傳俾 LLM).
+    """
+    url = f"https://arxiv.org/abs/{paper_id}"
+    # extract-json: schema description 帶 cross-pollination 提示 (比 extract-prompt 快 3-5x)
+    schema = json.dumps({
+        "title": f"string. 成功轉化案例參考: PIP(IEEE mining→背馡), Shannon(資訊論→再平衡), Permutation Entropy(物理→regime), Bayes(概率→濾網)",
+        "field": "string",
+        "applicable": "boolean. true=方法能轉化為交易策略,任何領域都得(數學/物理/CS/經濟)",
+        "alpha_idea": "string. 點轉化為交易edge? 1-2句. 空=唔得",
+        "data_needed": "string. 需要咩data",
+        "direction": "string. long/short/long-short",
+        "enhances_hkptrc": "string. 可強化邊個策略(Extrema/EfficiencyRatio/VolumeProfile/ZScore/PermutationEntropy/Bayes/Shannon/EquityCurve/CCASS/SEC13F/SD-ATR/藍籌領先). 空=唔適用",
+        "source_analogy": "string. 同邊個轉化案例類似. 空=唔適用",
+    }, ensure_ascii=False)
+    try:
+        r = subprocess.run(
+            [str(WEBCRAW), url, "--extract-json", schema, "--only-main-content"],
+            capture_output=True, text=True, timeout=60, env=ENV,
+        )
+        return json.loads(r.stdout.strip())
+    except Exception as e:
+        return {"title": f"err:{paper_id}", "applicable": False,
+                "alpha_idea": "", "error": str(e)}
+
+
+def main():
+    ap = argparse.ArgumentParser(description="ArXiv 跨學科 alpha 掃描")
+    ap.add_argument("--categories", nargs="*", default=DEFAULT_CATEGORIES,
+                    help=f"ArXiv 類別 (默認: {DEFAULT_CATEGORIES})")
+    ap.add_argument("--max-papers", type=int, default=8,
+                    help="每類別最多掃幾多篇 (默認 8)")
+    args = ap.parse_args()
+
+    print("=" * 65)
+    print("🔭 ArXiv 跨學科 Alpha 掃描 (webclaw + GLM-5.2)")
+    print(f"   類別: {args.categories} | 每類最多 {args.max_papers} 篇")
+    print("=" * 65)
+
+    all_hits = []
+    for cat in args.categories:
+        print(f"\n📚 掃描 [{cat}] ...")
+        ids = scrape_paper_ids(cat, args.max_papers)
+        print(f"   搵到 {len(ids)} 篇論文")
+        for pid in ids:
+            d = extract_alpha(pid)
+            t = (d.get("title") or "?")[:55]
+            ap_ = "🎯" if d.get("applicable") else "  "
+            idea = (d.get("alpha_idea") or "")[:90]
+            dn = (d.get("data_needed") or "")[:45]
+            dr = (d.get("direction") or "")[:12]
+            hk = (d.get("enhances_hkptrc") or "")[:40]
+            sa = (d.get("source_analogy") or "")[:50]
+            print(f"  {ap_} {t}")
+            if idea:
+                print(f"     → {idea}")
+                if dn:
+                    print(f"     data: {dn} | dir: {dr}")
+                if hk:
+                    print(f"     強化: {hk}")
+                if sa:
+                    print(f"     類比: {sa}")
+                all_hits.append({
+                    "id": pid, "category": cat, **d,
+                })
+
+    # 摘要
+    print(f"\n{'='*65}")
+    print(f"📊 掃描完成: {len(all_hits)} 個 alpha 候選")
+    print(f"{'='*65}")
+    for h in all_hits:
+        print(f"  🎯 [{h.get('field','?')}] {h['id']}")
+        print(f"     {h.get('alpha_idea','')[:100]}")
+
+    # 存檔
+    out = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification"
+               r"\data\vbt_factor_reports\arxiv_alpha_scan.json")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with open(out, "w", encoding="utf-8") as f:
+        json.dump(all_hits, f, ensure_ascii=False, indent=2)
+    print(f"\n💾 存到: {out}")
+
+
+if __name__ == "__main__":
+    main()

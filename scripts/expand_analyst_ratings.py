@@ -1,0 +1,19 @@
+"""expand_analyst_ratings.py — agent2-H: 擴展研報爬蟲 universe 到 ccass_south 全 158 股.
+
+讀 factor_store/ccass_south.parquet 欄名 (HK.XXXXX) 做 universe,
+重用 collect_analyst_ratings_em 嘅 crawl/checkpoint 機制.
+"""
+import sys
+from pathlib import Path
+
+SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(SCRIPTS))
+
+import collect_analyst_ratings_em as col
+import pandas as pd
+
+uni = pd.read_parquet(SCRIPTS.parent / "data" / "factor_store" / "ccass_south.parquet").columns
+codes = sorted({c.split(".")[1] for c in uni} | set(col.CODES))
+print(f"universe: {len(codes)} codes")
+col.CODES = codes
+col.main()

@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+"""collect_em_holdranks_daily.py — 東财 RPT_MUTUAL_STOCK_HOLDRANKS 港股通個股日度持股 backfill.
+
+[2026-08-23 agent2-H] 發現呢個 report 係 hsgtcg/StockHdStatistics 頁背後 API:
+日度 HOLD_SHARES + HOLD_SHARES_RATIO (南向合計, 滬+深), 歷史 ~2024-08-23 起 (~2 年).
+較 HKEX mutualmarket (12個月牆) 多一年日度; 更舊 (2021-08→2024-08) 三源實證都冇:
+HKEX SDW 12mo 牆 / RPT_MUTUAL_HOLD_DET 冇日度 / HOLDRANKS 由 2024-08 起.
+
+Output (long): data/new_sources/em_holdranks_daily.csv
+  date, stock_code, hold_shares, hold_pct
+Resume-safe (checkpoint per stock).
+"""
+import json
+import time
+from pathlib import Path
+
+import pandas as pd
+import requests
+
+BASE = Path(__file__).resolve().parent.parent
+NS = BASE / "data" / "new_sources"
+OUT = NS / "em_holdranks_daily.csv"
+CKPT = NS / "em_holdranks_daily_ckpt.json"
+
+URL = "https://datacenter-web.eastmoney.com/api/data/v1/get"
+H = {"User-Agent": "Mozilla/5.0", "Referer": "https://data.eastmoney.com/"}
+COLS = "TRADE_DATE,HOLD_SHARES,HOLD_SHARES_RATIO"
+
+# universe = sdw_south_full panel cols (49 deployment-pool stocks)
+uni = sorted(c.split(".")[1] for c in
+             pd.read_parquet(BASE / "data" / "factor_store" / "sdw_south_full.parquet").columns)
+
+ckpt = json.loads(CKPT.read_text()) if CKPT.exists() else {"done": {}}
+
+
+def fetch_stock(sc):
+    rows, page = [], 1
+    while True:
+        u = (f"{URL}?reportName=RPT_MUTUAL_STOCK_HOLDRANKS&columns={COLS}"
+             f"&filter=(MUTUAL_TYPE%3D%22002%22)(SECUCODE%3D%22{sc}.HK%22)"
+             f"&pageNumber={page}&pageSize=500&sortColumns=TRADE_DATE&sortTypes=1&source=WEB&client=WEB")
+        for a in range(3):
+            try:
+                r = requests.get(u, headers=H, timeout=20).json()
+                break
+            except Exception:
+                time.sleep(2)
+        else:
+            raise RuntimeError(f"{sc} network fail")
+        d = (r.get("result") or {}).get("data") or []
+        for x in d:
+            rows.append({"date": x["TRADE_DATE"][:10], "stock_code": sc,
+                         "hold_shares": x["HOLD_SHARES"], "hold_pct": x["HOLD_SHARES_RATIO"]})
+        if not d or len(d) < 500:
+            return rows
+        page += 1
+        time.sleep(0.3)
+
+
+if OUT.exists():
+    allrows = pd.read_csv(OUT, dtype={"stock_code": str}).to_dict("records")
+else:
+    allrows = []
+for i, sc in enumerate(uni):
+    if sc in ckpt["done"]:
+        continue
+    try:
+        rows = fetch_stock(sc)
+    except Exception as e:
+        print(f"[{i+1}/{len(uni)}] {sc} FAIL {e}", flush=True)
+        time.sleep(2)
+        continue
+    allrows.extend(rows)
+    ckpt["done"][sc] = len(rows)
+    CKPT.write_text(json.dumps(ckpt))
+    print(f"[{i+1}/{len(uni)}] {sc}: {len(rows)} rows", flush=True)
+    time.sleep(0.4)
+
+df = (pd.DataFrame(allrows).drop_duplicates(subset=["date", "stock_code"])
+      .sort_values(["date", "stock_code"]))
+df.to_csv(OUT, index=False)
+print(f"total {len(df)} rows, {df['date'].nunique()} dates, "
+      f"{df['date'].min()} -> {df['date'].max()}, {df['stock_code'].nunique()} stocks")

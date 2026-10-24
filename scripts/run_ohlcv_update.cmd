@@ -1,0 +1,12 @@
+@echo off
+REM ============================================================
+REM  CBSC OHLCV Updater wrapper（供 Windows Task Scheduler 用）
+REM  每日 17:15 收集恆生指數成份股 5年 OHLCV
+REM
+REM  設定 UTF-8 環境，避免 cp950 排程環境崩潰。
+REM ============================================================
+
+set PYTHONUTF8=1
+set PYTHONIOENCODING=utf-8
+
+"C:\Python313\pythonw.exe" "C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts\collect_hsi_ohlcv.py" --update-only

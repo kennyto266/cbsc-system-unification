@@ -1,0 +1,258 @@
+#!/usr/bin/env python3
+"""
+L2 擺盤 (order book) 每日快照收集器 — 富途 OpenAPI 版 (Phase 3)
+
+每日收市 (~16:00 HK) 拍一張 10-level bid/ask 深度快照, 儲落每日 CSV.
+擺盤不平衡 (imbalance) 係微結構因子 — 反映 bid/ask 掛單壓力, orthogonal 於 price/volume.
+
+設計 (學自 collect_intraday_futu.py 嘅實戰經驗):
+  - 直接 import OpenQuoteContext 會 hang → 用 subprocess + hard timeout
+  - 子進程寫 parquet 到 temp file (唔用 stdout — 避免 Futu log 污染)
+  - --workers N 用 ThreadPoolExecutor 並行 spawn 多個子進程
+
+Futu API:
+  - 先 subscribe([code], [SubType.ORDER_BOOK]) 再 get_order_book(code, num=10)
+  - 返回 dict {"Bid": [[price,vol],...], "Ask": [[price,vol],...]}
+  - Bid[0]/Ask[0] = best level (level 1)
+  - 限頻: 訂閱消耗額度 (港股每隻 ORDER_BOOK 佔 1 額度); get_order_book 本身輕量
+
+輸出: cbsc-system-unification/data/orderbook/HK_<code>_YYYYMMDD.csv
+欄位: level, bid_price, bid_volume, ask_price, ask_volume, imbalance
+       (每 stock 每 day 10 行; imbalance = 全 10 level 計算, 全行一致)
+
+Derived:
+  imbalance = (sum_bid_vol - sum_ask_vol) / (sum_bid_vol + sum_ask_vol)
+  範圍 [-1, +1]: 正 = bid 壓倒 ask (買盤強), 負 = 賣盤強.
+
+用法:
+    python scripts/collect_orderbook.py                 # 今日快照 (52 隻)
+    python scripts/collect_orderbook.py --workers 4     # 4 並行
+    python scripts/collect_orderbook.py --stocks HK.00700,HK.09988
+    python scripts/collect_orderbook.py --depth 10      # 檔位 (預設 10)
+
+注意: 呢個係「快照」收集器 — 必須喺 HK 交易時段 (最好 ~16:00 收市前) 跑,
+      先有真實擺盤. 非交易時段擺盤會係空 / stale.
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+
+import argparse
+import os
+import socket
+import subprocess
+import tempfile
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parent.parent
+OB_DIR = ROOT / "data" / "orderbook"
+OB_DIR.mkdir(parents=True, exist_ok=True)
+
+# HSI_CORE 52 stocks — 同 vbt_data.HK_UNIVERSE 一致.
+HSI_CORE = [
+    "HK.00005", "HK.00388", "HK.00001", "HK.00002", "HK.00003", "HK.00006",
+    "HK.00011", "HK.00012", "HK.00016", "HK.00017", "HK.00027", "HK.00066",
+    "HK.00101", "HK.00175", "HK.00241", "HK.00268", "HK.00285", "HK.00291",
+    "HK.00386", "HK.00688", "HK.00700", "HK.00762", "HK.00823", "HK.00883",
+    "HK.00939", "HK.00941", "HK.01038", "HK.01088", "HK.01109", "HK.01299",
+    "HK.01398", "HK.01876", "HK.01928", "HK.02013", "HK.02318", "HK.02388",
+    "HK.02628", "HK.03690", "HK.06862", "HK.09618", "HK.09988", "HK.09999",
+    "HK.01810", "HK.09992", "HK.01211", "HK.01024", "HK.02899", "HK.09888",
+    "HK.00992", "HK.01801", "HK.00020", "HK.02269",
+]
+
+FUTU_HOST = "127.0.0.1"
+FUTU_PORT = 11111
+HKT = timezone(timedelta(hours=8))
+
+
+def opend_alive(host=FUTU_HOST, port=FUTU_PORT) -> bool:
+    """快 check OpenD port 是否接受連線."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(4)
+    try:
+        sock.connect((host, port))
+        sock.close()
+        return True
+    except Exception:
+        return False
+
+
+def _child_script(code: str, depth: int, tmp_path: str,
+                  host: str, port: int) -> str:
+    """組裝子進程 script (訂閱 + get_order_book → 寫 parquet).
+
+    子進程做:
+      1. 連 OpenD
+      2. subscribe ORDER_BOOK (擺盤要先訂閱)
+      3. get_order_book(code, num=depth)
+      4. unsubscribe (釋放額度)
+      5. 建 10-row DataFrame + 計 imbalance, 寫 parquet
+    """
+    return (
+        "import sys, logging\n"
+        "logging.disable(logging.CRITICAL)\n"
+        "import pandas as pd\n"
+        "from futu import OpenQuoteContext, SubType, RET_OK\n"
+        f"q = OpenQuoteContext(host={host!r}, port={port})\n"
+        "try:\n"
+        f"    ret, msg = q.subscribe([{code!r}], [SubType.ORDER_BOOK], subscribe_push=False)\n"
+        "    if ret != RET_OK:\n"
+        "        sys.exit(1)\n"
+        f"    ret, data = q.get_order_book({code!r}, num={depth})\n"
+        f"    try:\n"
+        f"        q.unsubscribe([{code!r}], [SubType.ORDER_BOOK])\n"
+        f"    except Exception:\n"
+        f"        pass\n"
+        "    if ret != RET_OK or not isinstance(data, dict):\n"
+        "        sys.exit(1)\n"
+        "    bids = data.get('Bid', []) or []\n"
+        "    asks = data.get('Ask', []) or []\n"
+        f"    n = {depth}\n"
+        # 補齊至 n 檔 (不足補 NaN)
+        "    bp = [float(bids[i][0]) if i < len(bids) and bids[i] else float('nan') for i in range(n)]\n"
+        "    bv = [float(bids[i][1]) if i < len(bids) and bids[i] else 0.0 for i in range(n)]\n"
+        "    ap = [float(asks[i][0]) if i < len(asks) and asks[i] else float('nan') for i in range(n)]\n"
+        "    av = [float(asks[i][1]) if i < len(asks) and asks[i] else 0.0 for i in range(n)]\n"
+        "    sb, sa = sum(bv), sum(av)\n"
+        "    imb = (sb - sa) / (sb + sa) if (sb + sa) > 0 else 0.0\n"
+        "    out = pd.DataFrame({\n"
+        "        'level': list(range(1, n + 1)),\n"
+        "        'bid_price': bp, 'bid_volume': bv,\n"
+        "        'ask_price': ap, 'ask_volume': av,\n"
+        "    })\n"
+        "    out['imbalance'] = imb\n"
+        f"    out.to_parquet({tmp_path!r}, index=False, engine='pyarrow')\n"
+        "finally:\n"
+        "    q.close()\n"
+    )
+
+
+def fetch_orderbook(code: str, depth: int = 10, timeout_sec: int = 60) -> pd.DataFrame | None:
+    """子進程拉一隻股票嘅擺盤快照 (硬 timeout, 唔會 hang).
+
+    Returns:
+        DataFrame [level, bid_price, bid_volume, ask_price, ask_volume, imbalance]
+        (depth 行) 或 None.
+    """
+    fd, tmp_path = tempfile.mkstemp(suffix=".parquet")
+    os.close(fd)
+    script = _child_script(code, depth, tmp_path, FUTU_HOST, FUTU_PORT)
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True, text=True, timeout=timeout_sec,
+        )
+        if proc.returncode != 0:
+            return None
+        if not os.path.exists(tmp_path):
+            return None
+        df = pd.read_parquet(tmp_path)
+        return df if not df.empty else None
+    except subprocess.TimeoutExpired:
+        print(f"    [timeout] {code} 超過 {timeout_sec}s, skip")
+        return None
+    except Exception as e:
+        print(f"    [err] {code}: {str(e)[:80]}")
+        return None
+    finally:
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            pass
+
+
+def collect_stock(code: str, depth: int = 10, snap_date: str = None,
+                  timeout_sec: int = 60, verbose: bool = True) -> int:
+    """拉一隻股票擺盤快照 + 寫落當日 CSV. 回行數 (depth 或 0)."""
+    date_str = snap_date or datetime.now(HKT).strftime("%Y%m%d")
+    out_path = OB_DIR / f"{code.replace('.', '_')}_{date_str}.csv"
+
+    # 已有就 skip (同一日唔重複拉, 慳訂閱額度)
+    if out_path.exists():
+        if verbose:
+            print(f"  ⏭️  {code}: {date_str} 已存在, skip")
+        try:
+            return len(pd.read_csv(out_path))
+        except Exception:
+            return 0
+
+    df = fetch_orderbook(code, depth=depth, timeout_sec=timeout_sec)
+    if df is None or df.empty:
+        if verbose:
+            print(f"  ❌ {code}: 拎唔到擺盤 (非交易時段? / 額度滿?)")
+        return 0
+
+    df.to_csv(out_path, index=False)
+    if verbose:
+        imb = df["imbalance"].iloc[0] if "imbalance" in df.columns else float("nan")
+        print(f"  ✅ {code}: {len(df)} 檔, imbalance={imb:+.3f}")
+    return len(df)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="L2 擺盤每日快照收集器 (富途)")
+    parser.add_argument("--workers", type=int, default=4,
+                        help="並行 subprocess 數 (預設 4)")
+    parser.add_argument("--stocks", help="指定 (逗號分隔), 預設 HSI_CORE 52 隻")
+    parser.add_argument("--depth", type=int, default=10,
+                        help="擺盤檔位 (1/5/10, 預設 10)")
+    parser.add_argument("--date", help="自訂快照日期 YYYYMMDD (預設今日 HK)")
+    parser.add_argument("--timeout", type=int, default=60, help="每隻 timeout (秒)")
+    parser.add_argument("--rate-sleep", type=float, default=0.3,
+                        help="每隻完成後 sleep 秒數 (預設 0.3)")
+    args = parser.parse_args()
+
+    stocks = args.stocks.split(",") if args.stocks else HSI_CORE
+    date_str = args.date or datetime.now(HKT).strftime("%Y%m%d")
+
+    print("=" * 64)
+    print(f"📥 富途 L2 擺盤每日快照收集器 (subprocess + timeout)")
+    print(f"   股票: {len(stocks)} 隻")
+    print(f"   深度: {args.depth} 檔")
+    print(f"   日期: {date_str} (HK)")
+    print(f"   並行: {args.workers} workers")
+    print(f"   OpenD: {'✓ alive' if opend_alive() else '✗ DEAD — 先啟動 FutuOpenD'}")
+    print(f"   輸出: {OB_DIR}/HK_<code>_{date_str}.csv")
+    print("=" * 64)
+
+    if not opend_alive():
+        print("\n❌ OpenD port 11111 冇開. 請先啟動 FutuOpenD 再跑.")
+        return 1
+
+    ok, total = 0, 0
+
+    def _task(code):
+        return code, collect_stock(code, depth=args.depth, snap_date=date_str,
+                                   timeout_sec=args.timeout, verbose=False)
+
+    with ThreadPoolExecutor(max_workers=max(1, args.workers)) as ex:
+        futures = {ex.submit(_task, c): c for c in stocks}
+        for fut in as_completed(futures):
+            code = futures[fut]
+            total += 1
+            try:
+                c, rows = fut.result()
+            except Exception as e:
+                print(f"  ❌ [{total}/{len(stocks)}] {code}: {str(e)[:80]}")
+                continue
+            if rows > 0:
+                ok += 1
+                print(f"  ✅ [{total}/{len(stocks)}] {c}: {rows} 檔")
+            else:
+                print(f"  ⚠️  [{total}/{len(stocks)}] {c}: 0 (timeout / 非交易時段)")
+            time.sleep(args.rate_sleep)  # 限頻禮貌
+
+    print(f"\n{'='*64}")
+    print(f"✅ 完成: {ok}/{total} 隻有快照 ({date_str})")
+    if ok < total:
+        print(f"   ⚠️  {total - ok} 隻失敗 (timeout / 非交易時段 / 訂閱額度滿)")
+    print(f"{'='*64}")
+
+
+if __name__ == "__main__":
+    main()

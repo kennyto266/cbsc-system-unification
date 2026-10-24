@@ -1,0 +1,99 @@
+"""
+hkptrc #19 策略：另類 Multi-Timeframe（日線近似版）
+
+原本用 1 分鐘線計算 Volume Weighted Absolute Up Ratio。
+富途 intraday 歷史有限，改用日線近似：
+- 用日線計算 Up Ratio（上升日成交佔比近似）
+- Z-Score 標準化
+- 大 timeframe（週線）落盤
+
+出處：[5VBWiqn74H0](https://www.youtube.com/watch?v=5VBWiqn74H0)
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, __file__.rsplit("\\", 1)[0])
+
+from common import *
+import numpy as np
+import pandas as pd
+
+
+def compute_up_ratio(prices, stock, window=20):
+    """Volume Weighted Absolute Up Ratio（日線近似）。
+
+    原本用分鐘線：up_change*volume / abs_change*volume
+    日線近似：用日漲跌幅度做加權
+    """
+    close = prices[stock].dropna()
+    if len(close) < window * 5:
+        return None
+
+    pct = close.pct_change()
+    abs_change = pct.abs()
+    up_change = pct.where(pct > 0, 0)
+
+    # Rolling Up Ratio（無 volume 用等權近似）
+    up_ratio = up_change.rolling(window).mean() / abs_change.rolling(window).mean().replace(0, np.nan)
+
+    return up_ratio
+
+
+def strategy_19_mta(prices, stock, window=20, z_window=100, threshold=2.0):
+    """#19 另類 MTA — Up Ratio Z-Score。
+
+    Up Ratio 高 = 升幅集中 = 買入力強 → 買入
+    Up Ratio 低 = 跌幅集中 → 沽出
+    """
+    close = prices[stock].dropna()
+    if len(close) < z_window + window + 10:
+        return None
+
+    up_ratio = compute_up_ratio(prices, stock, window)
+    if up_ratio is None:
+        return None
+
+    z = compute_zscore(up_ratio, z_window)
+
+    entries = (z > threshold).fillna(False)        # 升幅集中 → 買
+    exits = (z < 0).fillna(False)
+    short_entries = (z < -threshold).fillna(False) # 跌幅集中 → 沽
+    short_exits = (z > 0).fillna(False)
+
+    if not entries.any() and not short_entries.any():
+        return None
+
+    pf = backtest_signals(close, entries, exits, short_entries, short_exits)
+    return extract_metrics(pf, "19_MTA_UpRatio", stock)
+
+
+def run_strategy_19(prices, stocks=None):
+    stocks = stocks or TEST_STOCKS
+    results = []
+
+    print("\n運行 #19 另類 MTA（Up Ratio）策略 ...")
+
+    for stock in stocks:
+        if stock not in prices.columns:
+            continue
+        try:
+            r = strategy_19_mta(prices, stock)
+            if r:
+                results.append(r)
+                print("  {} ✓ Sharpe={:.2f}".format(stock, r["sharpe"]))
+        except Exception as e:
+            print("  {} ✗ {}".format(stock, str(e)[:50]))
+
+    return results
+
+
+if __name__ == "__main__":
+    print("=" * 95)
+    print("📊 hkptrc #19: 另類 MTA（Up Ratio Z-Score）")
+    print("=" * 95)
+
+    prices = load_prices(250)
+    print("數據: {} 日 × {} 股".format(len(prices), prices.shape[1]))
+
+    results = run_strategy_19(prices)
+    print_results_table(results, "#19 另類 MTA")
+    save_results(results, "strategy_19_mta.csv")

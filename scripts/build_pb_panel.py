@@ -1,0 +1,197 @@
+# 一次性: 建 PB panel (thesis: PB self-rebase)
+# 1) Futu 未復權日 close 51股 2021-08起 -> futu_history/close_unadj/
+# 2) eastmoney RPT_HKF10_FN_MAININDICATOR BPS 季報 -> new_sources/bps_raw.csv
+# 3) PIT 合成 pb panel (BPS lag 60日) -> new_sources/pb_panel.csv
+import json, time, urllib.request, csv, os, sys, shutil
+from datetime import datetime, date
+
+import pandas as pd  # [09-14 T3384E3] 提前 — incremental tail merge 要用
+
+CODES_HK = ['00001','00002','00003','00005','00006','00012','00016','00017','00020','00027',
+'00066','00101','00175','00241','00268','00285','00291','00386','00388','00688','00700','00762',
+'00823','00883','00939','00941','00992','01024','01038','01088','01109','01211','01299','01398',
+'01801','01810','01876','01928','02013','02269','02318','02388','02628','02899','03690','06862',
+'09618','09888','09988','09992','09999']
+
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_CLOSE = os.path.join(BASE, 'data', 'futu_history', 'close_unadj')
+OUT_NEW = os.path.join(BASE, 'data', 'new_sources')
+os.makedirs(OUT_CLOSE, exist_ok=True)
+
+log = lambda *a: print(datetime.now().strftime('%H:%M:%S'), *a, flush=True)
+
+# ---------- 1) Futu daily unadjusted close ----------
+# [09-14 T3384E3] 兩個靜默停更病根剷走:
+#   a) end 寫死 '2026-08-22' — panel 永遠停喺 8/21;
+#   b) 檔案存在即永久 skip — 靜默 3 週冇人知。
+# 而家: end=今日, 有檔只補 last date → 今日 嘅 tail, 補唔到會 log FAIL。
+END = date.today().strftime('%Y-%m-%d')
+from futu import OpenQuoteContext
+q = OpenQuoteContext(host='127.0.0.1', port=11111)
+n_ok = 0
+n_fail = 0
+for c in CODES_HK:
+    code = f'HK.{c}'
+    fp = os.path.join(OUT_CLOSE, f'{code}.csv')
+    old_df = None
+    start = '2021-08-01'
+    if os.path.exists(fp) and os.path.getsize(fp) > 1000:
+        old_df = pd.read_csv(fp)
+        last = pd.to_datetime(old_df['time_key']).max()
+        start = (last + pd.Timedelta(days=1)).strftime('%Y-%m-%d')
+        if start > END:
+            n_ok += 1; continue  # 已到今日
+    for attempt in range(3):
+        ret, df, _ = q.request_history_kline(code, start=start, end=END,
+                                             ktype='K_DAY', autype=None, max_count=100000)
+        if ret == 0 and len(df) > 0:
+            new = df[['time_key', 'close']].copy()
+            # [10-20 G95666] futu 原生 time_key 帶 " 00:00:00" — 落檔前正規化返純日期;
+            # 唔係 b4c3e099 正規化完嘅 body 又俾尾貼溝雜 (一行 mixed format 毒死
+            # pb/div_yield/tp_std/anrev 四個 reader: merge_asof dtype / Timestamp vs str)
+            new['time_key'] = pd.to_datetime(new['time_key'], format='mixed').dt.strftime('%Y-%m-%d')
+            if old_df is not None:
+                comb = pd.concat([old_df, new]).drop_duplicates('time_key').sort_values('time_key')
+                comb.to_csv(fp, index=False)
+            elif len(df) > 500:
+                new.to_csv(fp, index=False)
+            else:
+                log('FUTU TOO FEW', code, len(df)); n_fail += 1; break
+            n_ok += 1; break
+        if ret == 0 and len(df) == 0:
+            # [TG哨兵 10-18 修] OpenD 正面答「窗口冇 bar」— 週末/假期/停牌
+            # 空窗唔係 fetch FAIL: 倉庫已有數據 (old_df 在場) 而 API 冇新
+            # 交易日 bar, 維持原檔即係最新狀態。真斷流 (連舊數都冇增量,
+            # 逾 7 日曆日零 bar) 由 moat-sentry orphan panel lag>30日 防線
+            # 兜底, 唔靠呢條 rc=1 假警報。
+            n_ok += 1; break
+        time.sleep(2)
+    else:
+        log('FUTU FAIL', code, df if ret != 0 else len(df))
+        n_fail += 1
+    time.sleep(0.4)
+q.close()
+log('futu done', n_ok, '/', len(CODES_HK), '| fail:', n_fail)
+# [09-14 T3384E3] 靜默失敗修復 — close 補唔齊都算綠係 pb 停更 3 週幫兇
+# [TG哨兵 10-18 收窄] 呢條閘保住「真失敗」(ret<0 / 3次重試都炸); 週末
+# 空窗 ret=0+0rows 已喺上面分流做 n_ok, 唔會再觸發本閘。
+if n_fail:
+    sys.exit(f'build_pb_panel: {n_fail} stock(s) close fetch FAIL — 唔好扮綠')
+
+# ---------- 2) Eastmoney BPS ----------
+def em_get(url):
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0',
+        'Referer': 'https://emweb.securities.eastmoney.com/'})
+    return urllib.request.urlopen(req, timeout=20).read().decode('utf-8')
+
+bps_rows = []
+for c in CODES_HK:
+    try:
+        u = ('https://datacenter.eastmoney.com/securities/api/data/v1/get?'
+             'reportName=RPT_HKF10_FN_MAININDICATOR&columns=SECURITY_CODE,STD_REPORT_DATE,BPS,DATE_TYPE_CODE'
+             f'&filter=(SECURITY_CODE%3D%22{c}%22)&pageSize=500&sortColumns=STD_REPORT_DATE&sortTypes=-1')
+        d = json.loads(em_get(u))
+        rows = d.get('result', {}).get('data') or []
+        got = [(c, r['STD_REPORT_DATE'][:10], r.get('BPS')) for r in rows if r.get('BPS') not in (None, 0)]
+        bps_rows.extend(got)
+        log('EM', c, len(got))
+    except Exception as e:
+        log('EM FAIL', c, repr(e)[:80])
+    time.sleep(0.3)
+
+with open(os.path.join(OUT_NEW, 'bps_raw.csv'), 'w', newline='') as f:
+    w = csv.writer(f); w.writerow(['stock_code', 'report_date', 'bps']); w.writerows(bps_rows)
+log('bps done', len(bps_rows))
+
+# ---------- 3) build PIT pb panel ----------
+import pandas as pd
+bps = pd.DataFrame(bps_rows, columns=['code', 'report_date', 'bps'])
+bps['report_date'] = pd.to_datetime(bps['report_date'])
+bps['avail_date'] = bps['report_date'] + pd.Timedelta(days=60)  # PIT lag
+bps = bps.sort_values('report_date').groupby('code').apply(
+    lambda g: g.drop_duplicates('report_date', keep='last'))
+bps = bps.reset_index(drop=True)
+
+# [09-14 TD79204 G68889] 近零資產 PB 門檻 — 判斷值唔係公式值: 高槓桿金融股正常
+# PB 5-15, >100 幾乎必係近零資產期 (數學啱經濟無意義); 要調就改呢度, 有 sidecar 案底
+LOW_PB_EXCLUDE = 100.0
+
+recs = []
+excluded = []
+for c in CODES_HK:
+    fp = os.path.join(OUT_CLOSE, f'HK.{c}.csv')
+    if not os.path.exists(fp): continue
+    px = pd.read_csv(fp, parse_dates=['time_key'])
+    g = bps[bps['code'] == c]
+    if g.empty: continue
+    # merge_asof: 每日取 avail_date <= 該日 嘅最新 BPS
+    g2 = g.sort_values('avail_date')[['avail_date', 'bps']]
+    m = pd.merge_asof(px.sort_values('time_key'), g2, left_on='time_key', right_on='avail_date')
+    m = m.dropna(subset=['bps'])
+    # [09-14 TD79204 G68889] 一刀切 bps>0 升級為語義分類 — 丟棄都要留案底:
+    #   negative_bps: 負資產 (一直已丟, 而家開始記錄)
+    #   low_equity:   bps>0 但 PB>LOW_PB_EXCLUDE — 近零正 BPS 假訊號
+    #     (基準案例 01928 金沙中國: BPS 0.6995→0.1078 (2022H1 疫情)→-0.6024 (負資產)
+    #      →2024H1 回正 0.464; 2023-01~02 段 BPS 0.1078 餵出 PB 148-283)
+    neg = m[m['bps'] <= 0]
+    for _, r in neg.iterrows():
+        excluded.append((r['time_key'].strftime('%Y-%m-%d'), f'HK.{c}',
+                         float(r['close']), float(r['bps']), 'negative_bps'))
+    m = m[m['bps'] > 0].copy()
+    m['pb'] = m['close'] / m['bps']
+    lo = m[m['pb'] > LOW_PB_EXCLUDE]
+    for _, r in lo.iterrows():
+        excluded.append((r['time_key'].strftime('%Y-%m-%d'), f'HK.{c}',
+                         float(r['close']), float(r['bps']), 'low_equity'))
+    m = m[m['pb'] <= LOW_PB_EXCLUDE]
+    for _, r in m.iterrows():
+        recs.append((r['time_key'].strftime('%Y-%m-%d'), f'HK.{c}', r['close'] / r['bps']))
+
+pb = pd.DataFrame(recs, columns=['date', 'code', 'value']).sort_values(['date', 'code'])
+pb.to_csv(os.path.join(OUT_NEW, 'pb_panel.csv'), index=False)
+# sidecar: 丟棄案底 (開頭 # 註解寫明基準案例, 讀嘅時候 comment='#' 跳得過)
+with open(os.path.join(OUT_NEW, 'pb_excluded_log.csv'), 'w', newline='', encoding='utf-8') as f:
+    f.write('# [TD79204 G68889] PB 丟棄理由 log — 基準案例: 01928 金沙中國疫情近零資產期\n')
+    f.write('# BPS 0.1078 (2022H1) -> PB 148-283 段 (2023-01~02) = 近零正 BPS, 數學對經濟無意義 -> low_equity\n')
+    w = csv.writer(f)
+    w.writerow(['date', 'code', 'close', 'bps', 'reason'])
+    w.writerows(excluded)
+by_reason = {}
+for e in excluded:
+    by_reason[e[4]] = by_reason.get(e[4], 0) + 1
+log('pb excluded', by_reason, '-> pb_excluded_log.csv')
+log('pb panel rows', len(pb), 'stocks', pb['code'].nunique())
+log('date range', pb['date'].min(), pb['date'].max())
+per = pb.groupby('code').size()
+log('min per-stock rows', per.min(), '| stocks <756d:', (per < 756).sum())
+
+# ---------- 4) promote: pb_panel.csv 冪等尾貼入 factor_store/pb_ratio.parquet ----------
+# [10-16 G13447 重鋪] 原促升尾隨 submodule gitlink 2356d0e35 物件失落蒸發咗
+# (只有 dbe449b35 evidence 行仲有紀錄), pb_ratio 再凍結 32 日孤兒。語義照
+# backtests/_agent_0914_pb_backfill.py: 淨貼 parquet 冇嘅日期行, 欄集不變。
+FS_PB = os.path.join(BASE, 'data', 'factor_store', 'pb_ratio.parquet')
+os.makedirs(os.path.dirname(FS_PB), exist_ok=True)
+try:
+    wide = pb.pivot_table(index='date', columns='code', values='value')
+    wide.index = pd.to_datetime(wide.index)
+    if os.path.exists(FS_PB):
+        old = pd.read_parquet(FS_PB)
+        old.index = pd.to_datetime(old.index)
+        wide = wide[[c for c in wide.columns if c in old.columns]]
+        new_dates = wide.index.difference(old.index)
+        if len(new_dates):
+            bak = FS_PB + '.bakG13447'
+            if not os.path.exists(bak):
+                shutil.copy2(FS_PB, bak)
+            pd.concat([old, wide.loc[sorted(new_dates)]]).sort_index().to_parquet(FS_PB)
+        chk = pd.read_parquet(FS_PB)
+        log('pb_ratio promote: +%d dates -> %d rows, max %s'
+            % (len(new_dates), len(chk), chk.index.max()))
+    elif len(wide):
+        wide.to_parquet(FS_PB)
+        log('pb_ratio promote: 全新落檔', wide.shape)
+    else:
+        log('pb_ratio promote: skip — empty panel')
+except Exception as e:
+    sys.exit('build_pb_panel: pb_ratio promote FAIL — %s (唔好扮綠)' % e)
+log('DONE')

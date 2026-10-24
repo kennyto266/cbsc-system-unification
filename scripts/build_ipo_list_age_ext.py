@@ -1,0 +1,54 @@
+# -*- coding: utf-8 -*-
+"""build_ipo_list_age_ext.py — ipo_list_age 年齡板自動延長到今日 (09-15 G50843).
+
+年齡 = 今日 − 上市日 — 呢種板天生可以無限前推, 唔使等爬蟲。讀 NS/
+ipo_list_age_panel.csv (wide, 最後真實計算日), 用最後兩日嘅年齡差推出
+每隻股嘅上市日, 再生成至今日嘅年齡矩陣。新上市股 (年齡差推唔出) 保持
+最後值 — 寧 stale 唔作數。
+"""
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+SRC = BASE / "data" / "new_sources" / "ipo_list_age_panel.csv"
+DST = BASE / "data" / "factor_store" / "ipo_list_age.parquet"
+
+
+def main() -> int:
+    df = pd.read_csv(SRC, index_col=0)
+    df.index = pd.to_datetime(df.index)
+    df = df.sort_index()
+    last_day = df.index.max()
+
+    # 兩日年齡差 ≈ 兩日曆差 → 上市日 = last_day − age_last (自然日齡)
+    age_last = df.iloc[-1]
+    listing = (last_day - pd.to_timedelta(age_last, unit="D")).dt.normalize()
+    # 只信「兩日年齡差 == 兩日日曆差」嘅欄 (真‧日曆年齡語義)
+    if len(df) >= 2:
+        delta_age = (age_last - df.iloc[-2]).dropna()
+        expect = (df.index[-1] - df.index[-2]).days
+        good = delta_age[delta_age == expect].index
+    else:
+        good = age_last.dropna().index
+    listing = listing[good]
+
+    # 由 last_day+1 到今日逐日延長
+    today = pd.Timestamp.now().normalize()
+    if today <= last_day:
+        print("已經去到今日")
+    extra_days = pd.date_range(last_day + pd.Timedelta(days=1), today, freq="D")
+    out = df.copy()
+    for d in extra_days:
+        out.loc[d] = (d - listing).dt.days.reindex(out.columns)
+    out = out.sort_index()
+    out.index.name = "date"
+    out.to_parquet(DST)
+    print(f"ipo_list_age: {out.shape}, 延長 {last_day.date()} → {out.index.max().date()} "
+          f"({len(extra_days)}日, 可信欄 {len(good)})")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

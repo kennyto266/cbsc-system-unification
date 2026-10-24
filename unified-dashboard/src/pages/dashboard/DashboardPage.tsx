@@ -1,0 +1,97 @@
+import React, { useState, useEffect } from 'react'
+import { Card, Row, Col, Statistic, Table, Spin, Empty } from 'antd'
+
+interface MarketData {
+  hsi_close?: number
+  hsi_change_pct?: number
+  turnover_hkd?: number
+  sentiment_label?: string
+  sentiment_score?: number
+}
+
+interface Strategy {
+  strategy: string
+  sharpe_median: number
+  ann_return_median: number
+  max_dd_mean: number
+  n_stocks: number
+  best_stock: string
+  best_sharpe: number
+}
+
+interface WatchItem {
+  code: string
+  name: string
+  last_price: number
+  change_percent: number
+}
+
+const DashboardPage: React.FC = () => {
+  const [market, setMarket] = useState<MarketData>({})
+  const [strategies, setStrategies] = useState<Strategy[]>([])
+  const [watch, setWatch] = useState<WatchItem[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/cbsc/dashboard-summary').then(r => r.json()).catch(() => ({})),
+      fetch('/api/strategies/list').then(r => r.json()).catch(() => ({})),
+      fetch('/api/futu/watchlist').then(r => r.json()).catch(() => ({})),
+    ]).then(([cbsc, strat, wl]) => {
+      const d = cbsc.data || {}
+      setMarket({
+        hsi_close: d.statistics?.hsif_current,
+        hsi_change_pct: d.statistics?.hsif_change_percent,
+        turnover_hkd: d.statistics?.total_volume,
+        sentiment_label: d.market_sentiment?.sentiment_label,
+        sentiment_score: d.market_sentiment?.sentiment_score,
+      })
+      setStrategies((strat.data?.strategies) || [])
+      setWatch((wl.data) || [])
+      setLoading(false)
+    })
+  }, [])
+
+  const watchCols = [
+    { title: '代碼', dataIndex: 'code', key: 'code', width: 90 },
+    { title: '名稱', dataIndex: 'name', key: 'name', ellipsis: true },
+    { title: '現價', dataIndex: 'last_price', key: 'price', align: 'right' as const, render: (v: number) => v?.toFixed(2) },
+    { title: '漲跌%', dataIndex: 'change_percent', key: 'chg', align: 'right' as const,
+      render: (v: number) => <span style={{ color: v >= 0 ? '#52c41a' : '#ff4d4f', fontWeight: 600 }}>{v >= 0 ? '+' : ''}{v?.toFixed(2)}%</span> },
+  ]
+
+  const stratCols = [
+    { title: '策略', dataIndex: 'strategy', key: 'strat', ellipsis: true },
+    { title: 'Sharpe', dataIndex: 'sharpe_median', key: 'sharpe', align: 'right' as const,
+      sorter: (a: Strategy, b: Strategy) => a.sharpe_median - b.sharpe_median,
+      render: (v: number) => <span style={{ color: v > 1 ? '#52c41a' : v > 0 ? '#faad14' : '#ff4d4f', fontWeight: 600 }}>{v?.toFixed(2)}</span> },
+    { title: '年回報%', dataIndex: 'ann_return_median', key: 'ret', align: 'right' as const, render: (v: number) => v?.toFixed(1) + '%' },
+    { title: 'MaxDD%', dataIndex: 'max_dd_mean', key: 'dd', align: 'right' as const, render: (v: number) => v?.toFixed(1) + '%' },
+    { title: '最佳股', dataIndex: 'best_stock', key: 'bs', width: 100 },
+    { title: '最佳SR', dataIndex: 'best_sharpe', key: 'bsr', align: 'right' as const, render: (v: number) => v?.toFixed(2) },
+  ]
+
+  return (
+    <div style={{ padding: 24 }}>
+      <h2 style={{ marginBottom: 24 }}>📊 市場概覽</h2>
+      <Row gutter={16} style={{ marginBottom: 24 }}>
+        <Col span={5}><Card><Statistic title="恆生指數" value={market.hsi_close || '-'} precision={2}
+          valueStyle={{ color: (market.hsi_change_pct || 0) >= 0 ? '#52c41a' : '#ff4d4f' }}
+          suffix={market.hsi_change_pct ? ` (${market.hsi_change_pct > 0 ? '+' : ''}${market.hsi_change_pct.toFixed(2)}%)` : ''} /></Card></Col>
+        <Col span={5}><Card><Statistic title="成交額" value={market.turnover_hkd ? (market.turnover_hkd / 1e8).toFixed(0) : '-'} suffix="億 HKD" /></Card></Col>
+        <Col span={5}><Card><Statistic title="市場情緒" value={market.sentiment_label || '-'}
+          valueStyle={{ color: (market.sentiment_score || 50) > 60 ? '#52c41a' : (market.sentiment_score || 50) < 40 ? '#ff4d4f' : '#faad14' }} /></Card></Col>
+        <Col span={5}><Card><Statistic title="情緒指數" value={market.sentiment_score || '-'} precision={1} suffix="/100" /></Card></Col>
+        <Col span={4}><Card><Statistic title="策略數" value={strategies.length} suffix="個" /></Card></Col>
+      </Row>
+      <Row gutter={16}>
+        <Col span={14}><Card title="🏆 策略回測排名（按 Sharpe）" size="small">
+          {loading ? <Spin /> : <Table dataSource={strategies.slice(0, 10)} columns={stratCols} rowKey="strategy" size="small" pagination={false} />}</Card></Col>
+        <Col span={10}><Card title="📈 藍籌實時報價" size="small">
+          {loading ? <Spin /> : watch.length > 0 ? <Table dataSource={watch.slice(0, 12)} columns={watchCols} rowKey="code" size="small" pagination={false} /> : <Empty description="載入中..." />}</Card></Col>
+      </Row>
+    </div>
+  )
+}
+
+export default DashboardPage

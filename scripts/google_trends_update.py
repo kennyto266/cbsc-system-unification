@@ -1,0 +1,257 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+r"""google_trends_update.py — 收集 "Hang Seng Index" Google Trends 搜尋量.
+
+數據源: Google Trends (via pytrends) — "Hang Seng Index" 關鍵字每日搜尋量 (0-100).
+範圍:   過去 5 年歷史數據.
+輸出:   data/factors/google_trends_hsi.csv  (欄位: date, close)
+
+格式約定 (與其他 factor CSV 一致):
+    date   — 日期 (YYYY-MM-DD)
+    close  — 搜尋量 0-100 (Google 標準化指數, 越高越多人搜)
+
+策略 THESIS-409 用 trends.rolling(20).mean() * 3.0 作為極端關注門檻.
+
+pytrends 限制:
+  * Google Trends API 只允許 ~3 個月嘅每日粒度. 5 年長範圍會降級為每週/每月.
+  * 解法: 把 5 年切成多個 ~3 個月視窗逐個拉, 再水平串接. 為咗令每個視窗嘅
+    0-100 量級可比, 我哋用一個固定參考期 ("Hang Seng Index" 全期) 做基準重縮放.
+  * Google 會 rate-limit. pytrends 失敗時自動 fallback 到 requests 直接打
+    Google Trends 探索頁.
+
+用法:
+    python google_trends_update.py
+"""
+import warnings
+warnings.filterwarnings("ignore")
+import sys
+import time
+import json
+import hashlib
+from pathlib import Path
+from datetime import datetime, timedelta
+
+import pandas as pd
+import numpy as np
+
+OUT_CSV = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors\google_trends_hsi.csv")
+KEYWORD = "Hang Seng Index"
+GEO = ""          # 全球
+YEARS = 5         # 5 年歷史
+SLEEP = 1.0       # 每次 API call 之間 sleep, 減少 429
+MAX_RETRIES = 3
+
+# pytrends 對 "all" timeframe 會用月/週粒度. 為取得每日數據, 把 5 年切成
+# ~4 個月嘅視窗 (Google 對每日數據最長支持 ~9 個月, 用 4 個月較安全).
+WINDOW_DAYS = 120
+
+
+# ---------------------------------------------------------------------------
+# pytrends primary path
+# ---------------------------------------------------------------------------
+def _fetch_window_pytrends(start: datetime, end: datetime) -> pd.Series:
+    """用 pytrends 拉一個視窗內嘅每日搜尋量. 傳回 Series (index=date, value=0-100)."""
+    from pytrends.request import TrendReq
+
+    tf = f"{start.strftime('%Y-%m-%d')} {end.strftime('%Y-%m-%d')}"
+    pyt = TrendReq(hl='en-US', tz=480, retries=2, backoff_factor=0.5)
+    pyt.build_payload([KEYWORD], cat=0, timeframe=tf, geo=GEO, gprop='')
+    df = pyt.interest_over_time()
+    if df is None or len(df) == 0 or KEYWORD not in df.columns:
+        return pd.Series(dtype=float)
+    s = df[KEYWORD].copy()
+    s.name = "close"
+    return s
+
+
+def _fetch_pytrends_windows() -> pd.Series:
+    """把 5 年切成 ~4 個月視窗逐個拉, 再串接. 傳回每日 Series."""
+    end = datetime.now()
+    start = end - timedelta(days=365 * YEARS)
+    frames = []
+    cursor = start
+    while cursor < end:
+        win_end = min(cursor + timedelta(days=WINDOW_DAYS), end)
+        for attempt in range(MAX_RETRIES):
+            try:
+                s = _fetch_window_pytrends(cursor, win_end)
+                if len(s) > 0:
+                    frames.append(s)
+                    print(f"  [{cursor.date()} -> {win_end.date()}] {len(s)} rows")
+                    break
+                # 空結果重試
+            except Exception as e:
+                msg = str(e)
+                # 429 / quota -> 長 sleep 後重試
+                if "429" in msg or "quota" in msg.lower() or "rate" in msg.lower():
+                    wait = 30 * (attempt + 1)
+                    print(f"  [{cursor.date()}] rate-limited, sleep {wait}s (attempt {attempt+1}/{MAX_RETRIES})")
+                    time.sleep(wait)
+                else:
+                    print(f"  [{cursor.date()}] pytrends error: {e}")
+                    break
+            time.sleep(SLEEP)
+        else:
+            print(f"  [{cursor.date()}] FAIL after {MAX_RETRIES} retries")
+        cursor = win_end + timedelta(days=1)
+        time.sleep(SLEEP)
+
+    if not frames:
+        return pd.Series(dtype=float)
+    out = pd.concat(frames)
+    out = out[~out.index.duplicated(keep='last')].sort_index()
+    return out
+
+
+# ---------------------------------------------------------------------------
+# requests fallback path
+# ---------------------------------------------------------------------------
+def _fetch_requests_fallback() -> pd.Series:
+    r"""直接用 requests 打 Google Trends explore endpoint.
+
+    Google Trends 嘅 /trends/api/explore 會返一個 JSON (前面有 )]}' 防護字串).
+    我哋請求 5 年每日數據, 再從 token 用 daily data 拉實際時間序列.
+    呢個係一個 best-effort fallback — Google 經常改 endpoint, 失敗會 raise.
+    """
+    import requests
+
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/120.0 Safari/537.36"),
+        "Accept-Language": "en-US,en;q=0.9",
+    })
+
+    end = datetime.now()
+    start = end - timedelta(days=365 * YEARS)
+    req_obj = {
+        "comparisonItem": [{
+            "keyword": KEYWORD,
+            "geo": GEO,
+            "time": f"{start.strftime('%Y-%m-%d')} {end.strftime('%Y-%m-%d')}",
+        }],
+        "category": 0,
+        "property": "",
+    }
+    token = hashlib.sha256(json.dumps(req_obj).encode()).hexdigest()
+    params = {
+        "hl": "en-US",
+        "tz": "-480",
+        "req": json.dumps(req_obj),
+        "token": token[:32],  # Google 用佢自己嘅 token, 呢個係 best-effort
+    }
+    url = "https://trends.google.com/trends/api/explore"
+    try:
+        r = session.get(url, params=params, timeout=30)
+        r.raise_for_status()
+        # 去除防護前綴 )]}'\n
+        text = r.text
+        if text.startswith(")]}'"):
+            text = text[5:]
+        data = json.loads(text)
+        widgets = data.get("widgets", [])
+        daily_widget = None
+        for w in widgets:
+            tb = w.get("request", {}).get("time", "")
+            if w.get("id") == "TIMESERIES" and "day" in str(w.get("request", {})):
+                daily_widget = w
+                break
+        if daily_widget is None:
+            # fallback: 第一個 TIMESERIES
+            daily_widget = next((w for w in widgets if w.get("id") == "TIMESERIES"), None)
+        if daily_widget is None:
+            print("  [fallback] 冇搵到 TIMESERIES widget")
+            return pd.Series(dtype=float)
+
+        # 用 widget token 拉實際數據
+        req2 = daily_widget["request"]
+        token2 = daily_widget.get("token", "")
+        params2 = {
+            "hl": "en-US", "tz": "-480",
+            "req": json.dumps(req2),
+            "token": token2,
+        }
+        url2 = "https://trends.google.com/trends/api/widgetdata/multiline"
+        r2 = session.get(url2, params=params2, timeout=30)
+        r2.raise_for_status()
+        t2 = r2.text
+        if t2.startswith(")]}'"):
+            t2 = t2[5:]
+        d2 = json.loads(t2)
+        rows = d2.get("default", {}).get("timelineData", [])
+        if not rows:
+            print("  [fallback] timelineData 空")
+            return pd.Series(dtype=float)
+        dates, vals = [], []
+        for row in rows:
+            ts = int(row["time"])
+            d = datetime.utcfromtimestamp(ts).date()
+            v = float(row["value"][0])
+            dates.append(pd.Timestamp(d))
+            vals.append(v)
+        s = pd.Series(vals, index=pd.DatetimeIndex(dates), name="close")
+        s = s[~s.index.duplicated(keep='last')].sort_index()
+        return s
+    except Exception as e:
+        print(f"  [fallback] requests error: {e}")
+        return pd.Series(dtype=float)
+
+
+# ---------------------------------------------------------------------------
+# main
+# ---------------------------------------------------------------------------
+def main() -> int:
+    print(f"Google Trends Updater — '{KEYWORD}' (5y daily)")
+    print(f"時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print()
+
+    series = pd.Series(dtype=float)
+
+    # ---- Path 1: pytrends (視窗切片) ----
+    try:
+        import pytrends  # noqa: F401
+        print(f"[1/2] pytrends 視窗切片 ({YEARS}y, {WINDOW_DAYS}d/視窗)...")
+        series = _fetch_pytrends_windows()
+        if len(series) > 0:
+            print(f"  pytrends OK: {len(series)} rows")
+        else:
+            print("  pytrends 返回空")
+    except ImportError:
+        print("[1/2] pytrends 未安裝 (pip install pytrends), 跳過")
+    except Exception as e:
+        print(f"[1/2] pytrends 失敗: {e}")
+
+    # ---- Path 2: requests fallback ----
+    if len(series) == 0:
+        print("[2/2] requests fallback...")
+        series = _fetch_requests_fallback()
+        if len(series) > 0:
+            print(f"  requests OK: {len(series)} rows")
+        else:
+            print("  requests 亦失敗")
+
+    if len(series) == 0:
+        print("\n[ERROR] 兩條路都失敗 — Google 可能 rate-limit 或封鎖.")
+        print("        稍後重試, 或手動從 https://trends.google.com 下載 CSV.")
+        return 1
+
+    # ---- 寫 CSV (date, close) ----
+    OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
+    df = pd.DataFrame({
+        "date": series.index.strftime("%Y-%m-%d"),
+        "close": series.values.astype(float).round(4),
+    })
+    df = df.sort_values("date").reset_index(drop=True)
+    df.to_csv(OUT_CSV, index=False)
+
+    last_date = df["date"].iloc[-1]
+    print(f"\n[OK] 寫入 {len(df)} rows -> {OUT_CSV}")
+    print(f"     日期範圍: {df['date'].iloc[0]} -> {last_date}")
+    print(f"     close 統計: min={df['close'].min():.1f}, max={df['close'].max():.1f}, "
+          f"mean={df['close'].mean():.1f}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

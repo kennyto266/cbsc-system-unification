@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+"""build_earnings_report_dates_panel.py — essa thesis: np_report_date 面板.
+
+輸入: data/new_sources/earnings_report_dates_raw.csv (HKEX titleSearch 全量公告)
+處理:
+  1. 嚴格篩「業績公佈」類標題 (排除報告書刊本/通知信函/運營數據/股息等雜訊)
+  2. 由標題解析報告期末日 (截至...止 / 年度 / 中期 / 第X季度 / FY 變體)
+  3. 每股每期去重 — 攞最早 notice_date 做 t0 (業績公佈時點)
+輸出: data/factor_store/np_report_date.parquet — date×stock, 值=當日公佈嘅期末日 (timestamp);
+      同一 t0 有多期 (極罕) 攞最近嗰期。agent3 用佢將 np 對齊 t0。
+"""
+import re
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "earnings_report_dates_raw.csv"
+OUT = BASE / "data" / "factor_store" / "np_report_date.parquet"
+START = "2019-01-01"
+
+# 雜訊: 刊本/函件/通知/非業績
+NOISE = re.compile(
+    r"通知信函|函件|信函|發佈通知|刊發通知|發布通知|年度報告|中期報告|半年度報告(?!.{0,4}業績)|"
+    r"20-F|企業年度報告書|回覆|澄清|運營數據|業務狀況|最新消息|股息公告|派付.{0,4}股利|第三支柱|督導|索取表格|"
+    r"月報表|翌日披露|週年大會|股東大會|ESG|資本管理|月度|業務回顧"
+)
+# 業績公佈類: 業績公佈/業績公告/業績摘要/A+H 季度報告公告
+KEEP = re.compile(
+    r"業績|季度報告|季度季度|財務及經營指標"
+)
+
+CN_DIG = {"零": 0, "〇": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+
+
+def cn_year(s):
+    y = 0
+    for ch in s:
+        y = y * 10 + CN_DIG.get(ch, -1)
+    return y
+
+
+def cn_num(s):
+    # 一~十二
+    if s == "十":
+        return 10
+    if "十" in s:
+        a, _, b = s.partition("十")
+        return (CN_DIG.get(a, 1)) * 10 + (CN_DIG.get(b, 0) if b else 0)
+    return CN_DIG.get(s, None)
+
+
+def parse_period(title):
+    """標題 → 報告期末日 (pd.Timestamp) 或 None."""
+    # 1) 截至二零二六年六月三十日止 / 截至2026年6月30日
+    m = re.search(r"截至(二[零〇一二三四五六七八九]{2,3}|20\d{2})年([一二三四五六七八九十]{1,3}|\d{1,2})月([一二三四五六七八九十]{1,3}|\d{1,2})日", title)
+    if m:
+        y = int(m.group(1)) if m.group(1).isdigit() else cn_year(m.group(1))
+        mo = int(m.group(2)) if m.group(2).isdigit() else cn_num(m.group(2))
+        d = int(m.group(3)) if m.group(3).isdigit() else cn_num(m.group(3))
+        if y and mo and d:
+            return pd.Timestamp(year=y, month=mo, day=d)
+    # 2) 20XX年年度 / 二零XX年年度 → 12-31
+    m = re.search(r"(20\d{2}|二[零〇一二三四五六七八九]{2,3})\s*年度", title)
+    if m and "中期" not in title and "季度" not in title:
+        y = int(m.group(1)) if m.group(1).isdigit() else cn_year(m.group(1))
+        return pd.Timestamp(year=y, month=12, day=31)
+    # 3) 中期 → 6-30 (同年; 2025/26 變體攞後年)
+    m = re.search(r"(20\d{2}|二[零〇一二三四五六七八九]{2})\s*(?:&#x2f;|/)?\d{0,2}\s*(?:年度)?中期", title)
+    if m:
+        y = int(m.group(1)) if m.group(1).isdigit() else cn_year(m.group(1))
+        return pd.Timestamp(year=y, month=6, day=30)
+    m = re.search(r"(20\d{2})年半年度", title)
+    if m:
+        return pd.Timestamp(year=int(m.group(1)), month=6, day=30)
+    # 4) 第X季度 → 3-31 / 9-30
+    m = re.search(r"(20\d{2}|二[零〇一二三四五六七八九]{2,3})\s*年(?:度)?第([一二三四])季度", title)
+    if m:
+        y = int(m.group(1)) if m.group(1).isdigit() else cn_year(m.group(1))
+        q = CN_DIG[m.group(2)]
+        return pd.Timestamp(year=y, month={1: 3, 3: 9}.get(q, 6), day=30)
+    # 5) 短標題: 20XX年(全年|中期)業績(公布) / 第X季業績; 中文年變體 + FY 20XX/XX 變體
+    #    用 token 提取, 唔靠單一大 regex (啲 FY 變體太亂)
+    t = title.replace("&#x2f;", "/").replace(" ", "").replace("╱", "/").replace("／", "/")
+    ym = re.search(r"(二[零〇一二三四五六七八九]{2,3}|20\d{2})[/\\](?:二[零〇一二三四五六七八九]{2,3}|\d{2})?", t) or re.search(r"(二[零〇一二三四五六七八九]{2,3}|20\d{2})年", t)
+    if ym and "業績" in t and "更改" not in t:
+        y = int(ym.group(1)) if ym.group(1).isdigit() else cn_year(ym.group(1))
+        if y:
+            # FY offset: 二零二六/二七 第一季 (7-9月) 實際期末係 FY 後年 → 2026-09-30 剛好同 y 對上
+            qm = re.search(r"第([一二三四1-4])季", t)
+            if qm:
+                q = qm.group(1)
+                return pd.Timestamp(year=y, month={"一": 3, "二": 6, "三": 9, "四": 12, "1": 3, "2": 6, "3": 9, "4": 12}[q], day=30)
+            if re.search(r"中期|半年度", t):
+                return pd.Timestamp(year=y, month=6, day=30)
+            return pd.Timestamp(year=y, month=12, day=31)
+    return None
+
+
+def main():
+    df = pd.read_csv(RAW, dtype={"stock_code": str})
+    df["notice_date"] = pd.to_datetime(df["notice_date"])
+    df = df[~df["title"].str.contains(NOISE.pattern, regex=True, na=False)]
+    df = df[df["title"].str.contains(KEEP.pattern, regex=True, na=False)]
+    df["report_period"] = df["title"].map(parse_period)
+    df = df[df["report_period"].notna()]
+    # 每股每期攞最早公佈日
+    dedup = df.sort_values("notice_date").groupby(["stock_code", "report_period"], as_index=False).first()
+    # sanity: 公佈日要喺期末日之後 0~180 日
+    lag = (dedup["notice_date"] - dedup["report_period"]).dt.days
+    dedup = dedup[(lag >= 0) & (lag <= 180)]
+    print(f"kept {len(dedup)} (stock,period) events from {df.shape[0]} notices")
+
+    # 交易日曆 (futu close_unadj union)
+    cal = set()
+    for f in (BASE / "data" / "futu_history" / "close_unadj").glob("*.csv"):
+        c = pd.read_csv(f, usecols=["time_key"])
+        cal.update(pd.to_datetime(c["time_key"]).dt.normalize())
+    idx = pd.DatetimeIndex(sorted(d for d in cal if d >= pd.Timestamp(START)))
+
+    codes = sorted(dedup["stock_code"].unique())
+    panel = pd.DataFrame(np.nan, index=idx, columns=["HK." + c for c in codes])
+    for _, row in dedup.iterrows():
+        col = "HK." + row["stock_code"]
+        d = row["notice_date"]
+        # 落去第一個交易日
+        pos = idx.searchsorted(d)
+        if pos < len(idx):
+            panel.iloc[pos, panel.columns.get_loc(col)] = row["report_period"]
+
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    panel.to_parquet(OUT)
+    n_events = int(panel.notna().sum().sum())
+    print(f"np_report_date: {panel.shape}, event cells {n_events}, "
+          f"range {panel.index.min().date()}→{panel.index.max().date()}, stocks {len(codes)}")
+    # 騰訊 spot check
+    tc = panel["HK.00700"].dropna()
+    print("00700 events (tail 6):")
+    print(tc.tail(6))
+
+
+if __name__ == "__main__":
+    main()

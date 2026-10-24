@@ -1,0 +1,189 @@
+# Kubernetes ConfigMaps for CBSC Strategy Management System
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cbsc-strategy-config
+  namespace: cbsc-strategy
+  labels:
+    app: cbsc-strategy
+    component: config
+data:
+  # Database configuration
+  DATABASE_HOST: "postgres-service"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "cbsc_strategy"
+  DATABASE_USER: "cbsc_user"
+
+  # Redis configuration
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+
+  # API configuration
+  STRATEGY_API_VERSION: "2"
+  API_VERSION: "v2"
+  API_PREFIX: "/api/v2"
+
+  # Feature flags
+  ENABLE_V2_API: "true"
+  ENABLE_WEBSOCKET_V2: "true"
+  ENABLE_BATCH_OPERATIONS: "true"
+  ENABLE_PERFORMANCE_ANALYTICS: "true"
+  ENABLE_V0_API: "false"  # Gradual deprecation
+
+  # Performance settings
+  WORKERS: "4"
+  MAX_CONNECTIONS: "100"
+  CACHE_TTL: "3600"
+  RATE_LIMIT_DEFAULT: "1000/minute"
+
+  # Logging configuration
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+  LOG_FILE: "/app/logs/strategies/app.log"
+
+  # Environment
+  ENVIRONMENT: "production"
+  DEBUG_MODE: "false"
+
+  # Monitoring
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "3005"
+  TRACING_ENABLED: "true"
+  JAEGER_ENDPOINT: "http://jaeger-service:14268/api/traces"
+
+  # CORS settings
+  CORS_ORIGINS: "https://dashboard.cbsc.com,https://api.cbsc.com"
+
+  # Application settings
+  SECRET_KEY_BASE64: "YmFzZTY0LWVuY29kZWQtc2VjcmV0LWtleS1yZXBsYWNlLWluLXByb2R1Y3Rpb24="
+  JWT_SECRET_KEY_BASE64: "YmFzZTY0LWVuY29kZWQtand0LXNlY3JldC1yZXBsYWNlLWluLXByb2R1Y3Rpb24="
+  JWT_ALGORITHM: "HS256"
+  JWT_EXPIRE_MINUTES: "30"
+
+  # Grayscale deployment settings
+  TRAFFIC_SPLIT_V2: "100"  # Percentage of traffic to v2 API (0-100)
+  ENABLE_V1_FALLBACK: "true"
+
+---
+# Application configuration file
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cbsc-strategy-app-config
+  namespace: cbsc-strategy
+  labels:
+    app: cbsc-strategy
+    component: app-config
+data:
+  app.yaml: |
+    # CBSC Strategy Management System Configuration
+
+    strategy:
+      # Core settings
+      max_concurrent_strategies: 1000
+      max_concurrent_executions: 500
+      execution_timeout: 3600  # 1 hour
+
+      # Performance thresholds
+      response_time_warning: 200  # ms
+      response_time_critical: 500  # ms
+      error_rate_warning: 5  # percentage
+      error_rate_critical: 10  # percentage
+
+      # Cache settings
+      strategy_cache_ttl: 300  # 5 minutes
+      execution_cache_ttl: 60  # 1 minute
+      performance_cache_ttl: 900  # 15 minutes
+
+      # WebSocket settings
+      websocket_max_connections: 1000
+      websocket_heartbeat_interval: 30  # seconds
+      websocket_message_queue_size: 10000
+
+    database:
+      # Connection pool
+      pool_size: 20
+      max_overflow: 30
+      pool_timeout: 30
+      pool_recycle: 3600
+
+      # Query optimization
+      statement_timeout: 30000  # 30 seconds
+      query_timeout: 10000  # 10 seconds
+
+    redis:
+      # Connection settings
+      max_connections: 100
+      retry_on_timeout: true
+      socket_timeout: 5
+      socket_connect_timeout: 5
+
+      # Cluster support
+      use_cluster: false
+      cluster_nodes: ""
+
+    monitoring:
+      # Metrics collection
+      metrics_interval: 30  # seconds
+      health_check_interval: 10  # seconds
+
+      # Alerting thresholds
+      cpu_usage_warning: 70
+      cpu_usage_critical: 90
+      memory_usage_warning: 80
+      memory_usage_critical: 95
+
+      # Performance metrics
+      enable_detailed_metrics: true
+      metrics_retention_days: 30
+
+    security:
+      # Rate limiting
+      rate_limit_per_minute: 1000
+      rate_limit_per_hour: 50000
+
+      # Authentication
+      session_timeout: 1800  # 30 minutes
+      max_login_attempts: 5
+      lockout_duration: 900  # 15 minutes
+
+      # Encryption
+      encrypt_sensitive_data: true
+      encryption_key_rotation_days: 90
+
+    logging:
+      # Log levels
+      root_level: "INFO"
+      api_level: "INFO"
+      database_level: "WARNING"
+      websocket_level: "INFO"
+
+      # Log format
+      include_timestamp: true
+      include_request_id: true
+      include_user_id: true
+
+      # Log rotation
+      max_file_size: "100MB"
+      max_files: 30
+      compression: true
+
+    deployment:
+      # Grayscale settings
+      feature_flags:
+        enable_v2_api: true
+        enable_v2_websocket: true
+        enable_batch_operations: true
+        enable_performance_analytics: true
+        enable_advanced_metrics: true
+
+      # Traffic splitting
+      v2_traffic_percentage: 100
+      enable_v1_fallback: true
+      fallback_threshold: 5  # error rate percentage
+
+      # Rollback settings
+      auto_rollback_enabled: true
+      rollback_threshold: 10  # error rate percentage
+      rollback_check_interval: 60  # seconds

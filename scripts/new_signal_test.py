@@ -1,0 +1,227 @@
+#!/usr/bin/env python3
+"""new_signal_test.py — 測試 3 種新訊號類型 (Composite/Divergence/Acceleration).
+
+8 個候選 → G1-G4 預檢 → OOS backtest → 通過嘅報告.
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings; warnings.filterwarnings("ignore")
+import numpy as np, pandas as pd
+from pathlib import Path
+from scipy.stats import spearmanr
+
+from thesis_precheck import g1_data_vitality, g2_signal_activity, g3_sign_sanity, g4_subperiod_stability
+
+FACT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors")
+HSIF_PATH = Path(r"C:\Users\Penguin8n\Desktop\阿程\HSIF_USDCNH_201009_202412.csv")
+SPLIT = pd.Timestamp("2024-01-01")
+
+
+def load_col(file, col):
+    p = FACT_DIR / file
+    if not p.exists(): return None
+    df = pd.read_csv(p)
+    dc = next((c for c in df.columns if c.lower() in ("date","end_of_day","datetime","time","time_key")), df.columns[0])
+    if col not in df.columns:
+        for c in df.columns:
+            if c == dc: continue
+            try: df[c].astype(float); col = c; break
+            except: continue
+    df[dc] = pd.to_datetime(df[dc], errors="coerce")
+    df = df.dropna(subset=[dc, col]).sort_values(dc).drop_duplicates(subset=dc, keep="last")
+    s = pd.Series(df[col].astype(float).values, index=pd.to_datetime(df[dc].values), name=col)
+    if getattr(s.index, "tz", None) is not None: s.index = s.index.tz_localize(None)
+    return s
+
+
+def load_sc_north_south():
+    """南向 + 北向淨買 separate series."""
+    sc = pd.read_csv(FACT_DIR.parent / "stock_connect" / "sc_full.csv")
+    sc["date"] = pd.to_datetime(sc["date"], errors="coerce")
+    south = sc[sc["type_name"].str.contains("南向", na=False)].groupby("date")["net_buy"].sum().sort_index()
+    north = sc[sc["type_name"].str.contains("北向", na=False)].groupby("date")["net_buy"].sum().sort_index()
+    south.index = pd.to_datetime(south.index); north.index = pd.to_datetime(north.index)
+    return south, north
+
+
+def z_score(series, window=60):
+    return (series - series.rolling(window).mean()) / series.rolling(window).std()
+
+
+def load_hsif():
+    df = pd.read_csv(HSIF_PATH, parse_dates=["Date"])
+    df = df.sort_values("Date").drop_duplicates(subset="Date", keep="last").set_index("Date")
+    return df["HSIF_close"]
+
+
+def fwd_ret(price, h=10):
+    return price.shift(-h) / price - 1
+
+
+def precheck(name, factor, target_fwd, signal, expected_dir, z_window=60):
+    fa = factor.reindex(target_fwd.index).ffill().dropna()
+    sig = signal.reindex(target_fwd.index).ffill().fillna(False).astype(bool)
+    common = fa.index.intersection(target_fwd.dropna().index)
+    fa = fa.reindex(common); sig = sig.reindex(common).fillna(False)
+    tg = target_fwd.reindex(common)
+    res = []
+    res.append(("G1", g1_data_vitality(fa, name)))
+    res.append(("G2", g2_signal_activity(sig, name)))
+    if expected_dir != 0:
+        res.append(("G3", g3_sign_sanity(fa, tg, expected_dir, name)))
+    res.append(("G4", g4_subperiod_stability(fa, tg, name=name)))
+    n_fail = sum(1 for _,(s,_) in res if s=="FAIL")
+    n_warn = sum(1 for _,(s,_) in res if s=="WARN")
+    for g,(s,m) in res:
+        print(f"    {'✅' if s=='PASS' else '⚠️ ' if s=='WARN' else '❌'} {g}: {m}")
+    verdict = "PASS" if n_fail==0 else "FAIL"
+    print(f"    → {verdict} ({n_fail} FAIL, {n_warn} WARN)")
+    return verdict == "PASS"
+
+
+def oos_backtest(hsif, signal, direction, holding=10):
+    """IS/OOS backtest against HSIF."""
+    import kol_alpha_strategies as kol
+    sig = signal.reindex(hsif.index).ffill().fillna(False).astype(bool)
+    # rising-edge entry
+    entries = sig & (~sig.shift(1).fillna(False))
+    exits = entries.shift(holding).fillna(False)
+    is_mask = hsif.index < SPLIT
+    oos_mask = ~is_mask
+    empty = pd.Series(False, index=hsif.index)
+    def sharpe(mask):
+        if mask.sum() < 50: return None
+        cl = hsif[mask]; e = entries.reindex(cl.index).fillna(False); x = exits.reindex(cl.index).fillna(False)
+        try:
+            if direction == 1:
+                pf = kol.backtest_signals(cl, e, x)
+            else:
+                pf = kol.backtest_signals(cl, empty.reindex(cl.index), empty.reindex(cl.index), e, x)
+            if pf is None or pf.trades.count() == 0: return None
+            s = pf.sharpe_ratio()
+            return float(s) if not np.isnan(s) else None
+        except: return None
+    return sharpe(is_mask), sharpe(oos_mask)
+
+
+def main():
+    hsif = load_hsif()
+    target = fwd_ret(hsif, 10)
+    print("="*65)
+    print("🧪 新訊號類型測試: Composite / Divergence / Acceleration")
+    print("="*65)
+
+    # Load all factors
+    copper = load_col("copper.csv", "close")
+    gold = load_col("gold.csv", "close")
+    a_shares = load_col("a_shares.csv", "close")
+    sp500 = load_col("sp500.csv", "close")
+    mb = load_col("monetary-base-daily.csv", "aggr_balance_bf_disc_win")
+    hibor = load_col("hibor.csv", "close")
+    fer = load_col("hkd-fer-daily.csv", "hkd_fer_12m")
+    us10 = load_col("us_10y_yield.csv", "close")
+    efbn = load_col("efbn-yield-daily.csv", "close")
+    south, north = load_sc_north_south()
+
+    passed = []
+
+    # ===== COMPOSITE =====
+    print(f"\n{'='*65}\n📊 COMPOSITE (多因子混合)\n{'='*65}")
+
+    # C1: 風險偏好 composite
+    print("\n[C1] 風險偏好: 0.3×copper + 0.3×gold + 0.2×ashares + 0.2×sp500")
+    factors = {"copper": copper, "gold": gold, "ashares": a_shares, "sp500": sp500}
+    weights = {"copper": 0.3, "gold": 0.3, "ashares": 0.2, "sp500": 0.2}
+    aligned = pd.DataFrame({n: f.reindex(hsif.index).ffill() for n, f in factors.items()}).dropna()
+    c1 = sum(z_score(aligned[n]) * w for n, w in weights.items())
+    c1_sig = c1 > 2.0
+    if precheck("C1_風險composite", c1, target, c1_sig, +1):
+        is_sr, oos_sr = oos_backtest(hsif, c1_sig, 1)
+        print(f"    OOS: IS={is_sr} OOS={oos_sr}")
+        if oos_sr and oos_sr > 0.3:
+            passed.append(("C1_風險composite", c1, c1_sig, +1, oos_sr)); print("    🟢 通過!")
+
+    # C2: 流動性 composite
+    print("\n[C2] 流動性: 0.4×z(總結餘) + 0.3×z(-HIBOR) + 0.3×z(|FER|)")
+    aligned2 = pd.DataFrame({"mb": mb.reindex(hsif.index).ffill(), "hibor_neg": (-hibor).reindex(hsif.index).ffill(), "fer_abs": fer.abs().reindex(hsif.index).ffill()}).dropna()
+    c2 = 0.4*z_score(aligned2["mb"]) + 0.3*z_score(aligned2["hibor_neg"]) + 0.3*z_score(aligned2["fer_abs"])
+    c2_sig = c2 > 2.0
+    if precheck("C2_流動性composite", c2, target, c2_sig, +1):
+        is_sr, oos_sr = oos_backtest(hsif, c2_sig, 1)
+        print(f"    OOS: IS={is_sr} OOS={oos_sr}")
+        if oos_sr and oos_sr > 0.3:
+            passed.append(("C2_流動性composite", c2, c2_sig, +1, oos_sr)); print("    🟢 通過!")
+
+    # ===== DIVERGENCE =====
+    print(f"\n{'='*65}\n📐 DIVERGENCE (跨因子背離)\n{'='*65}")
+
+    # D1: 銅金背離
+    print("\n[D1] 銅金背離: z(copper) - z(gold)")
+    d1_aligned = pd.DataFrame({"copper": copper.reindex(hsif.index).ffill(), "gold": gold.reindex(hsif.index).ffill()}).dropna()
+    d1 = z_score(d1_aligned["copper"]) - z_score(d1_aligned["gold"])
+    d1_sig = d1 > 2.0  # 銅相對金超強 = risk-on
+    if precheck("D1_銅金背離", d1, target, d1_sig, +1):
+        is_sr, oos_sr = oos_backtest(hsif, d1_sig, 1)
+        print(f"    OOS: IS={is_sr} OOS={oos_sr}")
+        if oos_sr and oos_sr > 0.3:
+            passed.append(("D1_銅金背離", d1, d1_sig, +1, oos_sr)); print("    🟢 通過!")
+
+    # D2: 美港息差
+    print("\n[D2] 美港息差: z(US10Y) - z(EFB yield)")
+    d2_aligned = pd.DataFrame({"us10": us10.reindex(hsif.index).ffill(), "efbn": efbn.reindex(hsif.index).ffill()}).dropna()
+    d2 = z_score(d2_aligned["us10"]) - z_score(d2_aligned["efbn"])
+    d2_sig = d2 > 2.0  # 美息相對港息極端高 → 做淡
+    if precheck("D2_美港息差", d2, target, d2_sig, -1):
+        is_sr, oos_sr = oos_backtest(hsif, d2_sig, -1)
+        print(f"    OOS: IS={is_sr} OOS={oos_sr}")
+        if oos_sr and oos_sr > 0.3:
+            passed.append(("D2_美港息差", d2, d2_sig, -1, oos_sr)); print("    🟢 通過!")
+
+    # D3: 南北向背離
+    print("\n[D3] 南北向背離: z(南向) - z(北向)")
+    south_a = south.rolling(5).sum().reindex(hsif.index).ffill()
+    north_a = north.rolling(5).sum().reindex(hsif.index).ffill()
+    d3 = z_score(south_a) - z_score(north_a)
+    d3_sig = d3 > 2.0  # 南向相對北向超強 → 港股受捧 → 做多
+    if precheck("D3_南北向背離", d3, target, d3_sig, +1):
+        is_sr, oos_sr = oos_backtest(hsif, d3_sig, 1)
+        print(f"    OOS: IS={is_sr} OOS={oos_sr}")
+        if oos_sr and oos_sr > 0.3:
+            passed.append(("D3_南北向背離", d3, d3_sig, +1, oos_sr)); print("    🟢 通過!")
+
+    # ===== ACCELERATION =====
+    print(f"\n{'='*65}\n🚀 ACCELERATION (因子加速度)\n{'='*65}")
+
+    for label, factor, direction in [("A1_金價加速", gold, +1), ("A3_銅價加速", copper, +1)]:
+        print(f"\n[{label}] z(factor).diff(5)")
+        accel = z_score(factor.reindex(hsif.index).ffill()).diff(5)
+        sig = accel > 1.5
+        if precheck(label, accel, target, sig, direction):
+            is_sr, oos_sr = oos_backtest(hsif, sig, direction)
+            print(f"    OOS: IS={is_sr} OOS={oos_sr}")
+            if oos_sr and oos_sr > 0.3:
+                passed.append((label, accel, sig, direction, oos_sr)); print("    🟢 通過!")
+
+    # A2: 南向加速
+    print(f"\n[A2_南向加速] z(sc_netbuy).diff(5)")
+    a2_f = south.rolling(5).sum().reindex(hsif.index).ffill()
+    a2 = z_score(a2_f).diff(5)
+    a2_sig = a2 > 1.5
+    if precheck("A2_南向加速", a2, target, a2_sig, +1):
+        is_sr, oos_sr = oos_backtest(hsif, a2_sig, 1)
+        print(f"    OOS: IS={is_sr} OOS={oos_sr}")
+        if oos_sr and oos_sr > 0.3:
+            passed.append(("A2_南向加速", a2, a2_sig, +1, oos_sr)); print("    🟢 通過!")
+
+    # ===== 總結 =====
+    print(f"\n{'='*65}")
+    print(f"🏁 結果: {len(passed)}/8 候選通過預檢+OOS")
+    print(f"{'='*65}")
+    for name, factor, sig, d, oos_sr in passed:
+        print(f"  🟢 {name}: OOS SR={oos_sr:+.2f} (dir={'多' if d>0 else '淡'})")
+
+
+if __name__ == "__main__":
+    main()

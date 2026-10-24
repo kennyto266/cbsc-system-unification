@@ -1,0 +1,246 @@
+{
+  "meta": {
+    "name": "香港交易符號配置",
+    "version": "1.0.0",
+    "last_updated": "2025-01-29",
+    "market": "Hong Kong Stock Exchange",
+    "total_symbols": 15
+  },
+  "blue_chip_stocks": [
+    {
+      "symbol": "0700.HK",
+      "name": "騰訊控股",
+      "english_name": "Tencent Holdings",
+      "sector": "技術",
+      "industry": "互聯網",
+      "market_cap": "Large Cap",
+      "weight": 0.08,
+      "description": "中國最大的互聯網公司之一"
+    },
+    {
+      "symbol": "0941.HK",
+      "name": "中國移動",
+      "english_name": "China Mobile",
+      "sector": "電信",
+      "industry": "電信服務",
+      "market_cap": "Large Cap",
+      "weight": 0.05,
+      "description": "中國最大的電信運營商"
+    },
+    {
+      "symbol": "1299.HK",
+      "name": "友邦保險",
+      "english_name": "AIA Group",
+      "sector": "金融",
+      "industry": "保險",
+      "market_cap": "Large Cap",
+      "weight": 0.04,
+      "description": "亞洲領先的保險集團"
+    },
+    {
+      "symbol": "2318.HK",
+      "name": "中國平安",
+      "english_name": "Ping An Insurance",
+      "sector": "金融",
+      "industry": "保險",
+      "market_cap": "Large Cap",
+      "weight": 0.04,
+      "description": "中國領先的金融服務集團"
+    },
+    {
+      "symbol": "0388.HK",
+      "name": "港交所",
+      "english_name": "HKEX",
+      "sector": "金融",
+      "industry": "交易所",
+      "market_cap": "Large Cap",
+      "weight": 0.02,
+      "description": "香港交易所"
+    },
+    {
+      "symbol": "0005.HK",
+      "name": "匯豐控股",
+      "english_name": "HSBC Holdings",
+      "sector": "金融",
+      "industry": "銀行",
+      "market_cap": "Large Cap",
+      "weight": 0.06,
+      "description": "香港最大的銀行"
+    },
+    {
+      "symbol": "0002.HK",
+      "name": "中電控股",
+      "english_name": "CLP Holdings",
+      "sector": "公用事業",
+      "industry": "電力",
+      "market_cap": "Large Cap",
+      "weight": 0.02,
+      "description": "香港主要電力供應商"
+    },
+    {
+      "symbol": "1398.HK",
+      "name": "工商銀行",
+      "english_name": "Industrial and Commercial Bank of China",
+      "sector": "金融",
+      "industry": "銀行",
+      "market_cap": "Large Cap",
+      "weight": 0.03,
+      "description": "中國最大的商業銀行"
+    },
+    {
+      "symbol": "2628.HK",
+      "name": "中國人壽",
+      "english_name": "China Life Insurance",
+      "sector": "金融",
+      "industry": "保險",
+      "market_cap": "Large Cap",
+      "weight": 0.03,
+      "description": "中國最大的人壽保險公司"
+    },
+    {
+      "symbol": "3988.HK",
+      "name": "中國銀行",
+      "english_name": "Bank of China",
+      "sector": "金融",
+      "industry": "銀行",
+      "market_cap": "Large Cap",
+      "weight": 0.02,
+      "description": "中國四大國有銀行之一"
+    }
+  ],
+  "technology_stocks": [
+    {
+      "symbol": "09988.HK",
+      "name": "阿里巴巴",
+      "english_name": "Alibaba Group",
+      "sector": "技術",
+      "industry": "電子商務",
+      "market_cap": "Large Cap",
+      "weight": 0.05,
+      "description": "中國最大的電子商務公司"
+    },
+    {
+      "symbol": "09618.HK",
+      "name": "京東集團",
+      "english_name": "JD.com",
+      "sector": "技術",
+      "industry": "電子商務",
+      "market_cap": "Large Cap",
+      "weight": 0.02,
+      "description": "中國第二大電子商務公司"
+    },
+    {
+      "symbol": "09918.HK",
+      "name": "蒙牛乳業",
+      "english_name": "China Mengniu Dairy",
+      "sector": "消費",
+      "industry": "食品飲料",
+      "market_cap": "Large Cap",
+      "weight": 0.01,
+      "description": "中國領先的乳製品公司"
+    }
+  ],
+  "etf_products": [
+    {
+      "symbol": "02800.HK",
+      "name": "恆生中國企業指數ETF",
+      "english_name": "Tracker Fund of Hong Kong",
+      "sector": "ETF",
+      "industry": "指數基金",
+      "market_cap": "Large Cap",
+      "weight": 0.03,
+      "description": "追蹤恆生中國企業指數的ETF"
+    },
+    {
+      "symbol": "02833.HK",
+      "name": "恆生指數ETF",
+      "english_name": "Hang Seng Index ETF",
+      "sector": "ETF",
+      "industry": "指數基金",
+      "market_cap": "Large Cap",
+      "weight": 0.02,
+      "description": "追蹤恆生指數的ETF"
+    }
+  ],
+  "reit_products": [
+    {
+      "symbol": "00775.HK",
+      "name": "領展房產基金",
+      "english_name": "Link REIT",
+      "sector": "REIT",
+      "industry": "房地產信託",
+      "market_cap": "Large Cap",
+      "weight": 0.01,
+      "description": "香港最大的房產投資信託基金"
+    }
+  ],
+  "trading_parameters": {
+    "market_hours": {
+      "open": "09:30",
+      "close": "16:00",
+      "lunch_start": "12:00",
+      "lunch_end": "13:00",
+      "timezone": "HKT"
+    },
+    "settlement": {
+      "cycle": "T+2",
+      "currency": "HKD"
+    },
+    "lot_sizes": {
+      "default": 1000,
+      "high_price": 500,
+      "medium_price": 200
+    },
+    "commission_rates": {
+      "standard": 0.0025,
+      "minimum": 50,
+      "stamp_duty": 0.001
+    }
+  },
+  "symbol_validation": {
+    "patterns": [
+      "^\\d{4}\\.HK$",
+      "^\\d{5}\\.HK$",
+      "^\\d{4}$",
+      "^\\d{5}$"
+    ],
+    "excluded_prefixes": ["99", "98"],
+    "special_formats": {
+      "warrants": "^\\d{5}\\.HK$",
+      "etfs": "^\\d{5}\\.HK$",
+      "reits": "^\\d{5}\\.HK$"
+    }
+  },
+  "sector_classifications": {
+    "金融": [
+      "1299.HK",
+      "2318.HK",
+      "0388.HK",
+      "0005.HK",
+      "1398.HK",
+      "2628.HK",
+      "3988.HK"
+    ],
+    "技術": [
+      "0700.HK",
+      "09988.HK",
+      "09618.HK"
+    ],
+    "電信": [
+      "0941.HK"
+    ],
+    "公用事業": [
+      "0002.HK"
+    ],
+    "消費": [
+      "09918.HK"
+    ],
+    "ETF": [
+      "02800.HK",
+      "02833.HK"
+    ],
+    "REIT": [
+      "00775.HK"
+    ]
+  }
+}

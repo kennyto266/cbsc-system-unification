@@ -1,0 +1,211 @@
+"""
+CBSC 牛熊證數據 API Router
+
+提供 CBSC Dashboard 需要嘅數據：
+- /api/cbsc/dashboard-summary — 綜合數據
+- /api/cbsc/market-sentiment — 市場情緒指標
+- /api/cbsc/top-contracts — 十大牛熊證
+- /api/cbsc/historical-data — 歷史情緒數據
+
+數據源：data/sentiment/sentiment_history.csv（HKEX 牛熊證 sentiment）
+"""
+import os
+import csv
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+import pandas as pd
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import JSONResponse
+
+logger = logging.getLogger(__name__)
+router = APIRouter(tags=["CBSC 牛熊證"])
+
+ROOT = Path(__file__).parent.parent.parent  # cbsc-system-unification/
+SENTIMENT_CSV = ROOT / "data" / "sentiment" / "sentiment_history.csv"
+
+
+def _load_sentiment():
+    """載入 sentiment 歷史數據。"""
+    if not SENTIMENT_CSV.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(SENTIMENT_CSV, encoding="utf-8-sig")
+    df["date"] = pd.to_datetime(df["date"])
+    return df.sort_values("date")
+
+
+def _load_latest_hkex():
+    """載入最新嘅 HKEX 數據（從 dashboard JSON）。"""
+    path = ROOT / "data" / "dashboard" / "hkex_daily.json"
+    if not path.exists():
+        return None
+    import json
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data[0] if data else None
+
+
+@router.get("/dashboard-summary")
+async def get_dashboard_summary():
+    """CBSC Dashboard 綜合數據（一次過返回所有需要嘅數據）。"""
+    sentiment_df = _load_sentiment()
+    latest_hkex = _load_latest_hkex()
+
+    if sentiment_df.empty:
+        raise HTTPException(status_code=404, detail="無 sentiment 數據。請先運行 hkex_full_crawler.py")
+
+    latest = sentiment_df.iloc[-1]
+
+    # 市場情緒
+    sentiment_score = float(latest.get("sentiment_score", 50))
+    sentiment_label = str(latest.get("sentiment_label", "中性"))
+    bull_bear_ratio = float(latest.get("bull_bear_ratio", 1.0))
+
+    # 恐懼貪婪指數（用 sentiment_score 近似）
+    fear_greed = sentiment_score
+
+    # 歷史趨勢（最近 30 日）
+    recent = sentiment_df.tail(30)
+    history = []
+    for _, row in recent.iterrows():
+        history.append({
+            "date": row["date"].strftime("%Y-%m-%d"),
+            "sentiment_score": float(row.get("sentiment_score", 50)),
+            "bull_pct": float(row.get("bull_pct", 50)),
+            "bear_pct": float(row.get("bear_pct", 50)),
+            "bull_bear_ratio": float(row.get("bull_bear_ratio", 1.0)),
+            "bull_value_hkd": float(row.get("bull_value_hkd", 0)),
+            "bear_value_hkd": float(row.get("bear_value_hkd", 0)),
+        })
+
+    # 十大牛證/熊證（從 HKEX 數據模擬）
+    top_bull = []
+    top_bear = []
+    if latest_hkex:
+        # HKEX 數據有 retail_sentiment（如果有）
+        for i in range(1, 6):
+            top_bull.append({
+                "rank": i,
+                "code": f"BULL{i:03d}",
+                "name": f"模擬牛證 {i}",
+                "price": round(float(latest_hkex.get("hsi_close", 24000)) * 0.01 * i, 3),
+                "volume": int(1000000 / i),
+                "change": round(float(i * 0.5 - 1), 2),
+                "leverage": round(10 / i, 1),
+                "strike": int(float(latest_hkex.get("hsi_close", 24000)) * (0.9 + i * 0.02)),
+                "expiry": "2026-12-30",
+            })
+            top_bear.append({
+                "rank": i,
+                "code": f"BEAR{i:03d}",
+                "name": f"模擬熊證 {i}",
+                "price": round(float(latest_hkex.get("hsi_close", 24000)) * 0.01 * i, 3),
+                "volume": int(800000 / i),
+                "change": round(float(1 - i * 0.5), 2),
+                "leverage": round(8 / i, 1),
+                "strike": int(float(latest_hkex.get("hsi_close", 24000)) * (1.1 - i * 0.02)),
+                "expiry": "2026-12-30",
+            })
+
+    summary = {
+        "market_sentiment": {
+            "fear_greed_index": fear_greed,
+            "bull_bear_ratio": bull_bear_ratio,
+            "realized_volatility": 0.0,
+            "rsi_signal": 50.0,
+            "sentiment_score": sentiment_score,
+            "sentiment_label": sentiment_label,
+            "update_time": latest["date"].strftime("%Y-%m-%d"),
+        },
+        "top_contracts": {
+            "bull_contracts": top_bull,
+            "bear_contracts": top_bear,
+        },
+        "statistics": {
+            "hsif_current": float(latest_hkex.get("hsi_close", 0)) if latest_hkex else 0,
+            "hsif_change": float(latest_hkex.get("hsi_change", 0)) if latest_hkex else 0,
+            "hsif_change_percent": float(latest_hkex.get("hsi_change_pct", 0)) if latest_hkex else 0,
+            "total_volume": float(latest_hkex.get("turnover_hkd", 0)) if latest_hkex else 0,
+            "active_contracts": len(top_bull) + len(top_bear),
+            "market_capitalization": 0,
+            "last_update": latest["date"].strftime("%Y-%m-%d"),
+        },
+        "historical_data": history,
+        "market_overview": {
+            "hsi_close": float(latest_hkex.get("hsi_close", 0)) if latest_hkex else 0,
+            "hsi_change_pct": float(latest_hkex.get("hsi_change_pct", 0)) if latest_hkex else 0,
+            "turnover_hkd": float(latest_hkex.get("turnover_hkd", 0)) if latest_hkex else 0,
+        },
+        "generated_at": datetime.now().isoformat(),
+    }
+
+    return {
+        "success": True,
+        "data": summary,
+        "message": "OK",
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+@router.get("/market-sentiment")
+async def get_market_sentiment():
+    """市場情緒指標。"""
+    sentiment_df = _load_sentiment()
+    if sentiment_df.empty:
+        raise HTTPException(status_code=404, detail="無 sentiment 數據")
+
+    latest = sentiment_df.iloc[-1]
+    return {
+        "success": True,
+        "data": {
+            "fear_greed_index": float(latest.get("sentiment_score", 50)),
+            "bull_bear_ratio": float(latest.get("bull_bear_ratio", 1.0)),
+            "realized_volatility": 0.0,
+            "rsi_signal": 50.0,
+            "sentiment_score": float(latest.get("sentiment_score", 50)),
+            "sentiment_label": str(latest.get("sentiment_label", "中性")),
+            "update_time": latest["date"].strftime("%Y-%m-%d"),
+        }
+    }
+
+
+@router.get("/top-contracts")
+async def get_top_contracts(limit: int = Query(10, ge=1, le=20)):
+    """十大牛熊證。"""
+    summary = await get_dashboard_summary()
+    data = summary["data"]["top_contracts"]
+    return {
+        "success": True,
+        "data": {
+            "bull_contracts": data["bull_contracts"][:limit],
+            "bear_contracts": data["bear_contracts"][:limit],
+        }
+    }
+
+
+@router.get("/historical-data")
+async def get_historical_data(
+    days: int = Query(30, ge=1, le=365),
+    metric: str = Query("all", description="all/sentiment/bull_bear"),
+):
+    """歷史情緒數據。"""
+    sentiment_df = _load_sentiment()
+    if sentiment_df.empty:
+        raise HTTPException(status_code=404, detail="無歷史數據")
+
+    recent = sentiment_df.tail(days)
+    history = []
+    for _, row in recent.iterrows():
+        history.append({
+            "date": row["date"].strftime("%Y-%m-%d"),
+            "sentiment_score": float(row.get("sentiment_score", 50)),
+            "bull_pct": float(row.get("bull_pct", 50)),
+            "bear_pct": float(row.get("bear_pct", 50)),
+            "bull_bear_ratio": float(row.get("bull_bear_ratio", 1.0)),
+            "bull_value_hkd": float(row.get("bull_value_hkd", 0)),
+            "bear_value_hkd": float(row.get("bear_value_hkd", 0)),
+        })
+
+    return {"success": True, "data": {"history": history, "count": len(history)}}

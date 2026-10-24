@@ -1,0 +1,115 @@
+"""build_target_price_implied_return_panel.py — thesis tpim (2026-08-24 agent2-H).
+
+源: hk_orgrating_raw.json (東财 RPT_HKPCF10_INFO_ORGRATING 984股評級/目標價事件史,
+     fetch_orgrating_tp.py 爬) → 每 stock 日曆日 consensus avg target price (PIT:
+     只用 PUBLISH_DATE <= 該日, 180日窗內研報取 TARGET_PRICE mean, 之後 ffill 90日)
+→ 同 close (futu_history) join → target_price_implied_return = (tp - close)/close
+Output: data/factor_store/target_price_implied_return.parquet (wide date × HK.XXXXX)
+
+[09-15 T1 向量化] 原版每事件 ev.loc[:cur].last("180D") 逐日迴圈 O(days×events),
+實測 300s timeout 完唔到 (要 900s)。等價重寫: 每日輸出只隨「最後一單 <= cur 嘅
+事件」(anchor) 變 — searchsorted 一過揾 anchor + 每事件 180D 窗左界, 日軸
+np.repeat 展開; 窗 mean 照舊行 pandas .mean() 保 bit-exact。行為不變 —
+backtests/test_tp_implied_equiv.py (主 repo) 新舊對照鐵證。
+"""
+import json
+import numpy as np
+import pandas as pd
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+NS = BASE / "data" / "new_sources"
+RAW = NS / "hk_orgrating_raw.json"
+FS = BASE / "data" / "factor_store"
+OUT = FS / "target_price_implied_return.parquet"
+
+
+def build_tp_daily(df: pd.DataFrame, today: pd.Timestamp) -> pd.DataFrame:
+    """events (date/tp/code) → 每日 consensus avg target price rows.
+
+    語義 (同原版逐日迴圈逐字等價): 每個日曆日 cur, anchor L = 最後一單
+    PUBLISH_DATE <= cur 嘅事件; 180日窗 = events with date > L - 180D
+    (即 .loc[:cur].last("180D") — 窗錨喺 L 唔係 cur); avg = round(mean, 4),
+    n = 窗內事件數。冇事件 <= cur 嘅日子冇輸出 (原版 ffill-90日分支係死碼:
+    窗錨喺最後事件日, S 一旦非空就永遠非空 — 對照測試實證永遠冇 n=0 行)。
+    """
+    day_ns = 86_400_000_000_000  # 1D 嘅 ns
+    chunks = []
+    for code, g in df.groupby("code"):
+        g = g.sort_values("date")
+        dmin = g["date"].min()
+        ev = g.set_index("date")["tp"].dropna()
+        if not len(ev):
+            continue
+        idx = ev.index
+        # 每事件 180D 窗左界 (date > t_j - 180D) — searchsorted 一過, 等價 .last("180D")
+        left = idx.searchsorted(idx - pd.Timedelta(days=180), side="right")
+        # 每事件窗值: anchor 永遠係同日最後一單, 非最後重複嗰啲算咗唔會被揀中 (無害)
+        avg = np.empty(len(ev), dtype=np.float64)
+        n_cnt = np.empty(len(ev), dtype=np.int64)
+        for j in range(len(ev)):
+            w = ev.iloc[left[j]: j + 1]
+            avg[j] = round(w.mean(), 4)  # 照舊行 pandas .mean() + round → bit-exact
+            n_cnt[j] = len(w)
+        # 日曆日網格 = dmin 起逐日到 today (同原版 while cur <= today); 每日 anchor = 最後一單 <= cur
+        t_ns = idx.asi8
+        # 唔用 np.arange(s, e, day_ns) — 巨 int64 ns 值會行 float64 計長度爆精度 (實渉食咗 endpoint)
+        n_days = (today.value - dmin.value) // day_ns + 1
+        grid = dmin.value + np.arange(n_days, dtype=np.int64) * day_ns
+        pos = t_ns.searchsorted(grid, side="right") - 1  # -1 = 該日仲未有任何事件
+        valid = pos >= 0
+        if not valid.any():
+            continue
+        j_idx = pos[valid]
+        dates = grid[valid] - grid[valid] % day_ns  # 原版 cur.date() = 掉低 time-of-day
+        chunks.append(pd.DataFrame({
+            "date": dates.astype("datetime64[ns]"),
+            "code": f"HK.{code}",
+            "avg_tp": avg[j_idx],
+            "n_tp_180d": n_cnt[j_idx],
+        }))
+    if not chunks:
+        return pd.DataFrame(columns=["date", "code", "avg_tp", "n_tp_180d"])
+    return pd.concat(chunks, ignore_index=True)
+
+
+def build_panel(tp: pd.DataFrame, base: Path = None) -> pd.DataFrame:
+    """tp rows join ohlcv_5y close → wide implied-return panel."""
+    base = base or BASE
+    frames = []
+    for fp in sorted((base / "data" / "ohlcv_5y").glob("HK_*.csv")):
+        code = "HK." + fp.stem.replace("HK_", "")
+        s = pd.read_csv(fp, usecols=["time_key", "close"])
+        s["code"] = code
+        frames.append(s)
+    long = pd.concat(frames, ignore_index=True)
+    long.columns = ["date", "close", "code"]
+    long["date"] = pd.to_datetime(long["date"])
+    m = tp.merge(long, on=["date", "code"], how="left")
+    m["target_price_implied_return"] = (m["avg_tp"] - m["close"]) / m["close"]
+    return m.pivot(index="date", columns="code", values="target_price_implied_return").sort_index()
+
+
+def main():
+    d = json.load(open(RAW, encoding="utf-8"))
+    rows = d["rows"]
+    df = pd.DataFrame(rows)
+    df["date"] = pd.to_datetime(df["PUBLISH_DATE"])
+    df["tp"] = pd.to_numeric(df["TARGET_PRICE"], errors="coerce")
+    df["code"] = df["SECUCODE"].str.split(".").str[0]
+    print("events:", len(df), "stocks:", df["code"].nunique(),
+          "with tp:", int(df["tp"].notna().sum()))
+
+    today = pd.Timestamp.now().normalize()
+    tp = build_tp_daily(df, today)
+    print("tp daily rows:", len(tp), "codes:", tp["code"].nunique())
+
+    panel = build_panel(tp)
+    panel.to_parquet(OUT)
+    print("panel:", panel.shape, "cells:", int(panel.notna().sum().sum()),
+          "codes with data:", int(panel.notna().sum().where(lambda s: s > 0).dropna().shape[0]))
+    print(panel.iloc[-1].dropna().sort_values().tail(5))
+
+
+if __name__ == "__main__":
+    main()

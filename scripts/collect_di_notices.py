@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+"""collect_di_notices.py — HKEX DI 董事申報 (3A notices) collector.
+
+源頭 (2026-08-23 實證):
+  1) 每股 sid lookup:
+     https://di.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=DD/MM/YYYY&sced=DD/MM/YYYY&sc=<code>&src=MAIN&lang=EN&g_lang=en
+     頁內 NSNotice3AList 連結含 sid + corpn (URL-encoded).
+  2) notice list (每頁 50 行, &pg=N):
+     https://di.hkex.com.hk/di/NSNotice3AList.aspx?sa2=nd&sid=<sid>&corpn=<corpn>&sd=<dd/mm/yyyy>&ed=<dd/mm/yyyy>&cid=0&sa1=cl&scsd=<..>&sced=<..>&sc=<code>&src=MAIN&lang=EN&g_lang=en&&pg=<n>
+  表欄: Form Serial | director | shares bought/sold/involved (L/S/P) | reason | avg price
+        | shares interested | % issued | event date | assoc corp | debentures
+  DION 覆蓋 2017-07-03 起; 我哋由 2021-01-01 起 (W1 用).
+
+輸出:
+  data/new_sources/di_notices_raw.csv  (一行一 notice)
+  data/new_sources/di_notices_ckpt.json
+"""
+import argparse
+import csv
+import json
+import re
+import sys
+import time
+import urllib.parse
+import urllib.request
+from datetime import datetime
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+OUT_DIR = BASE / "data" / "new_sources"
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+RAW = OUT_DIR / "di_notices_raw.csv"
+CKPT = OUT_DIR / "di_notices_ckpt.json"
+
+HOST = "https://di.hkex.com.hk"
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+DELAY = 1.6
+START = "01/01/2021"
+
+POOL = ["00001","00002","00003","00005","00006","00012","00016","00017","00020","00027",
+        "00066","00101","00175","00241","00268","00285","00291","00386","00388","00688",
+        "00700","00762","00823","00883","00939","00941","00992","01024","01038","01088",
+        "01109","01211","01299","01398","01801","01810","01876","01928","02013","02269",
+        "02318","02388","02628","02899","03690","06862","09618","09888","09988","09992",
+        "09999"]
+
+
+def fetch(url: str) -> str:
+    req = urllib.request.Request(url, headers=UA)
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=40) as r:
+                return r.read().decode("utf-8", errors="ignore")
+        except Exception as e:
+            if attempt == 2:
+                raise
+            time.sleep(5 * (attempt + 1))
+    return ""
+
+
+def lookup_sid(code: str):
+    """返 (sid, corpn_q) — 由 NSSrchCorpList 連結抽出."""
+    today = datetime.now().strftime("%d/%m/%Y")
+    url = (f"{HOST}/di/NSSrchCorpList.aspx?sa1=cl&scsd={START}&sced={today}"
+           f"&sc={code}&src=MAIN&lang=EN&g_lang=en")
+    h = fetch(url)
+    m = re.search(r"NSNotice3AList\.aspx\?sa2=nd&(?:amp;)?sid=(\d+)&(?:amp;)?corpn=([^&\"']+)", h)
+    if not m:
+        return None, None
+    return m.group(1), m.group(2)
+
+
+ROW_SPLIT_RE = re.compile(r"<tr[^>]*>(.*?)</tr>", re.S)
+TD_RE = re.compile(r"<td[^>]*>(.*?)</td>", re.S)
+TAG_RE = re.compile(r"<[^>]+>")
+TOTAL_RE = re.compile(r"Total records:\s*(?:<[^>]+>\s*)*(\d+)")
+
+
+def clean(s: str) -> str:
+    return s.replace("&nbsp;", " ").replace("&amp;", "&").strip()
+
+
+def parse_rows(h: str):
+    """逐 <tr> 切, td 內容去標籤."""
+    rows = []
+    for tr in ROW_SPLIT_RE.finditer(h):
+        tds = [clean(TAG_RE.sub("", td.group(1))) for td in TD_RE.finditer(tr.group(1))]
+        if len(tds) < 8:
+            continue
+        if not re.match(r"^[A-Z]{2}\d{6}", tds[0]):
+            continue
+        rows.append(tds[:9])
+    return rows
+
+
+def crawl_stock(code: str, sid: str, corpn_q: str) -> list:
+    end = datetime.now().strftime("%d/%m/%Y")
+    rows_all = []
+    pg = 1
+    while pg < 200:
+        url = (f"{HOST}/di/NSNotice3AList.aspx?sa2=nd&sid={sid}&corpn={corpn_q}"
+               f"&sd={urllib.parse.quote(START)}&ed={urllib.parse.quote(end)}&cid=0&sa1=cl"
+               f"&scsd={urllib.parse.quote(START)}&sced={urllib.parse.quote(end)}&sc={code}"
+               f"&src=MAIN&lang=EN&g_lang=en&&pg={pg}")
+        h = fetch(url)
+        rows = parse_rows(h)
+        if not rows:
+            break
+        for t in rows:
+            rows_all.append({
+                "code": code,
+                "form_serial": t[0],
+                "director": t[1],
+                "shares_bought_sold": t[2],
+                "reason": t[3],
+                "avg_price": t[4],
+                "shares_interested": t[5],
+                "pct_issued": t[6],
+                "event_date": t[7],   # dd/mm/yyyy
+            })
+        mt = TOTAL_RE.search(h)
+        total = int(mt.group(1)) if mt else None
+        if total is not None and pg * 50 >= total:
+            break
+        pg += 1
+        time.sleep(DELAY)
+    return rows_all
+
+
+def main() -> int:
+    ckpt = json.loads(CKPT.read_text()) if CKPT.exists() else {"done": {}}
+    done: dict = ckpt["done"]
+    todo = [c for c in POOL if c not in done]
+    print(f"POOL {len(POOL)}, todo {len(todo)}")
+    out = RAW
+    fh = out.open("a", newline="", encoding="utf-8")
+    w = csv.DictWriter(fh, fieldnames=["code","form_serial","director","shares_bought_sold",
+                                       "reason","avg_price","shares_interested","pct_issued",
+                                       "event_date"])
+    if not out.exists() or out.stat().st_size == 0:
+        w.writeheader()
+    for i, code in enumerate(todo):
+        try:
+            sid, corpn = lookup_sid(code)
+            if not sid:
+                print(f"  [{i+1}/{len(todo)}] {code}: sid 搵唔到, skip")
+                done[code] = "no_sid"
+                continue
+            rows = crawl_stock(code, sid, corpn)
+            for r in rows:
+                w.writerow(r)
+            fh.flush()
+            done[code] = len(rows)
+            print(f"  [{i+1}/{len(todo)}] {code}: {len(rows)} notices")
+        except Exception as e:
+            print(f"  [{i+1}/{len(todo)}] {code}: ERROR {e}")
+            done[code] = f"error:{e}"
+        time.sleep(DELAY)
+        if (i + 1) % 8 == 0:
+            CKPT.write_text(json.dumps(ckpt, indent=1))
+    fh.close()
+    CKPT.write_text(json.dumps(ckpt, indent=1))
+    n_ok = sum(v for v in done.values() if isinstance(v, int))
+    print(f"DONE: 總 notices {n_ok} → {RAW.name}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

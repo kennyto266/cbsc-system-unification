@@ -1,0 +1,89 @@
+"""
+增量存儲工具
+
+處理「load old → dedup by date → append → save」嘅通用邏輯
+所有每日更新嘅爬蟲共用
+"""
+import logging
+from typing import Optional
+import pandas as pd
+
+from .storage import ParquetStore, store
+
+logger = logging.getLogger(__name__)
+
+
+class IncrementalUpdater:
+    """增量更新管理器。
+
+    用法：
+        updater = IncrementalUpdater("market_data", "HK.00700", "daily")
+        new_data = fetch_today_data()
+        updater.update(new_data)  # 自動 dedup + append + save
+    """
+
+    def __init__(self, category: str, symbol: str, freq: str,
+                 store: ParquetStore = store):
+        self.category = category
+        self.symbol = symbol
+        self.freq = freq
+        self.store = store
+
+    def get_existing_dates(self) -> set:
+        """取得已有數據嘅日期集合。"""
+        df = self.store.load(self.category, self.symbol, self.freq)
+        if df is None or df.empty:
+            return set()
+        return set(df["date"].dt.date.unique())
+
+    def get_last_date(self):
+        """取得最後一個數據日期。"""
+        df = self.store.load(self.category, self.symbol, self.freq)
+        if df is None or df.empty:
+            return None
+        return df["date"].max().date()
+
+    def update(self, new_data: pd.DataFrame) -> dict:
+        """增量更新：dedup by date → append → save。
+
+        只加入新日期嘅數據，唔重複已有日期。
+        """
+        if new_data.empty:
+            return {"success": False, "reason": "empty"}
+
+        # 確保有 date column
+        new_data = new_data.copy()
+        if isinstance(new_data.index, pd.DatetimeIndex):
+            new_data = new_data.reset_index().rename(
+                columns={new_data.index.name or "index": "date"})
+
+        existing_dates = self.get_existing_dates()
+        new_data["date"] = pd.to_datetime(new_data["date"])
+        truly_new = new_data[~new_data["date"].dt.date.isin(existing_dates)]
+
+        if truly_new.empty:
+            return {"success": True, "new_rows": 0, "reason": "no_new_dates"}
+
+        result = self.store.save(
+            new_data, self.category, self.symbol, self.freq)
+        result["new_rows"] = len(truly_new)
+        logger.info("✓ {} {} +{} rows (total updated)".format(
+            self.symbol, self.freq, len(truly_new)))
+        return result
+
+
+def update_multiple(symbols_data: dict, category: str, freq: str) -> dict:
+    """批次更新多個 symbol。
+
+    Args:
+        symbols_data: {"HK.00700": df1, "HK.00005": df2, ...}
+        category, freq: 存儲類別同頻率
+
+    Returns:
+        {"HK.00700": result, ...}
+    """
+    results = {}
+    for symbol, df in symbols_data.items():
+        updater = IncrementalUpdater(category, symbol, freq)
+        results[symbol] = updater.update(df)
+    return results

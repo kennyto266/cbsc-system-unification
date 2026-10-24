@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+"""portfolio_simulation.py — 模擬 algotrade 實戰: 信號觸發選股, 組合層面計 SR.
+
+唔係事後揀股 (selection bias), 而係逐日模擬:
+1. 每日 scan 所有 ROBUST alpha × 所有股票
+2. 有信號就買 (max 10 倉位)
+3. 止損/止盈/信號消失就賣
+4. 計組合 daily return → Sharpe
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import numpy as np, pandas as pd
+from pathlib import Path
+from vbt_data import FACTOR_STOCKS, load_stock_close, TOTAL_COST
+from vbt_kol import run_kol
+from kol_alpha_strategies import KOL_REGISTRY
+
+ROBUST_IDS = [9,10,15,17,21,26,27,31,36,39,43,45,47,58,59,62,66,69,71,74,88]
+MAX_POSITIONS = 10
+COST_PER_SIDE = TOTAL_COST / 2
+INIT_CASH = 1000000
+
+print("=" * 65)
+print("📊 實戰模擬: 信號觸發選股 → 組合 SR")
+print(f"   {len(ROBUST_IDS)} ROBUST alpha × {len(FACTOR_STOCKS)} 股")
+print(f"   Max {MAX_POSITIONS} 倉位 | 成本 {TOTAL_COST*100:.2f}%/roundtrip")
+print("=" * 65)
+
+# Step 1: 預計算每個 alpha × 股票嘅持倉 timeline
+print("\n1. 預計算策略持倉 timeline...", flush=True)
+# timeline[(aid,stock)] = pd.Series(bool) 持倉中=True
+timelines = {}
+srs = {}
+
+for aid in ROBUST_IDS:
+    for stock in FACTOR_STOCKS:
+        try:
+            r = run_kol(aid, stock)
+            if r is None:
+                continue
+            pf, _, close, m = r
+            if pf.trades.count() < 2:
+                continue
+            # 重建持倉 timeline
+            trades_df = pf.trades.records_readable
+            in_pos = pd.Series(False, index=close.index)
+            for _, t in trades_df.iterrows():
+                entry = t["Entry Timestamp"]
+                exit_t = t.get("Exit Timestamp")
+                if entry in in_pos.index:
+                    if exit_t and pd.notna(exit_t) and exit_t in in_pos.index:
+                        in_pos.loc[entry:exit_t] = True
+                    else:
+                        in_pos.loc[entry:] = True
+            timelines[(aid, stock)] = in_pos
+            srs[(aid, stock)] = m["sharpe"]
+        except:
+            pass
+    print(f"  A{aid}: {sum(1 for k in timelines if k[0]==aid)} stocks", flush=True)
+
+print(f"\n  總計: {len(timelines)} 有效策略-股組合")
+
+# Step 2: 逐日模擬組合
+print("\n2. 逐日模擬組合...", flush=True)
+
+# 對齊所有 timeline 到一個共同 index
+all_stocks = sorted(set(s for _, s in timelines.keys()))
+# 用第一隻股嘅 close 做 index
+ref_close = load_stock_close(all_stocks[0])
+if ref_close is None:
+    ref_close = load_stock_close(FACTOR_STOCKS[0])
+dates = ref_close.index
+
+# 每日組合 return
+portfolio_daily_ret = []
+holding_log = []  # 記錄每日持倉數
+
+for i, date in enumerate(dates):
+    # 揾今日所有活躍持倉
+    active = []
+    for (aid, stock), timeline in timelines.items():
+        if date in timeline.index and timeline.loc[date]:
+            active.append((aid, stock, srs.get((aid, stock), 0.5)))
+
+    # SR 加權排序, max MAX_POSITIONS
+    active.sort(key=lambda x: -x[2])
+    selected = active[:MAX_POSITIONS]
+
+    if not selected:
+        portfolio_daily_ret.append(0.0)
+        holding_log.append(0)
+        continue
+
+    # 等權分配 (簡化 — 實戰用 SR 加權 sizing)
+    n = len(selected)
+    daily_ret = 0.0
+    for aid, stock, sr in selected:
+        close = load_stock_close(stock)
+        if close is None:
+            continue
+        if date in close.index:
+            idx = close.index.get_loc(date)
+            if idx > 0:
+                stock_ret = (close.iloc[idx] / close.iloc[idx - 1]) - 1
+                daily_ret += stock_ret / n  # 等權
+
+    # 扣交易成本 (粗略: 每日平均倉位變動 × cost)
+    if i > 0:
+        prev_n = holding_log[-1] if holding_log else 0
+        turnover = abs(n - prev_n) / max(n, 1)
+        daily_ret -= turnover * COST_PER_SIDE
+
+    portfolio_daily_ret.append(daily_ret)
+    holding_log.append(n)
+
+# Step 3: 計 SR
+port_ret = pd.Series(portfolio_daily_ret, index=dates)
+port_ret = port_ret.dropna()
+
+sr_full = port_ret.mean() / port_ret.std() * np.sqrt(252) if port_ret.std() > 0 else 0
+cum = (1 + port_ret).cumprod()
+total_ret = cum.iloc[-1] - 1
+mdd = (cum / cum.cummax() - 1).min()
+avg_holdings = np.mean(holding_log)
+
+# IS/OOS split
+cut = int(len(port_ret) * 0.6)
+is_ret = port_ret.iloc[:cut]
+oos_ret = port_ret.iloc[cut:]
+is_sr = is_ret.mean() / is_ret.std() * np.sqrt(252) if is_ret.std() > 0 else 0
+oos_sr = oos_ret.mean() / oos_ret.std() * np.sqrt(252) if oos_ret.std() > 0 else 0
+
+print(f"\n{'='*65}")
+print(f"📊 實戰模擬結果")
+print(f"{'='*65}")
+print(f"  回測期: {dates[0].date()} ~ {dates[-1].date()} ({len(dates)} 日)")
+print(f"  平均持倉: {avg_holdings:.1f} / {MAX_POSITIONS}")
+print(f"  總回報: {total_ret*100:.1f}%")
+print(f"  最大回撤: {mdd*100:.1f}%")
+print(f"")
+print(f"  Full Sharpe:  {sr_full:.2f}")
+print(f"  IS  Sharpe:   {is_sr:.2f} (前60%)")
+print(f"  OOS Sharpe:   {oos_sr:.2f} (後40%)")
+print(f"")
+print(f"  年化回報: {((1+total_ret)**(252/len(dates))-1)*100:.1f}%")

@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+"""alpha_ensemble.py — 多因子組合 Alpha (19 ROBUST 投票系統).
+
+核心: 19 個 ROBUST alpha 各自計算 entry signal → K-of-19 投票 → 共識夠強先買入.
+Diversification: 獨立信號噪音互相抵消 → Sharpe 顯著提升.
+
+技術: monkey-patch backtest_signals 捕獲 entries boolean array (唔改任何 alpha).
+"""
+import sys, warnings
+warnings.filterwarnings("ignore")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from multiprocessing import Pool, cpu_count
+
+import kol_alpha_strategies as kol
+from hkptrc_strategies.common import backtest_signals, extract_metrics, compute_zscore
+from vbt_data import FACTOR_STOCKS, load_stock_close
+
+# 19 個 ROBUST alpha IDs
+ROBUST_IDS = [9, 10, 15, 17, 21, 26, 31, 36, 39, 43, 45, 47, 58, 62, 66, 69, 71, 74, 78]
+
+# 哪些 ROBUST alpha 係 contrarian (short-side entry) — 需要翻轉
+# 從 _build_factor_signal direction="contrarian" 嘅 alpha
+CONTRARIAN_IDS = {58, 66, 71, 74, 78, 31}  # 依啲用 direction="contrarian"
+# 注意: inline entries/se 嘅 alpha (47,69,45,43,66,39) — entries 已經係 long channel
+
+
+def capture_signals(prices, stock, alpha_ids):
+    """用 monkey-patch 捕獲每個 alpha 嘅 entries boolean array.
+
+    方法: 臨時替換 backtest_signals, 記錄傳入嘅 entries 參數.
+    """
+    import kol_alpha_strategies as kol_mod
+    import hkptrc_strategies.common as common_mod
+
+    captured = {}  # {alpha_id: entries Series}
+
+    # 儲存原始 backtest_signals
+    orig_bs = common_mod.backtest_signals
+    orig_bfs = kol_mod._build_factor_signal
+
+    # 當前正在執行嘅 alpha ID (用於追蹤邊個 alpha 觸發)
+    current_aid = [None]
+
+    def patched_backtest_signals(close, entries, exits, short_entries=None, short_exits=None, **kw):
+        """捕獲 entries 並繼續正常 backtest."""
+        if current_aid[0] is not None:
+            # 捕獲 entries (long side)
+            captured[current_aid[0]] = entries.copy() if hasattr(entries, 'copy') else entries
+        # 返一個有效嘅 portfolio (唔使真正 backtest, 只要唔 crash)
+        return orig_bs(close, entries, exits, short_entries, short_exits, **kw)
+
+    def patched_build_factor_signal(factor_close, stock_close, entry_cond, exit_cond,
+                                     holding=7, direction="contrarian", **kw):
+        """捕獲 _build_factor_signal 內部構建嘅 entries (含 shift 處理)."""
+        # 重建 entries (同 _build_factor_signal 一樣嘅邏輯)
+        try:
+            common = stock_close.index.intersection(factor_close.index)
+            if len(common) < 200:
+                return orig_bfs(factor_close, stock_close, entry_cond, exit_cond, holding, direction, **kw)
+            close = stock_close.reindex(common)
+            ec = entry_cond.reindex(common).fillna(False)
+            xc = exit_cond.reindex(common).fillna(False)
+            n = len(close)
+            entries = np.zeros(n, dtype=bool)
+            exits = np.zeros(n, dtype=bool)
+            se = np.zeros(n, dtype=bool)
+            sx = np.zeros(n, dtype=bool)
+            for i in range(n):
+                if ec.iloc[i]:
+                    ei = min(i + 1 + holding, n - 1)
+                    if direction == "contrarian":
+                        se[i + 1] = True; sx[ei] = True
+                    else:
+                        entries[i + 1] = True; exits[ei] = True
+                    # early exit
+                    for j in range(i + 2, ei):
+                        if xc.iloc[j]:
+                            exits[j] = True if direction != "contrarian" else False
+                            sx[j] = True if direction == "contrarian" else False
+                            break
+            # 捕獲 entries Series
+            if current_aid[0] is not None:
+                if direction == "contrarian":
+                    # contrarian: se 係 short trigger, entries 係 long = 無
+                    # 但我哋要 long signal: contrarian alpha 做空 = 唔想 long
+                    captured[current_aid[0]] = pd.Series(se.astype(bool)[:n], index=close.index)
+                else:
+                    captured[current_aid[0]] = pd.Series(entries.astype(bool)[:n], index=close.index)
+        except Exception:
+            pass
+        return orig_bfs(factor_close, stock_close, entry_cond, exit_cond, holding, direction, **kw)
+
+    # Monkey-patch
+    common_mod.backtest_signals = patched_backtest_signals
+    kol_mod._build_factor_signal = patched_build_factor_signal
+    # 也要 patch kol 模塊引用嘅 backtest_signals (from common import *)
+    kol_mod.backtest_signals = patched_backtest_signals
+
+    try:
+        for aid in alpha_ids:
+            current_aid[0] = aid
+            try:
+                name, kol_name, func, dtype = kol.KOL_REGISTRY[aid]
+                m = func(prices, stock)
+                # m 可能係 None (無信號), 唔緊要
+            except Exception:
+                pass
+            finally:
+                current_aid[0] = None
+    finally:
+        # 恢復
+        common_mod.backtest_signals = orig_bs
+        kol_mod.backtest_signals = orig_bs
+        kol_mod._build_factor_signal = orig_bfs
+
+    return captured
+
+
+def ensemble_alpha(prices, stock, k_threshold=5, holding=10):
+    """多因子組合: 19 ROBUST alpha 投票 → K-of-19 → 做多.
+
+    邏輯: 收集 19 個 ROBUST alpha 嘅 entry signals.
+          當 >= k_threshold 個 alpha 同時發出 long signal → 買入.
+          持倉 holding 日 或 共識瓦解 (< k_threshold/2) → 出場.
+    """
+    close = prices[stock].dropna()
+    if len(close) < 300:
+        return None
+
+    # 捕獲所有 ROBUST alpha 嘅 signals
+    captured = capture_signals(prices, stock, ROBUST_IDS)
+    if len(captured) < 5:
+        return None  # 太少 alpha 有信號
+
+    # 對齊所有 signals 到 close.index
+    sig_dict = {}
+    for aid, sig in captured.items():
+        s = pd.Series(sig, index=close.index) if not isinstance(sig, pd.Series) else sig
+        s = s.reindex(close.index).fillna(False)
+        # contrarian alpha: 如果有 signal (se entries), 翻轉為 want-long
+        # 如果冇 signal (全 False), skip — 唔好翻轉成全 True
+        if aid in CONTRARIAN_IDS:
+            n_true = s.sum()
+            if n_true > 0 and n_true < len(s) * 0.8:
+                s = ~s  # 有意義嘅 short signal → 翻轉為 long
+            else:
+                continue  # 0 個或太多 signal → 無信息, skip
+        sig_dict[aid] = s.astype(bool)
+
+    if len(sig_dict) < 5:
+        return None
+
+    # K-of-N 投票
+    sig_df = pd.DataFrame(sig_dict)
+    vote_count = sig_df.sum(axis=1)
+    ensemble_entries = (vote_count >= k_threshold).shift(1).fillna(False)
+    # 出場: 共識瓦解 (投票數 < k_threshold 的一半)
+    ensemble_exits = (vote_count < k_threshold / 2).shift(1).fillna(False)
+    # 唔做 short (組合策略 long-only)
+    if not ensemble_entries.any():
+        return None
+
+    pf = backtest_signals(close, ensemble_entries, ensemble_exits)
+    if pf is None or pf.trades.count() == 0:
+        return None
+    return extract_metrics(pf, f"86_多因子組合K{k_threshold}", stock)
+
+
+def main():
+    print("=" * 65)
+    print("🚀 多因子組合 Alpha (19 ROBUST 投票)")
+    print("=" * 65)
+
+    # 測多個門檻
+    thresholds = [3, 5, 7, 10]
+    stocks = FACTOR_STOCKS[:40]  # 用 40 股快速測試
+
+    for k in thresholds:
+        print(f"\n{'='*55}")
+        print(f"  K={k}-of-19 投票門檻")
+        print(f"{'='*55}")
+        srs = []
+        for stock in stocks:
+            try:
+                close = load_stock_close(stock)
+                if close is None:
+                    continue
+                prices = pd.DataFrame({stock: close})
+                m = ensemble_alpha(prices, stock, k_threshold=k)
+                if m:
+                    srs.append(m["sharpe"])
+                    if m["sharpe"] > 1.5:
+                        print(f"  🎯 {stock}: SR={m['sharpe']:.2f} n={m['n_trades']}", flush=True)
+            except Exception as e:
+                pass
+
+        if srs:
+            mean_sr = np.mean(srs)
+            n_pos = sum(1 for s in srs if s > 0)
+            best_sr = max(srs)
+            print(f"\n  K={k}: 平均 SR={mean_sr:.2f}, 最佳 SR={best_sr:.2f}, "
+                  f"正回報 {n_pos}/{len(srs)}", flush=True)
+        else:
+            print(f"\n  K={k}: 無有效結果", flush=True)
+
+
+if __name__ == "__main__":
+    main()

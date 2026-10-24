@@ -1,0 +1,157 @@
+"""
+Intraday 分鐘線 Fetcher
+
+用富途 API 攞 1min/5min/15min/30min/60min 歷史 K 線。
+自動存入 Parquet 分區（freq + year + month）。
+
+注意：富途 intraday 歷史深度有限（1 分鐘線約 1-2 個月，
+5/15/30/60 分鐘線歷史較長）。實際深度視訂閱等級。
+
+用法:
+    from src.data.intraday_fetcher import IntradayFetcher
+
+    fetcher = IntradayFetcher()
+    df = fetcher.get_5min("HK.00700", days=5)
+    fetcher.store_intraday("HK.00700", freq="5min")
+"""
+import sys
+import time
+import logging
+from typing import List, Optional
+
+import pandas as pd
+
+sys.path = [p for p in sys.path if "CODEX" not in p]
+
+from .futu_adapter import FutuAdapter
+from .incremental import IncrementalUpdater
+
+logger = logging.getLogger(__name__)
+
+
+class IntradayFetcher:
+    """Intraday 分鐘線 Fetcher。"""
+
+    # 支援嘅頻率
+    FREQS = {
+        "1min": "1m",
+        "5min": "5m",
+        "15min": "15m",
+        "30min": "30m",
+        "60min": "60min",
+    }
+
+    def __init__(self, futu: FutuAdapter = None):
+        self.futu = futu or FutuAdapter()
+
+    def get_intraday(self, symbol: str, freq: str = "5min",
+                     max_count: int = 1000) -> pd.DataFrame:
+        """取得 intraday 分鐘線。
+
+        Args:
+            symbol: HK.00700
+            freq: 1min / 5min / 15min / 30min / 60min
+            max_count: 最多 K 線數（富途限制）
+
+        Returns:
+            DataFrame: datetime, open, high, low, close, volume, turnover
+        """
+        futu_freq = self.FREQS.get(freq)
+        if futu_freq is None:
+            raise ValueError("不支援嘅頻率: {}（支援: {}）".format(
+                freq, list(self.FREQS.keys())))
+
+        df = self.futu.get_ohlcv(symbol, days=max_count, freq=futu_freq)
+        if df.empty:
+            return df
+
+        df["freq"] = freq
+        return df
+
+    def get_1min(self, symbol: str, max_count: int = 1000) -> pd.DataFrame:
+        return self.get_intraday(symbol, "1min", max_count)
+
+    def get_5min(self, symbol: str, max_count: int = 1000) -> pd.DataFrame:
+        return self.get_intraday(symbol, "5min", max_count)
+
+    def get_15min(self, symbol: str, max_count: int = 1000) -> pd.DataFrame:
+        return self.get_intraday(symbol, "15min", max_count)
+
+    def get_30min(self, symbol: str, max_count: int = 1000) -> pd.DataFrame:
+        return self.get_intraday(symbol, "30min", max_count)
+
+    def get_60min(self, symbol: str, max_count: int = 1000) -> pd.DataFrame:
+        return self.get_intraday(symbol, "60min", max_count)
+
+    def store_intraday(self, symbol: str, freq: str = "5min",
+                       max_count: int = 5000) -> dict:
+        """攞 intraday 數據並存入 Parquet。"""
+        df = self.get_intraday(symbol, freq, max_count)
+        if df.empty:
+            return {"success": False, "reason": "no_data"}
+
+        updater = IncrementalUpdater("market_data", symbol, freq)
+        return updater.update(df)
+
+    def store_intraday_batch(self, symbols: List[str], freq: str = "5min",
+                             max_count: int = 5000) -> dict:
+        """批次存儲。"""
+        results = {}
+        for i, sym in enumerate(symbols):
+            results[sym] = self.store_intraday(sym, freq, max_count)
+            if (i + 1) % 10 == 0:
+                logger.info("Intraday 批次進度: {}/{}".format(i + 1, len(symbols)))
+            time.sleep(0.1)
+        return results
+
+    def close(self):
+        self.futu.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    print("=" * 70)
+    print("Intraday Fetcher 測試")
+    print("=" * 70)
+
+    with IntradayFetcher() as fetcher:
+        # 5 分鐘線
+        print("\n1. get_5min HK.00700 (100 根)")
+        df = fetcher.get_5min("HK.00700", max_count=100)
+        if not df.empty:
+            print("   rows:", len(df))
+            print("   日期範圍:", df["date"].min(), "→", df["date"].max())
+            print(df[["date", "open", "close", "volume"]].head(3).to_string(index=False))
+
+        # 測試歷史深度（1 分鐘線）
+        print("\n2. 測試 1 分鐘線歷史深度")
+        df1m = fetcher.get_1min("HK.00700", max_count=5000)
+        if not df1m.empty:
+            print("   rows:", len(df1m))
+            print("   最早:", df1m["date"].min())
+            print("   最晚:", df1m["date"].max())
+
+        # 存儲測試
+        print("\n3. store_intraday HK.00700 5min")
+        r = fetcher.store_intraday("HK.00700", freq="5min", max_count=200)
+        print("   結果:", r)
+
+        # 讀回驗證
+        from .storage import store
+        loaded = store.load("market_data", "HK.00700", "5min")
+        if loaded is not None:
+            print("\n4. 從 Parquet 讀回:", len(loaded), "rows")
+            print("   日期範圍:", loaded["date"].min(), "→", loaded["date"].max())
+
+        # 清理
+        import shutil
+        shutil.rmtree("data/market_data/5min/symbol=00700", ignore_errors=True)
+        print("\n   測試清理完成")
+
+    print("\n✓ Intraday Fetcher 測試完成")

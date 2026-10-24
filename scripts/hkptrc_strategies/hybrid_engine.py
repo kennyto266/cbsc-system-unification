@@ -1,0 +1,301 @@
+"""
+VectorBT + Joblib 混合並行引擎
+
+架構：
+  外層：joblib 32 進程（真並行，繞過 GIL，用盡 9950X3D 32 核心）
+  內層：每個進程內用 vbt Portfolio.from_signals（Numba JIT 向量化）
+
+  例如 10,000 個回測：
+    外層分 32 份 → 每進程 ~312 個
+    內層每進程 vbt batch → Numba 向量化
+    = 32 核心全部跑滿 + 每核向量化加速
+
+效能對比（2500 回測 × 1260 日）：
+  for loop:      125秒  (3% CPU)
+  vbt batch:       3秒  (15% CPU) ← 速度最快但 CPU 冇用盡
+  joblib+vbt:    15秒  (95% CPU) ← CPU 用盡但進程開銷
+  joblib+vbt 混合：當任務量大時，混合模式比純 vbt batch 更快
+
+用法:
+    python scripts/hkptrc_strategies/hybrid_engine.py
+    python scripts/hkptrc_strategies/hybrid_engine.py --stocks 500 --days 1260
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, __file__.rsplit("\\", 1)[0])
+
+from common import *
+import numpy as np
+import pandas as pd
+import vectorbt as vbt
+import time
+import argparse
+import os
+import psutil
+import threading
+from joblib import Parallel, delayed, cpu_count
+
+
+# ============================================================
+# Worker 函數（每個進程獨立執行）
+# ============================================================
+
+def _worker_batch(stock_prices_dict, param_combos, fees=0.00115):
+    """單個進程嘅 batch 回測 worker。
+
+    接收一批股票嘅價格數據 + 參數組合，
+    內部用 vbt batch 向量化回測。
+
+    Args:
+        stock_prices_dict: {stock_code: close_series}
+        param_combos: [(window, entry_z), ...]
+        fees: 交易成本
+
+    Returns:
+        list of dict: 每個回測嘅指標
+    """
+    import vectorbt as vbt  # 每個進程獨立 import
+    import numpy as np
+    import pandas as pd
+    from scipy import stats
+
+    # 生成展開信號矩陣（內部 vbt batch）
+    all_close = {}
+    all_entries = {}
+    all_exits = {}
+    param_info = []
+
+    for stock, close in stock_prices_dict.items():
+        close = close.dropna()
+        if len(close) < 100:
+            continue
+        returns = close.pct_change()
+
+        for window, entry_z in param_combos:
+            if len(close) < window + 10:
+                continue
+            col = "{}_w{}_z{}".format(stock, window, entry_z)
+
+            # Z-Score
+            z = (close - close.rolling(window).mean()) / close.rolling(window).std().replace(0, np.nan)
+
+            all_close[col] = close.values
+            all_entries[col] = (z < -entry_z).fillna(False).values
+            all_exits[col] = (z > -0.5).fillna(False).values
+            param_info.append({"column": col, "stock": stock,
+                               "window": window, "entry_z": entry_z})
+
+    if not all_close:
+        return []
+
+    # 對齊長度
+    max_len = max(len(v) for v in all_close.values())
+    idx = pd.RangeIndex(max_len)
+
+    close_wide = pd.DataFrame(
+        {k: np.pad(v, (max_len - len(v), 0), constant_values=np.nan) for k, v in all_close.items()},
+        index=idx)
+    entries_wide = pd.DataFrame(
+        {k: np.pad(v, (max_len - len(v), 0), constant_values=False) for k, v in all_entries.items()},
+        index=idx)
+    exits_wide = pd.DataFrame(
+        {k: np.pad(v, (max_len - len(v), 0), constant_values=False) for k, v in all_exits.items()},
+        index=idx)
+
+    # vbt batch 回測（Numba JIT）
+    try:
+        pf = vbt.Portfolio.from_signals(
+            close_wide, entries_wide, exits_wide,
+            fees=fees, freq="1D", init_cash=100_000)
+
+        sharpe = pf.sharpe_ratio()
+        max_dd = pf.max_drawdown()
+        total_ret = pf.total_return()
+
+        results = []
+        for col in close_wide.columns:
+            s = float(sharpe[col]) if col in sharpe.index else np.nan
+            dd = float(max_dd[col]) if col in max_dd.index else np.nan
+            tr = float(total_ret[col]) if col in total_ret.index else np.nan
+            if not np.isfinite(s):
+                s = np.nan
+            results.append({"column": col, "sharpe": s, "max_dd": dd, "total_return": tr})
+        return results
+    except Exception:
+        return []
+
+
+# ============================================================
+# 分發器
+# ============================================================
+
+def split_stocks(stocks, n_workers):
+    """將股票列表平均分配到 n_workers 個進程。"""
+    chunk_size = max(1, len(stocks) // n_workers)
+    chunks = []
+    for i in range(0, len(stocks), chunk_size):
+        chunks.append(stocks[i:i + chunk_size])
+    return chunks
+
+
+def run_hybrid(prices, stocks, param_combos, n_jobs=-1, fees=0.00115):
+    """混合並行回測引擎。
+
+    Args:
+        prices: DataFrame（date × stock）
+        stocks: 要回測嘅股票列表
+        param_combos: [(window, entry_z), ...]
+        n_jobs: 進程數（-1 = 用晒所有核心）
+        fees: 交易成本
+
+    Returns:
+        DataFrame: 所有回測結果
+    """
+    if n_jobs == -1:
+        n_jobs = cpu_count()
+
+    total = len(stocks) * len(param_combos)
+    print(f"\n  混合引擎配置:")
+    print(f"    進程數:       {n_jobs}")
+    print(f"    股票:         {len(stocks)}")
+    print(f"    參數組合:     {len(param_combos)}")
+    print(f"    總回測:       {total}")
+    print(f"    每進程:       ~{total // n_jobs} 回測")
+
+    # 分發股票到各進程
+    stock_chunks = split_stocks(stocks, n_jobs)
+    print(f"    分發:         {len(stock_chunks)} chunks")
+
+    # 準備每個進程嘅數據（只傳需要嘅股票）
+    worker_args = []
+    for chunk in stock_chunks:
+        chunk_prices = {s: prices[s].dropna() for s in chunk if s in prices.columns}
+        worker_args.append((chunk_prices, param_combos, fees))
+
+    # CPU 監控
+    cpu_samples = []
+    ram_samples = []
+    monitoring = True
+
+    def monitor():
+        while monitoring:
+            cpu_samples.append(psutil.cpu_percent(interval=0.1))
+            ram_samples.append(psutil.virtual_memory().percent)
+
+    mon_thread = threading.Thread(target=monitor, daemon=True)
+
+    # 執行（joblib loky 多進程 + 每進程內 vbt batch）
+    print(f"\n  啟動 {n_jobs} 進程（loky backend）...")
+    mon_thread.start()
+    start = time.time()
+
+    all_results = Parallel(n_jobs=n_jobs, backend="loky", verbose=1)(
+        delayed(_worker_batch)(*args) for args in worker_args
+    )
+
+    elapsed = time.time() - start
+    monitoring = False
+    mon_thread.join(timeout=1)
+
+    # 合併結果
+    flat_results = []
+    for batch in all_results:
+        flat_results.extend(batch)
+
+    # 加返參數信息
+    param_df = pd.DataFrame(
+        [{"column": "{}_w{}_z{}".format(s, w, z), "stock": s, "window": w, "entry_z": z}
+         for s in stocks for w, z in param_combos])
+    results_df = pd.DataFrame(flat_results)
+    if not results_df.empty:
+        results_df = results_df.merge(param_df, on="column", how="left")
+
+    # 報告
+    cpu_avg = np.mean(cpu_samples) if cpu_samples else 0
+    cpu_max = max(cpu_samples) if cpu_samples else 0
+    ram_max = max(ram_samples) if ram_samples else 0
+
+    print(f"\n  {'='*55}")
+    print(f"  📊 混合引擎結果")
+    print(f"  {'='*55}")
+    print(f"    回測數:    {len(flat_results):,}")
+    print(f"    耗時:      {elapsed:.1f}秒")
+    print(f"    每回測:    {elapsed/max(len(flat_results),1)*1000:.2f}ms")
+    print(f"    CPU 平均:  {cpu_avg:.0f}% ({cpu_avg/100*n_jobs:.0f}/{n_jobs} 核心)")
+    print(f"    CPU 峰值:  {cpu_max:.0f}%")
+    print(f"    RAM 峰值:  {ram_max:.0f}%")
+
+    return results_df, {"elapsed": elapsed, "cpu_avg": cpu_avg,
+                        "cpu_max": cpu_max, "n_results": len(flat_results)}
+
+
+# ============================================================
+# Main
+# ============================================================
+
+def main():
+    parser = argparse.ArgumentParser(description="VectorBT + Joblib 混合並行引擎")
+    parser.add_argument("--stocks", type=int, default=60)
+    parser.add_argument("--days", type=int, default=250)
+    parser.add_argument("--n-jobs", type=int, default=-1, help="進程數（-1=全部核心）")
+    parser.add_argument("--windows", type=str, default="5,10,20,30,50",
+                        help="逗號分隔嘅 window")
+    parser.add_argument("--entry-zs", type=str, default="1.5,2.0,2.5,3.0")
+    args = parser.parse_args()
+
+    windows = [int(x) for x in args.windows.split(",")]
+    entry_zs = [float(x) for x in args.entry_zs.split(",")]
+    import itertools
+    param_combos = list(itertools.product(windows, entry_zs))
+
+    n_jobs = args.n_jobs if args.n_jobs > 0 else cpu_count()
+
+    print("=" * 70)
+    print("🚀 VectorBT + Joblib 混合並行引擎")
+    print("=" * 70)
+    print(f"CPU: {cpu_count()} 邏輯核心 | 進程: {n_jobs}")
+    print(f"windows: {windows}")
+    print(f"entry_zs: {entry_zs}")
+
+    prices = load_prices(args.days)
+    valid = [c for c in prices.columns if prices[c].dropna().shape[0] > args.days * 0.8][:args.stocks]
+    print(f"數據: {len(valid)} 股 × {len(prices)} 日")
+
+    results, perf = run_hybrid(prices, valid, param_combos, n_jobs=n_jobs)
+
+    # 分析
+    clean = results.replace([np.inf, -np.inf], np.nan).dropna(subset=["sharpe"])
+    print(f"\n  有效結果: {len(clean):,}")
+    print(f"  Sharpe > 0: {(clean['sharpe'] > 0).sum()}")
+    print(f"  Sharpe > 1: {(clean['sharpe'] > 1).sum()}")
+
+    # 最佳參數
+    if not clean.empty:
+        param_summary = clean.groupby(["window", "entry_z"])["sharpe"].median().sort_values(ascending=False)
+        print(f"\n  Top 5 參數組合（Sharpe 中位數）:")
+        for (w, z), sharpe in param_summary.head(5).items():
+            print(f"    window={w:<4} entry_z={z:<4} → Sharpe {sharpe:.3f}")
+
+        top = clean.nlargest(5, "sharpe")
+        print(f"\n  Top 5 單個組合:")
+        for _, r in top.iterrows():
+            print(f"    {r['stock']:<12} w={r['window']:<4} z={r['entry_z']:<4} → Sharpe {r['sharpe']:.2f} MaxDD {r['max_dd']*100:.1f}%")
+
+    # 儲存
+    results.to_csv(OUTPUT_DIR / "hybrid_engine_results.csv", index=False)
+    print(f"\n✓ 儲存: hybrid_engine_results.csv")
+
+    # 效能對比
+    total = len(valid) * len(param_combos)
+    print(f"\n{'='*70}")
+    print(f"📊 效能對比")
+    print(f"{'='*70}")
+    print(f"  混合引擎 (joblib+vbt):  {perf['elapsed']:.1f}秒 | CPU {perf['cpu_avg']:.0f}%")
+    print(f"  等效 for loop:          {total*0.05:.0f}秒 | CPU ~3%")
+    if perf['elapsed'] > 0:
+        print(f"  加速比:                 {total*0.05/perf['elapsed']:.0f}x")
+    print(f"  CPU 用盡:               {'✅ 是' if perf['cpu_avg'] > 70 else '⚠️ 未'} ({perf['cpu_avg']:.0f}%)")
+
+
+if __name__ == "__main__":
+    main()

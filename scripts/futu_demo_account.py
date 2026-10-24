@@ -1,0 +1,285 @@
+#!/usr/bin/env python3
+"""
+富途 DEMO 戶口資料查詢
+
+顯示模擬戶口的：
+- 資金 (現金 / 購買力 / 總資產 / 淨資產)
+- 持倉 (股票 / 數量 / 均價 / 市值 / 盈虧)
+- 今日訂單
+- 歷史成交
+
+⚠️ 需要 OpenD API 監聽地址為 127.0.0.1（本地）。
+   如果監聽 0.0.0.0 會被要求加密，無法查詢。
+
+用法:
+    python scripts/futu_demo_account.py
+    python scripts/futu_demo_account.py --json   # JSON 輸出
+"""
+import os
+import sys
+import json
+import argparse
+from datetime import datetime
+
+FUTU_HOST = os.getenv("FUTU_OPEND_HOST", "127.0.0.1")
+FUTU_PORT = int(os.getenv("FUTU_OPEND_PORT", "1130"))
+
+
+def fmt_money(val, currency="HKD"):
+    """格式化金額。"""
+    if val is None:
+        return f"- {currency}"
+    try:
+        v = float(val)
+        if abs(v) >= 1e8:
+            return f"{v/1e8:.2f} 億 {currency}"
+        if abs(v) >= 1e4:
+            return f"{v/1e4:.2f} 萬 {currency}"
+        return f"{v:,.2f} {currency}"
+    except (ValueError, TypeError):
+        return f"- {currency}"
+
+
+def safe_float(val, default=0.0):
+    """安全轉 float，處理富途返回的 N/A 字串。"""
+    if val is None or val == "N/A" or val == "":
+        return default
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
+
+def check_opend_config_issue(error_msg):
+    """檢測是否為 0.0.0.0 跨網加密問題。"""
+    msg = str(error_msg)
+    if "跨网" in msg or "加密" in msg or "127.0.0.1" in msg:
+        return True
+    return False
+
+
+def query_demo_account(output_json=False):
+    """查詢 DEMO 戶口完整資料。"""
+    import futu
+
+    print(f"\n{'='*60}")
+    print(f"🏦 富途 DEMO 戶口資料")
+    print(f"{'='*60}")
+    print(f"查詢時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"OpenD: {FUTU_HOST}:{FUTU_PORT}")
+    print(f"SDK: {futu.__version__}")
+
+    # 建立交易上下文 (嘗試多個市場)
+    result = {
+        "timestamp": datetime.now().isoformat(),
+        "opend": {"host": FUTU_HOST, "port": FUTU_PORT},
+        "account": None,
+        "positions": [],
+        "orders": [],
+        "error": None,
+    }
+
+    ctx = None
+    try:
+        # 預設用 HK market (港股模擬戶口)
+        ctx = futu.OpenSecTradeContext(
+            host=FUTU_HOST, port=FUTU_PORT,
+            filter_trdmarket=futu.TrdMarket.HK,
+        )
+    except Exception as e:
+        result["error"] = f"連線失敗: {e}"
+        _print_error(result, output_json)
+        return result
+
+    try:
+        # 1. 戶口列表
+        ret, acc_data = ctx.get_acc_list()
+        if ret != futu.RET_OK:
+            if check_opend_config_issue(acc_data):
+                result["error"] = "OPEN_CONFIG"
+                _print_config_error(output_json)
+                return result
+            result["error"] = f"get_acc_list 失敗: {acc_data}"
+            _print_error(result, output_json)
+            return result
+
+        # 篩選 SIMULATE 戶口
+        sim_accounts = []
+        if hasattr(acc_data, "iterrows"):
+            for _, row in acc_data.iterrows():
+                env = str(row.get("trd_env", ""))
+                if "SIMULATE" in env or "模拟" in env:
+                    sim_accounts.append({
+                        "acc_id": int(row.get("acc_id", 0)),
+                        "trd_env": str(row.get("trd_env", "")),
+                        "acc_type": str(row.get("acc_type", "")),
+                        "security_firm": str(row.get("security_firm", "")),
+                    })
+
+        print(f"\n📋 戶口列表: {len(sim_accounts)} 個模擬戶口")
+        if not sim_accounts and hasattr(acc_data, "iterrows"):
+            # 如果冇明確 SIMULATE, 用所有戶口
+            for _, row in acc_data.iterrows():
+                sim_accounts.append({
+                    "acc_id": int(row.get("acc_id", 0)),
+                    "trd_env": str(row.get("trd_env", "")),
+                    "acc_type": str(row.get("acc_type", "")),
+                })
+            print(f"  (未找到 SIMULATE 標記，顯示全部 {len(sim_accounts)} 個戶口)")
+
+        for acc in sim_accounts[:5]:
+            print(f"  - acc_id={acc['acc_id']} env={acc['trd_env']} type={acc['acc_type']}")
+
+        # 2. 資金查詢
+        print(f"\n💰 資金概況")
+        ret, funds = ctx.accinfo_query(trd_env=futu.TrdEnv.SIMULATE)
+        if ret == futu.RET_OK and hasattr(funds, "iterrows") and not funds.empty:
+            for _, row in funds.iterrows():
+                cash = safe_float(row.get("cash"))
+                total = safe_float(row.get("total_assets"))
+                market_val = safe_float(row.get("market_val"))
+                power = safe_float(row.get("power"))
+                # 多幣種明細
+                hk_cash = safe_float(row.get("hk_cash"))
+                us_cash = safe_float(row.get("us_cash"))
+                cn_cash = safe_float(row.get("cn_cash"))
+
+                acc_info = {
+                    "cash": cash,
+                    "power": power,
+                    "total_assets": total,
+                    "market_value": market_val,
+                    "hk_cash": hk_cash,
+                    "us_cash": us_cash,
+                    "cn_cash": cn_cash,
+                    "unrealized_pl": safe_float(row.get("unrealized_pl")),
+                }
+                result["account"] = acc_info
+                print(f"  💵 現金總額:   {fmt_money(cash, 'HKD')}")
+                print(f"  ⚡ 購買力:     {fmt_money(power, 'HKD')}")
+                print(f"  📈 持倉市值:   {fmt_money(market_val, 'HKD')}")
+                print(f"  💎 總資產:     {fmt_money(total, 'HKD')}")
+                if acc_info["unrealized_pl"]:
+                    pl = acc_info["unrealized_pl"]
+                    sign = "📈" if pl >= 0 else "📉"
+                    print(f"  {sign} 未實現盈虧: {fmt_money(pl, 'HKD')}")
+                # 分幣種
+                print(f"\n  🌐 分幣種現金:")
+                print(f"     HKD: {fmt_money(hk_cash, 'HKD')}")
+                if us_cash > 0:
+                    print(f"     USD: {fmt_money(us_cash, 'USD')}")
+                if cn_cash > 0:
+                    print(f"     CNH: {fmt_money(cn_cash, 'CNH')}")
+        else:
+            print(f"  查詢失敗: {funds}")
+            if check_opend_config_issue(funds):
+                result["error"] = "OPEN_CONFIG"
+                _print_config_error(output_json)
+                return result
+
+        # 3. 持倉查詢
+        print(f"\n📦 持倉明細")
+        ret, positions = ctx.position_list_query(trd_env=futu.TrdEnv.SIMULATE)
+        if ret == futu.RET_OK and hasattr(positions, "iterrows") and not positions.empty:
+            print(f"  {'代碼':<12} {'名稱':<10} {'數量':>8} {'均價':>10} {'現價':>10} {'市值':>14} {'盈虧':>10}")
+            print(f"  {'-'*12} {'-'*10} {'-'*8} {'-'*10} {'-'*10} {'-'*14} {'-'*10}")
+            for _, row in positions.iterrows():
+                pos = {
+                    "code": str(row.get("code", "")),
+                    "name": str(row.get("stock_name", "")),
+                    "qty": safe_float(row.get("qty")),
+                    "cost_price": safe_float(row.get("cost_price")),
+                    "current_price": safe_float(row.get("current_price")),
+                    "market_value": safe_float(row.get("market_value")),
+                    "pl_val": safe_float(row.get("pl_val")),
+                    "pl_ratio": safe_float(row.get("pl_ratio")),
+                }
+                result["positions"].append(pos)
+                pl_pct = f"{pos['pl_ratio']*100:+.2f}%" if pos["pl_ratio"] else "-"
+                print(f"  {pos['code']:<12} {pos['name'][:8]:<10} {pos['qty']:>8.0f} "
+                      f"{pos['cost_price']:>10.2f} {pos['current_price']:>10.2f} "
+                      f"{fmt_money(pos['market_value']):>14} {pl_pct:>10}")
+            print(f"\n  共 {len(result['positions'])} 個持倉")
+        else:
+            print(f"  無持倉（或查詢返回空）")
+
+        # 4. 今日訂單
+        print(f"\n📜 今日訂單")
+        ret, orders = ctx.order_list_query(trd_env=futu.TrdEnv.SIMULATE)
+        if ret == futu.RET_OK and hasattr(orders, "iterrows") and not orders.empty:
+            for _, row in orders.iterrows():
+                order = {
+                    "order_id": str(row.get("order_id", "")),
+                    "code": str(row.get("code", "")),
+                    "stock_name": str(row.get("stock_name", "")),
+                    "trd_side": str(row.get("trd_side", "")),
+                    "price": safe_float(row.get("price")),
+                    "qty": safe_float(row.get("qty")),
+                    "order_status": str(row.get("order_status", "")),
+                    "create_time": str(row.get("create_time", "")),
+                }
+                result["orders"].append(order)
+                print(f"  {order['order_id']:<12} {order['trd_side']:<4} {order['code']:<12} "
+                      f"{order['qty']:>6.0f}@{order['price']:>8.2f} [{order['order_status']}]")
+            print(f"\n  共 {len(result['orders'])} 個訂單")
+        else:
+            print(f"  今日無訂單")
+
+        print(f"\n{'='*60}")
+        print(f"✅ 查詢完成")
+        print(f"{'='*60}")
+
+    except Exception as e:
+        result["error"] = f"查詢異常: {e}"
+        if check_opend_config_issue(e):
+            result["error"] = "OPEN_CONFIG"
+            _print_config_error(output_json)
+            return result
+        _print_error(result, output_json)
+        return result
+    finally:
+        if ctx:
+            try:
+                ctx.close()
+            except Exception:
+                pass
+
+    if output_json:
+        print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
+    return result
+
+
+def _print_config_error(output_json):
+    """打印 OpenD 配置錯誤 + 修正指引。"""
+    print(f"\n{'='*60}")
+    print(f"❌ 無法查詢 DEMO 戶口")
+    print(f"{'='*60}")
+    print(f"\n原因: OpenD API 監聽地址設為 0.0.0.0（跨網），交易 API 被要求加密。")
+    print(f"\n修正方法:")
+    print(f"  1. 打開 FutuOpenD GUI 介面")
+    print(f"  2. 右側設定 → 找「API 監聽地址」(不是 WebSocket)")
+    print(f"  3. 由 0.0.0.0 改為 127.0.0.1")
+    print(f"  4. 儲存 → 重啟 OpenD → 重新登入")
+    print(f"  5. 再運行: python scripts/futu_demo_account.py")
+    print(f"\n說明:")
+    print(f"  - 行情 API 不受此限制（已正常運作）")
+    print(f"  - 只有交易 API（查戶口/持倉/下單）受影響")
+    print(f"  - 2025-11-21 曾成功下單 (order_id 7377013)，當時配置為 127.0.0.1")
+    if output_json:
+        print(json.dumps({"error": "OPEN_CONFIG",
+                          "hint": "Change OpenD API listen address from 0.0.0.0 to 127.0.0.1"},
+                         ensure_ascii=False))
+
+
+def _print_error(result, output_json):
+    """打印一般錯誤。"""
+    print(f"\n❌ 錯誤: {result['error']}")
+    if output_json:
+        print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="富途 DEMO 戶口資料查詢")
+    parser.add_argument("--json", action="store_true", help="JSON 格式輸出")
+    args = parser.parse_args()
+    query_demo_account(output_json=args.json)

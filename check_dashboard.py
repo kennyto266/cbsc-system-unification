@@ -1,0 +1,267 @@
+"""
+Dashboard Playwright 檢查腳本
+
+逐頁檢查 dashboard：
+1. 截圖每個頁面
+2. 偵測 console 錯誤
+3. 偵測空白/載入失敗
+4. 檢查每個 tab 能否切換
+5. 檢查 API 調用有冇 404/500
+
+輸出：
+- screenshots/ 每頁截圖
+- check_report.json 完整報告
+"""
+import asyncio
+import json
+import os
+from datetime import datetime
+from pathlib import Path
+
+from playwright.async_api import async_playwright
+
+DASHBOARD_URL = "http://localhost:3000"
+OUTPUT_DIR = Path("dashboard_check")
+OUTPUT_DIR.mkdir(exist_ok=True)
+(OUTPUT_DIR / "screenshots").mkdir(exist_ok=True)
+
+
+async def check_dashboard():
+    report = {
+        "timestamp": datetime.now().isoformat(),
+        "url": DASHBOARD_URL,
+        "pages": [],
+        "errors": [],
+        "api_errors": [],
+        "summary": {},
+    }
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context(
+            viewport={"width": 1440, "height": 900},
+            ignore_https_errors=True,
+            bypass_csp=True,
+            extra_http_headers={"Cache-Control": "no-cache"},
+        )
+
+        # 收集 console 錯誤
+        console_errors = []
+        api_responses = []
+
+        page = await context.new_page()
+
+        # 監聽 console
+        def on_console(msg):
+            if msg.type == "error":
+                console_errors.append({
+                    "text": msg.text[:200],
+                    "url": msg.location.get("url", "") if msg.location else "",
+                })
+
+        page.on("console", on_console)
+
+        # 監聽網絡回應
+        async def on_response(response):
+            url = response.url
+            if "/api/" in url:
+                status = response.status
+                if status >= 400:
+                    api_responses.append({"url": url[:100], "status": status})
+
+        page.on("response", on_response)
+
+        # ============================================
+        # 1. 首頁
+        # ============================================
+        print("1. 載入首頁...")
+        try:
+            await page.goto(DASHBOARD_URL, wait_until="networkidle", timeout=20000)
+            await page.wait_for_timeout(2000)
+            await page.screenshot(path=str(OUTPUT_DIR / "screenshots" / "01_home.png"), full_page=False)
+
+            # 檢查頁面內容
+            title = await page.title()
+            body_text = await page.inner_text("body")
+            is_blank = len(body_text.strip()) < 50
+
+            # 搵所有導航連結
+            nav_items = await page.eval_on_selector_all(
+                "a, [role=menuitem], .ant-menu-item",
+                """els => els.map(e => ({
+                    text: e.innerText.substring(0, 30).trim(),
+                    href: e.getAttribute('href') || ''
+                })).filter(e => e.text && e.text.length < 30)"""
+            )
+
+            report["pages"].append({
+                "page": "首頁",
+                "url": DASHBOARD_URL,
+                "title": title,
+                "is_blank": is_blank,
+                "body_length": len(body_text),
+                "nav_items": nav_items[:15],
+                "screenshot": "01_home.png",
+            })
+            print("   ✓ 標題: {} | 內容: {} 字符".format(title, len(body_text)))
+            print("   導航項: {}".format([n["text"] for n in nav_items[:10]]))
+        except Exception as e:
+            report["errors"].append({"page": "首頁", "error": str(e)[:100]})
+            print("   ✗ 失敗: {}".format(str(e)[:80]))
+
+        # ============================================
+        # 2. 逐個導航項 click + 截圖
+        # ============================================
+        nav_texts = ["儀表板", "CBSC", "市場數據", "儀表", "Dashboard", "CBSC牛熊", "市場"]
+        clicked = set()
+
+        for nav_text in nav_texts:
+            try:
+                # 搵包含呢個文字嘅可 click 元素
+                element = page.locator("a, [role=menuitem], .ant-menu-item").filter(has_text=nav_text).first
+                if await element.count() > 0:
+                    text = await element.inner_text()
+                    await element.click()
+                    await page.wait_for_timeout(3000)
+                    await page.wait_for_load_state("networkidle", timeout=10000)
+
+                    safe_name = nav_text.replace(" ", "_").replace("/", "_")
+                    screenshot_path = "02_nav_{}.png".format(safe_name)
+                    await page.screenshot(path=str(OUTPUT_DIR / "screenshots" / screenshot_path), full_page=False)
+
+                    body_text = await page.inner_text("body")
+                    is_blank = len(body_text.strip()) < 100
+
+                    report["pages"].append({
+                        "page": text.strip(),
+                        "url": page.url,
+                        "is_blank": is_blank,
+                        "body_length": len(body_text),
+                        "screenshot": screenshot_path,
+                    })
+
+                    status = "空白" if is_blank else ("內容少" if len(body_text) < 500 else "OK")
+                    print("2. 導航 [{}] → {} ({}字符, {})".format(text.strip()[:15], page.url.split("/")[-1], len(body_text), status))
+                    clicked.add(text.strip())
+                else:
+                    pass
+            except Exception as e:
+                print("   ✗ [{}] 失敗: {}".format(nav_text, str(e)[:60]))
+
+        # ============================================
+        # 3. 市場數據頁 — 檢查所有 tab
+        # ============================================
+        print("\n3. 檢查市場數據頁 tab...")
+        try:
+            # 先去市場數據頁
+            market_link = page.locator("a, [role=menuitem]").filter(has_text="市場").first
+            if await market_link.count() > 0:
+                await market_link.click()
+                await page.wait_for_timeout(2000)
+
+            # 搵所有 tab
+            tabs = await page.eval_on_selector_all(
+                ".ant-tabs-tab, [role=tab]",
+                """els => els.map(e => e.innerText.trim()).filter(t => t)"""
+            )
+            print("   找到 tab: {}".format(tabs))
+
+            for tab_text in tabs:
+                try:
+                    tab = page.locator(".ant-tabs-tab, [role=tab]").filter(has_text=tab_text).first
+                    if await tab.count() > 0:
+                        await tab.click()
+                        await page.wait_for_timeout(5000)
+
+                        safe = tab_text.replace(" ", "_").replace("/", "_")[:20]
+                        screenshot_path = "03_tab_{}.png".format(safe)
+                        await page.screenshot(path=str(OUTPUT_DIR / "screenshots" / screenshot_path), full_page=False)
+
+                        body_text = await page.inner_text("body")
+                        # 檢查有冇表格/圖表內容
+                        has_table = await page.locator("table, .ant-table").count()
+                        has_chart = await page.locator("canvas, svg, .ant-card").count()
+                        has_empty = await page.locator(".ant-empty, [class*=empty]").count()
+                        has_error = await page.locator(".ant-result-error, [class*=error]").count()
+
+                        status = "OK"
+                        issues = []
+                        if len(body_text) < 500:
+                            issues.append("內容少")
+                        if has_empty > 0:
+                            issues.append("有空狀態")
+                        if has_error > 0:
+                            issues.append("有錯誤")
+                        if not issues and (has_table or has_chart):
+                            status = "完整"
+                        elif issues:
+                            status = "問題: " + ", ".join(issues)
+
+                        report["pages"].append({
+                            "page": "Tab: {}".format(tab_text),
+                            "url": page.url,
+                            "is_blank": len(body_text) < 200,
+                            "body_length": len(body_text),
+                            "has_table": has_table,
+                            "has_chart": has_chart,
+                            "has_empty": has_empty,
+                            "has_error": has_error,
+                            "status": status,
+                            "screenshot": screenshot_path,
+                        })
+                        print("   [{}] → {} | 表格:{} 圖表:{} 空:{} 錯:{} → {}".format(
+                            tab_text[:15], len(body_text), has_table, has_chart, has_empty, has_error, status))
+                except Exception as e:
+                    print("   ✗ [{}] {}".format(tab_text, str(e)[:50]))
+        except Exception as e:
+            print("   市場頁失敗: {}".format(str(e)[:60]))
+
+        # ============================================
+        # 4. 總結
+        # ============================================
+        report["errors"] = console_errors[:20]
+        report["api_errors"] = api_responses[:20]
+
+        # 分類頁面狀態
+        complete = [p for p in report["pages"] if p.get("status") == "完整" or (not p.get("is_blank") and p.get("body_length", 0) > 500)]
+        incomplete = [p for p in report["pages"] if p.get("is_blank") or p.get("body_length", 0) < 500 or "問題" in p.get("status", "")]
+
+        report["summary"] = {
+            "total_pages_checked": len(report["pages"]),
+            "complete": len(complete),
+            "incomplete": len(incomplete),
+            "console_errors": len(console_errors),
+            "api_errors": len(api_responses),
+            "complete_pages": [p["page"] for p in complete],
+            "incomplete_pages": [{"page": p["page"], "status": p.get("status", ""), "body_length": p.get("body_length", 0)} for p in incomplete],
+        }
+
+        await browser.close()
+
+    # 儲存報告
+    report_path = OUTPUT_DIR / "check_report.json"
+    with open(report_path, "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2, ensure_ascii=False)
+
+    print("\n" + "=" * 60)
+    print("📊 Dashboard 檢查報告")
+    print("=" * 60)
+    print("  總頁面: {}".format(report["summary"]["total_pages_checked"]))
+    print("  完整:   {}".format(report["summary"]["complete"]))
+    print("  未完整: {}".format(report["summary"]["incomplete"]))
+    print("  Console 錯誤: {}".format(report["summary"]["console_errors"]))
+    print("  API 錯誤: {}".format(report["summary"]["api_errors"]))
+    print("\n  ✓ 完整頁面:")
+    for p in report["summary"]["complete_pages"]:
+        print("    - {}".format(p))
+    print("\n  ⚠️ 未完整頁面:")
+    for p in report["summary"]["incomplete_pages"]:
+        print("    - {} ({}字符) {}".format(p["page"], p["body_length"], p.get("status", "")))
+    print("\n📁 截圖: {}".format(OUTPUT_DIR / "screenshots"))
+    print("📁 報告: {}".format(report_path))
+
+    return report
+
+
+if __name__ == "__main__":
+    asyncio.run(check_dashboard())

@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+"""regime_gated_repair.py — 用 regime gate 修復 12 個 OOS 失敗 alpha.
+
+紀律 (spec 2026-06-29):
+  Phase 1: IS-only (2021-2023) 試 suppress/reverse, 揀 best mode per alpha.
+  Phase 2: frozen OOS (2024-2026) 用 IS-selected mode 測一次.
+  Phase 3: 通過 (存活>50%, OOS>0, decay<100%) → 正式 alpha; 唔通過 → 丟棄.
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from datetime import datetime
+
+import kol_alpha_strategies as kol
+from kol_alpha_strategies import KOL_REGISTRY, regime_gated
+from vbt_data import load_stock_close, FACTOR_STOCKS
+
+OUT = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports")
+SPLIT = "2024-01-01"
+
+# 12 個目標 (ohlcv 失敗 + 幾個 multi 失敗)
+TARGETS = [15, 17, 36, 39, 43, 45, 46, 47, 52, 58, 62, 71, 73]
+MODES = ["suppress", "reverse"]
+
+
+def run_gated_sharpe(close_stock, alpha_id, gate_mode, stock):
+    """跑 regime_gated alpha 喺指定 close, 返 Sharpe (None=無交易)."""
+    prices = pd.DataFrame({stock: close_stock})
+    try:
+        m = regime_gated(alpha_id, prices, stock, gate_mode=gate_mode)
+        if m is None:
+            return None
+        return float(m.get("sharpe", 0.0))
+    except Exception:
+        return None
+
+
+def run_orig_sharpe(close_stock, alpha_id, stock):
+    """跑原版 (未 gated) alpha, 返 Sharpe (baseline)."""
+    prices = pd.DataFrame({stock: close_stock})
+    func = KOL_REGISTRY[alpha_id][2]
+    try:
+        m = func(prices, stock)
+        if m is None:
+            return None
+        return float(m.get("sharpe", 0.0))
+    except Exception:
+        return None
+
+
+def main():
+    stocks = sorted(FACTOR_STOCKS)[:30]
+    print("=" * 70)
+    print("🔧 Regime-Gated Alpha 修復")
+    print(f"  目標: {len(TARGETS)} 個失敗 alpha × {len(MODES)} modes")
+    print(f"  Gate: A131 貼現窗 regime (SMA=70, frozen)")
+    print(f"  IS<{SPLIT} (tune mode)  OOS>={SPLIT} (frozen test)")
+    print(f"  股票: {len(stocks)} 隻")
+    print("=" * 70, flush=True)
+
+    # load + split
+    stock_data = {}
+    for s in stocks:
+        c = load_stock_close(s)
+        if c is None or len(c) < 400: continue
+        stock_data[s] = {"is": c[c.index < SPLIT], "oos": c[c.index >= SPLIT]}
+    print(f"有數據: {len(stock_data)} 隻\n", flush=True)
+
+    results = []
+    for aid in TARGETS:
+        name = KOL_REGISTRY[aid][0] if aid in KOL_REGISTRY else f"A{aid}"
+        print(f"--- A{aid} {name} ---", flush=True)
+
+        # baseline (原版, 未 gated)
+        base_oos = []
+        for s, parts in stock_data.items():
+            sh = run_orig_sharpe(parts["oos"], aid, s)
+            if sh is not None: base_oos.append(sh)
+        base_oos_mean = np.mean(base_oos) if base_oos else 0
+        base_pass = (np.array(base_oos) > 0.3).mean() * 100 if base_oos else 0
+        print(f"  baseline OOS: mean={base_oos_mean:.2f} pass={base_pass:.0f}%", flush=True)
+
+        # Phase 1: IS mode selection
+        is_scores = {}
+        for mode in MODES:
+            is_shs = []
+            for s, parts in stock_data.items():
+                sh = run_gated_sharpe(parts["is"], aid, mode, s)
+                if sh is not None: is_shs.append(sh)
+            if len(is_shs) < 3:
+                is_scores[mode] = -99
+                continue
+            is_mean = np.mean(is_shs)
+            is_winrate = (np.array(is_shs) > 0).mean() * 100
+            score = is_mean * 0.4 + is_winrate / 100 * 0.6  # spec 準則
+            is_scores[mode] = score
+            print(f"  IS [{mode}]: mean={is_mean:.2f} winrate={is_winrate:.0f}% score={score:.2f}", flush=True)
+
+        best_mode = max(is_scores, key=is_scores.get)
+        if is_scores[best_mode] <= -99:
+            print(f"  ❌ IS 無有效交易, 丟棄", flush=True)
+            results.append({"alpha": aid, "name": name, "best_mode": "none",
+                            "is_score": -99, "oos_mean": base_oos_mean,
+                            "oos_pass": base_pass, "verdict": "丟棄(IS無交易)"})
+            continue
+        print(f"  🎯 IS-selected mode: {best_mode} (score={is_scores[best_mode]:.2f})", flush=True)
+
+        # Phase 2: frozen OOS test
+        oos_shs = []
+        for s, parts in stock_data.items():
+            sh = run_gated_sharpe(parts["oos"], aid, best_mode, s)
+            if sh is not None: oos_shs.append(sh)
+        oos_mean = np.mean(oos_shs) if oos_shs else 0
+        oos_pass = (np.array(oos_shs) > 0.3).mean() * 100 if oos_shs else 0
+        decay = (1 - oos_mean / base_oos_mean) * 100 if base_oos_mean != 0 else -99
+        # 但用 IS baseline 比: gated 版 IS score 既 mean 對比
+        print(f"  OOS [{best_mode}]: mean={oos_mean:.2f} pass={oos_pass:.0f}% "
+              f"(baseline mean={base_oos_mean:.2f} pass={base_pass:.0f}%)", flush=True)
+
+        # Phase 3: 判決
+        passed = (oos_pass > 50 and oos_mean > 0 and oos_mean > base_oos_mean)
+        verdict = "✅修復成功" if passed else "❌仍失敗"
+        improvement = oos_mean - base_oos_mean
+        print(f"  {verdict} (改善 {improvement:+.2f})\n", flush=True)
+        results.append({"alpha": aid, "name": name, "best_mode": best_mode,
+                        "is_score": is_scores[best_mode],
+                        "base_oos_mean": base_oos_mean, "base_oos_pass": base_pass,
+                        "oos_mean": oos_mean, "oos_pass": oos_pass,
+                        "improvement": improvement, "verdict": verdict})
+
+    # 報告
+    df = pd.DataFrame(results)
+    OUT.mkdir(parents=True, exist_ok=True)
+    df.to_csv(OUT / "regime_gated_repair_results.csv", index=False)
+    print(f"\n{'='*70}")
+    print(f"📊 Regime-Gated 修復總報告")
+    print(f"{'='*70}")
+    success = df[df["verdict"].str.contains("成功", na=False)]
+    fail = df[df["verdict"].str.contains("失敗", na=False)]
+    print(f"\n✅ 修復成功: {len(success)} 個")
+    for _, r in success.iterrows():
+        print(f"  A{int(r['alpha']):02d} [{r['best_mode']}] {r['name']}: "
+              f"OOS {r['base_oos_mean']:.2f}→{r['oos_mean']:.2f} ({r['improvement']:+.2f})")
+    print(f"\n❌ 仍失敗 (丟棄): {len(fail)} 個")
+    for _, r in fail.iterrows():
+        print(f"  A{int(r['alpha']):02d} [{r['best_mode']}] {r['name']}: "
+              f"OOS {r['base_oos_mean']:.2f}→{r['oos_mean']:.2f} ({r['improvement']:+.2f})")
+    print(f"\n報告: {OUT / 'regime_gated_repair_results.csv'}")
+
+
+if __name__ == "__main__":
+    main()

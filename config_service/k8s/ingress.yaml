@@ -1,0 +1,174 @@
+# Kubernetes Ingress for Configuration Service
+# 配置服務Kubernetes入口配置
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: config-service-ingress
+  namespace: config-service
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'";
+spec:
+  tls:
+  - hosts:
+    - config-service.example.com
+    - api.config-service.example.com
+    secretName: config-service-tls
+  rules:
+  - host: config-service.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: config-service
+            port:
+              number: 8005
+  - host: api.config-service.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: config-service
+            port:
+              number: 8005
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: config-service-ingress-internal
+  namespace: config-service
+  annotations:
+    kubernetes.io/ingress.class: "nginx-internal"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/whitelist-source-range: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+spec:
+  rules:
+  - host: config-service.internal
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: config-service
+            port:
+              number: 8005
+---
+# ServiceMonitor for Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: config-service-metrics
+  namespace: config-service
+  labels:
+    app: config-service
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: config-service
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+---
+# PrometheusRule for alerting
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: config-service-alerts
+  namespace: config-service
+  labels:
+    app: config-service
+    release: prometheus
+spec:
+  groups:
+  - name: config-service.rules
+    rules:
+  - alert: ConfigServiceDown
+    expr: up{job="config-service"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Configuration Service is down"
+      description: "Configuration Service has been down for more than 1 minute."
+  - alert: ConfigServiceHighErrorRate
+    expr: rate(http_requests_total{job="config-service",status=~"5.."}[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Configuration Service high error rate"
+      description: "Configuration Service error rate is {{ $value }} errors per second."
+  - alert: ConfigServiceHighLatency
+    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="config-service"}[5m])) > 1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Configuration Service high latency"
+      description: "Configuration Service 95th percentile latency is {{ $value }} seconds."
+  - alert: ConfigServiceMemoryUsageHigh
+    expr: container_memory_usage_bytes{job="config-service"} / container_spec_memory_limit_bytes{job="config-service"} > 0.9
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Configuration Service memory usage high"
+      description: "Configuration Service memory usage is above 90%."
+  - alert: ConfigServiceCPUUsageHigh
+    expr: rate(container_cpu_usage_seconds_total{job="config-service"}[5m]) > 0.8
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Configuration Service CPU usage high"
+      description: "Configuration Service CPU usage is above 80%."
+  - alert: ConfigServiceDatabaseConnectionFailed
+    expr: config_service_database_up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Configuration Service database connection failed"
+      description: "Configuration Service cannot connect to the database."
+  - alert: ConfigServiceRedisConnectionFailed
+    expr: config_service_redis_up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Configuration Service Redis connection failed"
+      description: "Configuration Service cannot connect to Redis."
+  - alert: ConfigServiceConfigChangesHigh
+    expr: rate(config_service_config_changes_total[5m]) > 10
+    for: 5m
+    labels:
+      severity: info
+    annotations:
+      summary: "Configuration Service high rate of config changes"
+      description: "Configuration Service is experiencing {{ $value }} config changes per second."

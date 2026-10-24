@@ -1,0 +1,125 @@
+"""
+hkptrc #16 策略：北水（南向港股通）資金流向
+
+北水 = 內地資金經港股通買港股，係最重要嘅大戶指標。
+數據：東方財富 12 年歷史（2014-2026），15030 條記錄。
+
+邏輯：
+- 南向港股通淨買入 = 北水流入港股
+- 北水淨流入 Z-Score > 2（異常大買）→ 買入恆指成分股
+- 北水淨流出 Z-Score < -2（異常大賣）→ 沽出
+- 持倉 5 天
+
+出處：[hOG5XyyvkMM](https://www.youtube.com/watch?v=hOG5XyyvkMM)
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, __file__.rsplit("\\", 1)[0])
+
+from common import *
+import numpy as np
+import pandas as pd
+
+
+def load_southbound_flow():
+    """載入南向港股通（北水）淨買入數據。"""
+    path = DATA_DIR / "stock_connect" / "sc_full.csv"
+    if not path.exists():
+        return None
+
+    df = pd.read_csv(path)
+    # 篩選南向港股通（滬 + 深）
+    southbound = df[df["type_name"].isin(["南向_港股通滬", "南向_港股通深"])].copy()
+    southbound["date"] = pd.to_datetime(southbound["date"])
+    # 合併滬深，按日匯總
+    daily = southbound.groupby("date")["net_buy"].sum().sort_index()
+    daily.name = "southbound_net_buy"
+    return daily
+
+
+def strategy_16_northbound(prices, stock, z_window=60, entry_z=2.0, exit_z=0.5, holding=5):
+    """#16 北水資金流向策略。
+
+    南向港股通淨買入 Z-Score > 2 → 買入
+    Z-Score < -2 → 沽出
+    持倉 5 天
+    """
+    close = prices[stock].dropna()
+    flow = load_southbound_flow()
+
+    if flow is None or len(flow) < z_window * 3:
+        return None
+
+    # 對齊到股價日期
+    flow = flow.reindex(close.index, method="ffill")
+
+    # Z-Score（單位：億元）
+    z = compute_zscore(flow, z_window)
+
+    entries = pd.Series(False, index=close.index)
+    exits = pd.Series(False, index=close.index)
+    short_entries = pd.Series(False, index=close.index)
+    short_exits = pd.Series(False, index=close.index)
+
+    # 信號 + 固定持有期
+    # 修正 look-ahead: z.iloc[i] 用 bar i 收盤後先知既 flow, 唔可以喺 bar i close 成交.
+    # 入場移到 i+1 (信號 bar 收盤決定, 下一 bar 開倉), 同 _build_factor_signal 一致.
+    for i in range(z_window, len(close) - 1):
+        z_val = z.iloc[i]
+        if np.isnan(z_val):
+            continue
+
+        if z_val > entry_z:
+            # 北水大買 → 買入 (i+1 開倉)
+            entries.iloc[i + 1] = True
+            exit_i = min(i + 1 + holding, len(close) - 1)
+            exits.iloc[exit_i] = True
+        elif z_val < -entry_z:
+            # 北水大賣 → 沽出 (i+1 開倉)
+            short_entries.iloc[i + 1] = True
+            exit_i = min(i + 1 + holding, len(close) - 1)
+            short_exits.iloc[exit_i] = True
+
+    if not entries.any() and not short_entries.any():
+        return None
+
+    pf = backtest_signals(close, entries, exits, short_entries, short_exits)
+    return extract_metrics(pf, "16_NorthboundFlow", stock)
+
+
+def run_strategy_16(prices, stocks=None):
+    stocks = stocks or TEST_STOCKS
+    results = []
+
+    print("\n運行 #16 北水資金流向策略 ...")
+    flow = load_southbound_flow()
+    if flow is not None:
+        print("  北水數據: {} 日 ({} 至 {})".format(
+            len(flow), flow.index[0].date(), flow.index[-1].date()))
+
+    for stock in stocks:
+        if stock not in prices.columns:
+            continue
+        try:
+            r = strategy_16_northbound(prices, stock)
+            if r:
+                results.append(r)
+                print("  {} ✓ Sharpe={:.2f} 回報={:.1f}%".format(
+                    stock, r["sharpe"], r["annual_return_pct"]))
+        except Exception as e:
+            print("  {} ✗ {}".format(stock, str(e)[:50]))
+
+    return results
+
+
+if __name__ == "__main__":
+    print("=" * 95)
+    print("📊 hkptrc #16: 北水（南向港股通）資金流向策略")
+    print("=" * 95)
+
+    prices = load_prices(250)
+    print("數據: {} 日 × {} 股".format(len(prices), prices.shape[1]))
+
+    results = run_strategy_16(prices)
+    print_results_table(results, "#16 北水資金流向")
+    save_results(results, "strategy_16_northbound.csv")

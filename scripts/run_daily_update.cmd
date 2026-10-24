@@ -1,0 +1,14 @@
+@echo off
+REM ============================================================
+REM  CBSC 每日自動更新 wrapper（供 Windows Task Scheduler 用）
+REM
+REM  Task Scheduler 的 <Exec> action 不支援直接設定環境變數，
+REM  故用此 wrapper 先設定 UTF-8 環境，再呼叫 daily_scheduler.py。
+REM  與 crawler 入口的 sys.stdout.reconfigure() 形成雙重保險，
+REM  確保 cp950 排程環境也能正確輸出 emoji / Unicode。
+REM ============================================================
+
+set PYTHONUTF8=1
+set PYTHONIOENCODING=utf-8
+
+"C:\Python313\pythonw.exe" "C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts\daily_scheduler.py" --run-now

@@ -1,0 +1,66 @@
+"""build_bkbuy_panel.py — cs_bkfx: buyback_ndd_full.csv -> bkbuy_fresh / bkbuy_amt panels.
+
+bkbuy_fresh = 1/max(days_since_last_buyback_trading_day, 1)  (越新越大)
+bkbuy_amt   = 近 21 交易日回購金額 / 前 252 日日均成交額 (規模確認, 冇 OHLCV 就先出 raw 金額 sum)
+輸出: data/factor_store/bkbuy_fresh.parquet, bkbuy_amt.parquet (wide date x HK.XXXXX)
+"""
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+SRC = BASE / "data" / "new_sources" / "buyback_ndd_full.csv"
+FS = BASE / "data" / "factor_store"
+
+
+def main():
+    df = pd.read_csv(SRC, dtype={"stock_code": str})
+    df["date"] = pd.to_datetime(df["trading_date"], format="%d %B %Y")
+    df["stock"] = "HK." + df["stock_code"].str.zfill(5)
+    df = df.dropna(subset=["date"]).sort_values("date")
+    print(f"raw: {len(df)} rows, {df['stock'].nunique()} stocks, "
+          f"{df['date'].min().date()} -> {df['date'].max().date()}")
+
+    # 全交易日曆 = 每股每日買入事件嘅 union 日曆
+    cal = pd.DatetimeIndex(sorted(df["date"].unique()))
+
+    idx = pd.MultiIndex.from_product([cal, sorted(df["stock"].unique())],
+                                     names=["date", "stock"])
+    ev = (df.groupby(["date", "stock"])
+            .agg(amt=("total_consideration", "sum"),
+                 shs=("shares_bought_back", "sum")))
+    ev = ev.reindex(idx, fill_value=0.0)
+
+    # days since last buyback (交易日計)
+    had = ev["shs"] > 0
+    grp = ev.groupby(level="stock")
+    since = grp["shs"].transform(lambda s: s.groupby(had.loc[s.index]).cumcount())
+    # cumcount 俾 0 = 今日有回購; 之後每過一個交易日 +1 (只計有事件日起)
+    # 改用直接法: 對每個日期, 距最近回購日嘅 calendar index 距離
+    fresh = pd.Series(index=ev.index, dtype=float)
+    dates = cal
+    pos = {d: i for i, d in enumerate(dates)}
+    last_bb = {}
+    rows = []
+    for (d, stk) in ev.index:
+        if had.loc[(d, stk)]:
+            last_bb[stk] = pos[d]
+        lb = last_bb.get(stk)
+        days = (pos[d] - lb) if lb is not None else None
+        rows.append(days)
+    ev["days_since"] = rows
+    ev["fresh"] = ev["days_since"].apply(lambda x: 1.0 / max(x, 1) if pd.notna(x) else 0.0)
+
+    amt21 = ev.groupby(level="stock")["amt"].apply(
+        lambda s: s.rolling(21, min_periods=1).sum())
+    ev["amt21"] = amt21.reset_index(level=0, drop=True).reindex(ev.index)
+
+    for name, col, fn in [("bkbuy_fresh", "fresh", None), ("bkbuy_amt", "amt21", None)]:
+        panel = ev[col].unstack("stock").sort_index()
+        panel.to_parquet(FS / f"{name}.parquet")
+        print(f"{name}: {panel.shape}, {panel.index.min().date()} -> {panel.index.max().date()}, "
+              f"nonzero cols={(panel > 0).any().sum()}")
+
+
+if __name__ == "__main__":
+    main()

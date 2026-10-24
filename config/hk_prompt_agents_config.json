@@ -1,0 +1,122 @@
+{
+  "hk_prompt_agents": {
+    "description": "港股量化分析AI代理团队配置",
+    "version": "1.0.0",
+    "llm_providers": {
+      "openai": {
+        "name": "OpenAI",
+        "models": ["gpt-4", "gpt-4-turbo", "gpt-3.5-turbo"],
+        "max_tokens": 4000,
+        "temperature": 0.1,
+        "timeout": 30
+      },
+      "claude": {
+        "name": "Anthropic Claude",
+        "models": ["claude-3-opus", "claude-3-sonnet", "claude-3-haiku"],
+        "max_tokens": 4000,
+        "temperature": 0.1,
+        "timeout": 30
+      },
+      "grok": {
+        "name": "Grok",
+        "models": ["grok-beta"],
+        "max_tokens": 4000,
+        "temperature": 0.1,
+        "timeout": 30
+      }
+    },
+    "agents": {
+      "fundamental_analyst": {
+        "name": "基本面分析代理",
+        "description": "分析港股基本面指标，计算PE、ROE等",
+        "analysis_symbols": ["0700.HK", "0005.HK", "0941.HK", "1299.HK", "0388.HK"],
+        "lookback_days": 30,
+        "analysis_interval_minutes": 5
+      },
+      "sentiment_analyst": {
+        "name": "情绪分析代理",
+        "description": "分析社交媒体和论坛情绪",
+        "analysis_symbols": ["0700.HK", "0005.HK", "0941.HK", "1299.HK", "0388.HK"],
+        "lookback_days": 7,
+        "analysis_interval_minutes": 2
+      },
+      "news_analyst": {
+        "name": "新闻分析代理",
+        "description": "分析新闻事件对港股的影响",
+        "analysis_symbols": ["0700.HK", "0005.HK", "0941.HK", "1299.HK", "0388.HK"],
+        "lookback_days": 3,
+        "analysis_interval_minutes": 1
+      },
+      "technical_analyst": {
+        "name": "技术分析代理",
+        "description": "计算技术指标，生成交易信号",
+        "analysis_symbols": ["0700.HK", "0005.HK", "0941.HK", "1299.HK", "0388.HK"],
+        "lookback_days": 20,
+        "analysis_interval_minutes": 1
+      },
+      "research_debate": {
+        "name": "研究辩论代理",
+        "description": "整合各代理分析，平衡乐观和悲观观点",
+        "analysis_symbols": ["0700.HK", "0005.HK", "0941.HK", "1299.HK", "0388.HK"],
+        "lookback_days": 30,
+        "analysis_interval_minutes": 10
+      },
+      "trader": {
+        "name": "交易执行代理",
+        "description": "基于分析结果生成交易订单",
+        "analysis_symbols": ["0700.HK", "0005.HK", "0941.HK", "1299.HK", "0388.HK"],
+        "lookback_days": 30,
+        "analysis_interval_minutes": 5
+      },
+      "risk_manager": {
+        "name": "风险管理代理",
+        "description": "计算风险指标，控制风险暴露",
+        "analysis_symbols": ["0700.HK", "0005.HK", "0941.HK", "1299.HK", "0388.HK"],
+        "lookback_days": 30,
+        "analysis_interval_minutes": 5
+      }
+    },
+    "prompt_templates": {
+      "system_prompt": "你是一位专业的港股量化分析AI代理，请严格按照要求输出JSON格式结果。",
+      "max_retries": 3,
+      "retry_delay_seconds": 1.0,
+      "validation_enabled": true
+    },
+    "execution": {
+      "pipeline_mode": "sequential",
+      "parallel_agents": ["fundamental_analyst", "technical_analyst", "sentiment_analyst"],
+      "max_concurrent_executions": 5,
+      "execution_timeout_seconds": 60
+    },
+    "data_sources": {
+      "market_data": {
+        "primary": "yahoo_finance",
+        "backup": "alpha_vantage",
+        "update_frequency_minutes": 1
+      },
+      "news_data": {
+        "sources": ["bloomberg", "reuters", "yahoo_finance"],
+        "update_frequency_minutes": 5
+      },
+      "sentiment_data": {
+        "sources": ["twitter", "weibo", "reddit"],
+        "update_frequency_minutes": 2
+      }
+    },
+    "risk_management": {
+      "max_drawdown_percent": 10.0,
+      "target_sharpe_ratio": 1.5,
+      "var_confidence_level": 0.95,
+      "position_size_limit_percent": 20.0
+    },
+    "monitoring": {
+      "log_level": "INFO",
+      "metrics_collection": true,
+      "alert_thresholds": {
+        "execution_failure_rate": 0.1,
+        "response_time_seconds": 30,
+        "error_count_per_hour": 10
+      }
+    }
+  }
+}

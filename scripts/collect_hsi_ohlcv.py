@@ -1,0 +1,258 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+收集恆生指數成份股 5年 OHLCV (yfinance 優先, Futu fallback)
+
+用法:
+    python scripts/collect_hsi_ohlcv.py              # 收集全部 + 更新現有
+    python scripts/collect_hsi_ohlcv.py --update-only # 只更新現有17隻到最新
+    python scripts/collect_hsi_ohlcv.py --stocks HK.01299,HK.02318  # 指定股票
+
+輸出: data/ohlcv_5y/HK_XXXXX.csv (time_key,open,high,low,close,volume,turnover,pe_ratio,basis)
+
+[09-14 T2A807E G69048] 復權基準根因段 (L1 越區發現嘅正式結論):
+1. 生產者單一 (本檔), 兩條取數路: fetch_yfin (auto_adjust=True, 主) →
+   fetch_futu (AUTYPE_FORWARD 前復權, 後備); 成檔一次過寫 (save_stock 全檔
+   覆寫), 檔內唔存在混源 — 「close float32 復權 vs OHL raw tick 分叉」假說
+   不成立 (全 store 冇 raw tick 欄、冇 float32), 唔好再查呢條。
+2. 歷史越區真來源兩類: (a) futu AUTYPE_FORWARD 喺無成交日回 H=L=C=前收 而
+   O 帶另一值 — 修復前 334/393 檔有此類, 8418d900 閘已 drop; (b) 邊界等值
+   1e-13 級浮點噪聲 (00114 兩行樣本), eps=1e-9 相對容差兩邊齊 (本檔閘 +
+   backtests/_data_validator.py ohlc_envelope)。
+3. 全庫統一復權基準 = 「調整後價」: yf 側 auto_adjust (除淨/拆併已調),
+   futu 側前復權; 兩者都唔留原始價。adjust_factor 數字欄無從重建 (要每隻
+   每源雙抓 raw+adj, 成本高無收益) — 以 basis provenance 欄代替, 屬對
+   G69048 acceptance「+獨立 adjust_factor 欄」字面要求嘅有意識偏離, 已報
+   老闆追認。混源一旦發生 (例如某檔 basis 同其餘唔同) 由 basis 欄照妖。
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, ".")
+
+import argparse
+import time
+from datetime import datetime, timedelta
+from pathlib import Path
+from io import StringIO
+
+import pandas as pd
+
+ROOT = Path(__file__).parent.parent
+OHLCV_DIR = ROOT / "data" / "ohlcv_5y"
+OHLCV_DIR.mkdir(parents=True, exist_ok=True)
+
+# [09-14 T2A807E G69048] basis provenance 常數 — 全庫唯一兩個合法值, audit 對住驗
+BASIS_YF = "yfinance_auto_adjust"
+BASIS_FUTU = "futu_AUTYPE_FORWARD"
+
+# [09-30 G31135 aftb FIXBACK] yfinance 源實錘壞行 blocklist — 每晚 --update-only
+# 全量重寫會將 CSV 手術沖走, 治本唯有落喺 crawl 層. 通用偵測 (負跳/中段ABA/
+# 孤立壞點 hard 簽名) 歸 _data_verify_dept C8 補盲票 G34390 (upgrade-loop),
+# 呢度淨記驗證部門集群 reviewer 判詞實錘 (key aftb|2026-09-30T09:09:21 F1/F2);
+# blocklist 零泛化 = 零誤殺 (G32638 hdto 第八族誤殺教訓 — 寧窄勿闊).
+# yf 源 09-30 實測兩處仲在: 00204 三日 1.416666 (前後 9.208333 連6小數相同,
+# 6.5x 非合法公司行動, 假回報 -84.6%/+550%); 00300 檔首 2.243966 volume=0
+# (其餘 490 行 65-101 尺度, 2024-10-02 真復牌被推成假回報 +3647%).
+OHLCV_DROP_ROWS = {
+    "HK.00204": ("2023-02-01", "2023-02-02", "2023-02-03"),
+    "HK.00300": ("2024-07-05",),
+}
+
+# 恆生指數主要成份股 (~76 隻, 含現有17隻 + 補充藍籌/科網/H股)
+HSI_CONSTITUENTS = {
+    # 現有 17 隻 (要更新)
+    "HK.00001": "長和", "HK.00002": "中電控股", "HK.00003": "香港中華煤氣",
+    "HK.00005": "匯豐控股", "HK.00006": "電能實業", "HK.00012": "恆基地產",
+    "HK.00016": "新鴻基地產", "HK.00388": "港交所", "HK.00700": "騰訊控股",
+    "HK.00939": "建設銀行", "HK.00992": "聯想集團", "HK.01024": "康師傅控股",
+    "HK.01038": "長江基建", "HK.01044": "恆安國際", "HK.01088": "中國神華",
+    "HK.01093": "石藥集團", "HK.01398": "工商銀行",
+    # 補充: 金融
+    "HK.00011": "恆生銀行", "HK.02318": "中國平安", "HK.02388": "中銀香港",
+    "HK.01299": "友邦保險", "HK.01336": "新華保險", "HK.01288": "農業銀行",
+    "HK.03328": "交通銀行", "HK.02601": "中國太保", "HK.02328": "中國財險",
+    "HK.02888": "渣打集團", "HK.03988": "中國銀行",
+    # 補充: 地產/基建
+    "HK.00017": "新世界發展", "HK.00101": "恆隆置業", "HK.00688": "中國海外發展",
+    "HK.00823": "領展房產基金", "HK.01109": "華潤置地", "HK.01113": "長實集團",
+    "HK.01997": "九龍倉置業", "HK.00688": "中國海外發展",
+    # 補充: 科網/消費
+    "HK.09988": "阿里巴巴", "HK.03690": "美團", "HK.01810": "小米集團",
+    "HK.01211": "比亞迪", "HK.00175": "吉利汽車", "HK.02331": "李寧",
+    "HK.02319": "蒙牛乳業", "HK.00291": "華潤啤酒", "HK.00267": "中信股份",
+    "HK.09633": "農夫山泉", "HK.09668": "海底撈", "HK.01876": "百威亞太",
+    "HK.01801": "信達生物", "HK.02269": "藥明生物", "HK.01177": "中國生物製藥",
+    "HK.09618": "京東集團", "HK.09999": "網易", "HK.09888": "百度集團",
+    "HK.02688": "新奧能源", "HK.02313": "申洲國際", "HK.02382": "舜宇光學",
+    "HK.02018": "瑞聲科技", "HK.00941": "中國移動", "HK.00762": "中國聯通",
+    "HK.00883": "中海油", "HK.00293": "國泰航空", "HK.00027": "銀河娛樂",
+    "HK.01928": "金沙中國", "HK.00066": "MTR", "HK.01038": "長江基建",
+    "HK.06098": "碧桂園服務", "HK.06862": "海爾智家",
+}
+
+
+def to_yf_code(code: str) -> str:
+    """HK.00001 -> 0001.HK (yfinance 4位格式)."""
+    n = int(code.replace("HK.", ""))
+    return f"{n:04d}.HK"
+
+
+def fetch_yfin(code: str, start: str = "2021-06-20", end: str = "2026-06-20"):
+    """yfinance 拉日 K. 回標準 DataFrame 或 None."""
+    import yfinance as yf
+    yc = to_yf_code(code)
+    try:
+        df = yf.download(yc, start=start, end=end, auto_adjust=True,
+                         multi_level_index=False, progress=False)
+        if df is None or len(df) == 0:
+            return None
+        df.columns = [c.lower() for c in df.columns]
+        df = df[["open", "high", "low", "close", "volume"]].astype(float)
+        df.index.name = "time_key"
+        return df.reset_index()
+    except Exception:
+        return None
+
+
+def fetch_futu(code: str, start: str = "2021-06-20", end: str = "2026-06-20", timeout_sec=30):
+    """Futu fallback (子進程 + 硬 timeout)."""
+    import socket, subprocess
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(4)
+    try:
+        sock.connect(("127.0.0.1", 11111)); sock.close()
+    except Exception:
+        return None
+    script = (
+        "import sys,pandas as pd\n"
+        "from futu import OpenQuoteContext\n"
+        "q=OpenQuoteContext(host='127.0.0.1',port=11111)\n"
+        "try:\n"
+        f"    ret,df,_=q.request_history_kline({code!r},start={start!r},end={end!r},"
+        f"ktype='KL_DAY',autype='AUTYPE_FORWARD',max_count=100000)\n"
+        "    if ret!=0 or df is None or len(df)==0: sys.exit(1)\n"
+        "    out=df[['time_key','open','high','low','close','volume']].astype(float)\n"
+        "    out['turnover']=float('nan'); out['pe_ratio']=float('nan')  # T6DF262: NaN=冇採集, 唔扮 0.0\n"
+        "    out.to_csv(sys.stdout,index=False)\n"
+        "finally:\n"
+        "    q.close()\n"
+    )
+    try:
+        proc = subprocess.run([sys.executable, "-c", script],
+                              capture_output=True, text=True, timeout=timeout_sec)
+        if proc.returncode != 0 or not proc.stdout.strip():
+            return None
+        return pd.read_csv(StringIO(proc.stdout))
+    except Exception:
+        return None
+
+
+def save_stock(code: str, name: str, start: str, end: str, verbose=True):
+    """拉一隻 + 存 CSV. 回 (rows, src)."""
+    # 先試 yfinance
+    df = fetch_yfin(code, start, end)
+    src = "yfinance"
+    if df is None or len(df) == 0:
+        df = fetch_futu(code, start, end)
+        src = "futu"
+    if df is None or len(df) == 0:
+        if verbose:
+            print(f"  ❌ {code} {name}: 拎唔到")
+        return 0, "fail"
+
+    # 補齊欄位 (yfinance 冇 turnover/pe_ratio) — T6DF262: NaN=冇採集 單一語義
+    if "turnover" not in df.columns:
+        df["turnover"] = float("nan")
+    if "pe_ratio" not in df.columns:
+        df["pe_ratio"] = float("nan")
+
+    # [09-14 T2A807E G69048] basis provenance 欄 — 「實際復權方案」由口講變機讀:
+    # 呢行用邊條取數路, basis 就係邊個常數; 以後混源/換源即刻現形, audit 對住驗
+    df["basis"] = BASIS_YF if src == "yfinance" else BASIS_FUTU
+
+    # [09-14 T6DF262 G69048] OHLC 一致性閘 — O/C 越出 [low,high] 或 high<low 嘅行唔入 store
+    # (futu AUTYPE_FORWARD 喺無成交日帶另一復權基準嘅 O/C, 334/393 檔實錘; NaN 比較=False 唔誤殺;
+    #  1e-9 相對容差 — yf 源頭有 close==high 差 1e-13 級浮點噪聲, 唔係真越區)
+    _eps = 1e-9
+    bad = ((df["close"] < df["low"] * (1 - _eps)) | (df["close"] > df["high"] * (1 + _eps))
+           | (df["open"] < df["low"] * (1 - _eps)) | (df["open"] > df["high"] * (1 + _eps))
+           | (df["high"] < df["low"] * (1 - _eps)))
+    n_bad = int(bad.sum())
+    if n_bad:
+        df = df[~bad]
+        print(f"  ⚠️ {code} dropped {n_bad} 行越區")
+
+    # [09-30 G31135] blocklist 壞行剔除 — str[:10] 正常化 datetime/str 兩款
+    # time_key (yf reset_index 出 datetime64, futu 路 str)
+    drop_dates = OHLCV_DROP_ROWS.get(code)
+    if drop_dates:
+        m = df["time_key"].astype(str).str[:10].isin(drop_dates)
+        n_glitch = int(m.sum())
+        if n_glitch:
+            df = df[~m]
+            print(f"  🧹 {code} dropped {n_glitch} 行 G31135 blocklist 壞行")
+
+    out_path = OHLCV_DIR / f"{code.replace('.', '_')}.csv"
+    df.to_csv(out_path, index=False)
+    if verbose:
+        rng = f"{pd.to_datetime(df['time_key']).min().date()} ~ {pd.to_datetime(df['time_key']).max().date()}"
+        print(f"  ✅ {code} {name}: {len(df)} 行 ({src}) [{rng}]")
+    return len(df), src
+
+
+def main():
+    parser = argparse.ArgumentParser(description="收集恆指成份股 5年 OHLCV")
+    # 預設 start = 5年前, end = 今日（不再硬編碼固定日期，否則會永遠停在舊日期）
+    _default_start = (datetime.now() - timedelta(days=365 * 5)).strftime("%Y-%m-%d")
+    _default_end = datetime.now().strftime("%Y-%m-%d")
+    parser.add_argument("--start", default=_default_start)
+    parser.add_argument("--end", default=_default_end)
+    parser.add_argument("--update-only", action="store_true", help="只更新現有檔")
+    parser.add_argument("--stocks", help="指定股票 (逗號分隔, e.g. HK.01299,HK.02318)")
+    args = parser.parse_args()
+
+    print("=" * 70)
+    print("📥 收集恆生指數成份股 5年 OHLCV")
+    print(f"   期間: {args.start} ~ {args.end}")
+    print("=" * 70)
+
+    # 決定目標股票
+    if args.stocks:
+        codes = [c.strip() for c in args.stocks.split(",")]
+        targets = {c: HSI_CONSTITUENTS.get(c, c) for c in codes}
+    elif args.update_only:
+        existing = [f.stem.replace("HK_", "HK.") for f in OHLCV_DIR.glob("HK_*.csv")]
+        targets = {c: HSI_CONSTITUENTS.get(c, c) for c in existing}
+        print(f"🔄 只更新現有 {len(targets)} 隻\n")
+    else:
+        targets = HSI_CONSTITUENTS
+        print(f"📊 收集全部 {len(targets)} 隻成份股\n")
+
+    ok, fail, total_rows = 0, 0, 0
+    src_count = {}
+    for i, (code, name) in enumerate(sorted(targets.items()), 1):
+        print(f"[{i}/{len(targets)}] {code} {name}")
+        rows, src = save_stock(code, name, args.start, args.end)
+        if rows > 0:
+            ok += 1; total_rows += rows
+            src_count[src] = src_count.get(src, 0) + 1
+        else:
+            fail += 1
+        time.sleep(0.3)  # 避免 yfinance rate limit
+
+    print("\n" + "=" * 70)
+    print(f"✅ 完成: 成功 {ok} 隻, 失敗 {fail} 隻, 總 {total_rows:,} 行")
+    print(f"   數據源: {src_count}")
+    print(f"   輸出: {OHLCV_DIR}/")
+    print("=" * 70)
+
+
+if __name__ == "__main__":
+    # Windows Task Scheduler 冇 console，stdout 預設用 cp950。
+    # 強制 UTF-8，避免日後加 emoji 時崩潰。
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+    main()

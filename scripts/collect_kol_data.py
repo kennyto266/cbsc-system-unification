@@ -1,0 +1,211 @@
+#!/usr/bin/env python3
+"""
+KOL Alpha 數據收集器 — 拉齊 22 個 alpha 需要嘅額外數據源
+
+數據源 (全免費):
+- BTCD (比特幣主導率): CoinGecko global API
+- BNB (平台幣): CoinGecko market_chart (365日歷史)
+- MSTR (幣企持倉代理): yfinance MSTR 股價 (持倉增長代理)
+- HIBOR (港元息率): yfinance 港元貨幣基金代理 / 直接用 us_10y_yield 已有
+- DEX volume: CoinGecko (降級近似)
+- 沽空歷史: HKEX daily (已有 short_selling_history.csv, 擴充)
+- capital_flow: 富途 (沿用 strategy_16a)
+
+用法: python scripts/collect_kol_data.py
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, ".")
+
+import time
+from pathlib import Path
+
+import pandas as pd
+import requests
+
+ROOT = Path(__file__).parent.parent
+FACTORS_DIR = ROOT / "data" / "factors"
+FACTORS_DIR.mkdir(parents=True, exist_ok=True)
+
+HEADERS = {"User-Agent": "ZCode Research research@example.com", "Accept": "application/json"}
+
+
+def fetch_coingecko_btcd():
+    """比特幣主導率 (BTCD) — 用 BTC market_cap 做代理 (total cap 歷史需 PRO 付費).
+
+    修正: 原版用 total_now 常數做分母 → BTCD>100% (數學上不可能, 錯).
+    新版: 直接用 BTC market_cap (billion USD) 做 BTCD 代理.
+    ALPHA-04 邏輯: BTC 強(risk-off), 用 BTC cap 既 Z-Score 捕捉 regime.
+    """
+    print("📥 拉取 BTCD (BTC market_cap 代理)...")
+    try:
+        r = requests.get("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart",
+                         params={"vs_currency": "usd", "days": "365", "interval": "daily"},
+                         headers=HEADERS, timeout=30)
+        btc_data = r.json()
+        btc_caps = btc_data.get("market_caps", [])
+        if not btc_caps:
+            print("  ❌ BTCD: 無數據")
+            return 0
+        rows = [{"date": pd.Timestamp(ts, unit="ms").date(), "close": cap / 1e9}
+                for ts, cap in btc_caps]  # billion USD
+        df = pd.DataFrame(rows)
+        df["date"] = pd.to_datetime(df["date"])
+        df["return"] = df["close"].pct_change() * 100
+        df = df.sort_values("date").drop_duplicates("date", keep="last")
+        out = df[["date", "close", "return"]]
+        out.to_csv(FACTORS_DIR / "btcd.csv", index=False)
+        print(f"  ✅ btcd.csv: {len(out)} 行, BTC cap={out['close'].iloc[-1]:.0f}B USD (dominance代理)")
+        return len(out)
+    except Exception as e:
+        print(f"  ❌ BTCD: {str(e)[:80]}")
+        return 0
+
+
+def fetch_coingecko_bnb():
+    """BNB 平台幣價格 — CoinGecko market_chart (365日)."""
+    print("📥 拉取 BNB (平台幣)...")
+    try:
+        r = requests.get("https://api.coingecko.com/api/v3/coins/binancecoin/market_chart",
+                         params={"vs_currency": "usd", "days": "max", "interval": "daily"},
+                         headers=HEADERS, timeout=30)
+        data = r.json()
+        prices = data.get("prices", [])
+        if not prices:
+            print("  ❌ BNB: 無數據")
+            return 0
+        df = pd.DataFrame(prices, columns=["date", "close"])
+        df["date"] = pd.to_datetime(df["date"], unit="ms").dt.date
+        df["date"] = pd.to_datetime(df["date"])
+        df["return"] = df["close"].pct_change() * 100
+        df = df.sort_values("date").drop_duplicates("date", keep="last")
+        df.to_csv(FACTORS_DIR / "bnb.csv", index=False)
+        print(f"  ✅ bnb.csv: {len(df)} 行, BNB=${df['close'].iloc[-1]:.2f}")
+        return len(df)
+    except Exception as e:
+        print(f"  ❌ BNB: {str(e)[:80]}")
+        return 0
+
+
+def fetch_mstr_proxy():
+    """MSTR 幣企持倉代理 — yfinance MSTR 股價 (持倉增長 ≈ 股價).
+
+    MSTR 持倉 = BTC, 股價反映持倉估值變化.
+    """
+    print("📥 拉取 MSTR (幣企持倉代理)...")
+    try:
+        import yfinance as yf
+        df = yf.download("MSTR", period="5y", auto_adjust=True, multi_level_index=False, progress=False)
+        if df is None or len(df) == 0:
+            print("  ❌ MSTR: yfinance 無數據")
+            return 0
+        df.columns = [c.lower() for c in df.columns]
+        out = pd.DataFrame({"date": df.index, "close": df["close"].astype(float)})
+        out["date"] = pd.to_datetime(out["date"])
+        out["return"] = out["close"].pct_change() * 100
+        out = out.reset_index(drop=True).sort_values("date")
+        out.to_csv(FACTORS_DIR / "mstr_btc.csv", index=False)
+        print(f"  ✅ mstr_btc.csv: {len(out)} 行, MSTR=${out['close'].iloc[-1]:.2f}")
+        return len(out)
+    except Exception as e:
+        print(f"  ❌ MSTR: {str(e)[:80]}")
+        return 0
+
+
+def fetch_dex_volume():
+    """DEX 交易量 — CoinGecko exchanges (降級近似, 無 Dune).
+
+    用 Uniswap + PancakeSwap 等 DEX 24h volume 近似.
+    """
+    print("📥 拉取 DEX volume (近似)...")
+    try:
+        # CoinGecko exchanges API: 拎 top DEX volume
+        r = requests.get("https://api.coingecko.com/api/v3/exchanges",
+                         params={"per_page": 50, "page": 1},
+                         headers=HEADERS, timeout=30)
+        exchanges = r.json()
+        dex_names = ["uniswap", "pancakeswap", "curve", "sushi", "balancer", "thorchain"]
+        dex_total = sum(float(ex.get("trade_volume_24h_btc_normalized", 0) or 0)
+                        for ex in exchanges if any(d in ex.get("id", "").lower() for d in dex_names))
+        # 降級: 只拎當日, 歷史用 7d trend
+        print(f"  ⚠️ DEX: CoinGecko 只拎當日 volume={dex_total:.0f} BTC, 歷史需付費 API")
+        print("  💡 降級: 用 BTC volume 做 DEX 活躍度代理")
+        # 用 BTC 交易量做 DEX 代理
+        r2 = requests.get("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart",
+                          params={"vs_currency": "usd", "days": "365", "interval": "daily"},
+                          headers=HEADERS, timeout=30)
+        vols = r2.json().get("total_volumes", [])
+        if vols:
+            df = pd.DataFrame(vols, columns=["date", "close"])
+            df["date"] = pd.to_datetime(df["date"], unit="ms").dt.date
+            df["date"] = pd.to_datetime(df["date"])
+            df["return"] = df["close"].pct_change() * 100
+            df = df.sort_values("date").drop_duplicates("date", keep="last")
+            df.to_csv(FACTORS_DIR / "dex_volume.csv", index=False)
+            print(f"  ✅ dex_volume.csv: {len(df)} 行 (BTC volume 代理 DEX 活躍度)")
+            return len(df)
+        return 0
+    except Exception as e:
+        print(f"  ❌ DEX: {str(e)[:80]}")
+        return 0
+
+
+def fetch_hibor_proxy():
+    """HIBOR 代理 — HKMA API 失敗, 降級用港元 ETF (2800 盈富) 波幅做流動性代理.
+
+    ALPHA-13 邏輯: 流動性緊張 → 港股壓力. 用 2800 realized vol 做 proxy.
+    """
+    print("📥 拉取 HIBOR (流動性代理)...")
+    print("  ⚠️ HKMA API 返回空, 降級用 realized volatility 做流動性壓力代理")
+    try:
+        import yfinance as yf
+        # 港元貨幣市場利率代理: 用 2833 港元 ETF 或直接用 HKDUSD 波幅
+        # 用香港銀行同業拆息代理: HXI 或直接用 0005 匯豐 (受 HIBOR 影響)
+        # 更好: 用 ^HSI realized vol (市場壓力 = 流動性緊張)
+        df = yf.download("^HSI", period="5y", auto_adjust=True, multi_level_index=False, progress=False)
+        if df is None or len(df) == 0:
+            print("  ❌ HIBOR proxy: yfinance ^HSI 無數據")
+            return 0
+        df.columns = [c.lower() for c in df.columns]
+        ret = df["close"].pct_change()
+        # 20日 realized vol = 流動性壓力代理 (vol 高 = 壓力大)
+        rv = ret.rolling(20).std() * (252 ** 0.5) * 100
+        out = pd.DataFrame({"date": df.index, "close": rv.astype(float)})
+        out["date"] = pd.to_datetime(out["date"])
+        out["return"] = out["close"].pct_change() * 100
+        out = out.dropna().reset_index(drop=True)
+        out.to_csv(FACTORS_DIR / "hibor.csv", index=False)
+        print(f"  ✅ hibor.csv: {len(out)} 行 (HSI realized vol = 流動性壓力代理)")
+        return len(out)
+    except Exception as e:
+        print(f"  ❌ HIBOR proxy: {str(e)[:80]}")
+        return 0
+
+
+def main():
+    print("=" * 60)
+    print("📥 KOL Alpha 數據收集器 (22 alpha 需要嘅額外數據)")
+    print("=" * 60)
+    results = {}
+    results["btcd"] = fetch_coingecko_btcd()
+    time.sleep(2)  # rate limit
+    results["bnb"] = fetch_coingecko_bnb()
+    time.sleep(2)
+    results["mstr"] = fetch_mstr_proxy()
+    results["dex"] = fetch_dex_volume()
+    time.sleep(2)
+    results["hibor"] = fetch_hibor_proxy()
+
+    print("\n" + "=" * 60)
+    print("📊 收集結果:")
+    for name, n in results.items():
+        print(f"  {name}: {'✅ ' + str(n) + ' 行' if n > 0 else '❌ 失敗'}")
+    total = sum(results.values())
+    print(f"\n總共收集 {total} 行數據 → {FACTORS_DIR}/")
+    if total == 0:
+        print("\n⚠️ 全部失敗! 檢查網絡/API. (部份 alpha 要降級用現有因子)")
+    print("=" * 60)
+
+
+if __name__ == "__main__":
+    main()

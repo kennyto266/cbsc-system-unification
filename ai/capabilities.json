@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "capabilities": {
+    "hasTests": false,
+    "hasTypeCheck": false,
+    "hasLint": false,
+    "hasBuild": false,
+    "hasGit": false,
+    "source": "ai-discovered",
+    "confidence": 0,
+    "languages": [],
+    "detectedAt": "2025-12-05T04:30:54.060Z",
+    "testInfo": {
+      "available": false,
+      "confidence": 0
+    },
+    "e2eInfo": {
+      "available": false,
+      "confidence": 0
+    },
+    "typeCheckInfo": {
+      "available": false,
+      "confidence": 0
+    },
+    "lintInfo": {
+      "available": false,
+      "confidence": 0
+    },
+    "buildInfo": {
+      "available": false,
+      "confidence": 0
+    }
+  },
+  "commitHash": "ceece5c55fb9f2e3e3b087612f45aa1b8e35904e",
+  "trackedFiles": []
+}

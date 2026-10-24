@@ -1,0 +1,48 @@
+"""build_analyst_tp_panel.py — T1: 東财机构评级 raw → 日更 consensus target price panel.
+
+analyst_ratings_em_raw.csv (逐筆研報事件) →
+  analyst_tp_em_panel.csv: date, code, consensus_tp (有TP嘅研報mean), n_notes, n_tp, n_buy, disc_ratio
+
+PIT: 只用 date <= 該日嘅研報; 共識窗口 90日 (研報目標價有效期), 冇新研報就 forward-fill 上次共識。
+"""
+import numpy as np
+import pandas as pd
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent.parent / "data" / "new_sources"
+RAW = HERE / "analyst_ratings_em_raw.csv"
+OUT = HERE / "analyst_tp_em_panel.csv"
+
+df = pd.read_csv(RAW, dtype={"stock_code": str})
+df["date"] = pd.to_datetime(df["date"])
+df["target_price"] = pd.to_numeric(df["target_price"], errors="coerce")
+df["is_buy"] = df["rating"].isin(["买入", "增持", "Buy", "Outperform", "Overweight"]).astype(int)
+
+rows = []
+today = pd.Timestamp.now().normalize()
+for code, g in df.groupby("stock_code"):
+    g = g.sort_values("date")
+    dmin = max(g["date"].min(), today - pd.Timedelta(days=5 * 365))
+    ev = g.set_index("date")
+    last = None
+    d = dmin
+    while d <= today:
+        win = ev.loc[:d].last("90D")
+        if len(win):
+            tp = win["target_price"].dropna()
+            last = {
+                "date": d.date(), "code": f"HK.{code}",
+                "consensus_tp": round(tp.mean(), 3) if len(tp) else np.nan,
+                "n_notes_90d": len(win), "n_tp_90d": len(tp),
+                "n_buy_90d": int(win["is_buy"].sum()),
+                "buy_ratio_90d": round(win["is_buy"].mean(), 3),
+            }
+        elif last:
+            last = dict(last, date=d.date(), n_notes_90d=0, n_tp_90d=0, n_buy_90d=0)
+        if last:
+            rows.append(last)
+        d += pd.Timedelta(days=1)
+out = pd.DataFrame(rows)
+out.to_csv(OUT, index=False)
+print(len(out), "rows,", out["code"].nunique(), "codes ->", OUT.name)
+print(out.tail(3))

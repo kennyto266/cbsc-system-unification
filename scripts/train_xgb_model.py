@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+"""train_xgb_model.py — XGBoost tabular 分類 (A151).
+
+Flatten 24-dim features → last-day z + 5d aggregate stats. XGBoost > Transformer for tabular.
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings; warnings.filterwarnings("ignore")
+import numpy as np, pandas as pd
+from pathlib import Path
+from ml_transformer_v2 import build_features, STOCKS, LOOKBACK, FORWARD, TRAIN_END, TEST_START
+from vbt_data import load_stock_close, TOTAL_COST, SLIPPAGE, INIT_CASH_FACTOR
+import vectorbt as vbt
+
+MODEL_PATH = Path(r"C:\Users\Penguin8n\ZCodeProject\backtests\xgb_model.json")
+
+
+def features_to_tabular(features, lookback=LOOKBACK):
+    """Flatten time-series features → tabular row (last-day + 5d stats)."""
+    rows = []
+    for i in range(lookback, len(features)):
+        window = features.iloc[i - lookback:i]
+        last = window.iloc[-1]
+        agg = window.agg(["mean", "std"])
+        row = {}
+        for col in features.columns:
+            row[f"{col}_last"] = last[col]
+            row[f"{col}_mean5"] = agg.loc["mean", col]
+            row[f"{col}_std5"] = agg.loc["std", col]
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def main():
+    import xgboost as xgb
+    print("=" * 70)
+    print("🌲 XGBoost Tabular Classifier — A151")
+    print("=" * 70)
+
+    print("\n1️⃣ 構建 tabular 特徵...", flush=True)
+    all_X_train, all_y_train, all_X_test, all_y_test = [], [], [], []
+    test_data = {}
+    for stock in STOCKS:
+        features, label = build_features(stock)
+        if features is None: continue
+        tab = features_to_tabular(features)
+        dates = features.index[LOOKBACK:]
+        close = load_stock_close(stock)
+        if close is None: continue
+        tab.index = dates
+        lab = label.reindex(dates).fillna(0)
+        dates_arr = dates.values if hasattr(dates, 'values') else np.array(dates)
+        train_mask = dates_arr < np.datetime64(TRAIN_END)
+        test_mask = dates_arr >= np.datetime64(TEST_START)
+        if train_mask.sum() > 100:
+            all_X_train.append(tab[train_mask]); all_y_train.append(lab[train_mask])
+        if test_mask.sum() > 50:
+            all_X_test.append(tab[test_mask]); all_y_test.append(lab[test_mask])
+            test_data[stock] = (close, dates[test_mask])
+        print(f"  {stock}: train={train_mask.sum()} test={test_mask.sum()} cols={tab.shape[1]}", flush=True)
+
+    X_train = pd.concat(all_X_train); y_train = pd.concat(all_y_train)
+    X_test = pd.concat(all_X_test); y_test = pd.concat(all_y_test)
+    print(f"\n  訓練: {len(X_train)} | 測試: {len(X_test)} | features: {X_train.shape[1]}")
+
+    print(f"\n2️⃣ 訓練 XGBoost...", flush=True)
+    model = xgb.XGBClassifier(
+        n_estimators=200, max_depth=6, learning_rate=0.1,
+        subsample=0.8, colsample_bytree=0.8,
+        eval_metric="logloss", random_state=42, n_jobs=-1,
+    )
+    model.fit(X_train, y_train)
+    model.save_model(str(MODEL_PATH))
+    print(f"💾 Model saved: {MODEL_PATH}", flush=True)
+
+    # OOS accuracy
+    train_acc = model.score(X_train, y_train)
+    test_acc = model.score(X_test, y_test)
+    print(f"  Train acc: {train_acc:.3f} | Test acc: {test_acc:.3f}")
+
+    print(f"\n3️⃣ OOS 回測...", flush=True)
+    results = []
+    for stock, (close, dates) in test_data.items():
+        features, label = build_features(stock)
+        if features is None: continue
+        tab = features_to_tabular(features)
+        tab.index = features.index[LOOKBACK:]
+        idx_arr = tab.index.values if hasattr(tab.index, 'values') else np.array(tab.index)
+        test_mask = idx_arr >= np.datetime64(TEST_START)
+        tab_test = tab[test_mask]
+        if len(tab_test) == 0: continue
+        preds = model.predict_proba(tab_test)[:, 1]
+        close_test = close.reindex(tab_test.index).dropna()
+        n = min(len(preds), len(close_test))
+        preds = preds[:n]; valid = close_test.index[:n]
+        entries = pd.Series(preds > 0.5, index=valid).shift(1).fillna(False)
+        exits = pd.Series(preds < 0.3, index=valid).shift(1).fillna(False)
+        if not entries.any(): continue
+        pf = vbt.Portfolio.from_signals(close=close_test, entries=entries, exits=exits,
+                                        fees=TOTAL_COST/2, slippage=SLIPPAGE, freq="1D", init_cash=INIT_CASH_FACTOR)
+        sr = float(pf.sharpe_ratio()); ret = float(pf.total_return())
+        print(f"  {stock}: SR={sr:.3f} ret={ret*100:.1f}% trades={pf.trades.count()}", flush=True)
+        results.append({"stock": stock, "sharpe": sr, "return": ret})
+
+    df = pd.DataFrame(results)
+    if len(df) > 0:
+        print(f"\n{'='*70}\n📊 XGBoost OOS 結果\n{'='*70}")
+        print(f"  正 Sharpe: {(df['sharpe']>0).sum()}/{len(df)}")
+        print(f"  平均 Sharpe: {df['sharpe'].mean():.3f}")
+        print(df.sort_values("sharpe", ascending=False).to_string(index=False))
+
+
+if __name__ == "__main__":
+    main()

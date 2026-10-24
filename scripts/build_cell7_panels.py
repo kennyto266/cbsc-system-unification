@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+"""build_cell7_panels.py — 東財 mainindicator 90欄未用欄位 → 5 個新 panels (PIT).
+
+第 7 隊進攻彈藥 (08-25):
+  ocf_oi_ttm  = NETCASH_OPERATE / OPERATE_INCOME TTM   (現金流質素 — eqcf)
+  ta_tdays_yoy = TOTAL_ASSETS_TDAYS 同比變化            (營運效率 — optr)
+  shares_yoy  = ISSUED_COMMON_SHARES 同比變化           (股本收縮 — shrk)
+  dps_yoy     = DPS_HKD 同比變化                        (派息增長 — dvgw)
+  dar_yoy     = DEBT_ASSET_RATIO 同比變化               (去槓桿 — levr)
+
+PIT 照 build_eveb_panels.py: 業績日曆公布日+1, 冇就 +60日 lag.
+YoY 用 4 期前對比 (季度頻率), TTM 用 4期滾動和.
+"""
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+BASE = Path(r"C:/Users/Penguin8n/ZCodeProject/cbsc-system-unification")
+BT = Path(r"C:/Users/Penguin8n/ZCodeProject/backtests")
+sys.path.insert(0, str(BT))
+import os
+os.chdir(str(BT))
+
+RAW = BASE / "data" / "new_sources" / "em_fundamentals" / "mainindicator.csv"
+CAL = BASE / "data" / "new_sources" / "results_calendar_raw.csv"
+STORE = BASE / "data" / "factor_store"
+
+
+def main():
+    from llm_cs_adapter import _load_prices_and_rets
+    prices, _ = _load_prices_and_rets()
+    idx = prices.index
+
+    raw = pd.read_csv(RAW, dtype={"SECURITY_CODE": str}, encoding="utf-8-sig")
+    raw["report_date"] = pd.to_datetime(raw["REPORT_DATE"])
+    raw["code5"] = raw["SECURITY_CODE"].str.zfill(5)
+    for c in ["NETCASH_OPERATE", "OPERATE_INCOME", "TOTAL_ASSETS_TDAYS",
+              "ISSUED_COMMON_SHARES", "DPS_HKD", "DEBT_ASSET_RATIO"]:
+        raw[c] = pd.to_numeric(raw[c], errors="coerce")
+
+    # PIT 公布日
+    cal = pd.read_csv(CAL, dtype={"stock_code": str})
+    cal["d"] = pd.to_datetime(cal["doc_date"], dayfirst=True)
+    ann = {}
+    for code, g in cal.groupby("stock_code"):
+        ann[code] = sorted(g["d"].tolist())
+
+    def eff_date(code, rd):
+        for d in ann.get(code, []):
+            if rd <= d <= rd + pd.Timedelta(days=170):
+                return d + pd.Timedelta(days=1)
+        return rd + pd.Timedelta(days=60)
+
+    raw["eff_date"] = [eff_date(r.code5, r.report_date) for r in raw.itertuples()]
+
+    # 按股按期排序 → 構造指標
+    raw = raw.sort_values(["code5", "report_date"])
+    g = raw.groupby("code5", group_keys=False)
+    # TTM 4期滾動和 (經營現金流/營業額 冇季節性比率要 TTM)
+    raw["ocf_ttm"] = g["NETCASH_OPERATE"].rolling(4, min_periods=4).sum().reset_index(level=0, drop=True)
+    raw["oi_ttm"] = g["OPERATE_INCOME"].rolling(4, min_periods=4).sum().reset_index(level=0, drop=True)
+    raw["ocf_oi_ttm"] = raw["ocf_ttm"] / raw["oi_ttm"].replace(0, np.nan)
+    # YoY = 對 4 期前 (季度序列同比)
+    for src, dst in [("TOTAL_ASSETS_TDAYS", "ta_tdays_yoy"),
+                     ("ISSUED_COMMON_SHARES", "shares_yoy"),
+                     ("DPS_HKD", "dps_yoy"),
+                     ("DEBT_ASSET_RATIO", "dar_yoy")]:
+        prev = g[src].shift(4)
+        raw[dst] = (raw[src] - prev) / prev.abs().replace(0, np.nan)
+
+    def to_panel(colname):
+        panel = pd.DataFrame(np.nan, index=idx, columns=prices.columns)
+        for code, gg in raw.dropna(subset=[colname]).groupby("code5"):
+            col = f"HK.{code}"
+            if col not in panel.columns:
+                continue
+            gg = gg.sort_values("eff_date")
+            s = pd.Series(gg[colname].values, index=gg["eff_date"].values)
+            s = s[~s.index.duplicated(keep="last")]
+            daily = s.reindex(panel.index, method="ffill")
+            mask = pd.Series(False, index=panel.index)
+            for vf in s.index:
+                mask |= panel.index >= vf
+            panel[col] = daily.where(mask)
+        return panel
+
+    for name in ["ocf_oi_ttm", "ta_tdays_yoy", "shares_yoy", "dps_yoy", "dar_yoy"]:
+        panel = to_panel(name)
+        p = STORE / f"{name}.parquet"
+        panel.to_parquet(p)
+        nn = int(panel.notna().sum().sum())
+        cov = (panel.notna().sum() > 0).sum()
+        print(f"{name}: {panel.shape} | 非NaN {nn} | {cov}股 | → {p.name}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

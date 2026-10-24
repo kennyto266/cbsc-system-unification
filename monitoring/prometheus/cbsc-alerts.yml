@@ -1,0 +1,243 @@
+# CBSC System Production Alert Rules
+# CBSC系統生產環境告警規則
+groups:
+- name: cbsc-system.rules
+  rules:
+  # API Health Alerts
+  - alert: CBSCAPIDown
+    expr: up{job=~"cbsc-.*"} == 0
+    for: 1m
+    labels:
+      severity: critical
+      service: "cbsc-api"
+      team: "devops"
+    annotations:
+      summary: "CBSC服務 {{ $labels.instance }} 已宕機"
+      description: "CBSC {{ $labels.job }} 服務在 {{ $labels.instance }} 已無法訪問超過1分鐘"
+      runbook_url: "https://docs.cbsc.com/runbooks/service-down"
+
+  - alert: HighErrorRate
+    expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+    for: 5m
+    labels:
+      severity: warning
+      service: "{{ $labels.kubernetes_name }}"
+    annotations:
+      summary: "High error rate on {{ $labels.kubernetes_name }}"
+      description: "Error rate is {{ $value | humanizePercentage }} on {{ $labels.kubernetes_name }} for the last 5 minutes."
+
+  - alert: VeryHighErrorRate
+    expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.20
+    for: 2m
+    labels:
+      severity: critical
+      service: "{{ $labels.kubernetes_name }}"
+    annotations:
+      summary: "Very high error rate on {{ $labels.kubernetes_name }}"
+      description: "Error rate is {{ $value | humanizePercentage }} on {{ $labels.kubernetes_name }} for the last 2 minutes."
+
+  - alert: HighResponseTime
+    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+    for: 5m
+    labels:
+      severity: warning
+      service: "{{ $labels.kubernetes_name }}"
+    annotations:
+      summary: "High response time on {{ $labels.kubernetes_name }}"
+      description: "95th percentile response time is {{ $value }}s on {{ $labels.kubernetes_name }}."
+
+  - alert: VeryHighResponseTime
+    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 5
+    for: 2m
+    labels:
+      severity: critical
+      service: "{{ $labels.kubernetes_name }}"
+    annotations:
+      summary: "Very high response time on {{ $labels.kubernetes_name }}"
+      description: "95th percentile response time is {{ $value }}s on {{ $labels.kubernetes_name }}."
+
+  # Database Alerts
+  - alert: PostgreSQLDown
+    expr: up{job="postgres-exporter"} == 0
+    for: 1m
+    labels:
+      severity: critical
+      service: postgres
+    annotations:
+      summary: "PostgreSQL is down"
+      description: "PostgreSQL database has been down for more than 1 minute."
+
+  - alert: PostgreSQLTooManyConnections
+    expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.9
+    for: 5m
+    labels:
+      severity: warning
+      service: postgres
+    annotations:
+      summary: "PostgreSQL connection usage high"
+      description: "PostgreSQL has {{ $value | humanizePercentage }} of connections used."
+
+  - alert: PostgreSQLSlowQueries
+    expr: rate(pg_stat_statements_mean_time_seconds[5m]) > 1
+    for: 5m
+    labels:
+      severity: warning
+      service: postgres
+    annotations:
+      summary: "PostgreSQL slow queries detected"
+      description: "Average query time is {{ $value }}s."
+
+  - alert: PostgreSQLDiskSpaceHigh
+    expr: (pg_database_size_bytes / 1024 / 1024 / 1024) > 50
+    for: 5m
+    labels:
+      severity: warning
+      service: postgres
+    annotations:
+      summary: "PostgreSQL disk space usage high"
+      description: "Database size is {{ $value }}GB."
+
+  # Redis Alerts
+  - alert: RedisDown
+    expr: up{job="redis-exporter"} == 0
+    for: 1m
+    labels:
+      severity: critical
+      service: redis
+    annotations:
+      summary: "Redis is down"
+      description: "Redis cache has been down for more than 1 minute."
+
+  - alert: RedisMemoryHigh
+    expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+    for: 5m
+    labels:
+      severity: warning
+      service: redis
+    annotations:
+      summary: "Redis memory usage high"
+      description: "Redis is using {{ $value | humanizePercentage }} of memory."
+
+  - alert: RedisConnectionsHigh
+    expr: redis_connected_clients > 100
+    for: 5m
+    labels:
+      severity: warning
+      service: redis
+    annotations:
+      summary: "Redis connections high"
+      description: "Redis has {{ $value }} connected clients."
+
+  # Kubernetes Alerts
+  - alert: PodCrashLooping
+    expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Pod {{ $labels.pod }} is crash looping"
+      description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently."
+
+  - alert: PodNotReady
+    expr: kube_pod_status_ready{condition="true"} == 0
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Pod {{ $labels.pod }} not ready"
+      description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been not ready for more than 10 minutes."
+
+  - alert: NodeMemoryHigh
+    expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Node memory usage high"
+      description: "Node {{ $labels.instance }} memory usage is {{ $value | humanizePercentage }}."
+
+  - alert: NodeDiskSpaceHigh
+    expr: (node_filesystem_size_bytes - node_filesystem_avail_bytes) / node_filesystem_size_bytes > 0.85
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Node disk space high"
+      description: "Node {{ $labels.instance }} disk usage is {{ $value | humanizePercentage }} on {{ $labels.mountpoint }}."
+
+  - alert: KubernetesPodNotHealthy
+    expr: kube_pod_status_phase{phase=~"Pending|Unknown|Failed"} > 0
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Pod {{ $labels.pod }} in unhealthy state"
+      description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been in {{ $labels.phase }} state for more than 10 minutes."
+
+  # Business Logic Alerts
+  - alert: StrategyExecutionFailures
+    expr: rate(strategy_execution_failures_total[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High strategy execution failure rate"
+      description: "Strategy execution failure rate is {{ $value }} per second."
+
+  - alert: MarketDataStale
+    expr: time() - market_data_last_update_timestamp > 300
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Market data is stale"
+      description: "Market data has not been updated for {{ $value }} seconds."
+
+  - alert: OrderProcessingBacklog
+    expr: order_processing_queue_size > 1000
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Order processing backlog"
+      description: "Order processing queue has {{ $value }} pending orders."
+
+  # Security Alerts
+  - alert: UnusualAuthenticationFailures
+    expr: rate(authentication_failures_total[5m]) > 10
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High authentication failure rate"
+      description: "Authentication failure rate is {{ $value }} per second."
+
+  - alert: SuspiciousAPIAccess
+    expr: rate(api_requests_blocked_total[5m]) > 5
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Suspicious API access detected"
+      description: "API request block rate is {{ $value }} per second."
+
+  # Custom CBSC Alerts
+  - alert: TradingSystemDown
+    expr: cbsc_service_status{service="quant-system"} == 0
+    for: 1m
+    labels:
+      severity: critical
+      service: trading-system
+    annotations:
+      summary: "Trading system is down"
+      description: "The CBSC trading system is not responding."
+
+  - alert: RiskCheckFailed
+    expr: increase(risk_check_failures_total[5m]) > 0
+    for: 1m
+    labels:
+      severity: critical
+      service: risk-management
+    annotations:
+      summary: "Risk check failures detected"
+      description: "{{ $value }} risk check failures in the last 5 minutes."

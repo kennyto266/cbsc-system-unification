@@ -1,0 +1,89 @@
+/* Strategy Filters Styles */
+.strategy-filters {
+  margin-bottom: 16px;
+}
+
+.filters-row {
+  margin-bottom: 0;
+}
+
+.expanded-filters {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.active-filters {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: #fafafa;
+  border-radius: 6px;
+}
+
+.active-filters .filter-label {
+  font-weight: 500;
+  color: #595959;
+}
+
+/* Custom filter styles */
+.filter-label {
+  font-weight: 500;
+  color: #262626;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* Filter animation */
+.ant-select-selector,
+.ant-picker,
+.ant-input {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.ant-select:hover .ant-select-selector,
+.ant-picker:hover,
+.ant-input:hover {
+  border-color: #40a9ff;
+}
+
+.ant-select-focused .ant-select-selector,
+.ant-picker:focus,
+.ant-input:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Filter badge styles */
+.ant-tag {
+  margin: 4px 4px 4px 0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .filters-row .ant-col {
+    margin-bottom: 8px;
+  }
+
+  .expanded-filters .ant-col {
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 576px) {
+  .strategy-filters .ant-space {
+    width: 100%;
+  }
+
+  .strategy-filters .ant-space-item {
+    width: 100%;
+  }
+
+  .strategy-filters .ant-btn {
+    width: 100%;
+  }
+}

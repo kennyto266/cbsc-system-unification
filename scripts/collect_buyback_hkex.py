@@ -1,0 +1,163 @@
+"""collect_buyback_hkex.py — T-btb-01 (v2): HKEX Next Day Disclosure -> per-stock 日回購 panel.
+
+v2 fix: v1 用單次搜尋 rowRange=1000, NDD 日日發 -> 只 cover 最近 ~2年 (00700 2021-24 全冇).
+v2 改逐年搜尋 (2021..2026), news_seen 去重, 斷咗重跑會跳過 done_codes 已有嘅股.
+
+路徑 (pilot 驗證):
+  1) prefix.do 攞 stockId (每股票一次)
+  2) titleSearchServlet.do title="Next Day Disclosure" 逐年 (lang=en 英文 PDF)
+  3) 下載 PDF, pypdf 抽 "Repurchase report" 表
+  4) new_sources/buyback_raw.csv
+"""
+import csv
+import json
+import re
+import time
+import urllib.request
+from datetime import datetime
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+OUT_DIR = BASE / "data" / "new_sources"
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+RAW = OUT_DIR / "buyback_raw.csv"
+CKPT = OUT_DIR / "buyback_checkpoint.json"
+
+CODES = ['00001','00002','00003','00005','00006','00012','00016','00017','00020','00027',
+'00066','00101','00175','00241','00268','00285','00291','00386','00388','00688','00700','00762',
+'00823','00883','00939','00941','00992','01024','01038','01088','01109','01211','01299','01398',
+'01801','01810','01876','01928','02013','02269','02318','02388','02628','02899','03690','06862',
+'09618','09888','09988','09992','09999']
+
+YEARS = ["2021", "2022", "2023", "2024", "2025", "2026"]
+SEARCH = ("https://www1.hkexnews.hk/search/titleSearchServlet.do?sortDir=0&sortByOptions=DateTime"
+          "&category=0&market=SEHK&stockId={sid}&documentType=-1&fromDate={f}&toDate={t}"
+          "&title=Next%20Day%20Disclosure&searchType=1&t1code=-2&t2Gcode=-2&t2code=-2"
+          "&rowRange=1000&lang=en")
+
+HDRS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", "Referer": "https://www1.hkexnews.hk/",
+        "Connection": "close"}
+
+log = lambda *a: print(datetime.now().strftime("%H:%M:%S"), *a, flush=True)
+
+
+def fetch(url, binary=False, tries=3):
+    for i in range(tries):
+        try:
+            req = urllib.request.Request(url, headers=HDRS)
+            with urllib.request.urlopen(req, timeout=30) as r:
+                b = r.read()
+            return b if binary else b.decode("utf-8", "replace")
+        except Exception:
+            if i == tries - 1:
+                raise
+            time.sleep(3)
+
+
+def get_stock_id(code):
+    txt = fetch(f"https://www1.hkexnews.hk/search/prefix.do?callback=cb&lang=ZH&type=A&name={code}&market=SEHK")
+    m = re.search(r'"stockId":(\d+),"code":"' + code + '"', txt)
+    return int(m.group(1)) if m else None
+
+
+ROW_RE = re.compile(
+    r"(\d{1,2} (?:January|February|March|April|May|June|July|August|September|October|November|December) \d{4})"
+    r"\s+([\d,]+)\s+On the Exchange HKD ([\d,.]+)(?: HKD ([\d,.]+))? HKD ([\d,.]+)")
+
+
+def parse_pdf(pdf_bytes):
+    from pypdf import PdfReader
+    import io
+    r = PdfReader(io.BytesIO(pdf_bytes))
+    text = "\n".join(p.extract_text() for p in r.pages)
+    if "Repurchase report" not in text:
+        return []
+    rows = []
+    for m in ROW_RE.finditer(text):
+        rows.append({
+            "trading_date": m.group(1),
+            "shares_repurchased": int(m.group(2).replace(",", "")),
+            "aggregate_price_hkd": float(m.group(5).replace(",", "")),
+        })
+    return rows
+
+
+def load_ckpt():
+    if CKPT.exists():
+        d = json.loads(CKPT.read_text())
+        d["news_seen"] = set(d["news_seen"])
+        if d.get("v2") is not True:
+            d = {"done_codes": {}, "news_seen": set(), "v2": True}  # v1 checkpoint 廢棄
+        return d
+    return {"done_codes": {}, "news_seen": set(), "v2": True}
+
+
+def save_ckpt(ck):
+    CKPT.write_text(json.dumps({"v2": True, "done_codes": ck["done_codes"], "news_seen": sorted(ck["news_seen"])}))
+
+
+def append_rows(fp, rows):
+    new = not fp.exists()
+    with open(fp, "a", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=["doc_date", "stock_code", "news_id", "pdf_url",
+                                          "trading_date", "shares_repurchased", "aggregate_price_hkd"])
+        if new:
+            w.writeheader()
+        for r in rows:
+            w.writerow(r)
+
+
+def main():
+    ck = load_ckpt()
+    buf = []
+    for code in CODES:
+        if code in ck["done_codes"]:
+            continue
+        sid = get_stock_id(code)
+        if sid is None:
+            log("no stockId", code)
+            continue
+        n_docs = 0
+        for year in YEARS:
+            try:
+                j = json.loads(fetch(SEARCH.format(sid=sid, f=year + "0101", t=year + "1231")))
+                rows = json.loads(j["result"])
+            except Exception as e:
+                log("search fail", code, year, e)
+                time.sleep(5)
+                continue
+            if j.get("total") and int(j["total"]) > len(rows):
+                log(f"  WARN {code} {year}: total={j['total']} > got={len(rows)}")
+            for r in rows:
+                nid = r["NEWS_ID"]
+                if nid in ck["news_seen"]:
+                    continue
+                link = r["FILE_LINK"]
+                if "_c." in link:
+                    link = link.replace("_c.", ".")
+                if not link:
+                    continue
+                try:
+                    pdf = fetch("https://www1.hkexnews.hk" + link, binary=True)
+                    for pr in parse_pdf(pdf):
+                        buf.append({
+                            "doc_date": r["DATE_TIME"], "stock_code": code, "news_id": nid,
+                            "pdf_url": link, "trading_date": pr["trading_date"],
+                            "shares_repurchased": pr["shares_repurchased"],
+                            "aggregate_price_hkd": pr["aggregate_price_hkd"],
+                        })
+                    n_docs += 1
+                    ck["news_seen"].add(nid)
+                except Exception as e:
+                    log("pdf fail", code, nid, e)
+                time.sleep(0.35)
+        append_rows(RAW, buf)
+        buf = []
+        ck["done_codes"][code] = sid
+        save_ckpt(ck)
+        log(f"done {code}: docs={n_docs} seen={len(ck['news_seen'])}")
+    log("ALL DONE")
+
+
+if __name__ == "__main__":
+    main()

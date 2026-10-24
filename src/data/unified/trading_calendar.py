@@ -1,0 +1,54 @@
+"""
+交易日曆工具
+
+處理週末、節日跳過、日期範圍生成
+"""
+from datetime import datetime, timedelta, date
+from typing import List
+
+
+def is_weekend(d: date) -> bool:
+    """判斷是否週末。"""
+    return d.weekday() >= 5
+
+
+def is_trading_day(d: date) -> bool:
+    """判斷是否交易日（簡化版：只跳過週末）。
+
+    注意：港股公眾假期需要额外判斷，但每個 crawler
+    會用 HTTP 404 處理假期（無數據 = 非交易日）。
+    """
+    return not is_weekend(d)
+
+
+def trading_days(start: date, end: date) -> List[date]:
+    """生成兩個日期之間嘅交易日列表（跳過週末）。"""
+    days = []
+    current = start
+    while current <= end:
+        if is_trading_day(current):
+            days.append(current)
+        current += timedelta(days=1)
+    return days
+
+
+def last_n_trading_days(n: int, end_date: date = None) -> List[date]:
+    """最近 N 個交易日。"""
+    if end_date is None:
+        end_date = date.today()
+    days = []
+    current = end_date
+    while len(days) < n:
+        if is_trading_day(current):
+            days.append(current)
+        current -= timedelta(days=1)
+    return list(reversed(days))
+
+
+def date_range_pairs(start: date, end: date, batch_days: int = 30):
+    """將日期範圍分成多個 batch（用於 crawl_date_range 嘅進度報告）。"""
+    current = start
+    while current <= end:
+        batch_end = min(current + timedelta(days=batch_days - 1), end)
+        yield current, batch_end
+        current = batch_end + timedelta(days=1)

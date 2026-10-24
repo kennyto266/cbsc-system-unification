@@ -1,0 +1,59 @@
+# Configuration Service Dependencies
+# 配置服務依賴
+
+# FastAPI and ASGI server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Database drivers
+asyncpg>=0.29.0              # PostgreSQL async driver
+aioredis>=2.0.1              # Redis async driver
+
+# Security and encryption
+cryptography>=41.0.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# HTTP client
+aiohttp>=3.8.0               # For client SDK
+httpx>=0.25.0                # Alternative HTTP client
+
+# WebSocket support
+websockets>=12.0
+
+# Data validation and settings
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Configuration file support
+PyYAML>=6.0.1
+python-dotenv>=1.0.0
+
+# Logging and monitoring
+structlog>=23.1.0
+
+# Background tasks
+celery>=5.3.0                # Optional: for async task processing
+
+# Development and testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+flake8>=6.0.0
+
+# Performance and optimization
+orjson>=3.9.0                # Faster JSON processing
+ujson>=5.8.0                 # Alternative JSON processor
+
+# Rate limiting
+slowapi>=0.1.9
+
+# Time handling
+pytz>=2023.3
+python-dateutil>=2.8.0
+
+# Circuit breaker for resilience
+circuitbreaker>=1.4.0
+
+# Health checks
+fastapi-health>=0.4.0

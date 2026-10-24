@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+"""ccass_playwright.py — 用 Playwright 爬 HKEX CCASS 個股持股數據.
+
+HKEX CCASS 搜尋係 ASP.NET POSTBACK 表單, Jina Reader/Eastmoney API 都搞唔掂.
+Playwright 可以模擬瀏覽器填表+提交+讀結果.
+
+用法:
+  python ccass_playwright.py                    # 拉全部 79 股最近 30 日
+  python ccass_playwright.py --stocks HK.00700  # 指定股票
+  python ccass_playwright.py --days 90          # 指定天數
+"""
+import argparse
+import asyncio
+import os
+import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+
+import pandas as pd
+
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+CCASS_DIR = DATA_DIR / "ccass"
+CCASS_DIR.mkdir(parents=True, exist_ok=True)
+
+CCASS_URL = "https://www3.hkexnews.hk/sdw/search/searchsdw.aspx"
+
+
+async def fetch_ccass_stock(page, stock_code, date_str):
+    """用 Playwright 填表 + 提交 + 讀持股表格."""
+    # 去 CCASS 搜尋頁
+    await page.goto(CCASS_URL, wait_until="domcontentloaded", timeout=30000)
+    try:
+        await page.wait_for_selector("#txtStockCode", timeout=10000)
+    except Exception:
+        return None
+
+    # stock input 唔係 readonly, 可以直接 fill
+    await page.fill("#txtStockCode", stock_code)
+
+    # 日期: 默認係昨日, 唔改 (改日期會 break ASP.NET form state)
+    # 如果要指定日期, 只喺 __days=1 時用默認就得
+
+    # ASP.NET postback = full page reload, 要等 navigation
+    nav_ok = False
+    try:
+        async with page.expect_navigation(wait_until="domcontentloaded", timeout=15000):
+            await page.evaluate("""() => {
+                const btn = document.getElementById('btnSearch');
+                if (btn) btn.click();
+            }""")
+        nav_ok = True
+    except Exception as e:
+        print(f"    nav warn: {e}", flush=True)
+
+    await page.wait_for_timeout(2000)
+
+    # 讀持股表格 (class 含 "table-mobile-list")
+    rows_data = await page.evaluate('''() => {
+        const table = document.querySelector('table.table-mobile-list');
+        if (!table) return [];
+        const rows = table.querySelectorAll('tr');
+        return Array.from(rows).map(r => {
+            const cells = r.querySelectorAll('td, th');
+            return Array.from(cells).map(c => c.innerText.trim());
+        });
+    }''')
+
+    print(f"    nav={nav_ok} rows={len(rows_data)}", flush=True)
+    if not rows_data or len(rows_data) < 3:
+        return None
+
+    # rows_data[0] = header (5 cols: ID, Name, Address, Shareholding, %)
+    # rows_data[1:] = data
+    holdings = []
+    for cells in rows_data[1:]:
+        if len(cells) >= 5:
+            participant_id = cells[0].strip()
+            participant_name = cells[1].strip()
+            shares_str = cells[3].replace(",", "").strip()
+            pct_str = cells[4].replace("%", "").strip()
+            try:
+                shares = int(shares_str)
+                pct = float(pct_str)
+            except ValueError:
+                continue
+            holdings.append({
+                "date": date_str,
+                "stock": stock_code,
+                "participant_id": participant_id,
+                "participant_name": participant_name,
+                "shares": shares,
+                "pct_of_total": pct,
+            })
+    return holdings
+
+
+async def fetch_stock_history(stock, days=30):
+    """拉一隻股票既 CCASS 歷史 (最近 N 日)."""
+    from playwright.async_api import async_playwright
+
+    code_num = stock.replace("HK.", "").lstrip("0") or "0"
+    # HKEX 用 5 位數字
+    stock_code = f"{int(code_num):05d}"
+
+    all_holdings = []
+    today = datetime.now()
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+
+        for i in range(days):
+            d = today - timedelta(days=i)
+            # 跳過週末
+            if d.weekday() >= 5:
+                continue
+            date_str = d.strftime("%Y/%m/%d")  # HKEX 用 YYYY/MM/DD
+            date_iso = d.strftime("%Y-%m-%d")
+
+            try:
+                holdings = await fetch_ccass_stock(page, stock_code, date_str)
+                if holdings:
+                    for h in holdings:
+                        h["date"] = date_iso
+                    all_holdings.extend(holdings)
+                    print(f"  [{date_iso}] {stock}: {len(holdings)} participants", flush=True)
+                else:
+                    print(f"  [{date_iso}] {stock}: 無數據 (可能假日)", flush=True)
+            except Exception as e:
+                print(f"  [{date_iso}] {stock}: 錯誤 {e}", flush=True)
+
+            await asyncio.sleep(1)  # 禮貌限速
+
+        await browser.close()
+
+    return all_holdings
+
+
+def main():
+    ap = argparse.ArgumentParser(description="HKEX CCASS Playwright 爬蟲")
+    ap.add_argument("--stocks", nargs="*", help="股票 (e.g. HK.00700), 無指定=全部 ohlcv_5y")
+    ap.add_argument("--days", type=int, default=30, help="拉最近幾日 (默認 30)")
+    args = ap.parse_args()
+
+    # 股票列表
+    if args.stocks:
+        stocks = args.stocks
+    else:
+        ohlcv_dir = DATA_DIR / "ohlcv_5y"
+        stocks = ["HK." + p.stem.replace("HK_", "") for p in sorted(ohlcv_dir.glob("HK_*.csv"))]
+
+    print(f"[*] CCASS 爬蟲: {len(stocks)} 股 × {args.days} 日", flush=True)
+
+    for stock in stocks:
+        print(f"\n=== {stock} ===", flush=True)
+        # 檢查是否已有數據 (增量更新)
+        code = stock.replace(".", "_")
+        out_file = CCASS_DIR / f"{code}_ccass.csv"
+        existing_dates = set()
+        if out_file.exists():
+            old = pd.read_csv(out_file)
+            existing_dates = set(old["date"].unique())
+            print(f"  已有 {len(existing_dates)} 日數據", flush=True)
+
+        # 拉歷史
+        holdings = asyncio.run(fetch_stock_history(stock, days=args.days))
+        if not holdings:
+            print(f"  ⚠️ {stock}: 拉唔到數據", flush=True)
+            continue
+
+        # 合併 + 去重
+        new_df = pd.DataFrame(holdings)
+        if out_file.exists():
+            old_df = pd.read_csv(out_file)
+            combined = pd.concat([old_df, new_df], ignore_index=True)
+            combined = combined.drop_duplicates(subset=["date", "stock", "participant_id"], keep="last")
+        else:
+            combined = new_df
+        combined = combined.sort_values(["date", "participant_id"]).reset_index(drop=True)
+        combined.to_csv(out_file, index=False)
+
+        # 摘要: 總持股比例 + 最大 participant
+        latest = combined[combined["date"] == combined["date"].max()]
+        total_pct = latest["pct_of_total"].sum()
+        top = latest.nlargest(3, "shares")
+        print(f"  ✅ {stock}: {len(combined)} 行, 最新 {combined['date'].max()}", flush=True)
+        print(f"     總 CCASS 持股: {total_pct:.1f}%", flush=True)
+        for _, r in top.iterrows():
+            print(f"     {r['participant_name'][:25]}: {r['shares']:,} 股 ({r['pct_of_total']:.2f}%)", flush=True)
+
+    print(f"\n[完成] 數據存到: {CCASS_DIR}")
+
+
+if __name__ == "__main__":
+    main()

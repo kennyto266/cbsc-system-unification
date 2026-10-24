@@ -1,0 +1,185 @@
+"""Round 3 alpha scan: factor-based low-correlation signals."""
+import sys
+sys.path = [p for p in sys.path if 'CODEX' not in p]
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\backtests')
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts')
+import warnings
+warnings.filterwarnings('ignore')
+import numpy as np, pandas as pd
+from pathlib import Path
+from vbt_data import FACTOR_STOCKS
+
+DATA_5Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y')
+DATA_10Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr')
+SPLIT = pd.Timestamp('2024-01-01')
+FAC = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors')
+
+ohlcv_cache = {}
+for s in FACTOR_STOCKS:
+    fname = s.replace('.', '_')
+    for d in [DATA_10Y, DATA_5Y]:
+        p = d / f'{fname}.csv'
+        if p.exists():
+            ohlcv_cache[s] = pd.read_csv(p, parse_dates=['time_key']).set_index('time_key').sort_index()
+            break
+
+
+def load_factor(csv_name):
+    p = FAC / csv_name
+    if not p.exists():
+        return None
+    df = pd.read_csv(p, parse_dates=True)
+    date_col = [c for c in df.columns if 'date' in c.lower() or c.lower() in ['time', 'ds']][0]
+    df = df.set_index(pd.to_datetime(df[date_col])).sort_index()
+    for c in df.columns:
+        if c != date_col and df[c].dtype in [np.float64, np.int64, float, int]:
+            return df[c].astype(float)
+    return df.iloc[:, 0].astype(float)
+
+
+factors = {}
+for f in ['gold.csv', 'copper.csv', 'vix.csv', 'fred_dgs10.csv', 'fred_dgs2.csv',
+           'fred_fedfunds.csv', 'fred_walcl.csv', 'fred_t10yie.csv', 'fred_baa10y.csv',
+           'fred_nfci.csv', 'a_shares.csv', 'usdcnh.csv']:
+    s = load_factor(f)
+    if s is not None:
+        factors[f.replace('.csv', '')] = s
+
+print('Loaded factors:', list(factors.keys()))
+
+
+def compute_portfolio(entry_func, hold=5):
+    all_rets = {}
+    for stock, df in ohlcv_cache.items():
+        if len(df) < 400:
+            continue
+        close = df['close'].astype(float)
+        try:
+            entries = entry_func(close, df)
+            if entries is None:
+                continue
+            ret1 = close.pct_change()
+            pos = pd.Series(0, index=close.index)
+            in_pos = False
+            dl = 0
+            for i in range(len(close)):
+                if entries.iloc[i] and not in_pos:
+                    in_pos = True
+                    dl = hold
+                pos.iloc[i] = 1 if in_pos else 0
+                if in_pos:
+                    dl -= 1
+                    if dl <= 0:
+                        in_pos = False
+            all_rets[stock] = (pos.shift(1) * ret1).dropna()
+        except Exception:
+            pass
+    if not all_rets:
+        return None
+    return pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+
+
+def report(name, result):
+    if result is None:
+        return
+    oos = result[result.index >= SPLIT].dropna()
+    is_ = result[result.index < SPLIT].dropna()
+    if len(oos) < 20:
+        return
+    oos_sr = oos.mean() / oos.std() * np.sqrt(252) if oos.std() > 0 else 0
+    is_sr = is_.mean() / is_.std() * np.sqrt(252) if is_.std() > 0 else 0
+    ret = (1 + oos).cumprod().iloc[-1] - 1
+    dd = ((1 + oos).cumprod() / (1 + oos).cumprod().cummax() - 1).min()
+    tag = '🟢' if oos_sr > 1.0 else '✨' if oos_sr > 0.7 else '  ' if oos_sr > 0.4 else '❌'
+    print(f'  {tag} {name}: IS={is_sr:+.2f} OOS={oos_sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')
+
+
+print('\n' + '=' * 65)
+print('ROUND 3: Factor-Gated Stock Signals')
+print('=' * 65)
+
+# D22: Factor trend regime
+print('\n--- D22: Factor Trend Regime (factor > SMA60 + stock mom > 0) ---')
+for fname in ['gold', 'fred_dgs10', 'vix', 'fred_walcl', 'fred_t10yie']:
+    fac = factors.get(fname)
+    if fac is None:
+        continue
+
+    def entry(close, df, fac=fac, ma_p=60):
+        fac_a = fac.reindex(close.index).ffill()
+        regime = fac_a > fac_a.rolling(ma_p).mean()
+        mom = close.pct_change(5) > 0
+        return (regime & mom).shift(1).fillna(False)
+
+    report(f'{fname} trend', compute_portfolio(entry, hold=5))
+
+# D23: Factor z-score extreme reversal
+print('\n--- D23: Factor Z-Score Reversal ---')
+for fname in ['vix', 'fred_nfci', 'fred_baa10y']:
+    fac = factors.get(fname)
+    if fac is None:
+        continue
+
+    def entry(close, df, fac=fac, z_w=60, z_t=1.5):
+        fac_a = fac.reindex(close.index).ffill()
+        z = (fac_a - fac_a.rolling(z_w).mean()) / fac_a.rolling(z_w).std().replace(0, np.nan)
+        # Risk indicator elevated → contrarian buy
+        return (z > z_t).shift(1).fillna(False)
+
+    report(f'{fname} z>1.5 buy', compute_portfolio(entry, hold=5))
+
+# D24: Cross-factor divergence (copper vs gold)
+print('\n--- D24: Copper-Gold Divergence ---')
+copper = factors.get('copper')
+gold = factors.get('gold')
+if copper is not None and gold is not None:
+
+    def entry(close, df, cu=copper, au=gold, w=20):
+        cu_a = cu.reindex(close.index).ffill()
+        au_a = au.reindex(close.index).ffill()
+        cu_ret = cu_a.pct_change(w)
+        au_ret = au_a.pct_change(w)
+        # Copper outperforming gold = risk on
+        return (cu_ret > au_ret).shift(1).fillna(False)
+
+    report('Cu>Au divergence', compute_portfolio(entry, hold=5))
+
+# D25: USDCNH weakness = risk on
+print('\n--- D25: USDCNH Regime ---')
+usdcnh = factors.get('usdcnh')
+if usdcnh is not None:
+
+    def entry(close, df, u=usdcnh, ma_p=60):
+        u_a = u.reindex(close.index).ffill()
+        weak = u_a < u_a.rolling(ma_p).mean()
+        mom = close.pct_change(5) > 0
+        return (weak & mom).shift(1).fillna(False)
+
+    report('USDCNH weak+stock_mom', compute_portfolio(entry, hold=5))
+
+# D26: Fed balance sheet (WALCL) trend
+print('\n--- D26: Fed BS (WALCL) Expansion Regime ---')
+walcl = factors.get('fred_walcl')
+if walcl is not None:
+
+    def entry(close, df, w=walcl, period=30):
+        w_a = w.reindex(close.index).ffill()
+        # WALCL rising = Fed expanding = risk on
+        rising = w_a > w_a.shift(period)
+        mom = close.pct_change(5) > 0
+        return (rising & mom).shift(1).fillna(False)
+
+    report('WALCL rising', compute_portfolio(entry, hold=5))
+
+# D27: A-shares momentum spillover
+print('\n--- D27: A-Shares Momentum Spillover ---')
+ashares = factors.get('a_shares')
+if ashares is not None:
+
+    def entry(close, df, a=ashares, w=5):
+        a_a = a.reindex(close.index).ffill()
+        a_mom = a_a.pct_change(w) > 0
+        stock_mom = close.pct_change(w) > 0
+        return (a_mom & stock_mom).shift(1).fillna(False)
+
+    report('A-shares spillover', compute_portfolio(entry, hold=5))

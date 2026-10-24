@@ -1,0 +1,158 @@
+"""Test XS alphas correlation with A159-162."""
+import sys
+sys.path = [p for p in sys.path if 'CODEX' not in p]
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\backtests')
+sys.path.insert(0, r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts')
+import warnings
+warnings.filterwarnings('ignore')
+import numpy as np, pandas as pd
+from pathlib import Path
+from vbt_data import FACTOR_STOCKS
+
+DATA_5Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_5y')
+DATA_10Y = Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\ohlcv_10yr')
+SPLIT = pd.Timestamp('2024-01-01')
+
+close_all = {}; vol_all = {}; ohlcv_cache = {}
+for s in FACTOR_STOCKS:
+    fname = s.replace('.', '_')
+    for d in [DATA_10Y, DATA_5Y]:
+        p = d / f'{fname}.csv'
+        if p.exists():
+            df = pd.read_csv(p, parse_dates=['time_key']).set_index('time_key').sort_index()
+            close_all[s] = df['close'].astype(float); vol_all[s] = df['volume'].astype(float)
+            ohlcv_cache[s] = df; break
+close_panel = pd.DataFrame(close_all); vol_panel = pd.DataFrame(vol_all)
+ret_panel = close_panel.pct_change()
+
+
+def ts_portfolio(entry_func, hold=5):
+    """Time-series portfolio (each stock independent)."""
+    all_rets = {}
+    for stock, df in ohlcv_cache.items():
+        if len(df) < 400: continue
+        close = df['close'].astype(float)
+        try:
+            entries = entry_func(close, df)
+            if entries is None: continue
+            ret1 = close.pct_change()
+            pos = pd.Series(0, index=close.index); in_pos=False; dl=0
+            for i in range(len(close)):
+                if entries.iloc[i] and not in_pos: in_pos=True; dl=hold
+                pos.iloc[i]=1 if in_pos else 0
+                if in_pos:
+                    dl-=1
+                    if dl<=0: in_pos=False
+            all_rets[stock] = (pos.shift(1)*ret1).dropna()
+        except: pass
+    if not all_rets: return None
+    return pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+
+
+def xs_portfolio(xs_signal_panel, hold=5):
+    """Cross-sectional portfolio from a panel of bool signals."""
+    all_rets = {}
+    for stock in close_panel.columns:
+        entries = xs_signal_panel[stock].shift(1).fillna(False) if stock in xs_signal_panel.columns else None
+        if entries is None: continue
+        close = close_panel[stock].dropna()
+        entries = entries.reindex(close.index).fillna(False)
+        ret1 = close.pct_change()
+        pos = pd.Series(0, index=close.index); in_pos=False; dl=0
+        for i in range(len(close)):
+            if entries.iloc[i] and not in_pos: in_pos=True; dl=hold
+            pos.iloc[i]=1 if in_pos else 0
+            if in_pos:
+                dl-=1
+                if dl<=0: in_pos=False
+        all_rets[stock] = (pos.shift(1)*ret1).dropna()
+    if not all_rets: return None
+    return pd.DataFrame(all_rets).mean(axis=1, skipna=True)
+
+
+# Existing alphas
+def a159(c,d):
+    vol=d['volume'].astype(float); ef=c.ewm(span=12,adjust=False).mean(); es=c.ewm(span=26,adjust=False).mean()
+    m=ef-es; s=m.ewm(span=9,adjust=False).mean(); h=m-s
+    e1=((h>0)&(h>h.shift(1))).shift(1).fillna(False)
+    vs=(vol-vol.rolling(20).mean())/vol.rolling(20).std().replace(0,np.nan)
+    e2=((vs>1.5)&(c.pct_change(5)>0)).shift(1).fillna(False)
+    return (e1&e2).fillna(False)
+def a160(c,d):
+    sma=c.rolling(100).mean(); dev=(c-sma)/sma
+    z=(dev-dev.rolling(120).mean())/dev.rolling(120).std().replace(0,np.nan)
+    return (z<-1.5).shift(1).fillna(False)
+def a161(c,d):
+    hi,lo=d['high'].astype(float),d['low'].astype(float)
+    tr=pd.concat([(hi-lo),(hi-c.shift()).abs(),(lo-c.shift()).abs()],axis=1).max(axis=1)
+    atr=tr.rolling(14).mean(); ap=atr/c
+    la=ap.rolling(60).rank(pct=True)<0.15; sma=c.rolling(50).mean()
+    return (la&(c>sma)).shift(1).fillna(False)
+FAC=Path(r'C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\factors')
+dv=pd.read_csv(FAC/'vix.csv').set_index(pd.to_datetime(pd.read_csv(FAC/'vix.csv')['date'])).sort_index()
+vix=dv['close'].astype(float)
+def a162(c,d):
+    va=vix.reindex(c.index).ffill()
+    z=(va-va.rolling(90).mean())/va.rolling(90).std().replace(0,np.nan)
+    return (z>2.0).shift(1).fillna(False)
+
+# XS signals
+vol_avg5 = vol_panel.rolling(5).mean()
+vol_ratio = vol_panel / vol_avg5
+vol_xs_rank = vol_ratio.rank(axis=1, pct=True)
+xs_vol_top20 = vol_xs_rank > 0.8  # top 20% volume vs own 5d avg
+
+ret5 = ret_panel.rolling(5).sum()
+ret_xs_rank = ret5.rank(axis=1, pct=True)
+xs_mom_top80 = ret_xs_rank > 0.8  # top 20% return
+xs_rev_bot30 = ret_xs_rank < 0.3  # bottom 30% return
+
+ret10 = ret_panel.rolling(10).sum()
+ret10_rank = ret10.rank(axis=1, pct=True)
+xs_rev10_bot30 = ret10_rank < 0.3
+
+print('Computing all returns...')
+all_returns = {
+    'A159': ts_portfolio(a159, hold=3),
+    'A160': ts_portfolio(a160, hold=10),
+    'A161': ts_portfolio(a161, hold=3),
+    'A162': ts_portfolio(a162, hold=5),
+    'XS_vol5_top20': xs_portfolio(xs_vol_top20, hold=3),
+    'XS_mom5_top80': xs_portfolio(xs_mom_top80, hold=5),
+    'XS_rev5_bot30': xs_portfolio(xs_rev_bot30, hold=5),
+    'XS_rev10_bot30': xs_portfolio(xs_rev10_bot30, hold=5),
+}
+
+df_all = pd.DataFrame(all_returns).dropna()
+oos = df_all[df_all.index >= SPLIT]
+
+print(f'\n{"Signal":<18} {"OOS_SR":>7} {"ret":>7} {"DD":>7} {"cA159":>6} {"cA160":>6} {"cA161":>6} {"cA162":>6} {"avg":>5}')
+print('-'*80)
+for col in df_all.columns:
+    s = oos[col]; sr = s.mean()/s.std()*np.sqrt(252) if s.std()>0 else 0
+    ret = (1+s).cumprod().iloc[-1]-1
+    dd = ((1+s).cumprod()/(1+s).cumprod().cummax()-1).min()
+    cs = [abs(oos[col].corr(oos[c])) for c in ['A159','A160','A161','A162']]
+    avg_c = np.mean(cs)
+    tag = '🟢' if sr > 1.0 else '✨' if sr > 0.7 else '  ' if sr > 0.4 else '❌'
+    low = '⭐' if avg_c < 0.3 else '🔵' if avg_c < 0.4 else ''
+    print(f'  {tag} {col:<16} {sr:>+6.2f} {ret:>+6.1%} {dd:>6.1%} {cs[0]:>5.2f} {cs[1]:>5.2f} {cs[2]:>5.2f} {cs[3]:>5.2f} {avg_c:>4.2f} {low}')
+
+# Test 5-way with XS candidates
+print('\n=== 5-Way Combos (A159+A160+A161+A162 + XS) ===')
+for xs in ['XS_vol5_top20', 'XS_mom5_top80', 'XS_rev5_bot30', 'XS_rev10_bot30']:
+    combo = oos['A159']*0.2 + oos['A160']*0.2 + oos['A161']*0.2 + oos['A162']*0.2 + oos[xs]*0.2
+    sr = combo.mean()/combo.std()*np.sqrt(252) if combo.std()>0 else 0
+    ret = (1+combo).cumprod().iloc[-1]-1
+    dd = ((1+combo).cumprod()/(1+combo).cumprod().cummax()-1).min()
+    tag = '🏆' if sr > 2.2 else '🟢' if sr > 1.5 else '✨'
+    print(f'  {tag} +{xs}: SR={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')
+
+# Weighted: give XS more weight if low corr
+print('\n=== Weighted 5-Way (XS gets 30%) ===')
+for xs in ['XS_vol5_top20', 'XS_rev5_bot30']:
+    combo = oos['A159']*0.175 + oos['A160']*0.175 + oos['A161']*0.175 + oos['A162']*0.175 + oos[xs]*0.30
+    sr = combo.mean()/combo.std()*np.sqrt(252) if combo.std()>0 else 0
+    ret = (1+combo).cumprod().iloc[-1]-1
+    dd = ((1+combo).cumprod()/(1+combo).cumprod().cummax()-1).min()
+    print(f'  +{xs}(30%): SR={sr:+.2f} ret={ret:+.1%} DD={dd:.1%}')

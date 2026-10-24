@@ -1,0 +1,735 @@
+#!/usr/bin/env python3
+r"""
+backfill_fundamentals_futu.py — Futu F10 fundamental data backfill for HK stocks.
+
+Fetches PE, PB, dividend_yield, ROE, revenue_growth via Futu OpenAPI F10 endpoints:
+  - get_valuation_detail         → daily PE/PB historical series (5yr default)
+  - get_financials_statements    → quarterly ROE (key metrics), revenue growth
+                                   (income statement yoy)
+  - get_corporate_actions_dividends → dividend history → trailing 12M yield
+
+Output: data/fundamentals/HK_<code>_fundamentals.csv
+  Daily-grain, PIT-correct for backtesting:
+    date, pe, pb, dividend_yield, roe, revenue_growth, report_date
+
+  pe/pb/dividend_yield are truly daily (point-in-time).
+  roe/revenue_growth are quarterly, forward-filled onto the daily index
+  (PIT-correct: you only know the last reported value until the next report).
+
+Usage:
+    python backfill_fundamentals_futu.py                  # all HSI_CORE (52)
+    python backfill_fundamentals_futu.py --stocks HK.00700 HK.09988
+    python backfill_fundamentals_futu.py --workers 4       # parallel threads
+    python backfill_fundamentals_futu.py --years 5         # PE/PB history depth
+    python backfill_fundamentals_futu.py --force           # re-fetch existing
+
+Rate limits: Futu 60 req/30s → self-limited to 50 req/30s (safety margin).
+Each worker thread creates its own OpenQuoteContext (OpenD supports multiple
+simultaneous connections).
+
+NOTE: Futu OpenD must be running (127.0.0.1:11111) before executing this script.
+      Start FutuOpenD GUI or run: python -c "from futu import *"
+"""
+from __future__ import annotations
+
+import argparse
+import collections
+import re
+import socket
+import sys
+import threading
+import time
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import pandas as pd
+
+# ── Path setup ──────────────────────────────────────────────────────────────
+SCRIPT_DIR = Path(__file__).resolve().parent
+DATA_DIR = SCRIPT_DIR.parent / "data"
+FUNDAMENTALS_DIR = DATA_DIR / "fundamentals"
+OHLCV_DIR = DATA_DIR / "ohlcv_5y"
+FUNDAMENTALS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Ensure backtests is on sys.path for potential HSI_CORE import
+_BACKTESTS_DIR = SCRIPT_DIR.parent.parent / "backtests"
+if str(_BACKTESTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_BACKTESTS_DIR))
+
+# ── HSI_CORE 52-stock universe (from vbt_data.HK_UNIVERSE) ──────────────────
+HSI_CORE = [
+    "HK.00005", "HK.00388", "HK.00001", "HK.00002", "HK.00003", "HK.00006",
+    "HK.00011", "HK.00012", "HK.00016", "HK.00017", "HK.00027", "HK.00066",
+    "HK.00101", "HK.00175", "HK.00241", "HK.00268", "HK.00285", "HK.00291",
+    "HK.00386", "HK.00688", "HK.00700", "HK.00762", "HK.00823", "HK.00883",
+    "HK.00939", "HK.00941", "HK.01038", "HK.01088", "HK.01109", "HK.01299",
+    "HK.01398", "HK.01876", "HK.01928", "HK.02013", "HK.02318", "HK.02388",
+    "HK.02628", "HK.03690", "HK.06862", "HK.09618", "HK.09988", "HK.09999",
+    "HK.01810", "HK.09992", "HK.01211", "HK.01024", "HK.02899", "HK.09888",
+    "HK.00992", "HK.01801", "HK.00020", "HK.02269",
+]
+
+# Futu valuation interval_type → years (from SKILL.md: 6=5yr, 7=10yr, 9=20yr)
+_INTERVAL_MAP = {1: 0.25, 2: 0.5, 3: 1, 8: 2, 4: 3, 6: 5, 7: 10, 9: 20, 10: 30}
+
+
+# ============================================================================
+# OpenD connectivity check
+# ============================================================================
+
+def opend_alive(host: str = "127.0.0.1", port: int = 11111) -> bool:
+    """Quick TCP check if OpenD is accepting connections."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(4)
+    try:
+        sock.connect((host, port))
+        sock.close()
+        return True
+    except Exception:
+        return False
+
+
+# ============================================================================
+# Rate limiter — sliding window (thread-safe)
+# ============================================================================
+
+class RateLimiter:
+    """Sliding-window rate limiter for Futu API calls.
+
+    Futu limit: 60 requests per 30 seconds per OpenD session.
+    Self-limited to ``max_calls`` (default 50) for safety margin.
+    """
+
+    def __init__(self, max_calls: int = 50, window_sec: float = 30.0):
+        self._max = max_calls
+        self._window = window_sec
+        self._calls: collections.deque = collections.deque()
+        self._lock = threading.Lock()
+
+    def acquire(self) -> None:
+        """Block until a request slot is available."""
+        with self._lock:
+            now = time.monotonic()
+            # Evict expired timestamps
+            while self._calls and now - self._calls[0] >= self._window:
+                self._calls.popleft()
+            if len(self._calls) >= self._max:
+                wait = self._window - (now - self._calls[0]) + 0.1
+                if wait > 0:
+                    time.sleep(wait)
+                now = time.monotonic()
+                while self._calls and now - self._calls[0] >= self._window:
+                    self._calls.popleft()
+            self._calls.append(now)
+
+
+# ============================================================================
+# Thread-local OpenQuoteContext management
+# ============================================================================
+
+_tls = threading.local()
+
+
+def get_quote_ctx(host: str, port: int):
+    """Get or lazily create a thread-local OpenQuoteContext.
+
+    Each worker thread gets its own connection to OpenD. The ``futu`` module
+    reference is also stored on thread-local for RET_OK access.
+    """
+    ctx = getattr(_tls, "ctx", None)
+    if ctx is None:
+        import futu
+        _tls.futu = futu
+        ctx = futu.OpenQuoteContext(host=host, port=port)
+        _tls.ctx = ctx
+    return ctx, getattr(_tls, "futu", None)
+
+
+def close_thread_ctx() -> None:
+    """Close the current thread's OpenQuoteContext if open."""
+    ctx = getattr(_tls, "ctx", None)
+    if ctx is not None:
+        try:
+            ctx.close()
+        except Exception:
+            pass
+        _tls.ctx = None
+
+
+# ============================================================================
+# F10 data fetching — each function makes API calls and returns clean data
+# ============================================================================
+
+def fetch_valuation_series(ctx, futu, code: str, valuation_type: int,
+                           interval_type: int, rate_limiter: RateLimiter) -> pd.Series:
+    """Fetch daily valuation (PE=1 / PB=2 / PS=3) from get_valuation_detail.
+
+    Returns a pd.Series indexed by date with float values.
+    """
+    rate_limiter.acquire()
+    try:
+        ret, data = ctx.get_valuation_detail(
+            code, valuation_type=valuation_type, interval_type=interval_type)
+    except Exception:
+        return pd.Series(dtype=float)
+
+    if not hasattr(futu, "RET_OK"):
+        ok = 0
+    else:
+        ok = futu.RET_OK
+    if ret != ok or not data:
+        return pd.Series(dtype=float)
+
+    trend = data.get("trend") if isinstance(data, dict) else None
+    if not trend:
+        return pd.Series(dtype=float)
+
+    items = trend.get("historical_items") or []
+    dates, values = [], []
+    for item in items:
+        ts = item.get("time_str")
+        val = item.get("value")
+        if ts and val is not None:
+            try:
+                dates.append(pd.to_datetime(ts))
+                values.append(float(val))
+            except (ValueError, TypeError):
+                continue
+    if not dates:
+        return pd.Series(dtype=float)
+    s = pd.Series(values, index=dates, name="val").sort_index()
+    # Deduplicate (keep last per date)
+    return s[~s.index.duplicated(keep="last")]
+
+
+def _find_field_ids(structure: list, keywords: list[str]) -> set[int]:
+    """Search structure_list for field_ids whose display_name matches any keyword."""
+    matches = set()
+    for entry in structure:
+        fid = entry.get("field_id")
+        name = (entry.get("display_name") or "").lower()
+        if fid is not None and any(kw.lower() in name for kw in keywords):
+            matches.add(fid)
+    return matches
+
+
+def fetch_key_metrics(ctx, futu, code: str,
+                      rate_limiter: RateLimiter) -> pd.DataFrame:
+    """Fetch quarterly key metrics (ROE) from get_financials_statements type=4.
+
+    Returns DataFrame with columns: date, roe (if found), revenue_growth (if found).
+    HK stocks typically report Q1 (interim) + annual → ~2 rows/yr.
+    """
+    rate_limiter.acquire()
+    try:
+        ret, data = ctx.get_financials_statements(
+            code, statement_type=4, financial_type=11, num=50)
+    except Exception:
+        return pd.DataFrame()
+
+    ok = getattr(futu, "RET_OK", 0)
+    if ret != ok or not data:
+        return pd.DataFrame()
+
+    structure = data.get("structure_list") or []
+    reports = data.get("report_list") or []
+    if not structure or not reports:
+        return pd.DataFrame()
+
+    roe_fids = _find_field_ids(structure, [
+        "roe", "净资产收益率", "return on equity", "return_on_equity",
+        "權益報酬率", "权益报酬率",
+    ])
+    rg_fids = _find_field_ids(structure, [
+        "营收增长", "营业收入同比", "收入增长", "revenue growth",
+        "营收同比", "收入同比",
+    ])
+
+    rows = []
+    for rpt in reports:
+        date_str = rpt.get("date_time_str")
+        if not date_str:
+            continue
+        row: dict = {"date": pd.to_datetime(date_str)}
+        item_map = {item["field_id"]: item for item in rpt.get("item_list", [])}
+
+        for fid in roe_fids:
+            item = item_map.get(fid)
+            if item and item.get("data") is not None:
+                val = float(item["data"])
+                # Normalise: if >1.5 it's likely in percent → convert to decimal
+                row["roe"] = val / 100.0 if val > 1.5 else val
+                break
+
+        for fid in rg_fids:
+            item = item_map.get(fid)
+            if item and item.get("data") is not None:
+                val = float(item["data"])
+                row["revenue_growth"] = val / 100.0 if val > 1.5 else val
+                break
+
+        rows.append(row)
+
+    return pd.DataFrame(rows) if rows else pd.DataFrame()
+
+
+def fetch_income_revenue_growth(ctx, futu, code: str,
+                                rate_limiter: RateLimiter) -> pd.DataFrame:
+    """Fetch income statement for revenue YoY growth (statement_type=1).
+
+    The yoy field on total_revenue gives revenue_growth directly.
+    Falls back to computing growth from consecutive periods if yoy is missing.
+    """
+    rate_limiter.acquire()
+    try:
+        ret, data = ctx.get_financials_statements(
+            code, statement_type=1, financial_type=11, num=50)
+    except Exception:
+        return pd.DataFrame()
+
+    ok = getattr(futu, "RET_OK", 0)
+    if ret != ok or not data:
+        return pd.DataFrame()
+
+    structure = data.get("structure_list") or []
+    reports = data.get("report_list") or []
+    if not reports:
+        return pd.DataFrame()
+
+    rev_fids = _find_field_ids(structure, [
+        "total revenue", "营业收入", "营业总收入", "revenue", "营收",
+    ])
+
+    rows = []
+    for rpt in reports:
+        date_str = rpt.get("date_time_str")
+        if not date_str:
+            continue
+        row = {"date": pd.to_datetime(date_str)}
+        item_map = {item["field_id"]: item for item in rpt.get("item_list", [])}
+
+        for fid in rev_fids:
+            item = item_map.get(fid)
+            if item:
+                if item.get("yoy") is not None:
+                    # yoy from Futu is in percent (e.g. 13.86 = 13.86%)
+                    row["revenue_growth"] = float(item["yoy"]) / 100.0
+                if item.get("data") is not None:
+                    row["total_revenue"] = float(item["data"])
+                break
+        rows.append(row)
+
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return df
+
+    # Fallback: compute revenue_growth from consecutive total_revenue
+    if "revenue_growth" not in df.columns and "total_revenue" in df.columns:
+        df = df.sort_values("date")
+        rev = df["total_revenue"]
+        df["revenue_growth"] = (rev - rev.shift(1)) / rev.shift(1).abs()
+
+    return df
+
+
+def parse_dividend_amount(statement: str) -> float | None:
+    """Parse per-share dividend amount from a statement string.
+
+    Handles common HK/A-share formats:
+        "10派2.3400"          → 0.234  (pay 2.34 per 10 shares)
+        "10派港幣2.34"        → 0.234
+        "每股0.1500"          → 0.15
+        "中期息每股0.15港元"  → 0.15
+        "股息0.15"            → 0.15
+        "特別股息每股1.20"    → 1.20
+    """
+    if not statement:
+        return None
+    s = str(statement).strip()
+
+    # Pattern 1: "N派X" (pay X per N shares)
+    m = re.search(r"(\d+)\s*派.*?(\d+(?:\.\d+)?)", s)
+    if m:
+        base = float(m.group(1))
+        amount = float(m.group(2))
+        if base > 0:
+            return amount / base
+
+    # Pattern 2: "每股X"
+    m = re.search(r"每股\s*(\d+(?:\.\d+)?)", s)
+    if m:
+        return float(m.group(1))
+
+    # Pattern 3: "股息X" / "息X"
+    m = re.search(r"(?:股息|息)\s*(\d+(?:\.\d+)?)", s)
+    if m:
+        return float(m.group(1))
+
+    # Pattern 4: bare decimal (last resort)
+    m = re.search(r"(\d+\.\d+)", s)
+    if m:
+        return float(m.group(1))
+
+    return None
+
+
+def fetch_dividends(ctx, futu, code: str,
+                    rate_limiter: RateLimiter) -> pd.DataFrame:
+    """Fetch dividend history from get_corporate_actions_dividends.
+
+    Returns DataFrame: ex_date (datetime), amount_per_share (float).
+    """
+    rate_limiter.acquire()
+    try:
+        ret, data = ctx.get_corporate_actions_dividends(code)
+    except Exception:
+        return pd.DataFrame()
+
+    ok = getattr(futu, "RET_OK", 0)
+    if ret != ok or not data:
+        return pd.DataFrame()
+
+    div_list = data.get("dividend_list") if isinstance(data, dict) else None
+    if not div_list:
+        return pd.DataFrame()
+
+    rows = []
+    for item in div_list:
+        ex_date = item.get("ex_date") or item.get("record_date")
+        statement = item.get("statement", "")
+        amount = parse_dividend_amount(statement)
+        if ex_date and amount is not None and amount > 0:
+            try:
+                rows.append({
+                    "ex_date": pd.to_datetime(ex_date),
+                    "amount_per_share": amount,
+                })
+            except (ValueError, TypeError):
+                continue
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame(rows).sort_values("ex_date").reset_index(drop=True)
+
+
+def load_close_prices(code: str) -> pd.Series:
+    """Load daily close prices from existing ohlcv_5y CSV.
+
+    Used for dividend_yield computation and PE fallback.
+    Returns empty Series if file not found.
+    """
+    csv_name = code.replace(".", "_")  # HK.00700 → HK_00700
+    path = OHLCV_DIR / f"{csv_name}.csv"
+    if not path.exists():
+        return pd.Series(dtype=float)
+    try:
+        df = pd.read_csv(path, parse_dates=["time_key"])
+        df = df.set_index("time_key").sort_index()
+        return df["close"].astype(float)
+    except Exception:
+        return pd.Series(dtype=float)
+
+
+def compute_dividend_yield(dividends: pd.DataFrame,
+                           close: pd.Series) -> pd.Series:
+    """Compute trailing 12-month dividend yield aligned to close dates.
+
+    dividend_yield[t] = sum(all dividends with ex_date in [t-365, t]) / close[t]
+    """
+    if dividends.empty or close.empty:
+        return pd.Series(dtype=float)
+
+    # Daily dividend amounts (sparse — only ex-dates have values)
+    div = dividends.set_index("ex_date")["amount_per_share"]
+    div = div[~div.index.duplicated(keep="last")].sort_index()
+
+    # Reindex to a superset daily grid, then rolling 365-day sum
+    full_range = pd.date_range(start=close.index.min(),
+                               end=close.index.max(), freq="D")
+    div_daily = div.reindex(full_range, fill_value=0.0)
+    div_ttm = div_daily.rolling(window=365, min_periods=1).sum()
+
+    # Align to close dates
+    dy = div_ttm.reindex(close.index, method="ffill") / close
+    dy = dy.where(close > 0)
+    dy.name = "dividend_yield"
+    return dy
+
+
+# ============================================================================
+# Per-stock processing — fetch all data, merge, save
+# ============================================================================
+
+def process_stock(code: str, years: int, host: str, port: int,
+                  rate_limiter: RateLimiter, force: bool,
+                  log=print) -> dict:
+    """Fetch all F10 fundamentals for one stock and save to CSV.
+
+    Returns a status dict: {code, rows, pe_days, pb_days, div_days, roe_qtrs, error}
+    """
+    out_path = FUNDAMENTALS_DIR / f"{code.replace('.', '_')}_fundamentals.csv"
+
+    # Append-safe: skip if file exists and has sufficient data
+    if out_path.exists() and not force:
+        try:
+            existing = pd.read_csv(out_path, parse_dates=["date"])
+            if len(existing) > 200:  # ~200+ daily rows = reasonable coverage
+                last_date = pd.to_datetime(existing["date"].iloc[-1])
+                if last_date > pd.Timestamp.now() - pd.Timedelta(days=30):
+                    log(f"  [=] {code}: up-to-date ({len(existing)} rows, "
+                        f"last={last_date.date()}), skip")
+                    return {"code": code, "rows": len(existing), "skipped": True}
+        except Exception:
+            pass  # File corrupt → re-fetch
+
+    # Pick interval_type based on requested years
+    interval_type = 6  # default 5yr
+    for it, yrs in sorted(_INTERVAL_MAP.items(), key=lambda x: x[1]):
+        if yrs >= years:
+            interval_type = it
+            break
+
+    ctx, futu = get_quote_ctx(host, port)
+    if ctx is None:
+        return {"code": code, "error": "no_context"}
+
+    ok = getattr(futu, "RET_OK", 0)
+    status = {"code": code, "rows": 0, "pe_days": 0, "pb_days": 0,
+              "div_days": 0, "roe_qtrs": 0, "error": None}
+
+    try:
+        # ── 1. PE daily series ────────────────────────────────────────────
+        pe = fetch_valuation_series(ctx, futu, code, valuation_type=1,
+                                    interval_type=interval_type,
+                                    rate_limiter=rate_limiter)
+        status["pe_days"] = len(pe)
+
+        # ── 2. PB daily series ────────────────────────────────────────────
+        pb = fetch_valuation_series(ctx, futu, code, valuation_type=2,
+                                    interval_type=interval_type,
+                                    rate_limiter=rate_limiter)
+        status["pb_days"] = len(pb)
+
+        # ── 3. ROE quarterly (key metrics) ────────────────────────────────
+        metrics = fetch_key_metrics(ctx, futu, code, rate_limiter=rate_limiter)
+        status["roe_qtrs"] = len(metrics)
+
+        # ── 4. Revenue growth quarterly (income statement) ────────────────
+        income = fetch_income_revenue_growth(ctx, futu, code,
+                                             rate_limiter=rate_limiter)
+
+        # Merge quarterly metrics: prefer key_metrics ROE, income revenue_growth
+        quarterly = pd.DataFrame()
+        if not metrics.empty:
+            quarterly = metrics.set_index("date").sort_index()
+        if not income.empty:
+            inc = income.set_index("date").sort_index()
+            if "revenue_growth" in inc.columns:
+                if "revenue_growth" not in quarterly.columns or quarterly["revenue_growth"].isna().all():
+                    quarterly["revenue_growth"] = inc["revenue_growth"]
+                else:
+                    # Fill NaN in key_metrics revenue_growth with income data
+                    quarterly["revenue_growth"] = quarterly["revenue_growth"].fillna(
+                        inc["revenue_growth"].reindex(quarterly.index))
+
+        # ── 5. Dividends → dividend_yield ─────────────────────────────────
+        divs = fetch_dividends(ctx, futu, code, rate_limiter=rate_limiter)
+        close = load_close_prices(code)
+
+        # PE fallback from ohlcv pe_ratio if valuation_detail returned nothing
+        if pe.empty and not close.empty:
+            csv_path = OHLCV_DIR / f"{code.replace('.', '_')}.csv"
+            try:
+                odf = pd.read_csv(csv_path, parse_dates=["time_key"])
+                odf = odf.set_index("time_key").sort_index()
+                if "pe_ratio" in odf.columns:
+                    pe = odf["pe_ratio"].astype(float)
+                    pe = pe[pe > 0]  # filter out zero/invalid PE
+                    status["pe_days"] = len(pe)
+                    status["pe_source"] = "ohlcv_fallback"
+            except Exception:
+                pass
+
+        div_yield = compute_dividend_yield(divs, close)
+        status["div_days"] = int(div_yield.notna().sum()) if not div_yield.empty else 0
+
+        # ── 6. Merge into daily fundamentals DataFrame ────────────────────
+        # Base index: union of PE and PB dates (daily)
+        base_dates = pe.index
+        if pb is not None and not pb.empty:
+            base_dates = base_dates.union(pb.index)
+        if div_yield is not None and not div_yield.empty:
+            # Restrict to close-price dates for dividend_yield alignment
+            base_dates = base_dates.union(div_yield.index)
+
+        if base_dates.empty and not close.empty:
+            # No valuation data at all — use close dates as base
+            base_dates = close.index
+
+        if base_dates.empty:
+            log(f"  [!] {code}: no data from any source")
+            status["error"] = "no_data"
+            return status
+
+        df = pd.DataFrame(index=base_dates)
+        df.index.name = "date"
+
+        if not pe.empty:
+            df["pe"] = pe.reindex(df.index)
+        if not pb.empty:
+            df["pb"] = pb.reindex(df.index)
+        if not div_yield.empty:
+            df["dividend_yield"] = div_yield.reindex(df.index)
+
+        # Forward-fill quarterly metrics onto daily index (PIT-correct)
+        if not quarterly.empty:
+            qtr = quarterly.sort_index()
+            for col in ["roe", "revenue_growth"]:
+                if col in qtr.columns:
+                    df[col] = qtr[col].reindex(df.index, method="ffill")
+            # Track which report period each row belongs to
+            df["report_date"] = qtr.index.to_series().reindex(
+                df.index, method="ffill")
+
+        # Sort and clean
+        df = df.sort_index()
+        df = df[~df.index.duplicated(keep="last")]
+        df = df.reset_index()
+
+        # Ensure expected column order
+        expected = ["date", "pe", "pb", "dividend_yield",
+                    "roe", "revenue_growth", "report_date"]
+        for col in expected:
+            if col not in df.columns:
+                df[col] = pd.NA
+        df = df[expected]
+
+        # ── 7. Merge with existing file (append-safe) ─────────────────────
+        if out_path.exists() and not force:
+            try:
+                old = pd.read_csv(out_path, parse_dates=["date"])
+                combined = pd.concat([old, df], ignore_index=True)
+                combined = combined.drop_duplicates(subset=["date"], keep="last")
+                combined = combined.sort_values("date").reset_index(drop=True)
+                df = combined
+            except Exception:
+                pass  # Use fresh data if merge fails
+
+        df.to_csv(out_path, index=False)
+        status["rows"] = len(df)
+
+        src_note = ""
+        if status.get("pe_source") == "ohlcv_fallback":
+            src_note = " (PE from ohlcv fallback)"
+
+        log(f"  [+] {code}: {len(df)} rows "
+            f"[PE:{status['pe_days']}{src_note} PB:{status['pb_days']} "
+            f"DIV:{status['div_days']} ROE:{status['roe_qtrs']}q] "
+            f"→ {out_path.name}")
+
+    except Exception as e:
+        status["error"] = str(e)[:120]
+        log(f"  [x] {code}: {status['error']}")
+
+    return status
+
+
+# ============================================================================
+# Main
+# ============================================================================
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Backfill F10 fundamentals (PE/PB/dividend_yield/ROE/"
+                    "revenue_growth) from Futu OpenAPI")
+    parser.add_argument("--stocks", nargs="*", default=None,
+                        help="Specific stock codes (default: all HSI_CORE 52)")
+    parser.add_argument("--workers", type=int, default=1,
+                        help="Parallel worker threads (each gets own context)")
+    parser.add_argument("--years", type=int, default=5,
+                        help="PE/PB history depth (5=5yr, 10=10yr)")
+    parser.add_argument("--force", action="store_true",
+                        help="Re-fetch even if output exists and is fresh")
+    parser.add_argument("--host", default="127.0.0.1", help="OpenD host")
+    parser.add_argument("--port", type=int, default=11111, help="OpenD port")
+    args = parser.parse_args()
+
+    stocks = args.stocks if args.stocks else HSI_CORE
+
+    print("=" * 70)
+    print("Futu F10 Fundamentals Backfill")
+    print(f"  Stocks:  {len(stocks)}")
+    print(f"  Workers: {args.workers}")
+    print(f"  Years:   {args.years} (interval_type={_INTERVAL_MAP.get(6, '?')}yr+)")
+    print(f"  Force:   {args.force}")
+    print(f"  OpenD:   {'alive' if opend_alive(args.host, args.port) else 'DEAD'}")
+    print(f"  Output:  {FUNDAMENTALS_DIR}/HK_<code>_fundamentals.csv")
+    print("=" * 70)
+
+    if not opend_alive(args.host, args.port):
+        print("\nERROR: OpenD port 11111 not responding.")
+        print("Start FutuOpenD GUI first, then re-run this script.")
+        return 1
+
+    rate_limiter = RateLimiter(max_calls=50, window_sec=30.0)
+
+    def log(msg):
+        ts = time.strftime("%H:%M:%S")
+        print(f"[{ts}] {msg}", flush=True)
+
+    results: list[dict] = []
+
+    if args.workers <= 1:
+        # Sequential mode — simpler, easier to debug
+        for i, code in enumerate(stocks):
+            log(f"[{i+1}/{len(stocks)}] {code}")
+            r = process_stock(code, years=args.years, host=args.host,
+                              port=args.port, rate_limiter=rate_limiter,
+                              force=args.force, log=log)
+            results.append(r)
+    else:
+        # Parallel mode — each thread gets its own OpenQuoteContext
+        with ThreadPoolExecutor(max_workers=args.workers) as pool:
+            futures = {
+                pool.submit(process_stock, code, args.years, args.host,
+                            args.port, rate_limiter, args.force, log): code
+                for code in stocks
+            }
+            done = 0
+            for future in as_completed(futures):
+                code = futures[future]
+                done += 1
+                try:
+                    r = future.result()
+                    results.append(r)
+                except Exception as e:
+                    log(f"  [x] {code}: {str(e)[:120]}")
+                    results.append({"code": code, "error": str(e)[:120]})
+                if done % 10 == 0:
+                    log(f"  Progress: {done}/{len(stocks)} stocks done")
+
+        # Close all thread-local contexts
+        for t in threading.enumerate():
+            if hasattr(t, "_thread_local"):
+                pass  # contexts are per-thread, will be GC'd
+
+    # ── Summary ───────────────────────────────────────────────────────────
+    ok = sum(1 for r in results if r.get("rows", 0) > 0)
+    skipped = sum(1 for r in results if r.get("skipped"))
+    failed = sum(1 for r in results if r.get("error"))
+
+    print(f"\n{'=' * 70}")
+    print(f"DONE: {ok} fetched, {skipped} skipped, {failed} failed "
+          f"(out of {len(stocks)})")
+    if failed:
+        print("Failed stocks:")
+        for r in results:
+            if r.get("error"):
+                print(f"  {r['code']}: {r['error']}")
+    print(f"Output: {FUNDAMENTALS_DIR}/")
+    print(f"{'=' * 70}")
+
+    return 0 if failed == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

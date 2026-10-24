@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""build_broker_top3_panel.py — ccass_participants_long.csv → broker_top3_hist.parquet.
+
+輸入: data/new_sources/ccass_participants_long.csv
+  (shown_date, stock, participant_id, participant_name, shares, pct_of_issued)
+輸出: data/factor_store/broker_top3_hist.parquet — wide (date × HK.XXXXX),
+  值 = 頭三大 participant 佔已發行股本 % 之和 (排除 A00xx 南向 CSDC — 佢係南向通道唔係券商)
+
+注意: 數據源只保留 12 個月窗口 (2025-08 末起), 2023 backfill 源頭冇 — 見 thesis 備註.
+"""
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "ccass_participants_long.csv"
+OUT = BASE / "data" / "factor_store" / "broker_top3_hist.parquet"
+
+
+def main() -> int:
+    df = pd.read_csv(RAW)
+    df["date"] = pd.to_datetime(df["shown_date"], format="%Y/%m/%d", errors="coerce")
+    df = df[df["date"].notna()]
+    # 假日請求會 fallback 前一交易日 → 同 shown_date 重複行, 去重
+    df = df.drop_duplicates(subset=["date", "stock", "participant_id"], keep="first")
+    df["pct"] = pd.to_numeric(df["pct_of_issued"], errors="coerce")
+    # 排除南向 CSDC participant (A00003/A00004 等 CHINA SECURITIES DEPOSITORY) — 佢唔係 broker positioning
+    is_csdc = df["participant_name"].str.contains("CHINA SECURITIES DEPOSITORY", na=False)
+    df = df[~is_csdc]
+    # 每日每股取 top-3 (source 已按 shareholding desc 排)
+    df = df.sort_values(["date", "stock", "shares"], ascending=[True, True, False])
+    top3 = (df.groupby(["date", "stock"]).head(3)
+              .groupby(["date", "stock"])["pct"].sum().reset_index())
+    panel = top3.pivot(index="date", columns="stock", values="pct").sort_index()
+    panel = panel[~panel.index.duplicated(keep="last")]
+    panel.columns = ["HK." + str(c).zfill(5) for c in panel.columns]
+    panel = panel.ffill(limit=5)
+    print(f"raw {len(df)} 行 → panel {panel.shape}")
+    print(f"  日期: {panel.index.min().date()} → {panel.index.max().date()}")
+    print(f"  股數: {panel.shape[1]}, 每股中位數有效日: {int(panel.notna().sum().median())}")
+    panel.to_parquet(OUT)
+    print(f"→ {OUT}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

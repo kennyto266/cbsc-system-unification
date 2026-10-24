@@ -1,0 +1,60 @@
+"""
+統一數據層 (Unified Data Layer)
+
+所有數據源嘅統一介面。
+
+用法:
+    from src.data.unified import store, HttpFetcher, FutuAdapter
+    from src.data.unified import IncrementalUpdater, trading_days
+
+    # 存儲
+    store.save(df, "market_data", "HK.00700", "daily")
+
+    # 讀取
+    df = store.load("market_data", "HK.00700", "daily")
+
+    # 富途 API
+    futu = FutuAdapter()
+    ohlcv = futu.get_ohlcv("HK.00700", days=250)
+
+    # 增量更新
+    updater = IncrementalUpdater("market_data", "HK.00700", "daily")
+    updater.update(new_data)
+"""
+
+from .config import (
+    DATA_DIR, MARKET_DATA_DIR, ALT_DATA_DIR, FUNDAMENTAL_DIR, METADATA_DIR,
+    FUTU_HOST, FUTU_PORT, FEE_PER_SIDE, RF_RATE, URLS,
+    DEFAULT_HEADERS, HKEX_HEADERS, EASTMONEY_HEADERS, CCASS_HEADERS,
+)
+from .trading_calendar import (
+    is_weekend, is_trading_day, trading_days, last_n_trading_days, date_range_pairs,
+)
+from .base_fetcher import HttpFetcher
+from .storage import ParquetStore, store
+from .incremental import IncrementalUpdater, update_multiple
+from .futu_adapter import FutuAdapter
+from .ccass_fetcher import CCASSFetcher
+from .intraday_fetcher import IntradayFetcher
+
+__all__ = [
+    # config
+    "DATA_DIR", "MARKET_DATA_DIR", "ALT_DATA_DIR", "FUNDAMENTAL_DIR", "METADATA_DIR",
+    "FUTU_HOST", "FUTU_PORT", "FEE_PER_SIDE", "RF_RATE", "URLS",
+    "DEFAULT_HEADERS", "HKEX_HEADERS", "EASTMONEY_HEADERS", "CCASS_HEADERS",
+    # calendar
+    "is_weekend", "is_trading_day", "trading_days", "last_n_trading_days",
+    "date_range_pairs",
+    # fetcher
+    "HttpFetcher",
+    # storage
+    "ParquetStore", "store",
+    # incremental
+    "IncrementalUpdater", "update_multiple",
+    # futu
+    "FutuAdapter",
+    # ccass
+    "CCASSFetcher",
+    # intraday
+    "IntradayFetcher",
+]

@@ -1,0 +1,50 @@
+"""Headless Chrome 封裝:data.gov.hk 搜尋 API 對 plain requests 返 401,
+需 seed cookie 後在頁面 context 內 fetch()。"""
+import json
+import time
+from contextlib import contextmanager
+
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
+SEED_URL = "https://data.gov.hk/tc-datasets"
+
+
+class BrowserSession:
+    def __init__(self, seed: str = SEED_URL, settle: float = 4.0):
+        o = Options()
+        o.add_argument("--headless=new")
+        o.add_argument("--no-sandbox")
+        o.add_argument("--disable-gpu")
+        self.driver = webdriver.Chrome(options=o)
+        self.driver.get(seed)
+        time.sleep(settle)  # seed cookies/session
+
+    def fetch_json(self, url: str):
+        """在頁面 context 內 fetch(帶 cookie + Origin/Referer),回 JSON。"""
+        js = """
+        const cb = arguments[arguments.length-1];
+        fetch(arguments[0], {credentials:'include', headers:{'Accept':'application/json'}})
+          .then(r => r.text())
+          .then(t => cb({ok:true, text:t}))
+          .catch(e => cb({ok:false, err:String(e)}));
+        """
+        res = self.driver.execute_async_script(js, url)
+        if not res.get("ok"):
+            raise RuntimeError(f"fetch failed: {res.get('err')} :: {url}")
+        return json.loads(res["text"])
+
+    def quit(self):
+        try:
+            self.driver.quit()
+        except Exception:
+            pass
+
+
+@contextmanager
+def browser_session(**kw):
+    s = BrowserSession(**kw)
+    try:
+        yield s
+    finally:
+        s.quit()

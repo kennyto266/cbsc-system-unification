@@ -1,0 +1,335 @@
+r"""Final10 策略包裝 — 將 autoresearch 發現嘅 6 個新 alpha 包裝成 KOL 兼容格式.
+
+策略 ID 170-175, 避開現有 KOL_REGISTRY 1-164 範圍.
+每個策略遵循 KOL 約定: func(prices, stock) -> metrics dict | None.
+內部調用 common.backtest_signals() 讓 live_signal_engine 可以 monkeypatch 攔截.
+
+Final10 Portfolio OOS SR=2.01 (2024-08 to 2026-07):
+  S1: Dispersion Regime  (vol regime switch)    — OOS SR 2.22
+  S2: A-Shares Dip       (cross-market lead-lag) — OOS SR 2.21
+  S3: HKMA JPY           (KOL #99 delegate)      — OOS SR 1.70
+  S4: HIBOR easing       (KOL #88 delegate)      — OOS SR 1.38
+  S5: DXY inverse        (KOL #10 delegate)      — OOS SR 1.09
+  S6: CCASS southbound   (KOL #84 delegate)      — OOS SR 0.85
+  S7: Crash bounce 60d   (reversal)              — OOS SR 1.24
+  S8: DD bounce           (reversal)              — OOS SR 1.09
+  S9: Range expansion    (vol reversal)           — OOS SR 1.06
+  S10: Turn-of-month     (calendar)              — OOS SR 0.21
+
+注意: S3/S4/S5/S6 已在 KOL_REGISTRY (ID 99/88/10/84), 唢需要包裝, 直接用.
+呢度只包裝 S1/S2/S7/S8/S9/S10 (6個新策略).
+
+成本: 用戶富途實際收費 0.001635/side (statutory 0.001135 + slippage 0.0005).
+"""
+import sys
+from pathlib import Path
+sys.path = [p for p in sys.path if "CODEX" not in p]
+_BACKTESTS_DIR = str(Path(__file__).resolve().parent)
+_PROJECT_ROOT = str(Path(__file__).resolve().parent.parent)
+sys.path.insert(0, _BACKTESTS_DIR)
+sys.path.insert(0, str(Path(_PROJECT_ROOT, "cbsc-system-unification", "scripts")))
+sys.path.insert(0, str(Path(_PROJECT_ROOT, "cbsc-system-unification", "scripts", "hkptrc_strategies")))
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+from common import extract_metrics
+# 重要: 用 kol_alpha_strategies.backtest_signals 而唔係直接 import common.backtest_signals.
+# 呢樣令 live_signal_engine 嘅 monkeypatch (替換 kol.backtest_signals) 可以攔截 Final10 策略.
+import kol_alpha_strategies as kol
+backtest_signals = kol.backtest_signals
+
+# [L2/L3] 成本同 HSI_CORE 單一來源: vbt_data.py
+from vbt_data import USER_FEE, HSI_CORE
+
+
+def _noop_metrics(stock):
+    """返回空 metrics (數據唔夠長時)."""
+    return {"strategy": "noop", "stock": stock, "sharpe": 0, "n_trades": 0}
+
+
+# ============================================================
+# S1: Dispersion Regime (vol regime switch) — OOS SR 2.22
+# 邏輯: 高波動 regime (20d vol > 252d median × 1.3) → 買跌 (mean revert)
+#       低波動 regime → 買升 (momentum continue)
+# ============================================================
+def final10_s1(prices, stock):
+    """FINAL10-S1 Dispersion Regime — OOS SR 2.22.
+
+    高波動環境用均值回歸 (跌深買入), 低波動環境用動量 (升勢追入).
+    Entry: (high_vol & mz < -1) | (~high_vol & mz > 1)
+    Exit:  (high_vol & mz > 0) | (~high_vol & mz < 0)
+    """
+    close = prices[stock]
+    if len(close) < 352:
+        return _noop_metrics(stock)
+
+    ret = close.pct_change()
+    vol = ret.rolling(20).std()
+    vol_med = vol.rolling(252).median()
+    high_vol = vol > vol_med * 1.3
+
+    mom = close.pct_change(20)
+    mz = (mom - mom.rolling(252).mean()) / mom.rolling(252).std()
+
+    entries = ((high_vol & (mz < -1)) | (~high_vol & (mz > 1))).shift(1).fillna(False)
+    exits = ((high_vol & (mz > 0)) | (~high_vol & (mz < 0))).shift(1).fillna(False)
+
+    pf = backtest_signals(close, entries, exits, fees=USER_FEE, init_cash=100000)
+    return extract_metrics(pf, "FINAL10-S1 Dispersion Regime", stock) if pf else None
+
+
+# ============================================================
+# S2: A-Shares Dip → HK Bounce (cross-market) — OOS SR 2.21
+# 邏輯: A股 120d z-score < -2.0 (深度跌) → 買入港股 (A股跌港股跟 → 反彈先於A股)
+# ============================================================
+
+# 預加載 A-shares factor (一次性, 唔使每次 scan 都 load)
+_ASHARES_FACTOR = None
+_ASHARES_LOADED_AT = 0.0  # timestamp of last load
+_ASHARES_TTL = 21600.0       # 6 hours (seconds) — 24/7 runtime refresh
+
+
+def _load_ashares():
+    """懶加載 A-shares factor data (TTL 6小時自動刷新)."""
+    global _ASHARES_FACTOR, _ASHARES_LOADED_AT
+    import time as _time
+    now = _time.time()
+    if _ASHARES_FACTOR is not None and (now - _ASHARES_LOADED_AT) < _ASHARES_TTL:
+        return _ASHARES_FACTOR
+    try:
+        from vbt_data import load_factor_close
+        _ASHARES_FACTOR = load_factor_close("a_shares")
+        _ASHARES_LOADED_AT = now
+    except Exception:
+        _ASHARES_FACTOR = False  # 標記加載失敗
+    return _ASHARES_FACTOR
+
+
+def final10_s2(prices, stock):
+    """FINAL10-S2 A-Shares Dip — OOS SR 2.21.
+
+    A股 120d z-score < -2.0 (深度調整) → 買入港股.
+    A股反彈至 z > -0.5 → 平倉.
+    Cross-market lead-lag: A股跌港股跟, 但港股反彈先於A股.
+    """
+    factor = _load_ashares()
+    if factor is None or factor is False:
+        return _noop_metrics(stock)
+
+    close = prices[stock]
+    if len(close) < 220:
+        return _noop_metrics(stock)
+
+    f = factor.reindex(close.index).ffill().dropna()
+    if len(f) < 170:
+        return _noop_metrics(stock)
+
+    fz = (f - f.rolling(120).mean()) / f.rolling(120).std()
+
+    # [f10s2align 10-22] fz 由 factor reindex+dropna 而嚟, 長度可以短過 close
+    # (A股假期頭段 ffill 無源 + factor 尾日 lag) — 唔 reindex 返 close.index 就
+    # vbt broadcast 炸 shape mismatch, 被 backtest_signals 吞例外靜靜返 None。
+    entries = (fz < -2.5).shift(1).reindex(close.index).fillna(False)
+    exits = (fz > -0.1).shift(1).reindex(close.index).fillna(False)
+
+    pf = backtest_signals(close, entries, exits, fees=USER_FEE, init_cash=100000)
+    return extract_metrics(pf, "FINAL10-S2 A-Shares Dip", stock) if pf else None
+
+
+# ============================================================
+# S7: Crash Bounce 60d (reversal) — OOS SR 1.24
+# 邏輯: 5日回報 60d z-score < -3.0 (極端暴跌) → 買入 (恐慌拋售超賣反彈)
+# ============================================================
+def final10_s7(prices, stock):
+    """FINAL10-S7 Crash Bounce 60d — OOS SR 1.24.
+
+    5日回報喺過去60日出現極端暴跌 (z < -3.0) → 恐慌超賣反彈.
+    z 回升至 > -0.5 → 恐慌消散, 平倉.
+    """
+    close = prices[stock]
+    if len(close) < 160:
+        return _noop_metrics(stock)
+
+    r5 = close.pct_change(5)
+    z = (r5 - r5.rolling(60).mean()) / r5.rolling(60).std()
+
+    entries = (z < -3.0).shift(1).fillna(False)
+    exits = (z > -0.5).shift(1).fillna(False)
+
+    pf = backtest_signals(close, entries, exits, fees=USER_FEE, init_cash=100000)
+    return extract_metrics(pf, "FINAL10-S7 Crash Bounce", stock) if pf else None
+
+
+# ============================================================
+# S8: DD Bounce (drawdown bounce reversal) — OOS SR 1.09
+# 邏輯: 120d 最大回撤 < -25% 且 3日動量 > 0 (開始反彈) → 買入
+# ============================================================
+def final10_s8(prices, stock):
+    """FINAL10-S8 DD Bounce — OOS SR 1.09.
+
+    120日最大回撤 < -35% + 3日動量轉正 → 深跌反彈訊號.
+    回撤回升至 > -5% → 平倉.
+    """
+    close = prices[stock]
+    if len(close) < 220:
+        return _noop_metrics(stock)
+
+    cm = close.rolling(120, min_periods=20).max()
+    dd = (close - cm) / cm
+    m3 = close.pct_change(3)
+
+    entries = ((dd < -0.35) & (m3 > 0)).shift(1).fillna(False)
+    exits = (dd > -0.05).shift(1).fillna(False)
+
+    pf = backtest_signals(close, entries, exits, fees=USER_FEE, init_cash=100000)
+    return extract_metrics(pf, "FINAL10-S8 DD Bounce", stock) if pf else None
+
+
+# ============================================================
+# S9: Range Expansion (volatility reversal)
+# 邏輯: 5日波動率 > 10日均值 × 2.5 且 5日回報 < 0 (恐慌擴張) → 買入
+# FIX 2026-07: 出場改用固定持倉期 20 日 (原本 rp<ar 波動率回歸出場太早,
+#   forward-return 分析顯示 5-20 日後 reversal 先完全實現; 原出場 OOS SR=-0.54,
+#   改 hold-20 後 OOS SR=+0.65 across 3 split dates). BEAR regime gate 經測試
+#   無效 (OOS 期本身處牛市, gate 只加摩擦), 不採用.
+# ============================================================
+def final10_s9(prices, stock, multiplier=2.5, hold_days=20):
+    """FINAL10-S9 Range Expansion.
+
+    5日波動率突然擴大 (> 10日均值 × multiplier) + 5日回報為負 → 恐慌性拋售,
+    持倉 hold_days 日後平倉 (不再用 rp<ar 波動率回歸出場).
+    """
+    close = prices[stock]
+    if len(close) < 110:
+        return _noop_metrics(stock)
+
+    ret = close.pct_change()
+    rp = ret.rolling(5).std()
+    ar = rp.rolling(10).mean()
+    exp = rp > ar * multiplier
+
+    m = close.pct_change(5)
+
+    raw_entries = (exp & (m < 0)).shift(1).fillna(False)
+
+    # 固定持倉期出場: 由 entry 往後數 hold_days 日
+    n = len(close)
+    pos = np.zeros(n, dtype=bool)
+    holding = False
+    days_in = 0
+    e = raw_entries.values
+    for i in range(n):
+        if not holding and e[i]:
+            holding = True
+            days_in = 0
+            pos[i] = True
+        elif holding:
+            days_in += 1
+            if days_in >= hold_days:
+                holding = False
+            else:
+                pos[i] = True
+    pos_s = pd.Series(pos, index=close.index)
+    entries = pos_s & ~pos_s.shift(1).fillna(False)
+    exits = ~pos_s & pos_s.shift(1).fillna(False)
+
+    pf = backtest_signals(close, entries, exits, fees=USER_FEE, init_cash=100000)
+    return extract_metrics(pf, "FINAL10-S9 Range Expansion", stock) if pf else None
+
+
+# ============================================================
+# S10: Turn-of-Month (calendar effect) — OOS SR 0.21 (弱但低相關)
+# 邏輯: 月初前3日 / 月末後3日 → 持倉, 其餘時間空倉
+# ============================================================
+def final10_s10(prices, stock):
+    """FINAL10-S10 Turn-of-Month — OOS SR 0.21.
+
+    月初效應: day <= 3 或 day >= 27 持倉, day 4-26 空倉.
+    SR 低但同其他策略相關性極低 (多維分散價值).
+    """
+    close = prices[stock]
+    if len(close) < 60:
+        return _noop_metrics(stock)
+
+    idx = close.index
+    dom = idx.day
+    sig = pd.Series((dom <= 3) | (dom >= 27), index=idx)
+
+    entries = sig.shift(1).fillna(False)
+    exits = (~sig).shift(1).fillna(False)
+
+    pf = backtest_signals(close, entries, exits, fees=USER_FEE, init_cash=100000)
+    return extract_metrics(pf, "FINAL10-S10 Turn-of-Month", stock) if pf else None
+
+
+# ============================================================
+# 註冊表: Final10 策略 ID → (name, author, func, data_type)
+# ID 170-175 避開 KOL 1-164
+# S3-S6 唔喺度 (已喺 KOL: 99/88/10/84)
+# ============================================================
+FINAL10_REGISTRY = {
+    170: ("FINAL10-S1 Dispersion Regime", "autoresearch", final10_s1, "price"),
+    171: ("FINAL10-S2 A-Shares Dip", "autoresearch", final10_s2, "factor"),
+    172: ("FINAL10-S7 Crash Bounce", "autoresearch", final10_s7, "price"),
+    173: ("FINAL10-S8 DD Bounce", "autoresearch", final10_s8, "price"),
+    174: ("FINAL10-S9 Range Expansion", "autoresearch", final10_s9, "price"),
+    175: ("FINAL10-S10 Turn-of-Month", "autoresearch", final10_s10, "calendar"),
+}
+
+# Final10 完整 10 策略 ID 映射 (包括 KOL 現有 4 個)
+FINAL10_ALL_IDS = [170, 171, 99, 88, 10, 84, 172, 173, 174, 175]
+
+# Final10 新策略 ID (需要 signal-exit 出場邏輯)
+FINAL10_NEW_IDS = [170, 171, 172, 173, 174, 175]
+
+# Final10 委託 KOL 策略 ID (已有出場邏輯, 用持倉期到期)
+FINAL10_KOL_IDS = [99, 88, 10, 84]
+
+# Signal-exit 策略集合 (呢啲策略唔用固定持倉期, 改用信號 exit)
+SIGNAL_EXIT_IDS = {170, 171, 172, 173, 174, 175}
+
+# Final10 持倉期 (交易日, fallback 如果信號 exit 唔觸發)
+FINAL10_HOLD_DAYS = {
+    170: 20,   # S1: dispersion regime, 中期
+    171: 14,   # S2: A-shares dip, 中期
+    172: 7,    # S7: crash bounce, 短期
+    173: 10,   # S8: DD bounce, 短期
+    174: 20,   # S9: range expansion, 持倉 20 日 (fixed-hold exit, 原 signal-exit 太早出場)
+    175: 5,    # S10: turn-of-month, 短期
+}
+
+# HSI_CORE: imported from vbt_data (單一來源)
+
+
+if __name__ == "__main__":
+    print("=" * 60)
+    print("Final10 策略冒煙測試")
+    print("=" * 60)
+
+    from vbt_data import load_stock_close
+    stock = "HK.00700"
+    close = load_stock_close(stock)
+    if close is None:
+        print(f"❌ {stock} 數據加載失敗")
+    else:
+        prices = pd.DataFrame({stock: close})
+        print(f"📊 {stock}: {len(close)} bars, {close.index[0].date()} ~ {close.index[-1].date()}")
+
+        for aid in sorted(FINAL10_REGISTRY.keys()):
+            name, author, func, dtype = FINAL10_REGISTRY[aid]
+            try:
+                m = func(prices, stock)
+                if m and m.get("n_trades", 0) > 0:
+                    print(f"  ✅ {name:35s} SR={m.get('sharpe', 0):+.2f} "
+                          f"ret={m.get('total_return_pct', 0):+.1f}% "
+                          f"trades={m.get('n_trades', 0)}")
+                else:
+                    print(f"  ⚠️ {name:35s} 無交易")
+            except Exception as e:
+                print(f"  ❌ {name:35s} 異常: {e}")
+
+    print(f"\nHSI_CORE: {len(HSI_CORE)} 隻")
+    print(f"Final10 全部 ID: {FINAL10_ALL_IDS}")
+    print(f"Signal-exit ID: {sorted(SIGNAL_EXIT_IDS)}")

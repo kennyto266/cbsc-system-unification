@@ -1,0 +1,292 @@
+#!/usr/bin/env python3
+"""Walk-forward + Monte Carlo 驗證 top 策略 (用新成本 0.227%/來回).
+
+從 3 個 leaderboard 各取 top 5, 對每個跑:
+  - Walk-forward rolling (3yr train / 1yr step): OOS Sharpe 穩定性
+  - Monte Carlo p-value (1000 perm): 統計顯著性
+
+存:
+  - data/vbt_factor_reports/validation_report.csv  (彙總表)
+  - data/vbt_factor_reports/validation_report.md   (人讀報告)
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+
+from vbt_data import (load_stock_close, load_factor_close, TOTAL_COST, SLIPPAGE,
+                      INIT_CASH_FACTOR, FACTORS)
+import vectorbt as vbt
+from vbt_kol import run_kol
+from vbt_hkptrc import run_hkptrc
+from vbt_validation import walk_forward_rolling, monte_carlo_pvalue
+
+OUT_DIR = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports")
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# ============================================================
+# top 策略清單 (每類 top 5, 共 15)
+# ============================================================
+KOL_TOPS = [
+    (20, "HK.02313"),   # ALPHA-20 轉角位 @ 申洲國際
+    (2,  "HK.02688"),   # ALPHA-02 幣企持倉風控 @ 新華文軒
+    (15, "HK.02018"),   # ALPHA-15 美息regime @ 廣深鐵路
+    (20, "HK.06862"),   # ALPHA-20 轉角位 @ 海普瑞
+    (15, "HK.00700"),   # ALPHA-15 美息regime @ 騰訊
+]
+HKPTRC_TOPS = [
+    (6, "HK.02313"),    # #6 Double RSI 均值回歸
+    (5, "HK.02313"),    # #5 Extrema+Threshold
+    (9, "HK.00017"),    # #9 Bayes 濾網
+    (7, "HK.01876"),    # #7 Z-Score 均值回歸
+    (5, "HK.06862"),    # #5 Extrema+Threshold
+]
+# factor: (factor, stock, N, holding, direction)
+FACTOR_TOPS = [
+    ("vix",   "HK.01336", 5, 14, "contrarian"),
+    ("sp500", "HK.00175", 7, 10, "follow"),
+    ("dxy",   "HK.01211", 2, 10, "contrarian"),
+    ("dxy",   "HK.00175", 2, 14, "contrarian"),
+    ("vix",   "HK.02319", 2,  7, "follow"),
+]
+
+
+def factor_runner(spec):
+    """為 factor 策略造一個符合 run_kol 簽名既 runner (返 pf tuple 或 None).
+
+    spec = (factor, stock, N, holding, direction)
+    """
+    factor_name, stock, n_days, holding, direction = spec
+    factor = load_factor_close(factor_name)
+    close = load_stock_close(stock)
+    if factor is None or close is None:
+        return None
+    factor = factor.reindex(close.index).ffill()
+    # factor N 日變動
+    f_chg = factor.pct_change(n_days)
+    thr = 0.008  # 預設 (scan 已證實對 Sharpe 唔敏感)
+    if direction == "contrarian":
+        entries = f_chg < -thr
+    else:
+        entries = f_chg > thr
+    # holding 期出場
+    exits = pd.Series(False, index=close.index)
+    entry_idx = np.where(entries.values)[0]
+    for i in entry_idx:
+        exit_i = min(i + holding, len(close) - 1)
+        exits.iloc[exit_i] = True
+    if not entries.any():
+        return None
+    try:
+        pf = vbt.Portfolio.from_signals(
+            close=close, entries=entries, exits=exits,
+            fees=TOTAL_COST / 2, slippage=SLIPPAGE,
+            freq="1D", init_cash=INIT_CASH_FACTOR)
+        pf_bench = vbt.Portfolio.from_holding(close, init_cash=INIT_CASH_FACTOR, fees=TOTAL_COST / 2, freq="1D")
+        return pf, pf_bench, close, {}
+    except Exception:
+        return None
+
+
+def run_validation():
+    rows = []
+    print("=" * 70)
+    print(f"Walk-forward + Monte Carlo 驗證 (成本 {TOTAL_COST*100:.3f}%/來回)")
+    print("=" * 70)
+
+    # --- KOL ---
+    print("\n📡 KOL Alpha top 5")
+    for sid, stock in KOL_TOPS:
+        label = f"KOL-ALPHA-{sid} @ {stock}"
+        print(f"\n  [{label}]")
+        # Monte Carlo
+        try:
+            mc = monte_carlo_pvalue(run_kol, sid, stock, n_sims=1000, engine="kol")
+        except Exception as e:
+            mc = None
+            print(f"    MC error: {e}")
+        # Walk-forward (2yr train / 1yr step → 5yr 數據約 3 窗口)
+        try:
+            wf = walk_forward_rolling(run_kol, sid, stock, train_years=2, step_years=1, engine="kol")
+        except Exception as e:
+            wf = None
+            print(f"    WF error: {e}")
+        _emit_row(rows, label, "KOL", mc, wf)
+
+    # --- hkptrc ---
+    print("\n📡 hkptrc top 5")
+    for sid, stock in HKPTRC_TOPS:
+        label = f"HKPTRC-#{sid} @ {stock}"
+        print(f"\n  [{label}]")
+        try:
+            mc = monte_carlo_pvalue(run_hkptrc, sid, stock, n_sims=1000, engine="hkptrc")
+        except Exception as e:
+            mc = None
+            print(f"    MC error: {e}")
+        try:
+            wf = walk_forward_rolling(run_hkptrc, sid, stock, train_years=2, step_years=1, engine="hkptrc")
+        except Exception as e:
+            wf = None
+            print(f"    WF error: {e}")
+        _emit_row(rows, label, "hkptrc", mc, wf)
+
+    # --- Factor ---
+    print("\n📡 Factor top 5")
+    for spec in FACTOR_TOPS:
+        factor_name, stock = spec[0], spec[1]
+        label = f"FACTOR-{factor_name} @ {stock}"
+        print(f"\n  [{label}]")
+        # factor 用 wrapper runner
+        def _runner(*args, **kwargs):
+            return factor_runner(spec)
+        try:
+            mc = monte_carlo_pvalue(_runner, None, stock, n_sims=1000, engine="kol")
+        except Exception as e:
+            mc = None
+            print(f"    MC error: {e}")
+        try:
+            wf = walk_forward_rolling(_runner, None, stock, train_years=2, step_years=1, engine="kol")
+        except Exception as e:
+            wf = None
+            print(f"    WF error: {e}")
+        _emit_row(rows, label, "factor", mc, wf)
+
+    df = pd.DataFrame(rows)
+    csv_path = OUT_DIR / "validation_report.csv"
+    df.to_csv(csv_path, index=False)
+    print(f"\n✅ CSV: {csv_path}")
+
+    # --- 人讀報告 ---
+    _write_md_report(df, OUT_DIR / "validation_report.md")
+    print(f"✅ MD:  {OUT_DIR / 'validation_report.md'}")
+    _print_summary(df)
+    return df
+
+
+def _emit_row(rows, label, category, mc, wf):
+    if mc is not None:
+        mc_row = {
+            "策略": label, "類別": category,
+            "真實Sharpe": round(mc["real_sharpe"], 3),
+            "MC_p_value": round(mc["p_value"], 4),
+            "MC_百分位": round(mc["percentile"], 1),
+            "MC_顯著": "✅" if mc["significant"] else "❌",
+            "交易數": mc["n_trades"],
+            "WF_窗口數": "",
+            "WF_平均Sharpe": "",
+            "WF_正比例": "",
+            "WF_最差": "",
+        }
+        print(f"    MC: real Sharpe={mc['real_sharpe']:.3f} | p={mc['p_value']:.4f} "
+              f"| 百分位={mc['percentile']:.0f}% | {'✅顯著' if mc['significant'] else '❌唔顯著'}")
+    else:
+        mc_row = {"策略": label, "類別": category, "真實Sharpe": "", "MC_p_value": "",
+                  "MC_百分位": "", "MC_顯著": "⚠️", "交易數": "", "WF_窗口數": "",
+                  "WF_平均Sharpe": "", "WF_正比例": "", "WF_最差": ""}
+        print(f"    MC: ⚠️ 跑唔到")
+
+    if wf is not None:
+        mc_row["WF_窗口數"] = wf["n_windows"]
+        mc_row["WF_平均Sharpe"] = round(wf["mean_sharpe"], 3)
+        mc_row["WF_正比例"] = f"{wf['pct_positive']*100:.0f}%"
+        mc_row["WF_最差"] = round(wf["min_sharpe"], 3)
+        print(f"    WF: {wf['n_windows']} 窗口 | 平均={wf['mean_sharpe']:.3f} "
+              f"| 正比例={wf['pct_positive']*100:.0f}% | 最差={wf['min_sharpe']:.3f}")
+    else:
+        print(f"    WF: ⚠️ 數據不足")
+    rows.append(mc_row)
+
+
+def _write_md_report(df, path):
+    from vbt_validation import benjamini_hochberg
+    # FDR 校正 (多重檢驗)
+    pvals_raw = df["MC_p_value"].apply(lambda x: float(x) if x != "" and str(x) != "nan" else 1.0).values
+    rejected, adj_pvals = benjamini_hochberg(pvals_raw, alpha=0.05)
+    df = df.copy()
+    df["MC_adj_p (BH)"] = [round(float(a), 4) for a in adj_pvals]
+    df["FDR通過"] = ["✅" if r else "❌" for r in rejected]
+
+    wf_pct = df["WF_正比例"].astype(str).str.replace("%", "").replace("", "nan")
+    wf_pct_num = pd.to_numeric(wf_pct, errors="coerce").fillna(0)
+    robust = df[(df["FDR通過"] == "✅") & (wf_pct_num >= 50)]
+    lines = [
+        "# 🎯 Top 策略穩健度驗證報告 (嚴苛版)",
+        "",
+        f"> 成本口徑: **{TOTAL_COST*100:.3f}%/來回** (Longbridge 實際)",
+        f"> Monte Carlo: **exposure-preserving shuffle** (1000 次, 保持持倉 run-length, 只打散時點)",
+        f"> Walk-forward: **period-split OOS** (2yr train/1yr step, ⚠️ 固定參數非重新擬合)",
+        f"> 多重檢驗: **Benjamini-Hochberg FDR** (α=0.05, 控制 false discovery rate)",
+        f"> 驗證日期: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}",
+        "",
+        "## 📊 全部結果",
+        "",
+        df.to_markdown(index=False),
+        "",
+        "## 🏆 穩健策略 (FDR通過 + WF正比例≥50%)",
+        "",
+        (robust.to_markdown(index=False) if len(robust) else "*(無策略同時通過兩關)*"),
+        "",
+        "## ⚠️ 方法論限制 (誠實聲明)",
+        "",
+        "1. **Walk-forward 非真正 walk-forward**: 呢個係「固定參數 period-split」, 唔會喺 train 窗口重新擬合最優參數. 測到既係「固定規則既時間穩定性」, 唔係「參數有冇 overfit」.",
+        "2. **OOS 窗口只有 2 個** (5yr 數據 / 2yr train / 1yr step): 「正比例≥50%」= 至少 1/2 窗口 Sharpe>0, 統計效力有限.",
+        "3. **選擇偏差未完全控制**: 呢 15 個策略係 leaderboard 既 top, 已經過 in-sample 篩選. MC null 測「固定規則 vs 隨機擇時」, 唔測「選擇過程本身」.",
+        "4. **FDR 校正控制假陽性**: 15 個策略 × α=0.05, 無校正預期 ~0.75 個假陽性. BH FDR 將 false discovery rate 控制喺 5% 以下.",
+        "",
+        "## 📖 解讀",
+        "",
+        "- **MC p<0.05**: exposure-preserving shuffle 1000 次中, 隨機擇時 Sharpe ≥ 真實 既比例",
+        "- **MC_adj_p (BH)**: 經 Benjamini-Hochberg FDR 校正後既 p-value (多重檢驗)",
+        "- **FDR通過 ✅**: 校正後仍顯著 (95% 信心非隨機, 已控制假發現率)",
+        "- **WF 正比例**: OOS 窗口中 Sharpe>0 既比例 (僅 2 窗口, 統計效力有限)",
+        "- **同時 FDR✅ + WF≥50%** = 較穩健, 但唔等於「必定實盤賺錢」",
+        "",
+    ]
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return robust, rejected, adj_pvals
+
+
+def _print_summary(df):
+    from vbt_validation import benjamini_hochberg
+    print("\n" + "=" * 70)
+    print("📊 驗證總結 (嚴苛版: exposure-shuffle MC + FDR 校正)")
+    print("=" * 70)
+    n_total = len(df)
+    # raw MC significant
+    n_raw_sig = (df["MC_顯著"] == "✅").sum()
+    # FDR corrected
+    pvals_raw = df["MC_p_value"].apply(lambda x: float(x) if x != "" and str(x) != "nan" else 1.0).values
+    rejected, adj_pvals = benjamini_hochberg(pvals_raw, alpha=0.05)
+    n_fdr = int(rejected.sum())
+    print(f"  MC 顯著 (raw p<0.05):       {n_raw_sig}/{n_total}")
+    print(f"  MC 顯著 (FDR 校正後):       {n_fdr}/{n_total}  ← 較可信 (控制假發現率)")
+    wf_pos = df[df["WF_正比例"] != ""]
+    if len(wf_pos) > 0:
+        wf_pct = wf_pos["WF_正比例"].str.replace("%", "").astype(float)
+        print(f"  Period-split 平均正比例:    {wf_pct.mean():.0f}% (僅 2 窗口, 效力有限)")
+    wf_pct_s = df["WF_正比例"].astype(str).str.replace("%", "").replace("", "nan")
+    wf_pct_num = pd.to_numeric(wf_pct_s, errors="coerce").fillna(0)
+    robust = df[wf_pct_num >= 50]
+    robust_fdr = robust.copy()
+    robust_fdr_idx = robust.index
+    robust_pass = [i for i in robust_fdr_idx if rejected[list(df.index).index(i)]]
+    print(f"  FDR✅ + WF≥50% (較穩健):   {len(robust_pass)}/{n_total}")
+    if robust_pass:
+        print(f"\n  🏆 較穩健策略 (FDR 校正 + OOS 正):")
+        for i in robust_pass:
+            r = df.loc[i]
+            adj = adj_pvals[list(df.index).index(i)]
+            print(f"     {r['策略']} | Sharpe={r['真實Sharpe']} | raw p={r['MC_p_value']} | BH adj p={adj:.4f}")
+    print()
+    print("  ⚠️ 誠實聲明: 上述係「固定規則時間穩定性」測試, 非 walk-forward optimization.")
+    print("     窗口僅 2 個, 統計效力有限. 實盤前建議延長數據 + 真正 walk-forward 重擬合.")
+
+
+if __name__ == "__main__":
+    run_validation()

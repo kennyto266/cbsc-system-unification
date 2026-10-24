@@ -1,0 +1,92 @@
+#!/usr/bin/env python
+"""collect_eveb_em.py — 東財 RPT_HKF10_FN_MAININDICATOR 季度基本面 → EV 類 panel raw.
+
+欄位 (已逐個 API 驗證存在):
+  TOTAL_MARKET_CAP 市值 | TOTAL_LIABILITIES 總負債 | TOTAL_ASSETS 總資產
+  OPERATE_INCOME 營業額 | OPERATE_PROFIT 經營利潤 | EPS_TTM | BPS | PE_TTM
+
+構造 (負債入 EV, 現金欠 → 用兩條:
+  evx_oi  = (市值+總負債) / 營業額     (資本負擔 vs 規模)
+  evx_op  = (市值+總負債) / 經營利潤   (資本負擔 vs 經營盈利, EBITDA 近似下界)
+PIT: 用業績日曆 results_calendar_raw.csv 對齊 — 財期 STD_REPORT_DATE 後嘅
+第一個公布日先生效 (無公布日紀錄嘅用 +60日 lag, 同 pb panel 一致).
+"""
+import json
+import os
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+import pandas as pd
+
+BASE = Path(r"C:/Users/Penguin8n/ZCodeProject/cbsc-system-unification")
+OUT = BASE / "data" / "new_sources" / "eveb_raw.csv"
+POOL_FILE = BASE / "data" / "new_sources" / "results_calendar_raw.csv"
+
+COLS = ("SECURITY_CODE,STD_REPORT_DATE,DATE_TYPE_CODE,TOTAL_MARKET_CAP,"
+        "TOTAL_LIABILITIES,TOTAL_ASSETS,OPERATE_INCOME,OPERATE_PROFIT,EPS_TTM,BPS,PE_TTM")
+
+API = ("https://datacenter.eastmoney.com/securities/api/data/v1/get?"
+       "reportName=RPT_HKF10_FN_MAININDICATOR&columns={cols}"
+       "&filter=(SECURITY_CODE%3D%22{code}%22)&pageNumber={pg}&pageSize=50"
+       "&sortTypes=-1&sortColumns=STD_REPORT_DATE&source=F10&client=PC")
+
+HDR = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+       "Referer": "https://emweb.securities.eastmoney.com/"}
+
+
+def fetch(code, pg=1, tries=3):
+    for t in range(tries):
+        try:
+            req = urllib.request.Request(API.format(cols=COLS, code=code, pg=pg), headers=HDR)
+            d = json.loads(urllib.request.urlopen(req, timeout=20).read())
+            r = d.get("result") or {}
+            return r.get("data") or [], r.get("pages", 1)
+        except Exception as e:
+            if t == tries - 1:
+                print(f"  {code} pg{pg} ERR {str(e)[:60]}")
+                return [], 0
+            time.sleep(2 + 2 * t)
+
+
+def main():
+    codes = sorted({str(c).zfill(5) for c in pd.read_csv(POOL_FILE)["stock_code"].astype(str)})
+    print(f"池: {len(codes)} 股")
+    rows = []
+    for i, code in enumerate(codes):
+        pg = 1
+        while True:
+            data, pages = fetch(code, pg)
+            for r in data or []:
+                rows.append({
+                    "code": code,
+                    "report_date": str(r.get("STD_REPORT_DATE", ""))[:10],
+                    "date_type": r.get("DATE_TYPE_CODE"),
+                    "mktcap": r.get("TOTAL_MARKET_CAP"),
+                    "total_liab": r.get("TOTAL_LIABILITIES"),
+                    "total_assets": r.get("TOTAL_ASSETS"),
+                    "operate_income": r.get("OPERATE_INCOME"),
+                    "operate_profit": r.get("OPERATE_PROFIT"),
+                    "eps_ttm": r.get("EPS_TTM"),
+                    "bps": r.get("BPS"),
+                })
+            if pg >= min(pages, 8):  # 8頁×50 = 最多400期, 實際96期(24年)
+                break
+            pg += 1
+            time.sleep(0.4)
+        time.sleep(0.5)
+        if (i + 1) % 8 == 0:
+            print(f"  [{i+1}/{len(codes)}] {code}: 累計 {len(rows)} rows")
+
+    df = pd.DataFrame(rows).drop_duplicates(subset=["code", "report_date"]).sort_values(["code", "report_date"])
+    df.to_csv(OUT, index=False, encoding="utf-8-sig")
+    print(f"DONE: {len(df)} rows × {df['code'].nunique()} 股 → {OUT.name}")
+    print(f"  日期 {df['report_date'].min()} → {df['report_date'].max()}")
+    have_ev = df.dropna(subset=["mktcap", "total_liab"])
+    print(f"  市值+負債齊: {len(have_ev)} rows ({have_ev['code'].nunique()} 股)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

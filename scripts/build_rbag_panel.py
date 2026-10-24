@@ -1,0 +1,301 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""build_rbag_panel.py — rbag thesis: 回購溢價雙源 panel (rbag_prem + rbag_prem_full).
+
+[09-30 G62277 重建] 09-30 worktree 清場穿 junction 刪走 untracked 原件 (零 git
+史), 由 factor_store 黃金樣板 (2026-09-28 凍結版: prem 1163x20 / full 1163x19,
+index 最尾 2026-09-28) 逐格反推重建 — 方法論同 build_bbex_panel.py (09-27 東財
+版重建) / build_bbex_full_panel.py (09-30 NDD 版重建), 三者同一條回購鏈嘅表親。
+
+配方 (黃金樣板逐格 bit-exact 驗證先落筆):
+  rbag_prem — 東財源 (data/new_sources/buyback_em_raw.csv,
+    RPT_HKCH_COMPANYREPO 執行明細; _a2h_0926_bbex_window_refresh.py 替換式刷新):
+    - 全欄位 dedup keep-last (同額同股數唔同 hi/lo 都係唔同筆, 唯完全相同先係 dup);
+    - 跨境腿 containment 過濾 (09-28 12 案例配方, 同 build_bbex_panel.py):
+      EM hi/lo 必須落喺當日實際 unadj 交易區間 ±2% 內 — day range 由 ohlcv_5y
+      high/low × (unadj close / qfq close) 複權比還原; 00005 倫敦 GBP 腿 /
+      02318 A股 CNY 腿 / 09988 ADR USD 腿全 OUT; 容差 0.025 實測漏 7 格
+      (0.025 會多收 golden 冇嘅格), 0.02 唯一吻合;
+    - 場內同日多筆: 金額加權 vwap = sum(REPO_AMT) / sum(REPO_NUM);
+    - prem = vwap / 當日 unadj_close − 1 (futu_history/close_unadj, Futu
+      AuType.NONE — 分母唔可以用 ohlcv 前複權 close, 00001 差 22% 量綱走樣);
+    - 冇 unadj 或冇 ohlcv 倉庫 → 股剔 (唔驗腿唔收); containment 全軍覆沒 →
+      唔出欄; 無回購日 = NaN (稀疏事件 panel, 非凍結)。
+  rbag_prem_full — NDD 官方源第二刀 (data/new_sources/buyback_ndd_full.csv,
+    collect_buyback_v3.py HKEX「翌日披露回購報告」):
+    - 官方 PDF「On the Exchange」只報場內腿, 天生冇跨境腿問題 → 冇 containment;
+    - 同日多稿 = 修訂版覆蓋: keep news_id 最大嗰筆 (唔 sum, 00268 實錄同日
+      最多 17 筆); vwap = total_consideration / shares_bought_back;
+    - prem = vwap / 當日 unadj_close − 1; 事件全喺 panel 窗前 (00017 例:
+      事件止於 2021-08, panel 2022-01 起) → 全 NaN 唔出欄。
+  兩塊共用: reindex 去 prices universe (backtests llm_cs_adapter
+  _load_prices_and_rets, 同 bbex 系同源), 2022-01-01 起, index name='time_key',
+  全 NaN 欄 drop, 欄序 = 股代碼升序。
+
+驗證 (2026-09-30, 輸出 backtests/_g62277_rediff/rbag_prem_new.parquet +
+  rbag_prem_full_new.parquet 對 factor_store 樣板, 逐格 diff):
+  - rbag_prem: 黃金 1163x20 樣板非 NaN 格 2788/2788 全數 bit-exact 重現
+    (maxdiff 0.0), NaN 格零錯配, 欄序全等; 新 build 多 5 格全喺 2026-09-28
+    (00005/00386/00700/01024/09888) — 樣板凍結後 EM 日爬補嘅 09-28 明細
+    (live 數據運動, 值同 rbag_prem_full 樣板同日格一致, 非配方差);
+  - rbag_prem_full: 黃金非 NaN 格 3367/3367 全數 bit-exact 重現 (maxdiff
+    0.0), cand-only/golden-only 均零; 唯一欄差 00017 全 NaN 欄 (窗前事件)
+    由全 NaN drop 處理, 19 欄全等;
+  - 冪等: 連跑兩次 pandas 全等 (deterministic sort)。
+
+輸入: --data-root (預設 HERE-based repo data/)
+  data/new_sources/buyback_em_raw.csv        (東財源)
+  data/new_sources/buyback_ndd_full.csv      (NDD 官方源)
+  data/futu_history/close_unadj/HK.XXXXX.csv (Futu AuType.NONE unadj close)
+  data/ohlcv_5y/HK_XXXXX.csv                 (qfq 複權價, high/low 做 day range)
+輸出: --out-dir (預設 <data-root>/factor_store; 測試指去 tmp — 正本淨係
+  生產線寫, 驗證行 _g62277_rediff)
+  1) rbag_prem.parquet        — 東財場內腿溢價 panel
+  2) rbag_prem_full.parquet   — NDD 官方源溢價 panel
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+HERE = Path(__file__).resolve().parent
+DEFAULT_DATA_ROOT = HERE.parent / "data"
+BT = HERE.parent.parent / "backtests"
+
+PANEL_START = "2022-01-01"
+RANGE_TOL = 0.02  # 當日區間判定容差 (同 build_bbex_panel.py; 0.025 實測漏格)
+
+# [G53073] raw 新鮮度前置閘 — 裁決 (a) builder 前置雙閘 (判詞 .scratch/g53073-bbex-stale-gate/)
+STALE_MTIME_DAYS = 4   # collector 日更 — mtime 凍結即 collector 鏈死 (同 _factor_store_refresh FRESH_LAG 口徑)
+STALE_DATA_DAYS_EM = 7   # EM 事件面: 51股 pool 2025 起最長無事件 gap 5 日 + 緩衝
+STALE_DATA_DAYS_NDD = 14  # NDD 公告源: 2025 實錄最長 gap 10 日 + 緩衝
+
+
+def _now() -> datetime:
+    return datetime.now()
+
+
+def _raw_stale_reason(csv_path: Path, date_col: str, date_fmt: str | None,
+                      stale_data_days: int) -> str | None:
+    """[G53073] None = 新鮮可以重建; 有字 = 凍結原因 (skip 重建等哨兵).
+
+    缺口同 build_bbex_panel.py: collector 部分敗照 rc=0 + builder 零
+    freshness guard + 兩塊 prem panel reindex(prices.index) 行到最新交易
+    日 → measure_lags 恒 lag=0 — raw 凍結日日重建 = 假新鮮呃哨兵. 閘死時
+    唔重寫 panel (兩塊一齊斷更, 誠實過假新鮮), 哨兵鏈 4 日後自動接手.
+    """
+    if not csv_path.exists():
+        return f"raw 唔在場: {csv_path.name}"
+    age = (_now() - datetime.fromtimestamp(csv_path.stat().st_mtime)).days
+    if age > STALE_MTIME_DAYS:
+        return f"{csv_path.name} mtime 凍結 {age} 日 (>{STALE_MTIME_DAYS}) — collector 鏈死?"
+    td = pd.to_datetime(
+        pd.read_csv(csv_path, usecols=[date_col])[date_col], errors="coerce",
+        format=date_fmt).max()
+    if pd.isna(td):
+        return f"{csv_path.name} {date_col} 全爛 — 讀唔到事件日"
+    dage = (_now() - td.to_pydatetime()).days
+    if dage > stale_data_days:
+        return (f"{csv_path.name} max {date_col} {td.date()} 凍結 {dage} 日 "
+                f"(>{stale_data_days}) — 源端停更/collector 敗?")
+    return None
+
+
+def _load_universe() -> pd.DataFrame:
+    sys.path.insert(0, str(BT))
+    from llm_cs_adapter import _load_prices_and_rets
+
+    prices, _ = _load_prices_and_rets()
+    prices.index = pd.to_datetime(prices.index)
+    return prices
+
+
+def _atomic_parquet(df: pd.DataFrame, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    df.to_parquet(tmp)
+    os.replace(tmp, path)
+
+
+def _load_em_events(csv_path: Path) -> pd.DataFrame | None:
+    """東財 RPT_HKCH_COMPANYREPO 明細 → 事件表 (未過 containment)。"""
+    if not csv_path.exists():
+        print(f"[rbag-build] EM raw 唔在場: {csv_path} — 唔靜靜寫壞 parquet", flush=True)
+        return None
+    df = pd.read_csv(csv_path, dtype={"SECURITY_CODE": str})
+    ev = pd.DataFrame({
+        "date": pd.to_datetime(df["TRADE_DATE"], format="%Y-%m-%d", errors="coerce"),
+        "code5": df["SECURITY_CODE"].str.zfill(5),
+        "shares": pd.to_numeric(df["REPO_NUM"], errors="coerce"),
+        "high": pd.to_numeric(df["HIGH_PRICE"], errors="coerce"),
+        "low": pd.to_numeric(df["LOW_PRICE"], errors="coerce"),
+        "amount": pd.to_numeric(df["REPO_AMT"], errors="coerce"),
+    })
+    n_bad = int((ev["date"].isna() | ev["amount"].isna()).sum())
+    ev = ev[ev["date"].notna() & ev["amount"].notna()]
+    # 全欄位 dedup: 完全相同先係重複 (同日同額唔同 hi/lo = 多筆/多腿, 留俾
+    # containment 判) — G62366 教訓: 誤判 dup 會掉真腿
+    ev = ev.drop_duplicates(keep="last")
+    ev = ev.sort_values(["date", "code5"]).reset_index(drop=True)
+    if ev.empty:
+        print("[rbag-build] EM events 全空 (raw 爛?) — 唔寫輸出", flush=True)
+        return None
+    print(f"[rbag-build] EM events {len(ev)} 行 {ev['code5'].nunique()} 股 "
+          f"{ev['date'].min().date()} → {ev['date'].max().date()} "
+          f"(壞行剔 {n_bad}, 全欄位 dup keep-last)", flush=True)
+    return ev
+
+
+def _load_ndd_events(csv_path: Path) -> pd.DataFrame | None:
+    """NDD 官方源 → 事件表 (keep news_id 最大 = 最新修訂稿)。"""
+    if not csv_path.exists():
+        print(f"[rbag-build] NDD raw 唔在場: {csv_path} — 唔靜靜寫壞 parquet", flush=True)
+        return None
+    df = pd.read_csv(csv_path, dtype={"stock_code": str, "news_id": str})
+    ev = pd.DataFrame({
+        "date": pd.to_datetime(df["trading_date"], format="%d %B %Y", errors="coerce"),
+        "code5": df["stock_code"].str.zfill(5),
+        "_nid": pd.to_numeric(df["news_id"], errors="coerce"),
+        "shares": pd.to_numeric(df["shares_bought_back"], errors="coerce"),
+        "amount": pd.to_numeric(df["total_consideration"], errors="coerce"),
+    })
+    n_bad = int((ev["date"].isna() | ev["_nid"].isna() | ev["shares"].isna()
+                 | ev["amount"].isna()).sum())
+    ev = ev[ev["date"].notna() & ev["_nid"].notna() & ev["shares"].notna()
+            & ev["amount"].notna()]
+    # 同日多稿 = 修訂版覆蓋 (doc_date 最新為準 = news_id 最大), 唔 sum
+    ev = (ev.sort_values("_nid", kind="mergesort")
+            .drop_duplicates(["date", "code5"], keep="last"))
+    ev = ev.sort_values(["date", "code5"]).reset_index(drop=True)
+    if ev.empty:
+        print("[rbag-build] NDD events 全空 (raw 爛?) — 唔寫輸出", flush=True)
+        return None
+    print(f"[rbag-build] NDD events {len(ev)} 行 {ev['code5'].nunique()} 股 "
+          f"{ev['date'].min().date()} → {ev['date'].max().date()} "
+          f"(壞行剔 {n_bad}, 同日多稿 keep-max news_id)", flush=True)
+    return ev
+
+
+def _finalize(cols: dict[str, pd.Series], prices: pd.DataFrame) -> pd.DataFrame:
+    panel = pd.DataFrame(cols, index=prices.index)
+    panel.index.name = "time_key"
+    panel = panel[panel.index >= PANEL_START]
+    return panel.dropna(how="all", axis=1)  # 全 NaN 欄唔出 (00017 窗前事件例)
+
+
+def build_em_prem(ev: pd.DataFrame, prices: pd.DataFrame, data_root: Path) -> pd.DataFrame:
+    """東財源: containment 過濾跨境腿 → 金額加權 vwap / unadj close − 1。"""
+    unadj_dir = data_root / "futu_history" / "close_unadj"
+    ohlcv_dir = data_root / "ohlcv_5y"
+    cols: dict[str, pd.Series] = {}
+    n_leg_rows = n_nopx_rows = 0
+    for c in sorted(ev["code5"].unique()):
+        hk = "HK." + c
+        if hk not in prices.columns:
+            continue
+        ocsv = ohlcv_dir / f"HK_{c}.csv"
+        fcsv = unadj_dir / f"HK.{c}.csv"
+        if not ocsv.exists():
+            print(f"[rbag-build] WARN ohlcv 缺 {ocsv.name} — 股跳過", flush=True)
+            continue
+        if not fcsv.exists():
+            # 冇 unadj 倉庫 — 冇分母亦冇得驗腿, 唂靜靜用可疑數: 全股剔 + 警告
+            print(f"[rbag-build] WARN unadj 缺 {fcsv.name} — 股跳過 (唔驗腿唔收)", flush=True)
+            continue
+        u = (pd.read_csv(fcsv, parse_dates=["time_key"])
+               .set_index("time_key")["close"].sort_index())
+        o = (pd.read_csv(ocsv, parse_dates=["time_key"])
+               .set_index("time_key").sort_index()[["close", "high", "low"]])
+        sub = ev[ev["code5"] == c].set_index("date")
+        j = sub.join(u.rename("uadj"), how="left").join(
+            o.rename(columns={"close": "qfq", "high": "day_hi", "low": "day_lo"}),
+            how="left")
+        with np.errstate(divide="ignore", invalid="ignore"):
+            scale = j["uadj"] / j["qfq"]
+        dlo, dhi = j["day_lo"] * scale, j["day_hi"] * scale
+        has_px = j["uadj"].notna() & dlo.notna() & dhi.notna()
+        # containment: 場內腿必然落喺當日實際 unadj 區間 (容差 2%)
+        in_range = ((j["low"] >= dlo * (1 - RANGE_TOL))
+                    & (j["high"] <= dhi * (1 + RANGE_TOL)))
+        keep = has_px & in_range.fillna(False)
+        n_leg_rows += int((has_px & ~in_range.fillna(False)).sum())
+        n_nopx_rows += int((~has_px).sum())
+        kept = j[keep]
+        if kept.empty:
+            continue  # 全史跨境腿 (09988 純 ADR 類) / 全缺價 — 無訊號唔出欄
+        agg = kept.groupby(level=0).agg(
+            amount=("amount", "sum"), shares=("shares", "sum"))
+        vwap = agg["amount"] / agg["shares"]
+        cols[hk] = (vwap / u.reindex(vwap.index) - 1).reindex(prices.index)
+    print(f"[rbag-build] 東財腿: 跨境/場外剔 {n_leg_rows} 筆 + 冇價 {n_nopx_rows} 筆",
+          flush=True)
+    return _finalize(cols, prices)
+
+
+def build_ndd_prem(ev: pd.DataFrame, prices: pd.DataFrame, data_root: Path) -> pd.DataFrame:
+    """NDD 官方源 (天生場內): vwap = amount/shares, 無 containment。"""
+    unadj_dir = data_root / "futu_history" / "close_unadj"
+    cols: dict[str, pd.Series] = {}
+    for c in sorted(ev["code5"].unique()):
+        hk = "HK." + c
+        if hk not in prices.columns:
+            continue
+        fcsv = unadj_dir / f"HK.{c}.csv"
+        if not fcsv.exists():
+            print(f"[rbag-build] WARN unadj 缺 {fcsv.name} — NDD 股跳過 (冇分母)",
+                  flush=True)
+            continue
+        u = (pd.read_csv(fcsv, parse_dates=["time_key"])
+               .set_index("time_key")["close"].sort_index())
+        sub = ev[ev["code5"] == c].set_index("date")
+        vwap = sub["amount"] / sub["shares"]
+        cols[hk] = (vwap / u.reindex(sub.index) - 1).reindex(prices.index)
+    return _finalize(cols, prices)
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--data-root", type=Path, default=DEFAULT_DATA_ROOT,
+                    help=f"數據根 (預設 {DEFAULT_DATA_ROOT})")
+    ap.add_argument("--out-dir", type=Path, default=None,
+                    help="輸出目錄 (預設 <data-root>/factor_store; 測試指去 tmp)")
+    args = ap.parse_args(argv)
+    out_dir = args.out_dir if args.out_dir is not None else args.data_root / "factor_store"
+
+    ns_dir = args.data_root / "new_sources"
+    for gate_csv, gate_col, gate_fmt, gate_days in (
+        (ns_dir / "buyback_em_raw.csv", "TRADE_DATE", "%Y-%m-%d", STALE_DATA_DAYS_EM),
+        (ns_dir / "buyback_ndd_full.csv", "trading_date", "%d %B %Y", STALE_DATA_DAYS_NDD),
+    ):
+        stale = _raw_stale_reason(gate_csv, gate_col, gate_fmt, gate_days)
+        if stale:
+            print(f"[rbag-build] STALE-GATE: {stale} — 唔重建, panel 如實凍結等哨兵接手 [G53073]",
+                  flush=True)
+            return 1
+
+    em_ev = _load_em_events(ns_dir / "buyback_em_raw.csv")
+    ndd_ev = _load_ndd_events(args.data_root / "new_sources" / "buyback_ndd_full.csv")
+    if em_ev is None or ndd_ev is None:
+        return 1
+
+    prices = _load_universe()
+    em_panel = build_em_prem(em_ev, prices, args.data_root)
+    ndd_panel = build_ndd_prem(ndd_ev, prices, args.data_root)
+
+    _atomic_parquet(em_panel, out_dir / "rbag_prem.parquet")
+    _atomic_parquet(ndd_panel, out_dir / "rbag_prem_full.parquet")
+    print(f"[rbag-build] rbag_prem {em_panel.shape[0]}日 x {em_panel.shape[1]}股, "
+          f"max {em_panel.index.max().date()}; "
+          f"rbag_prem_full {ndd_panel.shape[0]}日 x {ndd_panel.shape[1]}股, "
+          f"max {ndd_panel.index.max().date()} → {out_dir}", flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

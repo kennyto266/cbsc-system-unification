@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""collect_earnings_report_dates.py — essa thesis: 業績公佈日爬蟲 (HKEX 披露易 titleSearch)。
+
+來源: https://www1.hkexnews.hk/search/titleSearchServlet.do (GET)
+  每股 stockId (prefix.do 查) + 無標題過濾 + rowRange 2000, 客戶端再篩「業績」關鍵詞。
+輸出: data/new_sources/earnings_report_dates_raw.csv
+  欄: stock_code, stock_id, notice_date, title, report_period (期末日, 由標題解析 Q 末月)
+      np_yoy, eps_actual 東財 RPT_HKF10_FN_MAININDICATOR (HOLDER_PROFIT_YOY, BASIC_EPS)
+面板: build_earnings_report_dates_panel.py → factor_store/np_report_date.parquet
+"""
+import csv
+import json
+import re
+import sys
+import time
+from pathlib import Path
+
+import requests
+
+BASE = Path(__file__).resolve().parent.parent
+RAW = BASE / "data" / "new_sources" / "earnings_report_dates_raw.csv"
+H = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "Referer": "https://www1.hkexnews.hk/search/titlesearch.xhtml",
+}
+
+# 業績公佈標題關鍵詞 (中英, 排除月報/翌日披露)
+PAT = re.compile(r"業績|中期報告|年度報告|全年業績|中期業績|第一季度|第三季度|三個月及|interim|annual results|quarterly results|final results", re.I)
+EXCL = re.compile(r"月報表|翌日披露|翌日報表|股東週年大會|補充|通告.*延| monthly return", re.I)
+# 期末月份 → 期末日
+PERIOD_PAT = re.compile(
+    r"二[零〇一二三四五六七八九]{2}年([一二三四五六七八九十]{2})月|20(\d{2})年(\d{1,2})月"
+)
+CN_NUM = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10, "十一": 11, "十二": 12}
+
+
+def stock_id(code, s=None):
+    s = s or requests.Session()
+    r = s.get(
+        "https://www1.hkexnews.hk/search/prefix.do",
+        params={"callback": "cb", "lang": "ZH", "type": "A", "name": code, "market": "SEHK"},
+        headers=H, timeout=20,
+    )
+    m = re.search(r"\((\{.*\})\)", r.text)
+    if not m:
+        return None
+    infos = json.loads(m.group(1)).get("stockInfo") or []
+    for it in infos:
+        if it.get("code") == code:
+            return it.get("stockId")
+    return None
+
+
+def search_notices(sid, s, frm="20190101", to="20260831"):
+    params = {
+        "sortDir": "0", "sortByOptions": "DateTime", "category": "0",
+        "market": "SEHK", "stockId": str(sid), "documentType": "-1",
+        "fromDate": frm, "toDate": to, "title": "", "searchType": "0",
+        "t1code": "-2", "t2Gcode": "-2", "t2code": "-2", "lang": "ZH", "rowRange": "3000",
+    }
+    r = s.get("https://www1.hkexnews.hk/search/titleSearchServlet.do", headers=H, params=params, timeout=40)
+    d = r.json()
+    return json.loads(d["result"]) if d.get("result") else []
+
+
+def parse_period(title):
+    """標題入面『截至二零二六年六月三十日止』→ 2026-06-30。"""
+    m = re.search(r"二[零〇一二三四五六七八九]{2}年([一二三四五六七八九十]{2})月([一二三四五六七八九十]{2}?)(?:十)?([一二三四五六七八九]?)日", title)
+    return None  # 月日中文轉換太易錯 — 期末日用東財 REPORT_DATE join, 唔靠標題
+
+
+def fetch_em_fundamentals(secucode, s):
+    r = s.get(
+        "https://datacenter.eastmoney.com/securities/api/data/v1/get",
+        params={
+            "reportName": "RPT_HKF10_FN_MAININDICATOR", "columns": "ALL",
+            "filter": f'(SECUCODE="{secucode}")', "pageNumber": 1, "pageSize": 100,
+            "sortTypes": "-1", "sortColumns": "REPORT_DATE", "source": "F10", "client": "PC",
+        }, headers={"User-Agent": "Mozilla/5.0"}, timeout=40,
+    )
+    return (r.json().get("result") or {}).get("data") or []
+
+
+def main():
+    codes = sys.argv[1:] or [
+        "00001", "00002", "00003", "00005", "00006", "00012", "00016", "00017", "00020",
+        "00027", "00066", "00175", "00241", "00268", "00285", "00291", "00388", "00688",
+        "00700", "00762", "00823", "00883", "00939", "00941", "00992", "01024", "01038",
+        "01088", "01109", "01211", "01299", "01801", "01810", "01876", "01928", "02013",
+        "02269", "02318", "02388", "02628", "02899", "03690", "06862", "09618", "09888",
+        "09988", "09992", "09999",
+    ]
+    s = requests.Session()
+    rows = []
+    for i, code in enumerate(codes):
+        try:
+            sid = stock_id(code, s)
+            if not sid:
+                print(f"{code}: no stockId", flush=True)
+                continue
+            hits = search_notices(sid, s)
+            kept = [
+                it for it in hits
+                if PAT.search(it.get("TITLE", "")) and not EXCL.search(it.get("TITLE", ""))
+            ]
+            # 東財基本面 (REPORT_DATE 期末 + YoY)
+            em = fetch_em_fundamentals(f"{code}.HK", s)
+            em_by_rd = {r["REPORT_DATE"][:10]: r for r in em if r.get("REPORT_DATE")}
+            for it in kept:
+                date_time = it.get("DATE_TIME", "")  # e.g. 12/08/2026 16:31
+                try:
+                    dd, mm, yy = date_time.split(" ")[0].split("/")
+                    notice = f"{yy}-{mm}-{dd}"
+                except Exception:
+                    continue
+                rows.append({
+                    "stock_code": code,
+                    "stock_id": sid,
+                    "notice_date": notice,
+                    "title": it.get("TITLE", ""),
+                })
+            print(f"{code} ({sid}): {len(kept)} earnings notices, em rows {len(em)}", flush=True)
+            time.sleep(1.0)
+        except Exception as e:
+            print(f"{code}: ERROR {e}", flush=True)
+            time.sleep(2.0)
+    RAW.parent.mkdir(parents=True, exist_ok=True)
+    with open(RAW, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=["stock_code", "stock_id", "notice_date", "title"])
+        w.writeheader()
+        w.writerows(rows)
+    print(f"TOTAL {len(rows)} rows -> {RAW}")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+"""a131_optimize.py — A131 貼現窗 regime 參數優化 (嚴格 IS-only tune → frozen OOS).
+
+鐵律 (防止 overfit 到 OOS):
+  1. 所有 (sma, holding) 組合只喺 IS (2021-2023) 評估
+  2. 揀 IS 表現最佳既 config (按 OOS-robust 準則: 高 IS Sharpe + 高 IS 勝率)
+  3. 呢個 config frozen, 喺 OOS (2024-2026) 測一次, 出一個誠實結果
+  4. 絕唔可以望 OOS 嚟揀 config (咁 = overfit)
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from datetime import datetime
+
+import kol_alpha_strategies as kol
+from kol_alpha_strategies import alpha_131, _load_factor_col, _regime_signal, extract_metrics
+from vbt_data import load_stock_close, FACTOR_STOCKS
+
+OUT = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports")
+SPLIT = "2024-01-01"
+
+SMAS = [30, 40, 50, 60, 70, 80, 90, 100, 120]
+HOLDINGS = [5, 7, 10, 14, 21]
+
+
+def run_alpha(close_stock, sma, holding):
+    """跑 A131 用指定 sma/holding 喺 close_stock 上, 返 Sharpe (None=無交易)."""
+    factor = _load_factor_col("discount_window.csv", "discount_window_usage")
+    if factor is None:
+        return None
+    pf = _regime_signal(close_stock, factor, sma=sma, holding=holding)
+    if pf is None or pf.trades.count() == 0:
+        return None
+    try:
+        s = pf.sharpe_ratio()
+        return float(s) if not np.isnan(s) else 0.0
+    except Exception:
+        return 0.0
+
+
+def main():
+    stocks = sorted(FACTOR_STOCKS)[:30]  # 30 股 (representative, 快)
+    print("=" * 70)
+    print("🔧 A131 貼現窗 regime — IS-only 參數優化")
+    print(f"  Grid: SMA {SMAS} × Holding {HOLDINGS} = {len(SMAS)*len(HOLDINGS)} configs")
+    print(f"  IS: <{SPLIT} (tune)  |  OOS: >={SPLIT} (frozen test)")
+    print(f"  股票: {len(stocks)} 隻")
+    print("=" * 70, flush=True)
+
+    # load + split
+    stock_data = {}
+    for s in stocks:
+        c = load_stock_close(s)
+        if c is None or len(c) < 400: continue
+        stock_data[s] = {"is": c[c.index < SPLIT], "oos": c[c.index >= SPLIT]}
+    print(f"有數據: {len(stock_data)} 隻", flush=True)
+
+    # Phase 1: IS grid search — 每個 config × 每隻股, 計 IS Sharpe
+    print(f"\n1️⃣ IS grid search ({len(SMAS)*len(HOLDINGS)} configs × {len(stock_data)} 股)...", flush=True)
+    is_matrix = []  # rows: {sma, holding, is_sharpe_mean, is_winrate, n}
+    for sma in SMAS:
+        for holding in HOLDINGS:
+            shs = []
+            for s, parts in stock_data.items():
+                sh = run_alpha(parts["is"], sma, holding)
+                if sh is not None:
+                    shs.append(sh)
+            if len(shs) < 5:
+                continue
+            is_mean = np.mean(shs)
+            is_winrate = (np.array(shs) > 0).mean() * 100
+            is_matrix.append({"sma": sma, "holding": holding,
+                              "is_mean": is_mean, "is_winrate": is_winrate,
+                              "is_med": np.median(shs), "n": len(shs)})
+    is_df = pd.DataFrame(is_matrix).sort_values("is_mean", ascending=False)
+    print(f"\n   IS top 8 configs (by IS mean Sharpe):", flush=True)
+    print(is_df.head(8).to_string(index=False), flush=True)
+
+    # 揀最佳 config: 用 IS mean + IS winrate 加權 (要 high mean 且廣泛有效)
+    # 準則: is_mean > median, 且 is_winrate 最高 (廣泛性優先, 防 single-stock overfit)
+    is_df["score"] = is_df["is_mean"] * 0.4 + is_df["is_winrate"] / 100 * 0.6
+    best = is_df.sort_values("score", ascending=False).iloc[0]
+    best_sma, best_hold = int(best["sma"]), int(best["holding"])
+    print(f"\n   🎯 選中 config (IS score 最高): SMA={best_sma}, holding={best_hold}")
+    print(f"      IS mean={best['is_mean']:.2f}  IS winrate={best['is_winrate']:.0f}%  IS median={best['is_med']:.2f}")
+
+    # Phase 2: frozen OOS test — 用 best config 跑 OOS, 呢個係唯一誠實結果
+    print(f"\n2️⃣ Frozen OOS test (SMA={best_sma}, holding={best_hold})...", flush=True)
+    oos_shs = []
+    for s, parts in stock_data.items():
+        sh = run_alpha(parts["oos"], best_sma, best_hold)
+        if sh is not None:
+            oos_shs.append((s, sh))
+    oos_arr = np.array([x[1] for x in oos_shs])
+    oos_mean = oos_arr.mean()
+    oos_med = np.median(oos_arr)
+    oos_pos = (oos_arr > 0.3).mean() * 100
+    print(f"   OOS mean={oos_mean:.2f}  median={oos_med:.2f}  pass>0.3={oos_pos:.0f}%")
+
+    # 完整 IS top vs OOS 對比 (睇邊個 config 係真係 generalize, 唔淨係 best)
+    print(f"\n3️⃣ IS top-5 configs 既 frozen OOS 對比 (generalize 檢查)...", flush=True)
+    print(f"   {'SMA':>4} {'hold':>4} {'IS_mean':>8} {'IS_win%':>7} | {'OOS_mean':>8} {'OOS_win%':>8} {'decay':>7}")
+    check = is_df.head(5)
+    for _, r in check.iterrows():
+        sma, hold = int(r["sma"]), int(r["holding"])
+        oos_shs2 = []
+        for s, parts in stock_data.items():
+            sh = run_alpha(parts["oos"], sma, hold)
+            if sh is not None:
+                oos_shs2.append(sh)
+        om = np.mean(oos_shs2) if oos_shs2 else 0
+        ow = (np.array(oos_shs2) > 0.3).mean() * 100 if oos_shs2 else 0
+        decay = (1 - om / r["is_mean"]) * 100 if r["is_mean"] != 0 else -99
+        print(f"   {sma:>4} {hold:>4} {r['is_mean']:>8.2f} {r['is_winrate']:>7.0f} | {om:>8.2f} {ow:>8.0f} {decay:>7.0f}%")
+
+    # 報告
+    print(f"\n{'='*70}")
+    print(f"📊 A131 優化結果")
+    print(f"{'='*70}")
+    print(f"  Best config (IS-selected): SMA={best_sma}, holding={best_hold}")
+    print(f"  IS:  mean={best['is_mean']:.2f}  winrate={best['is_winrate']:.0f}%")
+    print(f"  OOS: mean={oos_mean:.2f}  median={oos_med:.2f}  pass={oos_pos:.0f}%")
+    target = "✅ 達標 (OOS>1.0)" if oos_mean > 1.0 else ("🟢 真有效 (OOS>0.5)" if oos_mean > 0.5 else "🟡 一般")
+    print(f"  判斷: {target}")
+
+    # 存
+    OUT.mkdir(parents=True, exist_ok=True)
+    summary = pd.DataFrame([{
+        "best_sma": best_sma, "best_holding": best_hold,
+        "is_mean": best["is_mean"], "is_winrate": best["is_winrate"],
+        "oos_mean": oos_mean, "oos_median": oos_med, "oos_pass_pct": oos_pos,
+        "target_hit": oos_mean > 1.0, "date": datetime.now().isoformat(),
+    }])
+    summary.to_csv(OUT / "a131_optimization.csv", index=False)
+    is_df.to_csv(OUT / "a131_is_grid.csv", index=False)
+    print(f"\n報告: {OUT / 'a131_optimization.csv'}")
+
+
+if __name__ == "__main__":
+    main()

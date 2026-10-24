@@ -1,0 +1,252 @@
+# Rollback Framework Configuration
+# Phase 6: Enterprise-grade rollback capabilities
+
+# Version Rollback Manager Configuration
+version_rollback:
+  # Version storage settings
+  versions_directory: "versions"
+  max_versions_retained: 50
+  backup_timeout_seconds: 300
+  
+  # Rollback performance targets
+  max_rollback_time_seconds: 300      # 5 minutes
+  emergency_rollback_timeout_seconds: 30  # 30 seconds
+  
+  # Version integrity
+  checksum_verification: true
+  backup_compression: true
+  
+  # Cleanup settings
+  auto_cleanup_old_versions: true
+  min_stable_versions_retained: 5
+  version_retention_days: 90
+
+# Feature Flags Manager Configuration
+feature_flags:
+  # Hot-reload settings
+  config_file_path: "config/feature_flags.yaml"
+  reload_interval_seconds: 5
+  
+  # Emergency settings
+  emergency_disable_all_on_failure: true
+  emergency_cooldown_minutes: 15
+  
+  # Rollout strategies
+  default_rollout_strategy: "gradual"
+  max_rollout_percentage_per_step: 25
+  
+  # Monitoring
+  enable_evaluation_metrics: true
+  log_flag_evaluations: false
+
+# Configuration Manager Configuration
+configuration_manager:
+  # Configuration paths
+  config_root_directory: "config"
+  backup_directory: "config/backups"
+  
+  # Environment settings
+  default_environment: "production"
+  supported_environments:
+    - "development"
+    - "testing"
+    - "staging"
+    - "production"
+  
+  # Auto-backup settings
+  automatic_backup_enabled: true
+  backup_on_change: true
+  max_snapshots: 100
+  
+  # Validation settings
+  validation_enabled: true
+  strict_validation_in_production: true
+  schema_validation_enabled: true
+  
+  # File monitoring
+  config_watch_interval_seconds: 5
+  hot_reload_enabled: true
+
+# Emergency Recovery System Configuration
+emergency_recovery:
+  # Monitoring settings
+  config_file_path: "config/emergency_recovery_config.json"
+  monitoring_interval_seconds: 10
+  
+  # Emergency timeouts
+  emergency_timeout_seconds: 30
+  verification_timeout_seconds: 60
+  
+  # Cooldown and rate limiting
+  emergency_cooldown_minutes: 15
+  max_emergencies_per_hour: 5
+  
+  # Health metrics
+  default_metrics:
+    - name: "cpu_usage"
+      threshold_warning: 80.0
+      threshold_critical: 90.0
+      threshold_emergency: 95.0
+      unit: "%"
+      higher_is_better: false
+      measurement_interval: 30
+    
+    - name: "memory_usage"
+      threshold_warning: 80.0
+      threshold_critical: 90.0
+      threshold_emergency: 95.0
+      unit: "%"
+      higher_is_better: false
+      measurement_interval: 30
+    
+    - name: "disk_usage"
+      threshold_warning: 85.0
+      threshold_critical: 95.0
+      threshold_emergency: 98.0
+      unit: "%"
+      higher_is_better: false
+      measurement_interval: 60
+    
+    - name: "error_rate"
+      threshold_warning: 5.0
+      threshold_critical: 10.0
+      threshold_emergency: 20.0
+      unit: "%"
+      higher_is_better: false
+      measurement_interval: 30
+    
+    - name: "response_time"
+      threshold_warning: 2000.0
+      threshold_critical: 5000.0
+      threshold_emergency: 10000.0
+      unit: "ms"
+      higher_is_better: false
+      measurement_interval: 30
+
+# Deployment Safety Net Configuration
+deployment_safety_net:
+  # General settings
+  default_environment: "production"
+  default_validation_level: "production"
+  
+  # Stage gate timeouts
+  stage_gate_timeouts:
+    validation: 15        # minutes
+    pre_deployment: 10
+    deployment: 30
+    post_deployment: 15
+    verification: 20
+  
+  # Safety thresholds
+  max_deployment_time_minutes: 60
+  max_validation_failures: 3
+  critical_error_threshold: 1
+  
+  # Resource checks
+  min_disk_space_percent: 20
+  max_memory_usage_percent: 90
+  max_cpu_usage_percent: 80
+
+# Alert System Configuration
+alert_system:
+  # Email alerts
+  email_enabled: true
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  smtp_use_tls: true
+  smtp_username: "alerts@company.com"
+  
+  # Webhook alerts
+  webhook_enabled: true
+  webhook_url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+  webhook_timeout_seconds: 10
+  
+  # Alert levels
+  alert_levels:
+    info:
+      enabled: true
+      email: false
+      webhook: false
+    
+    warning:
+      enabled: true
+      email: true
+      webhook: true
+    
+    critical:
+      enabled: true
+      email: true
+      webhook: true
+      retry_attempts: 3
+    
+    emergency:
+      enabled: true
+      email: true
+      webhook: true
+      retry_attempts: 5
+      immediate_delivery: true
+
+# Audit and Logging Configuration
+audit_logging:
+  # Audit trail settings
+  audit_directory: "logs/audit"
+  max_audit_files: 365  # Keep 1 year of daily audit files
+  audit_rotation: "daily"
+  
+  # Logging levels
+  console_logging_level: "INFO"
+  file_logging_level: "DEBUG"
+  
+  # Log format
+  log_format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # Performance logging
+  enable_performance_logging: true
+  slow_operation_threshold_ms: 1000
+
+# Integration Settings
+integrations:
+  # Monitoring systems
+  prometheus_enabled: false
+  prometheus_port: 9090
+  
+  # Health check endpoints
+  health_check_endpoint: "/health"
+  readiness_endpoint: "/ready"
+  liveness_endpoint: "/live"
+  
+  # External systems
+  external_monitoring_enabled: false
+  custom_metrics_enabled: false
+
+# Development and Testing
+development:
+  # Testing settings
+  enable_test_mode: false
+  mock_external_dependencies: false
+  
+  # Debug settings
+  debug_mode: false
+  verbose_logging: false
+  
+  # Performance testing
+  enable_performance_tests: false
+  load_test_duration_seconds: 300
+
+# Production Overrides
+production:
+  # Strict settings
+  strict_validation: true
+  enforce_all_checks: true
+  
+  # Performance optimizations
+  optimize_for_performance: true
+  enable_monitoring: true
+  
+  # Security
+  enable_security_checks: true
+  validate_ssl_certificates: true
+  
+  # Reliability
+  enable_auto_recovery: true
+  enable_circuit_breaker: true

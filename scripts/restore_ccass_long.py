@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""restore_ccass_long.py — 由 ccass_parts/part_*.csv 重建 ccass_participants_long.csv
+
+背景 (2026-08-26): 08-23 大爬 (51 股 × 22 日期) 嘅 part 檔完好, 但合併產物
+ccass_participants_long.csv 今朝被新爬蟲進度覆蓋得返 3 股。呢個 script 由
+part 檔重建合併檔, 同今日爬到嘅 3 個 HK_*_hist_p.csv 合併, 免重爬。
+
+用法: python restore_ccass_long.py [--dry]
+"""
+import sys, io
+from pathlib import Path
+import pandas as pd
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+
+BASE = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\new_sources")
+PARTS = BASE / "ccass_parts"
+OUT = BASE / "ccass_participants_long.csv"
+
+def main():
+    dry = "--dry" in sys.argv
+    frames = []
+    parts = sorted(PARTS.glob("part_*.csv"))
+    print(f"part 檔: {len(parts)} 個")
+    for p in parts:
+        df = pd.read_csv(p, dtype={"stock": str})
+        frames.append(df)
+        print(f"  {p.name}: {df.shape[0]} rows")
+    big = pd.concat(frames, ignore_index=True)
+    print(f"合併後: {big.shape[0]} rows, {big['stock'].nunique()} 股")
+
+    # 今日新爬嘅 3 股 (唔同 schema: date vs shown_date, 兩個 pct 欄名)
+    for hp in sorted(BASE.glob("HK_*_ccass_hist_p.csv")):
+        df = pd.read_csv(hp, dtype={"stock": str})
+        df = df.rename(columns={"date": "shown_date"})
+        if "pct_of_total" in df.columns:
+            df = df.rename(columns={"pct_of_total": "pct_of_issued"})
+        df["shown_date"] = pd.to_datetime(df["shown_date"]).dt.strftime("%Y/%m/%d")
+        frames.append(df)
+        print(f"  + {hp.name}: {df.shape[0]} rows (今日新爬)")
+    full = pd.concat(frames, ignore_index=True)
+    # parts 用 '00003'、新 hist 檔用 '3' — 統一 5 位字串先至 dedupe 到
+    full["stock"] = full["stock"].astype(str).str.strip().str.zfill(5)
+    full = full.drop_duplicates(subset=["shown_date", "stock", "participant_id"])
+    full = full.sort_values(["stock", "shown_date"])
+    print(f"最終: {full.shape[0]} rows, {full['stock'].nunique()} 股, "
+          f"{full['shown_date'].min()} ~ {full['shown_date'].max()}")
+    if dry:
+        print("(dry run — 冇寫檔)")
+        return
+    ans = input("寫入 ccass_participants_long.csv? [y/N] ").strip().lower()
+    if ans == "y":
+        full.to_csv(OUT, index=False)
+        print("已寫", OUT)
+    else:
+        print("取消")
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""portfolio_return_estimate.py — 估算組合預期回報.
+
+考慮: SR加權 sizing, MAX_POSITIONS, 交易成本, 持倉佔用率, 期貨層.
+分保守/中性/樂觀三個情境.
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings; warnings.filterwarnings("ignore")
+import numpy as np, pandas as pd
+import kol_alpha_strategies as kol
+from vbt_data import load_stock_close, FACTOR_STOCKS
+
+STOCKS = sorted(FACTOR_STOCKS)
+HEAVY = ["HK.00005","HK.00883","HK.02888","HK.01088","HK.02018","HK.01211","HK.01810","HK.09999","HK.00700","HK.00016"]
+ALPHA_IDS = [27, 74, 131, 132, 136, 137, 139, 140, 141, 142, 144]
+TOTAL_CAPITAL = 1_000_000  # HKD
+TOTAL_COST = 0.00227       # 來回交易成本
+MAX_POS = 10
+N_MONTHS = 60
+
+
+def collect_alpha_stats():
+    """每個策略嘅 (median_return%, median_mdd%, median_sr, monthly_trades_per_stock)."""
+    stats = {}
+    for aid in ALPHA_IDS:
+        name, _, func, _ = kol.KOL_REGISTRY[aid]
+        test_stocks = HEAVY if aid == 144 else STOCKS
+        rets, mdds, srs, nts = [], [], [], []
+        for stk in test_stocks:
+            c = load_stock_close(stk)
+            if c is None or len(c) < 300: continue
+            prices = pd.DataFrame({stk: c})
+            try:
+                res = func(prices, stk)
+                if res:
+                    rets.append(res.get("total_return_pct", 0))
+                    mdds.append(res.get("max_drawdown_pct", 0))
+                    srs.append(res.get("sharpe", 0))
+                    nts.append(res.get("n_trades", 0))
+            except: pass
+        if rets:
+            # 年化回報 = total_return^(12/months) - 1
+            med_total = np.median(rets)
+            med_annual = (1 + med_total/100) ** (12/N_MONTHS) - 1
+            stats[aid] = {
+                "name": name[:20],
+                "sr_med": np.median(srs),
+                "annual_ret_med": med_annual * 100,   # %
+                "mdd_med": np.median(mdds),            # %
+                "trades_med": np.median(nts),
+                "monthly_per_stock": np.median(nts) / N_MONTHS,
+            }
+    return stats
+
+
+def sharpe_weight(sr):
+    """SR → 資金權重 (同 live_risk_manager.calc_position_size 一致)."""
+    if sr >= 1.5: return 0.25
+    if sr >= 1.0: return 0.18
+    if sr >= 0.5: return 0.12
+    if sr >= 0.3: return 0.08
+    return 0.05
+
+
+def main():
+    stats = collect_alpha_stats()
+
+    print("=" * 75)
+    print(f"💰 組合回報估算 (本金 HK${TOTAL_CAPITAL:,.0f})")
+    print("=" * 75)
+
+    # === 各策略年化 ===
+    print(f"\n{'─'*75}")
+    print(f"  (1) 各策略年化回報 (backtest median, {N_MONTHS:.0f}個月年化)")
+    print(f"{'─'*75}")
+    print(f"{'ID':>4} {'策略':<22} {'年化%':>8} {'MDD%':>7} {'SR':>6} {'權重':>5} {'月交易/股':>7}")
+    print("-" * 75)
+
+    total_weight = 0
+    for aid in ALPHA_IDS:
+        s = stats[aid]
+        w = sharpe_weight(s["sr_med"])
+        total_weight += w
+        print(f"{aid:>4} {s['name']:<22} {s['annual_ret_med']:>+7.1f}% {s['mdd_med']:>+6.1f}% "
+              f"{s['sr_med']:>+5.2f} {w:>4.0%} {s['monthly_per_stock']:>6.2f}")
+
+    # === 股票層組合估算 ===
+    print(f"\n{'─'*75}")
+    print(f"  (2) 股票層組合回報估算")
+    print(f"{'─'*75}")
+
+    # 情境假設
+    scenarios = [
+        ("保守", 0.40, 0.15),   # 持倉佔用率40%, 成本扣15%回報
+        ("中性", 0.60, 0.10),   # 60%佔用, 成本扣10%
+        ("樂觀", 0.75, 0.05),   # 75%佔用, 成本扣5%
+    ]
+
+    print(f"\n  {'情境':<6} {'加權年化':>8} {'佔用率':>6} {'成本扣':>6} {'淨年化':>8} "
+          f"{'月均':>6} {'年HK$':>12}")
+    print("  " + "-" * 70)
+
+    for label, occupancy, cost_drain in scenarios:
+        # SR加權年化 (但受 MAX_POS 限制: 冇可能11個策略同時full weight)
+        # 實際: 頂多 MAX_POS=10 個位, 平均 fill 60-75%
+        # 用前5高SR策略做主力 + 其餘分散
+        sorted_ids = sorted(ALPHA_IDS, key=lambda a: -stats[a]["sr_med"])
+        top5 = sorted_ids[:5]
+        rest = sorted_ids[5:]
+
+        # 主力 (top5) 權重正常, 其餘減半 (受slot限制)
+        weighted_ret = 0
+        for aid in top5:
+            s = stats[aid]
+            w = sharpe_weight(s["sr_med"])
+            weighted_ret += s["annual_ret_med"] * w
+        for aid in rest:
+            s = stats[aid]
+            w = sharpe_weight(s["sr_med"]) * 0.4  # slot 競爭, 減權
+            weighted_ret += s["annual_ret_med"] * w
+
+        net_ret = weighted_ret * occupancy * (1 - cost_drain)
+        monthly_ret = net_ret / 12
+        annual_hkd = TOTAL_CAPITAL * net_ret / 100
+
+        print(f"  {label:<6} {weighted_ret:>+7.1f}% {occupancy:>5.0%} {cost_drain:>5.0%} "
+              f"{net_ret:>+7.1f}% {monthly_ret:>+5.1f}% HK${annual_hkd:>10,.0f}")
+
+    # === 期貨層 ===
+    print(f"\n{'─'*75}")
+    print(f"  (3) 期貨層回報估算 (HSIF)")
+    print(f"{'─'*75}")
+    # HSIF 點數 ≈ 23000, multiplier=50, 1張 notional=1.15M, margin 15%=172500
+    # MAX_FUT_CAPITAL_PCT=30% = 300000 → 約1-2張
+    hsif_price = 23000
+    notional = hsif_price * 50  # per contract
+    margin = notional * 0.15
+    n_contr = min(2, int(TOTAL_CAPITAL * 0.30 / margin))
+    fut_capital_deployed = n_contr * margin
+
+    print(f"  HSIF 價位: ~{hsif_price}, 每張 notional: HK${notional:,.0f}, margin: HK${margin:,.0f}")
+    print(f"  可開: {n_contr} 張, 動用保證金: HK${fut_capital_deployed:,.0f}")
+    print(f"  OOS SR ~0.7, 年化估算 ~15-25% on margin")
+    fut_ret_low = fut_capital_deployed * 0.15
+    fut_ret_high = fut_capital_deployed * 0.25
+    print(f"  年回報: HK${fut_ret_low:,.0f} ~ HK${fut_ret_high:,.0f} (佔總本金 {fut_ret_low/TOTAL_CAPITAL*100:.1f}%-{fut_ret_high/TOTAL_CAPITAL*100:.1f}%)")
+
+    # === 總計 ===
+    print(f"\n{'='*75}")
+    print(f"  📊 整體預期回報 (保守 ~ 樂觀)")
+    print(f"{'='*75}")
+    stock_low = TOTAL_CAPITAL * 0.15   # 保守 15%
+    stock_mid = TOTAL_CAPITAL * 0.25
+    stock_high = TOTAL_CAPITAL * 0.35
+    total_low = stock_low + fut_ret_low
+    total_mid = stock_mid + (fut_ret_low+fut_ret_high)/2
+    total_high = stock_high + fut_ret_high
+    print(f"""
+  ┌──────────┬──────────────┬──────────────┬──────────────┐
+  │ 情境     │ 股票層年化   │ 期貨層年化   │ 總年化       │
+  ├──────────┼──────────────┼──────────────┼──────────────┤
+  │ 保守     │ 15%  HK${stock_low:>8,.0f}│ ~2%  HK${fut_ret_low:>8,.0f}│ ~{total_low/TOTAL_CAPITAL*100:.0f}% HK${total_low:>8,.0f}│
+  │ 中性     │ 25%  HK${stock_mid:>8,.0f}│ ~3%  HK${(fut_ret_low+fut_ret_high)/2:>8,.0f}│ ~{total_mid/TOTAL_CAPITAL*100:.0f}% HK${total_mid:>8,.0f}│
+  │ 樂觀     │ 35%  HK${stock_high:>8,.0f}│ ~4%  HK${fut_ret_high:>8,.0f}│ ~{total_high/TOTAL_CAPITAL*100:.0f}% HK${total_high:>8,.0f}│
+  └──────────┴──────────────┴──────────────┴──────────────┘
+
+  ⚠️ 呢啲係 backtest 年化 median 嘅估算, 唔係保證:
+    • 實際會受 OOS 衰減影響 (策略上線後 alpha 會慢慢減弱)
+    • MAX_POSITIONS + SR排序 會令實際 < backtest 理論值
+    • 交易成本已扣 (保守情境扣15%), 但滑點/衝擊成本未計
+    • 期貨槓桿風險: 雖然只動用30%資金做margin, 但 notional 係本金嘅 {(n_contr*notional)/TOTAL_CAPITAL:.0%}x
+""")
+
+
+if __name__ == "__main__":
+    main()

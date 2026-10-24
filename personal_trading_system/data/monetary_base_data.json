@@ -1,0 +1,981 @@
+{
+  "result": {
+    "records": [
+      {
+        "date": "2025-09-01 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1817875.11
+      },
+      {
+        "date": "2025-09-01 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 270562.09
+      },
+      {
+        "date": "2025-09-01 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1528788.96
+      },
+      {
+        "date": "2025-09-02 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1828437.29
+      },
+      {
+        "date": "2025-09-02 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 273548.23
+      },
+      {
+        "date": "2025-09-02 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1506775.65
+      },
+      {
+        "date": "2025-09-03 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1792373.88
+      },
+      {
+        "date": "2025-09-03 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 272324.43
+      },
+      {
+        "date": "2025-09-03 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1543750.54
+      },
+      {
+        "date": "2025-09-04 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1835463.58
+      },
+      {
+        "date": "2025-09-04 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 272606.68
+      },
+      {
+        "date": "2025-09-04 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1535119.66
+      },
+      {
+        "date": "2025-09-05 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1767754.65
+      },
+      {
+        "date": "2025-09-05 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 272144.66
+      },
+      {
+        "date": "2025-09-05 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1527312.61
+      },
+      {
+        "date": "2025-09-08 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1818280.61
+      },
+      {
+        "date": "2025-09-08 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 263940.14
+      },
+      {
+        "date": "2025-09-08 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1538898.27
+      },
+      {
+        "date": "2025-09-09 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1779211.97
+      },
+      {
+        "date": "2025-09-09 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 271410.03
+      },
+      {
+        "date": "2025-09-09 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1541243.51
+      },
+      {
+        "date": "2025-09-10 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1797901.65
+      },
+      {
+        "date": "2025-09-10 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 263327.24
+      },
+      {
+        "date": "2025-09-10 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1506075.45
+      },
+      {
+        "date": "2025-09-11 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1748523.98
+      },
+      {
+        "date": "2025-09-11 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 273857.94
+      },
+      {
+        "date": "2025-09-11 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1509604.08
+      },
+      {
+        "date": "2025-09-12 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1809755.31
+      },
+      {
+        "date": "2025-09-12 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 272935.9
+      },
+      {
+        "date": "2025-09-12 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1528399.0
+      },
+      {
+        "date": "2025-09-15 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1793009.22
+      },
+      {
+        "date": "2025-09-15 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 272980.74
+      },
+      {
+        "date": "2025-09-15 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1548263.32
+      },
+      {
+        "date": "2025-09-16 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1796209.38
+      },
+      {
+        "date": "2025-09-16 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 270468.83
+      },
+      {
+        "date": "2025-09-16 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1537990.7
+      },
+      {
+        "date": "2025-09-17 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1783981.5
+      },
+      {
+        "date": "2025-09-17 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 272459.08
+      },
+      {
+        "date": "2025-09-17 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1520264.74
+      },
+      {
+        "date": "2025-09-18 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1819019.31
+      },
+      {
+        "date": "2025-09-18 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 271976.57
+      },
+      {
+        "date": "2025-09-18 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1525150.77
+      },
+      {
+        "date": "2025-09-19 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1787966.51
+      },
+      {
+        "date": "2025-09-19 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 270561.43
+      },
+      {
+        "date": "2025-09-19 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1507169.25
+      },
+      {
+        "date": "2025-09-22 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1821118.06
+      },
+      {
+        "date": "2025-09-22 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 267837.84
+      },
+      {
+        "date": "2025-09-22 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1517895.57
+      },
+      {
+        "date": "2025-09-23 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1776641.01
+      },
+      {
+        "date": "2025-09-23 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 263971.22
+      },
+      {
+        "date": "2025-09-23 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1531786.72
+      },
+      {
+        "date": "2025-09-24 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1787353.33
+      },
+      {
+        "date": "2025-09-24 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 269749.07
+      },
+      {
+        "date": "2025-09-24 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1551768.71
+      },
+      {
+        "date": "2025-09-25 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1791185.29
+      },
+      {
+        "date": "2025-09-25 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 268782.24
+      },
+      {
+        "date": "2025-09-25 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1523513.19
+      },
+      {
+        "date": "2025-09-26 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1830980.19
+      },
+      {
+        "date": "2025-09-26 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 270974.27
+      },
+      {
+        "date": "2025-09-26 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1553494.51
+      },
+      {
+        "date": "2025-09-29 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1787736.02
+      },
+      {
+        "date": "2025-09-29 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 268226.04
+      },
+      {
+        "date": "2025-09-29 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1528702.43
+      },
+      {
+        "date": "2025-09-30 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1791124.16
+      },
+      {
+        "date": "2025-09-30 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 274974.4
+      },
+      {
+        "date": "2025-09-30 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1529148.56
+      },
+      {
+        "date": "2025-10-01 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1802229.18
+      },
+      {
+        "date": "2025-10-01 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 267642.67
+      },
+      {
+        "date": "2025-10-01 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1553602.51
+      },
+      {
+        "date": "2025-10-02 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1764494.69
+      },
+      {
+        "date": "2025-10-02 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 271709.35
+      },
+      {
+        "date": "2025-10-02 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1520128.03
+      },
+      {
+        "date": "2025-10-03 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1797519.69
+      },
+      {
+        "date": "2025-10-03 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 271688.28
+      },
+      {
+        "date": "2025-10-03 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1495652.82
+      },
+      {
+        "date": "2025-10-06 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1805073.95
+      },
+      {
+        "date": "2025-10-06 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 263599.02
+      },
+      {
+        "date": "2025-10-06 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1526385.9
+      },
+      {
+        "date": "2025-10-07 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1790696.1
+      },
+      {
+        "date": "2025-10-07 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 271961.4
+      },
+      {
+        "date": "2025-10-07 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1542040.54
+      },
+      {
+        "date": "2025-10-08 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1811209.12
+      },
+      {
+        "date": "2025-10-08 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 268771.37
+      },
+      {
+        "date": "2025-10-08 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1518843.15
+      },
+      {
+        "date": "2025-10-09 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1797470.91
+      },
+      {
+        "date": "2025-10-09 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 273073.7
+      },
+      {
+        "date": "2025-10-09 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1559410.11
+      },
+      {
+        "date": "2025-10-10 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1772677.29
+      },
+      {
+        "date": "2025-10-10 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 269889.43
+      },
+      {
+        "date": "2025-10-10 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1558049.16
+      },
+      {
+        "date": "2025-10-13 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1821584.58
+      },
+      {
+        "date": "2025-10-13 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 271436.73
+      },
+      {
+        "date": "2025-10-13 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1535422.0
+      },
+      {
+        "date": "2025-10-14 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1830471.21
+      },
+      {
+        "date": "2025-10-14 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 267222.67
+      },
+      {
+        "date": "2025-10-14 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1530412.57
+      },
+      {
+        "date": "2025-10-15 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1828566.94
+      },
+      {
+        "date": "2025-10-15 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 269985.65
+      },
+      {
+        "date": "2025-10-15 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1540585.52
+      },
+      {
+        "date": "2025-10-16 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1831377.22
+      },
+      {
+        "date": "2025-10-16 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 271008.88
+      },
+      {
+        "date": "2025-10-16 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1518275.78
+      },
+      {
+        "date": "2025-10-17 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1799177.25
+      },
+      {
+        "date": "2025-10-17 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 272569.63
+      },
+      {
+        "date": "2025-10-17 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1495440.82
+      },
+      {
+        "date": "2025-10-20 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1811601.92
+      },
+      {
+        "date": "2025-10-20 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 264832.2
+      },
+      {
+        "date": "2025-10-20 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1530990.19
+      },
+      {
+        "date": "2025-10-21 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1793901.28
+      },
+      {
+        "date": "2025-10-21 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 270366.07
+      },
+      {
+        "date": "2025-10-21 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1506874.51
+      },
+      {
+        "date": "2025-10-22 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1803106.95
+      },
+      {
+        "date": "2025-10-22 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 269575.83
+      },
+      {
+        "date": "2025-10-22 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1502424.36
+      },
+      {
+        "date": "2025-10-23 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1787529.16
+      },
+      {
+        "date": "2025-10-23 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 272804.6
+      },
+      {
+        "date": "2025-10-23 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1542892.71
+      },
+      {
+        "date": "2025-10-24 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1782149.87
+      },
+      {
+        "date": "2025-10-24 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 271041.87
+      },
+      {
+        "date": "2025-10-24 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1535988.73
+      },
+      {
+        "date": "2025-10-27 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1810954.54
+      },
+      {
+        "date": "2025-10-27 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 273488.16
+      },
+      {
+        "date": "2025-10-27 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1556269.46
+      },
+      {
+        "date": "2025-10-28 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1787022.03
+      },
+      {
+        "date": "2025-10-28 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 271426.32
+      },
+      {
+        "date": "2025-10-28 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1526916.02
+      },
+      {
+        "date": "2025-10-29 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1782093.7
+      },
+      {
+        "date": "2025-10-29 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 272047.42
+      },
+      {
+        "date": "2025-10-29 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1555939.56
+      },
+      {
+        "date": "2025-10-30 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1798773.71
+      },
+      {
+        "date": "2025-10-30 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 274710.31
+      },
+      {
+        "date": "2025-10-30 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1515619.55
+      },
+      {
+        "date": "2025-10-31 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1818851.03
+      },
+      {
+        "date": "2025-10-31 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 272242.65
+      },
+      {
+        "date": "2025-10-31 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1526879.11
+      },
+      {
+        "date": "2025-11-03 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1799660.9
+      },
+      {
+        "date": "2025-11-03 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 262422.53
+      },
+      {
+        "date": "2025-11-03 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1503080.4
+      },
+      {
+        "date": "2025-11-04 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1784224.77
+      },
+      {
+        "date": "2025-11-04 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 267870.16
+      },
+      {
+        "date": "2025-11-04 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1557005.48
+      },
+      {
+        "date": "2025-11-05 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1778862.22
+      },
+      {
+        "date": "2025-11-05 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 269768.52
+      },
+      {
+        "date": "2025-11-05 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1539299.29
+      },
+      {
+        "date": "2025-11-06 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1809191.17
+      },
+      {
+        "date": "2025-11-06 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 266687.86
+      },
+      {
+        "date": "2025-11-06 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1543391.21
+      },
+      {
+        "date": "2025-11-07 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1788584.47
+      },
+      {
+        "date": "2025-11-07 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 266148.35
+      },
+      {
+        "date": "2025-11-07 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1548315.43
+      },
+      {
+        "date": "2025-11-10 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1825475.51
+      },
+      {
+        "date": "2025-11-10 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 272309.98
+      },
+      {
+        "date": "2025-11-10 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1562162.05
+      },
+      {
+        "date": "2025-11-11 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1767817.63
+      },
+      {
+        "date": "2025-11-11 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 272231.96
+      },
+      {
+        "date": "2025-11-11 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1528773.97
+      },
+      {
+        "date": "2025-11-12 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1784890.25
+      },
+      {
+        "date": "2025-11-12 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 274713.42
+      },
+      {
+        "date": "2025-11-12 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1510397.66
+      },
+      {
+        "date": "2025-11-13 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1797543.43
+      },
+      {
+        "date": "2025-11-13 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 272184.09
+      },
+      {
+        "date": "2025-11-13 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1548852.05
+      },
+      {
+        "date": "2025-11-14 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1770221.96
+      },
+      {
+        "date": "2025-11-14 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 265044.71
+      },
+      {
+        "date": "2025-11-14 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1527888.8
+      },
+      {
+        "date": "2025-11-17 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1792922.1
+      },
+      {
+        "date": "2025-11-17 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 268055.83
+      },
+      {
+        "date": "2025-11-17 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1506987.92
+      },
+      {
+        "date": "2025-11-18 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1827101.27
+      },
+      {
+        "date": "2025-11-18 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 271599.3
+      },
+      {
+        "date": "2025-11-18 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1525416.03
+      },
+      {
+        "date": "2025-11-19 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1804918.21
+      },
+      {
+        "date": "2025-11-19 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 274343.59
+      },
+      {
+        "date": "2025-11-19 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1556542.7
+      },
+      {
+        "date": "2025-11-20 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1816539.12
+      },
+      {
+        "date": "2025-11-20 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 269305.84
+      },
+      {
+        "date": "2025-11-20 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1522928.98
+      },
+      {
+        "date": "2025-11-21 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1797636.76
+      },
+      {
+        "date": "2025-11-21 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 273779.06
+      },
+      {
+        "date": "2025-11-21 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1532809.02
+      },
+      {
+        "date": "2025-11-24 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1786080.62
+      },
+      {
+        "date": "2025-11-24 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 264321.21
+      },
+      {
+        "date": "2025-11-24 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1519788.97
+      },
+      {
+        "date": "2025-11-25 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1798062.56
+      },
+      {
+        "date": "2025-11-25 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 268556.26
+      },
+      {
+        "date": "2025-11-25 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1526326.6
+      },
+      {
+        "date": "2025-11-26 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1787981.32
+      },
+      {
+        "date": "2025-11-26 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 268864.06
+      },
+      {
+        "date": "2025-11-26 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1525515.77
+      },
+      {
+        "date": "2025-11-27 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1815877.98
+      },
+      {
+        "date": "2025-11-27 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 269329.93
+      },
+      {
+        "date": "2025-11-27 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1511604.6
+      },
+      {
+        "date": "2025-11-28 16:36:06.381811",
+        "metric": "monetary_base",
+        "value": 1803368.68
+      },
+      {
+        "date": "2025-11-28 16:36:06.381811",
+        "metric": "notes_coins",
+        "value": 276910.35
+      },
+      {
+        "date": "2025-11-28 16:36:06.381811",
+        "metric": "banking_system_reserves",
+        "value": 1541099.6
+      }
+    ]
+  }
+}

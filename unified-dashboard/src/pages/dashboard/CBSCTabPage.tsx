@@ -1,0 +1,285 @@
+/**
+ * CBSC 牛熊证监控标签页
+ * CBSC Bull/Bear Contract Monitoring Tab Page
+ *
+ * 3 個 tab：
+ * - 市場總覽：CBSC 牛熊證即時監控
+ * - 深度分析：資金流向（大戶手影）+ 即時報價
+ * - 排行榜：藍籌股實時排行（漲跌幅、成交量）
+ */
+
+import React, { useState, useEffect } from 'react';
+import { Tabs, Table, Card, Spin, Empty, Tag, Row, Col, Statistic } from 'antd';
+import {
+  DashboardOutlined,
+  BarChartOutlined,
+  TrophyOutlined
+} from '@ant-design/icons';
+import CBSCDashboard from '../../components/cbsc/CBSCDashboard';
+import { useTranslation } from 'react-i18next';
+
+const API_BASE = 'http://localhost:3006/api';
+
+// ============================================================
+// 深度分析 — 資金流向 + 即時報價
+// ============================================================
+interface FlowRecord {
+  date: string;
+  in_flow: number;
+  super_in_flow: number;
+  big_in_flow: number;
+  mid_in_flow: number;
+  sml_in_flow: number;
+}
+
+interface QuoteRecord {
+  code: string;
+  name: string;
+  last_price: number;
+  change_percent: number;
+  volume: number;
+  turnover: number;
+  pe_ratio?: number;
+}
+
+const AnalysisTab: React.FC = () => {
+  const [symbol, setSymbol] = useState('00700');
+  const [flow, setFlow] = useState<FlowRecord[]>([]);
+  const [quote, setQuote] = useState<QuoteRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      fetch(`${API_BASE}/unified/capital-flow/${symbol}?days=20`).then(r => r.json()),
+      fetch(`${API_BASE}/unified/ohlcv/${symbol}?days=1`).then(r => r.json()),
+    ]).then(([flowData, ohlcvData]) => {
+      setFlow(flowData.data || []);
+      if (ohlcvData.data && ohlcvData.data.length > 0) {
+        const r = ohlcvData.data[0];
+        setQuote({
+          code: symbol,
+          name: symbol,
+          last_price: r.close,
+          change_percent: r.close && r.open ? (r.close / r.open - 1) * 100 : 0,
+          volume: r.volume || 0,
+          turnover: r.turnover || 0,
+          pe_ratio: r.pe_ratio,
+        });
+      }
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [symbol]);
+
+  const flowColumns = [
+    { title: '日期', dataIndex: 'date', key: 'date', width: 110, render: (v: string) => v?.slice(0, 10) },
+    { title: '總流入', dataIndex: 'in_flow', key: 'in_flow', align: 'right' as const,
+      render: (v: number) => <span style={{ color: v >= 0 ? '#00ff88' : '#ff3366' }}>{v ? (v / 1e8).toFixed(2) + 'B' : '-'}</span> },
+    { title: '超大單', dataIndex: 'super_in_flow', key: 'super_in_flow', align: 'right' as const,
+      render: (v: number) => <span style={{ color: v >= 0 ? '#00ff88' : '#ff3366' }}>{v ? (v / 1e8).toFixed(2) + 'B' : '-'}</span> },
+    { title: '大單', dataIndex: 'big_in_flow', key: 'big_in_flow', align: 'right' as const,
+      render: (v: number) => <span style={{ color: v >= 0 ? '#00ff88' : '#ff3366' }}>{v ? (v / 1e8).toFixed(2) + 'B' : '-'}</span> },
+    { title: '中單', dataIndex: 'mid_in_flow', key: 'mid_in_flow', align: 'right' as const,
+      render: (v: number) => v ? (v / 1e8).toFixed(2) + 'B' : '-' },
+    { title: '細單', dataIndex: 'sml_in_flow', key: 'sml_in_flow', align: 'right' as const,
+      render: (v: number) => v ? (v / 1e8).toFixed(2) + 'B' : '-' },
+  ];
+
+  return (
+    <div style={{ padding: 24, background: '#0a0e1a', minHeight: 'calc(100vh - 120px)' }}>
+      <Row gutter={16} style={{ marginBottom: 16 }}>
+        <Col>
+          <select
+            value={symbol}
+            onChange={e => setSymbol(e.target.value)}
+            style={{ background: '#1a1f2e', border: '1px solid #2a3447', color: '#e0e6ed',
+              padding: '6px 12px', borderRadius: 4, fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            <option value="00700">騰訊 00700</option>
+            <option value="00005">匯豐 00005</option>
+            <option value="00939">建行 00939</option>
+            <option value="01299">友邦 01299</option>
+            <option value="00388">港交所 00388</option>
+          </select>
+        </Col>
+      </Row>
+
+      {quote && (
+        <Row gutter={16} style={{ marginBottom: 16 }}>
+          <Col span={4}>
+            <Card size="small" style={{ background: '#141925', border: '1px solid #2a3447' }}>
+              <Statistic title={<span style={{ color: '#8b95a7' }}>現價</span>}
+                value={quote.last_price} precision={2}
+                valueStyle={{ color: '#00d4ff', fontFamily: "'JetBrains Mono', monospace" }} />
+            </Card>
+          </Col>
+          <Col span={4}>
+            <Card size="small" style={{ background: '#141925', border: '1px solid #2a3447' }}>
+              <Statistic title={<span style={{ color: '#8b95a7' }}>漲跌</span>}
+                value={quote.change_percent} precision={2} suffix="%"
+                valueStyle={{ color: quote.change_percent >= 0 ? '#00ff88' : '#ff3366',
+                  fontFamily: "'JetBrains Mono', monospace" }} />
+            </Card>
+          </Col>
+          <Col span={4}>
+            <Card size="small" style={{ background: '#141925', border: '1px solid #2a3447' }}>
+              <Statistic title={<span style={{ color: '#8b95a7' }}>成交量</span>}
+                value={quote.volume ? (quote.volume / 1e6).toFixed(1) : '-'} suffix="M"
+                valueStyle={{ color: '#e0e6ed', fontFamily: "'JetBrains Mono', monospace" }} />
+            </Card>
+          </Col>
+          <Col span={4}>
+            <Card size="small" style={{ background: '#141925', border: '1px solid #2a3447' }}>
+              <Statistic title={<span style={{ color: '#8b95a7' }}>PE</span>}
+                value={quote.pe_ratio || '-'} precision={1}
+                valueStyle={{ color: '#e0e6ed', fontFamily: "'JetBrains Mono', monospace" }} />
+            </Card>
+          </Col>
+        </Row>
+      )}
+
+      <Card title={<span style={{ color: '#00d4ff' }}>💰 資金流向 — 大戶手影</span>}
+        size="small" style={{ background: '#141925', border: '1px solid #2a3447' }}>
+        {loading ? <Spin /> : flow.length > 0 ? (
+          <Table dataSource={flow.slice(0, 20)} columns={flowColumns} rowKey="date"
+            size="small" pagination={false} />
+        ) : <Empty description="無資金流向數據" />}
+      </Card>
+    </div>
+  );
+};
+
+// ============================================================
+// 排行榜 — 藍籌股實時排行
+// ============================================================
+const RankingTab: React.FC = () => {
+  const [quotes, setQuotes] = useState<QuoteRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/futu/watchlist`)
+      .then(r => r.json())
+      .then(d => {
+        setQuotes(d.data || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const sorted = [...quotes].sort((a, b) =>
+    (b.change_percent || 0) - (a.change_percent || 0));
+
+  const columns = [
+    { title: '#', key: 'rank', width: 50, render: (_: any, __: any, i: number) => i + 1 },
+    { title: '代碼', dataIndex: 'code', key: 'code', width: 100 },
+    { title: '名稱', dataIndex: 'name', key: 'name', width: 120 },
+    { title: '現價', dataIndex: 'last_price', key: 'last_price', align: 'right' as const,
+      render: (v: number) => v?.toFixed(2) },
+    { title: '漲跌%', dataIndex: 'change_percent', key: 'change_percent', align: 'right' as const,
+      sorter: (a: QuoteRecord, b: QuoteRecord) => (a.change_percent || 0) - (b.change_percent || 0),
+      render: (v: number) => (
+        <span style={{ color: v >= 0 ? '#00ff88' : '#ff3366', fontWeight: 600 }}>
+          {v >= 0 ? '+' : ''}{v?.toFixed(2)}%
+        </span>
+      ) },
+    { title: '成交量', dataIndex: 'volume', key: 'volume', align: 'right' as const,
+      render: (v: number) => v ? (v / 1e6).toFixed(1) + 'M' : '-' },
+    { title: '成交額', dataIndex: 'turnover', key: 'turnover', align: 'right' as const,
+      render: (v: number) => v ? (v / 1e8).toFixed(2) + 'B' : '-' },
+  ];
+
+  const gainers = sorted.filter(q => (q.change_percent || 0) > 0);
+  const losers = sorted.filter(q => (q.change_percent || 0) < 0);
+
+  return (
+    <div style={{ padding: 24, background: '#0a0e1a', minHeight: 'calc(100vh - 120px)' }}>
+      <Row gutter={16} style={{ marginBottom: 16 }}>
+        <Col span={6}>
+          <Card size="small" style={{ background: '#141925', border: '1px solid #2a3447' }}>
+            <Statistic title={<span style={{ color: '#8b95a7' }}>上升</span>}
+              value={gainers.length} valueStyle={{ color: '#00ff88' }} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card size="small" style={{ background: '#141925', border: '1px solid #2a3447' }}>
+            <Statistic title={<span style={{ color: '#8b95a7' }}>下跌</span>}
+              value={losers.length} valueStyle={{ color: '#ff3366' }} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card size="small" style={{ background: '#141925', border: '1px solid #2a3447' }}>
+            <Statistic title={<span style={{ color: '#8b95a7' }}>最大升幅</span>}
+              value={gainers[0]?.change_percent || 0} precision={2} suffix="%"
+              valueStyle={{ color: '#00ff88' }} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card size="small" style={{ background: '#141925', border: '1px solid #2a3447' }}>
+            <Statistic title={<span style={{ color: '#8b95a7' }}>最大跌幅</span>}
+              value={losers[losers.length - 1]?.change_percent || 0} precision={2} suffix="%"
+              valueStyle={{ color: '#ff3366' }} />
+          </Card>
+        </Col>
+      </Row>
+
+      <Card title={<span style={{ color: '#00d4ff' }}>🏆 藍籌股實時排行</span>}
+        size="small" style={{ background: '#141925', border: '1px solid #2a3447' }}>
+        {loading ? <Spin /> : quotes.length > 0 ? (
+          <Table dataSource={sorted} columns={columns} rowKey="code"
+            size="small" pagination={false} />
+        ) : <Empty description="載入中..." />}
+      </Card>
+    </div>
+  );
+};
+
+// ============================================================
+// 主頁面
+// ============================================================
+const CBSCTabPage: React.FC = () => {
+  const { t } = useTranslation();
+
+  return (
+    <div className="h-full">
+      <Tabs
+        defaultActiveKey="overview"
+        size="large"
+        className="w-full"
+        items={[
+          {
+            key: 'overview',
+            label: (
+              <span>
+                <DashboardOutlined />
+                市场总览
+              </span>
+            ),
+            children: <CBSCDashboard />,
+          },
+          {
+            key: 'analysis',
+            label: (
+              <span>
+                <BarChartOutlined />
+                深度分析
+              </span>
+            ),
+            children: <AnalysisTab />,
+          },
+          {
+            key: 'ranking',
+            label: (
+              <span>
+                <TrophyOutlined />
+                排行榜
+              </span>
+            ),
+            children: <RankingTab />,
+          },
+        ]}
+      />
+    </div>
+  );
+};
+
+export default CBSCTabPage;

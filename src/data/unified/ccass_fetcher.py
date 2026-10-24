@@ -1,0 +1,263 @@
+"""
+CCASS 大戶持倉爬蟲
+
+3 層方案取得 CCASS 持倉數據：
+- 方案 A：富途 API get_capital_distribution（即時，已驗證）
+- 方案 B：港交所 CCASS 網站爬蟲（歷史明細，需解 anti-bot）
+- 方案 C：東方財富 / 港股通持股數據（補充）
+
+出處：[hOG5XyyvkMM](https://www.youtube.com/watch?v=hOG5XyyvkMM)
+"""
+import sys
+import time
+import logging
+import re
+from datetime import datetime, date, timedelta
+from typing import List, Dict, Optional
+
+import pandas as pd
+
+sys.path = [p for p in sys.path if "CODEX" not in p]
+
+from .base_fetcher import HttpFetcher
+from .config import CCASS_HEADERS, URLS, EASTMONEY_HEADERS
+from .futu_adapter import FutuAdapter
+from .storage import store
+
+logger = logging.getLogger(__name__)
+
+
+class CCASSFetcher:
+    """CCASS 大戶持倉爬蟲（3 層方案）。"""
+
+    def __init__(self, futu: FutuAdapter = None):
+        self.futu = futu or FutuAdapter()
+        self.ccass_fetcher = HttpFetcher(headers=CCASS_HEADERS, encoding="utf-8")
+        self.eastmoney_fetcher = HttpFetcher(headers=EASTMONEY_HEADERS, encoding="utf-8")
+
+    # ============================================================
+    # 方案 A：富途 API（即時，最可靠）
+    # ============================================================
+
+    def get_smart_money_distribution(self, symbol: str) -> Dict:
+        """方案 A：富途即時資金分佈（大戶 vs 散戶）。
+
+        返回大戶/中戶/散戶嘅買賣比例。
+        """
+        ctx = self.futu._connect()
+        futu = self.futu._futu
+        ret, data = ctx.get_capital_distribution(symbol)
+        if ret != futu.RET_OK:
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    def get_capital_flow_history(self, symbol: str, days: int = 250) -> pd.DataFrame:
+        """方案 A：富途資金流向歷史。
+
+        含超大單/大單/中單/細單流入流出 = 大戶手影。
+        """
+        return self.futu.get_capital_flow(symbol, days=days)
+
+    # ============================================================
+    # 方案 B：港交所 CCASS 網站（歷史明細）
+    # ============================================================
+
+    def get_ccass_holdings(self, stock_code: str, query_date: date) -> Optional[pd.DataFrame]:
+        """方案 B：港交所 CCASS 持倉明細。
+
+        每間券商對某隻股票嘅持倉量。
+        港交所網站有 anti-bot，可能失敗。
+
+        Args:
+            stock_code: 5 位代碼 '00700'
+            query_date: 查詢日期
+
+        Returns:
+            DataFrame: participant, ccass_id, shareholding, pct_of_total
+        """
+        date_str = query_date.strftime("%Y/%m/%d")
+
+        # 第一步：攞 ViewState
+        html = self.ccass_fetcher.get(URLS["hkex_ccass"])
+        if not html:
+            logger.warning("CCASS GET 失敗")
+            return None
+
+        viewstate = self._extract_hidden(html, "__VIEWSTATE")
+        generator = self._extract_hidden(html, "__VIEWSTATEGENERATOR")
+
+        # 第二步：POST 查詢
+        data = {
+            "__EVENTTARGET": "", "__EVENTARGUMENT": "",
+            "__VIEWSTATE": viewstate,
+            "__VIEWSTATEGENERATOR": generator,
+            "txtStockCode": stock_code,
+            "txtStockName": "",
+            "txtShareholdingDate": date_str,
+            "txtParticipantID": "",
+            "txtParticipantName": "",
+            "txtSelPartID": "",
+            "btnSearch.x": "20", "btnSearch.y": "10",
+            "sortBy": "shareholding", "sortDirection": "desc",
+        }
+
+        html2 = self.ccass_fetcher.post(URLS["hkex_ccass"], data=data)
+        if not html2:
+            return None
+
+        return self._parse_ccass_table(html2, query_date)
+
+    def _extract_hidden(self, html: str, name: str) -> str:
+        """從 HTML 提取 hidden input value。"""
+        import re
+        pattern = r'name="{}"\s+[^>]*value="([^"]*)"'.format(re.escape(name))
+        match = re.search(pattern, html)
+        return match.group(1) if match else ""
+
+    def _parse_ccass_table(self, html: str, query_date: date) -> Optional[pd.DataFrame]:
+        """解析 CCASS 持倉表格。"""
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, "html.parser")
+
+        table = soup.find("table", {"class": re.compile("table-scroll|shareholding")})
+        if not table:
+            for t in soup.find_all("table"):
+                if t.find(string=re.compile("Participant|參與者")):
+                    table = t
+                    break
+
+        if not table:
+            return None
+
+        rows = []
+        for tr in table.find_all("tr"):
+            tds = tr.find_all("td")
+            if len(tds) >= 3:
+                participant = tds[0].get_text(strip=True)
+                ccass_id = tds[1].get_text(strip=True) if len(tds) > 1 else ""
+                shareholding_str = tds[-1].get_text(strip=True).replace(",", "")
+                try:
+                    shares = int(shareholding_str)
+                    rows.append({
+                        "participant": participant,
+                        "ccass_id": ccass_id,
+                        "shareholding": shares,
+                        "date": query_date,
+                    })
+                except ValueError:
+                    continue
+
+        if not rows:
+            return None
+
+        df = pd.DataFrame(rows)
+        total = df["shareholding"].sum()
+        if total > 0:
+            df["pct_of_total"] = df["shareholding"] / total * 100
+
+        southbound_kw = ["港股通", "Shanghai", "Shenzhen", "沪港通", "深港通"]
+        df["is_southbound"] = df["participant"].apply(
+            lambda x: any(kw in str(x) for kw in southbound_kw))
+        return df
+
+    # ============================================================
+    # 方案 C：東方財富 港股通持股（補充）
+    # ============================================================
+
+    def get_southbound_holdings(self, stock_code: str, days: int = 30) -> Optional[pd.DataFrame]:
+        """方案 C：東方財富港股通個股持股比例。
+
+        北水對個股嘅持股比例變化（比總額更精細）。
+        """
+        params = {
+            "reportName": "RPT_MUTUAL_HOLDSTOCKDETAILS",
+            "columns": "ALL",
+            "filter": "(SCODE=\"{}\")".format(stock_code),
+            "pageNumber": 1,
+            "pageSize": min(days, 30),
+            "sortColumns": "TRADE_DATE",
+            "sortTypes": "-1",
+        }
+
+        data = self.eastmoney_fetcher.get_json(URLS["eastmoney_api"], params=params)
+        if not data or not data.get("result") or not data["result"].get("data"):
+            logger.info("東財港股通持股: 無數據 for {}".format(stock_code))
+            return None
+
+        rows = data["result"]["data"]
+        df = pd.DataFrame(rows)
+        return df
+
+    # ============================================================
+    # 統一介面
+    # ============================================================
+
+    def get_smart_money_signal(self, symbol: str, days: int = 60) -> pd.DataFrame:
+        """取得大戶手影信號（統一介面）。
+
+        結合方案 A（富途資金流向）+ 方案 C（港股通持股）。
+        """
+        results = []
+
+        # 方案 A：富途資金流向
+        flow = self.get_capital_flow_history(symbol, days)
+        if not flow.empty:
+            flow["source"] = "futu_capital_flow"
+            results.append(flow)
+
+        # 方案 C：港股通持股
+        stock_num = symbol.replace("HK.", "").lstrip("0") or "0"
+        stock_5 = symbol.replace("HK.", "").zfill(5)
+        sb = self.get_southbound_holdings(stock_5, days)
+        if sb is not None and not sb.empty:
+            sb["source"] = "eastmoney_southbound"
+            results.append(sb)
+
+        if not results:
+            return pd.DataFrame()
+
+        return pd.concat(results, ignore_index=True)
+
+    def close(self):
+        """關閉所有連線。"""
+        self.futu.close()
+        self.ccass_fetcher.close()
+        self.eastmoney_fetcher.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    print("=" * 70)
+    print("CCASS Fetcher 測試")
+    print("=" * 70)
+
+    with CCASSFetcher() as fetcher:
+        # 方案 A：富途即時資金分佈
+        print("\n1. 方案 A: 富途即時資金分佈 (HK.00700)")
+        dist = fetcher.get_smart_money_distribution("HK.00700")
+        if dist:
+            for k, v in list(dist.items())[:8]:
+                print("   {}: {}".format(k, v))
+        else:
+            print("   無數據")
+
+        # 方案 A：資金流向歷史
+        print("\n2. 方案 A: 富途資金流向 (3日)")
+        flow = fetcher.get_capital_flow_history("HK.00700", days=3)
+        if not flow.empty:
+            print(flow[["date", "in_flow", "super_in_flow"]].to_string(index=False))
+
+        # 方案 C：港股通持股
+        print("\n3. 方案 C: 東財港股通持股 (00700)")
+        sb = fetcher.get_southbound_holdings("00700", days=5)
+        if sb is not None and not sb.empty:
+            print("   columns:", list(sb.columns)[:6])
+            print("   rows:", len(sb))
+        else:
+            print("   無數據（可能需要付費 API）")

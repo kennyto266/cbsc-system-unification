@@ -1,0 +1,314 @@
+{
+  "timestamp": "2026-06-23T13:12:50.835098",
+  "url": "http://localhost:3000",
+  "pages": [
+    {
+      "page": "首頁",
+      "url": "http://localhost:3000",
+      "title": "CBSC Unified Dashboard",
+      "is_blank": false,
+      "body_length": 560,
+      "nav_items": [
+        {
+          "text": "仪表板",
+          "href": ""
+        },
+        {
+          "text": "策略管理",
+          "href": ""
+        },
+        {
+          "text": "技术指标",
+          "href": ""
+        },
+        {
+          "text": "监控中心",
+          "href": ""
+        },
+        {
+          "text": "数据分析",
+          "href": ""
+        },
+        {
+          "text": "CBSC牛熊证",
+          "href": ""
+        },
+        {
+          "text": "市場數據中心",
+          "href": ""
+        },
+        {
+          "text": "工具",
+          "href": ""
+        },
+        {
+          "text": "资源中心",
+          "href": ""
+        },
+        {
+          "text": "系统设置",
+          "href": ""
+        },
+        {
+          "text": "功能介绍",
+          "href": "/features"
+        },
+        {
+          "text": "定价方案",
+          "href": "/pricing"
+        },
+        {
+          "text": "更新日志",
+          "href": "/changelog"
+        },
+        {
+          "text": "路线图",
+          "href": "/roadmap"
+        },
+        {
+          "text": "文档中心",
+          "href": "/docs"
+        }
+      ],
+      "screenshot": "01_home.png"
+    },
+    {
+      "page": "CBSC牛熊证",
+      "url": "http://localhost:3000/cbsc",
+      "is_blank": false,
+      "body_length": 890,
+      "screenshot": "02_nav_CBSC.png"
+    },
+    {
+      "page": "市場數據中心",
+      "url": "http://localhost:3000/market-data",
+      "is_blank": false,
+      "body_length": 1118,
+      "screenshot": "02_nav_市場數據.png"
+    },
+    {
+      "page": "儀表板",
+      "url": "http://localhost:3000/dashboard",
+      "is_blank": false,
+      "body_length": 1359,
+      "screenshot": "02_nav_儀表.png"
+    },
+    {
+      "page": "CBSC牛熊证",
+      "url": "http://localhost:3000/cbsc",
+      "is_blank": false,
+      "body_length": 890,
+      "screenshot": "02_nav_CBSC牛熊.png"
+    },
+    {
+      "page": "市場數據中心",
+      "url": "http://localhost:3000/market-data",
+      "is_blank": false,
+      "body_length": 1118,
+      "screenshot": "02_nav_市場.png"
+    },
+    {
+      "page": "Tab: 📈 HKEX 每日報告",
+      "url": "http://localhost:3000/market-data",
+      "is_blank": false,
+      "body_length": 1118,
+      "has_table": 2,
+      "has_chart": 28,
+      "has_empty": 0,
+      "has_error": 0,
+      "status": "完整",
+      "screenshot": "03_tab_📈_HKEX_每日報告.png"
+    },
+    {
+      "page": "Tab: 📈 HKEX 每日報告",
+      "url": "http://localhost:3000/market-data",
+      "is_blank": false,
+      "body_length": 1118,
+      "has_table": 2,
+      "has_chart": 28,
+      "has_empty": 0,
+      "has_error": 0,
+      "status": "完整",
+      "screenshot": "03_tab_📈_HKEX_每日報告.png"
+    },
+    {
+      "page": "Tab: 💰 南北水資金流向",
+      "url": "http://localhost:3000/market-data",
+      "is_blank": false,
+      "body_length": 1273,
+      "has_table": 4,
+      "has_chart": 40,
+      "has_empty": 0,
+      "has_error": 0,
+      "status": "完整",
+      "screenshot": "03_tab_💰_南北水資金流向.png"
+    },
+    {
+      "page": "Tab: 💰 南北水資金流向",
+      "url": "http://localhost:3000/market-data",
+      "is_blank": false,
+      "body_length": 1273,
+      "has_table": 4,
+      "has_chart": 40,
+      "has_empty": 0,
+      "has_error": 0,
+      "status": "完整",
+      "screenshot": "03_tab_💰_南北水資金流向.png"
+    },
+    {
+      "page": "Tab: 🔬 回測結果",
+      "url": "http://localhost:3000/market-data",
+      "is_blank": false,
+      "body_length": 552,
+      "has_table": 6,
+      "has_chart": 54,
+      "has_empty": 0,
+      "has_error": 0,
+      "status": "完整",
+      "screenshot": "03_tab_🔬_回測結果.png"
+    },
+    {
+      "page": "Tab: 🔬 回測結果",
+      "url": "http://localhost:3000/market-data",
+      "is_blank": false,
+      "body_length": 552,
+      "has_table": 6,
+      "has_chart": 54,
+      "has_empty": 0,
+      "has_error": 0,
+      "status": "完整",
+      "screenshot": "03_tab_🔬_回測結果.png"
+    },
+    {
+      "page": "Tab: 🗂️ 統一數據層",
+      "url": "http://localhost:3000/market-data",
+      "is_blank": false,
+      "body_length": 1513,
+      "has_table": 10,
+      "has_chart": 62,
+      "has_empty": 0,
+      "has_error": 0,
+      "status": "完整",
+      "screenshot": "03_tab_🗂️_統一數據層.png"
+    },
+    {
+      "page": "Tab: 🗂️ 統一數據層",
+      "url": "http://localhost:3000/market-data",
+      "is_blank": false,
+      "body_length": 1513,
+      "has_table": 10,
+      "has_chart": 62,
+      "has_empty": 0,
+      "has_error": 0,
+      "status": "完整",
+      "screenshot": "03_tab_🗂️_統一數據層.png"
+    }
+  ],
+  "errors": [
+    {
+      "text": "Warning: Received `%s` for a non-boolean attribute `%s`.\n\nIf you want to write it to the DOM, pass a string instead: %s=\"%s\" or %s={value.toString()}.%s true jsx jsx true jsx \n    at style\n    at asid",
+      "url": "http://localhost:3000/node_modules/.vite/deps/chunk-WRD5HZVH.js?v=adee43e4"
+    },
+    {
+      "text": "Access to font at 'https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.118.woff2' from origin 'http://localhost:3000' has been blocked by ",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "text": "Failed to load resource: net::ERR_FAILED",
+      "url": "https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.118.woff2"
+    },
+    {
+      "text": "Access to font at 'https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.101.woff2' from origin 'http://localhost:3000' has been blocked by ",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "text": "Failed to load resource: net::ERR_FAILED",
+      "url": "https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.101.woff2"
+    },
+    {
+      "text": "Access to font at 'https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.86.woff2' from origin 'http://localhost:3000' has been blocked by C",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "text": "Failed to load resource: net::ERR_FAILED",
+      "url": "https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.86.woff2"
+    },
+    {
+      "text": "Access to font at 'https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2' from origin 'http://localhost:3000' has been blocked by CORS ",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "text": "Failed to load resource: net::ERR_FAILED",
+      "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2"
+    },
+    {
+      "text": "Access to font at 'https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.87.woff2' from origin 'http://localhost:3000' has been blocked by C",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "text": "Failed to load resource: net::ERR_FAILED",
+      "url": "https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.87.woff2"
+    },
+    {
+      "text": "Access to font at 'https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.113.woff2' from origin 'http://localhost:3000' has been blocked by ",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "text": "Failed to load resource: net::ERR_FAILED",
+      "url": "https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.113.woff2"
+    },
+    {
+      "text": "Access to font at 'https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.106.woff2' from origin 'http://localhost:3000' has been blocked by ",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "text": "Failed to load resource: net::ERR_FAILED",
+      "url": "https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.106.woff2"
+    },
+    {
+      "text": "Access to font at 'https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.51.woff2' from origin 'http://localhost:3000' has been blocked by C",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "text": "Failed to load resource: net::ERR_FAILED",
+      "url": "https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.51.woff2"
+    },
+    {
+      "text": "Access to font at 'https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.114.woff2' from origin 'http://localhost:3000' has been blocked by ",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "text": "Failed to load resource: net::ERR_FAILED",
+      "url": "https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.114.woff2"
+    },
+    {
+      "text": "Access to font at 'https://fonts.gstatic.com/s/notosanstc/v39/-nF7OG829Oofr2wohFbTp9iFOkMQAewlpbGXhhyYs0QF3kPVyLylzU95vTq1Ltj5xQez1g.77.woff2' from origin 'http://localhost:3000' has been blocked by C",
+      "url": "http://localhost:3000/"
+    }
+  ],
+  "api_errors": [],
+  "summary": {
+    "total_pages_checked": 14,
+    "complete": 14,
+    "incomplete": 0,
+    "console_errors": 100,
+    "api_errors": 0,
+    "complete_pages": [
+      "首頁",
+      "CBSC牛熊证",
+      "市場數據中心",
+      "儀表板",
+      "CBSC牛熊证",
+      "市場數據中心",
+      "Tab: 📈 HKEX 每日報告",
+      "Tab: 📈 HKEX 每日報告",
+      "Tab: 💰 南北水資金流向",
+      "Tab: 💰 南北水資金流向",
+      "Tab: 🔬 回測結果",
+      "Tab: 🔬 回測結果",
+      "Tab: 🗂️ 統一數據層",
+      "Tab: 🗂️ 統一數據層"
+    ],
+    "incomplete_pages": []
+  }
+}

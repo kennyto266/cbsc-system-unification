@@ -1,0 +1,65 @@
+"""build_idxr_panel.py — agent2-H 2026-08-23: thesis cs_index_inclusion_drift.
+
+index_review_events.csv (恒指公司檢討公告, 2021-03→2026-09, 3310 events)
+→ data/factor_store/index_add_recency.parquet (wide date × HK.XXXXX)
+
+index_add_recency = 自最近一次「納入大指數」生效日起算嘅日曆日數
+  (未納入過 = NaN; 被剔除後重置為 NaN)。
+大指數 = HSI / HSCEI / TECH (有被動資金追蹤嘅龍頭指數);
+HSCI (綜合指數) 覆蓋太廣 (幾乎全股市), 被動追蹤金額細, 唔計 —
+thesis 講明係「被動資金強制買入」, HSCI 納入唔構成有意義flow。
+"""
+import numpy as np
+import pandas as pd
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+EV = BASE / "data" / "new_sources" / "index_review_events.csv"
+OUT = BASE / "data" / "factor_store" / "index_add_recency.parquet"
+OUT_LONG = BASE / "data" / "new_sources" / "index_add_recency_long.csv"
+
+BIG = {"Hang Seng Index", "Hang Seng China Enterprises Index",
+       "Hang Seng TECH Index"}
+
+df = pd.read_csv(EV, dtype={"stock_code": str})
+df["stock_code"] = df["stock_code"].str.zfill(5)
+df["effective_date"] = pd.to_datetime(df["effective_date"])
+df = df[df.index_name.isin(BIG)].dropna(subset=["effective_date"])
+
+# 每股事件時間線: (date, +1=add, -1=remove)
+events = {}
+for _, r in df.iterrows():
+    events.setdefault(f"HK.{r.stock_code}", []).append(
+        (r.effective_date, 1 if r.action == "add" else -1))
+
+today = pd.Timestamp.now().normalize()
+days = pd.date_range(df.effective_date.min() - pd.Timedelta(days=5), today, freq="D")
+
+cols = {}
+for code, evs in events.items():
+    evs.sort()
+    vals = []
+    last_add = None
+    ei = 0
+    for d in days:
+        while ei < len(evs) and evs[ei][0] <= d:
+            act = evs[ei][1]
+            if act == 1:
+                last_add = evs[ei][0]
+            else:
+                last_add = None
+            ei += 1
+        vals.append((d - last_add).days if last_add is not None else np.nan)
+    cols[code] = vals
+
+wide = pd.DataFrame({k: v for k, v in cols.items()}, index=days)
+wide.index.name = "date"
+wide.to_parquet(OUT)
+
+long_rows = [(d, c, v) for c in wide.columns for d, v in wide[c].items() if pd.notna(v)]
+pd.DataFrame(long_rows, columns=["date", "code", "index_add_recency"]).to_csv(
+    OUT_LONG, index=False)
+
+print(f"events used: {len(df)} ({df.index_name.value_counts().to_dict()})")
+print(f"wide {wide.shape} cells_non_na={int(wide.notna().sum().sum())}")
+print(wide.tail(3).dropna(axis=1, how="all").iloc[:, :5])

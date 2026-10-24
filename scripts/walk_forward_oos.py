@@ -1,0 +1,236 @@
+#!/usr/bin/env python3
+"""walk_forward_oos.py — 真正的 train-select / frozen-test OOS 評估.
+
+核心目的: 回答 selection-aware MC 揭穿嘅問題——
+  「你個 in-sample best 策略, 喺完全未見過嘅 OOS 數據上仲 work 唔 work?」
+
+紀律性設計 (避免常見 leakage):
+  1. 時間切分: TRAIN = 2021-06 ~ 2023-12 (in-sample, 揀策略用)
+                TEST  = 2024-01 ~ 2026-06 (out-of-sample, 策略+參數 frozen)
+  2. 喺 TRAIN 期計每個 (alpha, stock) 既 Sharpe → 揀出 IS-best per stock
+  3. 同一個 (alpha, stock) 組合, 參數唔變, 跑 TEST 期 → OOS Sharpe
+  4. 判準: OOS Sharpe vs IS Sharpe 既衰減 (decay). 真正 alpha 衰減 <50%;
+           隨機/overfit 衰減 >70% 甚至轉負.
+
+關鍵防 leakage:
+  - 策略參數係 KOL_REGISTRY 入面既 default (固定, 唔係 train 期 tune 出黎).
+  - 只用「邊個 alpha 喺 train 期最好」呢一個選擇, 唔 re-fit.
+  - TEST 期 close 完全獨立切片.
+
+呢個比 selection-aware MC 更嚴格: MC 測「隨機數據能唔能假陽性」,
+呢度測「真實 in-sample 選擇能唔能真係 generalize」.
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\backtests")
+sys.path.insert(0, r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\scripts")
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from datetime import datetime
+
+import kol_alpha_strategies as kol
+from kol_alpha_strategies import KOL_REGISTRY
+from vbt_data import load_stock_close
+
+OUT = Path(r"C:\Users\Penguin8n\ZCodeProject\cbsc-system-unification\data\vbt_factor_reports")
+
+# 時間切分 (5年數據 2021-06 ~ 2026-06, 50/50 split)
+SPLIT_DATE = "2024-01-01"   # < 此日期 = IS, >= = OOS
+
+# 測試對象: ROBUST 17 (同 algotrade/MC 一致) × 全部 100 股
+ROBUST_IDS = [10, 15, 17, 27, 36, 39, 43, 45, 46, 47, 52, 58, 62, 71, 73, 74, 88]
+
+
+def get_stocks():
+    try:
+        from vbt_data import FACTOR_STOCKS
+        return sorted(FACTOR_STOCKS)
+    except Exception:
+        return ["HK.00700", "HK.09988", "HK.03690", "HK.00005", "HK.00939"]
+
+
+def run_strategy_sharpe(func, close_series, stock):
+    """跑一個策略喺指定 close series, 返 (metrics_dict, sharpe). 同 MC 一致既 spy 法."""
+    if len(close_series) < 100:
+        return None, 0.0
+    prices = pd.DataFrame({stock: close_series})
+    captured = {"pf": None}
+    orig_bs = kol.backtest_signals
+
+    def spy(close, entries, exits, se=None, sx=None, _c=captured):
+        pf = orig_bs(close, entries, exits, se, sx)
+        if pf is not None:
+            _c["pf"] = pf
+        return pf
+
+    kol.backtest_signals = spy
+    try:
+        m = func(prices, stock)
+    except Exception:
+        m = None
+    finally:
+        kol.backtest_signals = orig_bs
+
+    if m is None:
+        return None, 0.0
+    return m, float(m.get("sharpe", 0.0))
+
+
+def evaluate_period(alpha_ids, stocks, close_dict, period_label):
+    """對每個 (alpha, stock) 跑一次, 返 DataFrame[alpha, stock, sharpe]."""
+    rows = []
+    for aid in alpha_ids:
+        if aid not in KOL_REGISTRY:
+            continue
+        name, kol_name, func, _ = KOL_REGISTRY[aid]
+        for stock in stocks:
+            close_full = close_dict.get(stock)
+            if close_full is None:
+                continue
+            close_p = close_full[period_label]
+            if len(close_p) < 100:
+                continue
+            try:
+                m, sharpe = run_strategy_sharpe(func, close_p, stock)
+                rows.append({"alpha": aid, "stock": stock, "sharpe": sharpe})
+            except Exception:
+                rows.append({"alpha": aid, "stock": stock, "sharpe": 0.0})
+    return pd.DataFrame(rows)
+
+
+def main():
+    stocks = get_stocks()
+    print("=" * 70)
+    print("🧊 Walk-Forward OOS (Train-Select / Frozen-Test)")
+    print(f"  IS (train/select): ~2021-06 → {SPLIT_DATE}")
+    print(f"  OOS (frozen test): {SPLIT_DATE} → ~2026-06")
+    print(f"  策略: {len(ROBUST_IDS)} ROBUST × 股票: {len(stocks)} 隻")
+    print(f"  規則: 揀 IS-best alpha per stock → 同組合 frozen 測 OOS")
+    print("=" * 70, flush=True)
+
+    # 1. load + split all stock close
+    print("\n1️⃣ Load + 時間切分...", flush=True)
+    close_dict = {}
+    for s in stocks:
+        c = load_stock_close(s)
+        if c is None or len(c) < 300:
+            continue
+        is_part = c[c.index < SPLIT_DATE]
+        oos_part = c[c.index >= SPLIT_DATE]
+        close_dict[s] = {"is": is_part, "oos": oos_part}
+    print(f"   有足夠數據既股票: {len(close_dict)}", flush=True)
+
+    # 2. IS 期評估所有 (alpha, stock)
+    print("\n2️⃣ IS (train) 期評估所有組合...", flush=True)
+    is_rows = []
+    for s, parts in close_dict.items():
+        for aid in ROBUST_IDS:
+            if aid not in KOL_REGISTRY:
+                continue
+            name, kol_name, func, _ = KOL_REGISTRY[aid]
+            cp = parts["is"]
+            if len(cp) < 100:
+                continue
+            try:
+                m, sharpe = run_strategy_sharpe(func, cp, s)
+                is_rows.append({"alpha": aid, "stock": s, "is_sharpe": sharpe})
+            except Exception:
+                is_rows.append({"alpha": aid, "stock": s, "is_sharpe": 0.0})
+    is_df = pd.DataFrame(is_rows)
+    print(f"   IS 組合: {len(is_df)}  (IS Sharpe mean={is_df['is_sharpe'].mean():.3f})", flush=True)
+
+    # 3. 揀 IS-best alpha per stock (selection — 呢個就係要測既選擇)
+    print("\n3️⃣ 揀 IS-best alpha per stock...", flush=True)
+    best_is = is_df.loc[is_df.groupby("stock")["is_sharpe"].idxmax()].copy()
+    print(f"   {len(best_is)} 隻股票各有 IS-best alpha", flush=True)
+    print(f"   IS-best Sharpe: mean={best_is['is_sharpe'].mean():.3f} "
+          f"median={best_is['is_sharpe'].median():.3f}", flush=True)
+    print(f"   揀中既 alpha 分佈:", flush=True)
+    for aid, cnt in best_is["alpha"].value_counts().items():
+        print(f"     A{int(aid):02d}: {cnt} 隻股", flush=True)
+
+    # 4. OOS 期: 同一組合 (frozen), 跑 TEST 期
+    print("\n4️⃣ OOS (frozen test) 期評估 IS-best 組合...", flush=True)
+    oos_rows = []
+    for _, row in best_is.iterrows():
+        aid = int(row["alpha"])
+        s = row["stock"]
+        if aid not in KOL_REGISTRY:
+            continue
+        name, kol_name, func, _ = KOL_REGISTRY[aid]
+        cp = close_dict[s]["oos"]
+        if len(cp) < 50:
+            continue
+        try:
+            m, sharpe = run_strategy_sharpe(func, cp, s)
+            oos_rows.append({"alpha": aid, "stock": s, "oos_sharpe": sharpe,
+                             "is_sharpe": row["is_sharpe"]})
+        except Exception:
+            oos_rows.append({"alpha": aid, "stock": s, "oos_sharpe": 0.0,
+                             "is_sharpe": row["is_sharpe"]})
+    oos_df = pd.DataFrame(oos_rows)
+    oos_df["decay_pct"] = (1 - oos_df["oos_sharpe"] / oos_df["is_sharpe"]) * 100
+
+    # 5. 判準 + 報告
+    print(f"\n{'='*70}")
+    print(f"📊 Walk-Forward OOS 結果")
+    print(f"{'='*70}")
+    is_mean = oos_df["is_sharpe"].mean()
+    oos_mean = oos_df["oos_sharpe"].mean()
+    oos_med = oos_df["oos_sharpe"].median()
+    pct_pos = (oos_df["oos_sharpe"] > 0).mean() * 100
+    overall_decay = (1 - oos_mean / is_mean) * 100 if is_mean != 0 else float("nan")
+
+    print(f"  IS-best Sharpe:    mean={is_mean:.3f}")
+    print(f"  OOS Sharpe:        mean={oos_mean:.3f}  median={oos_med:.3f}")
+    print(f"  OOS 正數比例:      {pct_pos:.1f}%")
+    print(f"  整體衰減:          {overall_decay:.1f}%  (OOS/IS)")
+    print()
+    print(f"  判準 (<50% 衰減 = 真 alpha; >70% = overfit):")
+    if overall_decay < 50:
+        verdict = "🟢 真 alpha 傾向 (衰減可控)"
+    elif overall_decay < 70:
+        verdict = "🟡 部分真 (中度衰減, 需謹慎)"
+    else:
+        verdict = "🔴 嚴重 overfit / 唔 generalize"
+    print(f"    {verdict}")
+    print()
+
+    # per-alpha 衰減 (邊個 alpha 最真/最假)
+    print(f"  Per-alpha OOS 表現 (揀中次數 >= 2):")
+    per_alpha = oos_df.groupby("alpha").agg(
+        n=("stock", "count"),
+        is_mean=("is_sharpe", "mean"),
+        oos_mean=("oos_sharpe", "mean"),
+        oos_pos_pct=("oos_sharpe", lambda x: (x > 0).mean() * 100),
+    ).reset_index()
+    per_alpha["decay"] = (1 - per_alpha["oos_mean"] / per_alpha["is_mean"]) * 100
+    per_alpha = per_alpha[per_alpha["n"] >= 2].sort_values("oos_mean", ascending=False)
+    for _, r in per_alpha.iterrows():
+        print(f"    A{int(r['alpha']):02d}: n={int(r['n'])} IS={r['is_mean']:.2f} "
+              f"OOS={r['oos_mean']:.2f} decay={r['decay']:.0f}% pos={r['oos_pos_pct']:.0f}%")
+    print()
+
+    # 存結果
+    OUT.mkdir(parents=True, exist_ok=True)
+    oos_df.to_csv(OUT / "walk_forward_oos_results.csv", index=False)
+    per_alpha.to_csv(OUT / "walk_forward_oos_per_alpha.csv", index=False)
+    summary = pd.DataFrame([{
+        "is_mean": is_mean, "oos_mean": oos_mean, "oos_median": oos_med,
+        "oos_pos_pct": pct_pos, "decay_pct": overall_decay,
+        "verdict": verdict, "n_stocks": len(oos_df),
+        "split_date": SPLIT_DATE, "date": datetime.now().isoformat(),
+    }])
+    summary.to_csv(OUT / "walk_forward_oos_summary.csv", index=False)
+    print(f"報告:")
+    print(f"  {OUT / 'walk_forward_oos_summary.csv'}")
+    print(f"  {OUT / 'walk_forward_oos_results.csv'}")
+    print(f"  {OUT / 'walk_forward_oos_per_alpha.csv'}")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,444 @@
+"""
+hkptrc 策略回測通用工具
+
+共用：數據載入、指標計算、回測引擎、報告輸出
+所有策略繼承呢個基礎
+"""
+import sys
+sys.path = [p for p in sys.path if "CODEX" not in p]
+
+import os
+import json
+import warnings
+from pathlib import Path
+from datetime import datetime
+from itertools import permutations
+
+import numpy as np
+import pandas as pd
+import vectorbt as vbt
+from scipy import stats
+from scipy.stats import entropy as scipy_entropy
+
+warnings.filterwarnings("ignore")
+
+ROOT = Path(__file__).parent.parent.parent
+DATA_DIR = ROOT / "data"
+OUTPUT_DIR = DATA_DIR / "hkptrc_backtests"
+OUTPUT_DIR.mkdir(exist_ok=True)
+
+# 交易成本（港股, Longbridge/長橋 實際口徑 2026-06 用戶截圖核實）
+# 個別費用 — 買賣雙邊都收
+COMMISSION     = 0.0005      # 佣金 0.05% (min 50 HKD; 全倉 100K = threshold)
+SETTLEMENT_FEE = 0.00005     # 交收費 0.005% (min 5.5 / max 200 HKD)
+TRADING_FEE    = 0.0000565   # 交易費 0.00565%
+SFC_LEVY       = 0.000027    # 證監會徵費 0.0027%
+FRC_LEVY       = 0.0000015   # 財匯局徵費 0.00015%
+# 只賣出收
+STAMP_DUTY     = 0.001       # 印花稅 0.1% (SELL only, 唔係之前嘅 0.13%)
+# vbt fees 對稱 (買賣同率), stamp 只賣收 → 攤分到兩邊令來回總成本準確
+FEE_PER_SIDE = (COMMISSION + SETTLEMENT_FEE + TRADING_FEE + SFC_LEVY + FRC_LEVY
+                + STAMP_DUTY * 0.5)   # 0.001135
+RF_RATE = 0.04
+
+# 富途 API
+FUTU_HOST = os.getenv("FUTU_OPEND_HOST", "127.0.0.1")
+FUTU_PORT = int(os.getenv("FUTU_OPEND_PORT", "1130"))
+
+# 測試股票池（流動性好嘅藍籌 + 科技）
+TEST_STOCKS = [
+    "HK.00700",  # 騰訊
+    "HK.00005",  # 匯豐
+    "HK.00939",  # 建行
+    "HK.01398",  # 工行
+    "HK.00388",  # 港交所
+    "HK.00012",  # 恒基地產
+    "HK.00941",  # 中移動
+    "HK.01299",  # 友邦
+    "HK.00016",  # 新鴻基地產
+    "HK.01109",  # 華潤置地
+]
+
+
+# ============================================================
+# 數據載入
+# ============================================================
+
+def load_prices(days=None):
+    """載入 HSI 成分股價格。"""
+    cache = DATA_DIR / "hsi_prices.pkl"
+    if not cache.exists():
+        raise FileNotFoundError("請先運行 pair_trade_vbt.py 建立 hsi_prices.pkl")
+    prices = pd.read_pickle(cache)
+    if days:
+        prices = prices.tail(days)
+    return prices
+
+
+def load_returns(days=None):
+    """載入收益率。"""
+    prices = load_prices(days)
+    return prices.pct_change().dropna()
+
+
+# ============================================================
+# 技術指標庫
+# ============================================================
+
+def compute_rsi(close, period=14):
+    """RSI"""
+    delta = close.diff()
+    gain = delta.where(delta > 0, 0)
+    loss = -delta.where(delta < 0, 0)
+    avg_gain = gain.rolling(period).mean()
+    avg_loss = loss.rolling(period).mean()
+    rs = avg_gain / avg_loss.replace(0, np.nan)
+    return 100 - (100 / (1 + rs))
+
+
+def compute_atr(df, period=14):
+    """ATR"""
+    tr = pd.concat([
+        df["high"] - df["low"],
+        abs(df["high"] - df["close"].shift(1)),
+        abs(df["low"] - df["close"].shift(1))
+    ], axis=1).max(axis=1)
+    return tr.rolling(period).mean()
+
+
+def compute_zscore(series, window=250):
+    """Z-Score"""
+    return (series - series.rolling(window).mean()) / series.rolling(window).std().replace(0, np.nan)
+
+
+def compute_efficiency_ratio(close, n=20):
+    """Efficiency Ratio = 淨變動 / 總波動"""
+    net_change = abs(close - close.shift(n))
+    total_change = close.diff(1).abs().rolling(n).sum()
+    return net_change / total_change.replace(0, np.nan)
+
+
+def compute_sma(close, period):
+    """Simple Moving Average"""
+    return close.rolling(period).mean()
+
+
+def compute_macd(close, fast=12, slow=26, signal=9):
+    """MACD"""
+    ema_fast = close.ewm(span=fast, adjust=False).mean()
+    ema_slow = close.ewm(span=slow, adjust=False).mean()
+    macd_line = ema_fast - ema_slow
+    signal_line = macd_line.ewm(span=signal, adjust=False).mean()
+    return macd_line, signal_line
+
+
+def compute_volume_profile(close, volume, bins=50):
+    """Volume Profile - 每日計算 Max Volume Price Level"""
+    # 簡化：用 rolling window 計算
+    window = 250
+    mvpl_series = pd.Series(index=close.index, dtype=float)
+    for i in range(window, len(close)):
+        c = close.iloc[i-window:i]
+        v = volume.iloc[i-window:i]
+        price_bins = pd.cut(c, bins=bins)
+        vp = pd.Series(v.values, index=price_bins).groupby(level=0).sum()
+        if not vp.empty:
+            mvpl_series.iloc[i] = vp.idxmax().mid
+    return mvpl_series
+
+
+def compute_channel_range(df, window=20):
+    """區間幅度"""
+    rolling_high = df["high"].rolling(window).max()
+    rolling_low = df["low"].rolling(window).min()
+    return (rolling_high - rolling_low) / df["close"], rolling_high, rolling_low
+
+
+def find_pips(prices, order=5):
+    """PIP (Perceptually Important Points) - 簡化版"""
+    n = len(prices)
+    if n < order + 2:
+        return list(range(n))
+    pips = [0, n - 1]
+    for _ in range(order - 2):
+        max_dist = 0
+        max_idx = 0
+        for i in range(1, n - 1):
+            if i in pips:
+                continue
+            # 搵 i 屬於邊段
+            pips_sorted = sorted(pips)
+            for j in range(len(pips_sorted) - 1):
+                if pips_sorted[j] < i < pips_sorted[j+1]:
+                    # 計算到對角線距離
+                    x1, y1 = pips_sorted[j], prices.iloc[pips_sorted[j]]
+                    x2, y2 = pips_sorted[j+1], prices.iloc[pips_sorted[j+1]]
+                    x0, y0 = i, prices.iloc[i]
+                    # 點到線距離
+                    if x2 - x1 != 0:
+                        dist = abs((y2-y1)*x0 - (x2-x1)*y0 + x2*y1 - y2*x1) / np.sqrt((y2-y1)**2 + (x2-x1)**2)
+                    else:
+                        dist = abs(y0 - y1)
+                    if dist > max_dist:
+                        max_dist = dist
+                        max_idx = i
+                    break
+        pips.append(max_idx)
+    return sorted(pips)
+
+
+def find_extrema(df, order=15, threshold_pct=0.10):
+    """Extrema + Threshold 混合（瀨尿牛丸）
+
+    修正 look-ahead bias: 原版用 highs.iloc[i-order:i+order+1] 包含未來 order 日,
+    即係用未來數據判斷 i 係咪極值 (完美買底沽頂, Sharpe 虛高).
+    修正版: 只向後睇 highs.iloc[i-order:i+1] (只到 i, 唔包未來),
+    i 係過去 order 日窗口內既最高/最低點即為極值 (causal).
+    """
+    highs = df["high"]
+    lows = df["low"]
+    close = df["close"]
+    n = len(df)
+    is_maxima = pd.Series(False, index=df.index)
+    is_minima = pd.Series(False, index=df.index)
+
+    for i in range(order, n):
+        # Extrema — 只用過去 order 日 (唔包未來), causal
+        if highs.iloc[i] == highs.iloc[i-order:i+1].max():
+            is_maxima.iloc[i] = True
+        if lows.iloc[i] == lows.iloc[i-order:i+1].min():
+            is_minima.iloc[i] = True
+        # Threshold — 修正方向 (原版反轉: drop→應該 minima 買底, rise→應該 maxima 沽頂)
+        window_close = close.iloc[max(0, i-order):i]
+        if len(window_close) > 0:
+            drop = (window_close.max() - close.iloc[i]) / window_close.max()
+            rise = (close.iloc[i] - window_close.min()) / window_close.min() if window_close.min() > 0 else 0
+            if drop > threshold_pct:
+                is_minima.iloc[i] = True   # 跌得多 → 接近底 → 買入 (minima)
+            if rise > threshold_pct:
+                is_maxima.iloc[i] = True  # 升得多 → 接近頂 → 沽出 (maxima)
+    return is_maxima, is_minima
+
+
+def compute_sd_atr_spread(df, window=14):
+    """SD - ATR Spread"""
+    close = df["close"]
+    pct_change = close.pct_change()
+    sd = pct_change.rolling(window).std()
+    atr = compute_atr(df, window)
+    atr_pct = atr / close
+    spread = sd - atr_pct
+    return compute_zscore(spread, 250)
+
+
+def compute_permutation_entropy(close, order=4, window=50, normalize=True):
+    """Permutation Entropy"""
+    patterns = list(permutations(range(order)))
+    result = []
+    values = close.values
+
+    for i in range(window, len(values)):
+        window_data = values[i-window:i]
+        pe_values = []
+        for j in range(len(window_data) - order + 1):
+            segment = window_data[j:j+order]
+            rank = tuple(np.argsort(np.argsort(segment)))
+            pe_values.append(rank)
+
+        counts = [pe_values.count(p) for p in patterns]
+        total = sum(counts)
+        if total == 0:
+            result.append(np.nan)
+            continue
+        probs = np.array([c/total for c in counts if c > 0])
+        pe = scipy_entropy(probs)
+        if normalize:
+            pe = pe / np.log(len(patterns))
+        result.append(pe)
+
+    return pd.Series(result, index=close.index[window:])
+
+
+# ============================================================
+# 回測引擎
+# ============================================================
+
+def backtest_signals(close, entries, exits, short_entries=None, short_exits=None,
+                     init_cash=100_000, fees=None, stock_code=None):
+    """用 VectorBT 回測信號。
+
+    委派到 trading_core.engine.backtest_signals() (2026-07 統一框架).
+    修正: 用 trading_core 嘅正確 Sharpe 計算 (唔再用 vol=ann_ret/sharpe 反推).
+
+    Args:
+        close: 收盤價 Series.
+        entries/exits: 進出場信號 Series (bool).
+        short_entries/short_exits: 做空信號 (optional).
+        init_cash: 初始資金.
+        fees: 直接指定 per-side 成本 (向後兼容). 如果 None, 用 stock_code 判斷.
+        stock_code: 股票代碼 (如 "HK.00700"), 用於 instrument-aware 成本判斷.
+                    ETF (如 "HK.03066") 免印花稅 → 成本大降.
+
+    Returns:
+        vbt.Portfolio 或 None.
+    """
+    # 委派到 trading_core 引擎
+    try:
+        from trading_core.engine import backtest_signals as _tc_bs
+        from trading_core.costs import get_market_for_code, get_per_side as _tc_gps
+    except ImportError:
+        # trading_core 唔喺 path — fallback 到本地實現 (安全降級)
+        _tc_bs = None
+
+    if _tc_bs is not None:
+        # 決定 market + fees
+        if fees is not None:
+            # 舊調用方式: 直接傳入 fees
+            return _tc_bs(close, entries, exits, short_entries, short_exits,
+                          market="hk_stock", init_cash=init_cash, fees_override=fees)
+        elif stock_code:
+            market = get_market_for_code(stock_code)
+            return _tc_bs(close, entries, exits, short_entries, short_exits,
+                          market=market, init_cash=init_cash)
+        else:
+            # 無 stock_code 也無 fees — 用港股股票預設成本
+            return _tc_bs(close, entries, exits, short_entries, short_exits,
+                          market="hk_stock", init_cash=init_cash)
+    # Fallback: trading_core 唔可用時嘅本地實現
+    _fees = fees if fees is not None else FEE_PER_SIDE
+    entries = entries.fillna(False)
+    exits = exits.fillna(False)
+    kwargs = dict(close=close, entries=entries, exits=exits, fees=_fees,
+                  freq="1D", init_cash=init_cash)
+    if short_entries is not None:
+        kwargs["short_entries"] = short_entries.fillna(False)
+        se = short_exits if short_exits is not None else exits
+        kwargs["short_exits"] = se.fillna(False)
+    try:
+        return vbt.Portfolio.from_signals(**kwargs)
+    except Exception:
+        return None
+
+
+def extract_metrics(pf, strategy_name, stock_code):
+    """從 Portfolio 提取專業指標。
+
+    委派到 trading_core.engine.extract_metrics() (2026-07 統一框架).
+    修正: Sharpe 用 daily returns 直接計, 唔再用 vol=ann_ret/sharpe 反推.
+    """
+    if pf is None:
+        return None
+    # 委派到 trading_core (修正 Sharpe bug)
+    try:
+        from trading_core.engine import extract_metrics as _tc_em
+        from trading_core.costs import get_market_for_code
+        market = get_market_for_code(stock_code) if stock_code else "hk_stock"
+        result = _tc_em(pf, strategy_name, stock_code, market=market)
+        if result is not None:
+            # 補充 trading_core 唔返回嘅 final_value (舊 API 兼容)
+            try:
+                result["final_value"] = round(float(pf.value().iloc[-1]), 0)
+            except Exception:
+                result["final_value"] = 0
+            # trading_core 用 "asset" key, 舊代碼用 "stock" — 兼容
+            result["stock"] = stock_code
+            return result
+    except ImportError:
+        pass
+
+    # Fallback: trading_core 唔可用時嘅本地實現 (保留舊邏輯, 但有已知 Sharpe bug)
+    try:
+        total_ret = float(pf.total_return())
+        ann_ret = float(pf.annualized_return())
+        sharpe = float(pf.sharpe_ratio())
+        sortino = float(pf.sortino_ratio())
+        max_dd = float(pf.max_drawdown())
+        calmar = float(pf.calmar_ratio())
+        trades = pf.trades.records_readable
+        n_trades = len(trades)
+        if n_trades > 0 and "PnL" in trades.columns:
+            wins = (trades["PnL"] > 0).sum()
+            win_rate = float(wins / n_trades)
+            gp = float(trades[trades["PnL"] > 0]["PnL"].sum())
+            gl = abs(float(trades[trades["PnL"] < 0]["PnL"].sum()))
+            profit_factor = gp / gl if gl > 0 else 99.0
+        else:
+            win_rate = 0
+            profit_factor = 0
+        final_value = float(pf.value().iloc[-1])
+        # Sharpe 扣 rf (注意: 呢個 fallback 仍有 vol=ann_ret/sharpe bug,
+        # 但只在 trading_core 唔可用時先會執行)
+        if sharpe != 0 and ann_ret != 0:
+            vol = ann_ret / sharpe
+            sharpe = (ann_ret - RF_RATE) / vol if vol > 0 else sharpe
+        return {
+            "strategy": strategy_name, "stock": stock_code,
+            "final_value": round(final_value, 0),
+            "total_return_pct": round(total_ret * 100, 2),
+            "annual_return_pct": round(ann_ret * 100, 2),
+            "sharpe": round(sharpe, 3), "sortino": round(sortino, 3),
+            "max_drawdown_pct": round(max_dd * 100, 2),
+            "calmar": round(calmar, 3), "n_trades": n_trades,
+            "win_rate_pct": round(win_rate * 100, 1),
+            "profit_factor": round(profit_factor, 2),
+        }
+    except Exception:
+        return None
+
+
+def buy_hold_benchmark(close, init_cash=100_000, fees=FEE_PER_SIDE):
+    """Buy & Hold 基準。"""
+    try:
+        return vbt.Portfolio.from_holding(close, init_cash=init_cash, fees=fees, freq="1D")
+    except Exception:
+        return None
+
+
+# ============================================================
+# 報告
+# ============================================================
+
+def print_results_table(results, title=""):
+    """打印結果表格。"""
+    print("\n" + "=" * 95)
+    print(title)
+    print("=" * 95)
+
+    if not results:
+        print("  無結果")
+        return
+
+    df = pd.DataFrame(results)
+    print("\n{:<4} {:<28} {:<12} {:>7} {:>8} {:>7} {:>5} {:>5} {:>5}".format(
+        "#", "策略", "股票", "Sharpe", "AnnRet%", "MaxDD%", "Trd", "Win%", "PF"))
+    print("-" * 95)
+    for i, (_, r) in enumerate(df.iterrows(), 1):
+        strat = str(r.get("strategy", ""))[:26]
+        stock = str(r.get("stock", ""))[:10]
+        print("{:<4} {:<28} {:<12} {:>7.2f} {:>7.1f}% {:>6.1f}% {:>5} {:>4.0f}% {:>5.2f}".format(
+            i, strat, stock, r["sharpe"], r["annual_return_pct"],
+            r["max_drawdown_pct"], r["n_trades"], r["win_rate_pct"], r["profit_factor"]))
+
+    # 匯總
+    print("\n📊 匯總:")
+    print("   Sharpe 中位數: {:.2f}".format(df["sharpe"].median()))
+    print("   Sharpe > 0:    {}/{}".format((df["sharpe"] > 0).sum(), len(df)))
+    print("   Sharpe > 1:    {}/{}".format((df["sharpe"] > 1).sum(), len(df)))
+    print("   平均年回報:    {:.1f}%".format(df["annual_return_pct"].mean()))
+    print("   平均 MaxDD:    {:.1f}%".format(df["max_drawdown_pct"].mean()))
+
+
+def save_results(results, filename):
+    """儲存結果。"""
+    if results:
+        df = pd.DataFrame(results)
+        path = OUTPUT_DIR / filename
+        df.to_csv(path, index=False)
+        print("\n✓ 儲存: {}".format(path.relative_to(ROOT)))
+
+
+if __name__ == "__main__":
+    # 快速測試
+    prices = load_prices(250)
+    print("數據載入: {} 日 × {} 股".format(len(prices), prices.shape[1]))
+    print("測試股票:", TEST_STOCKS)

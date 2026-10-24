@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+"""register_agent2h_panels.py — 2026-08-23 agent2-H 三個新 panel 入 factor_store.
+
+1. ah_premium     <- new_sources/ah_premium_full_panel.csv  (202 AH股, 2021起, 東財)
+2. broker_conc_sdw<- new_sources/ccass_broker_conc_panel.csv(top10/總CCASS, HKEX SDW 12個月)
+3. di_netbuy      <- new_sources/di_netbuy_panel.csv        (HKEX DI 董事申報淨買)
+全部轉 wide (date × HK.XXXXX) parquet 落 factor_store/.
+"""
+from pathlib import Path
+import pandas as pd
+
+NS = Path(__file__).resolve().parent.parent / "data" / "new_sources"
+FS = Path(__file__).resolve().parent.parent / "data" / "factor_store"
+
+jobs = {
+    "ah_premium":      (NS / "ah_premium_full_panel.csv", str),
+    "broker_conc_sdw": (NS / "ccass_broker_conc_panel.csv", str),
+    "di_netbuy":       (NS / "di_netbuy_panel.csv", str),
+}
+
+for name, (src, dt) in jobs.items():
+    if name == "di_netbuy":
+        df = pd.read_csv(src, dtype={"stock_code": str}, parse_dates=["date"])
+        df = df.rename(columns={"stock_code": "code", "di_net_buy_bp": "value"})[["date", "code", "value"]]
+        p = df.pivot_table(index="date", columns="code", values="value").sort_index()
+        p.columns = ["HK." + c.zfill(5) for c in p.columns]
+    else:
+        df = pd.read_csv(src, parse_dates=["date"])
+        if "code" in df.columns:  # long format
+            df["code"] = df["code"].astype(str).str.zfill(5).radd("HK.")
+            p = df.pivot_table(index="date", columns="code", values="value").sort_index()
+        else:                      # already wide
+            p = df.set_index("date")
+            p.columns = ["HK." + str(c).zfill(5) for c in p.columns]
+    p = p.sort_index()
+    p.to_parquet(FS / f"{name}.parquet")
+    print(f"{name}: {p.shape} {p.index.min().date()}->{p.index.max().date()} "
+          f"cells={int(p.notna().sum().sum())}")

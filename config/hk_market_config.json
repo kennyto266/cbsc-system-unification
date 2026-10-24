@@ -1,0 +1,283 @@
+{
+  "system": {
+    "name": "香港專用量化交易系統",
+    "version": "1.0.0",
+    "market_focus": "Hong Kong Stock Exchange (HKEX)",
+    "description": "Hong Kong Exclusive Quantitative Trading System",
+    "timezone": "Asia/Hong_Kong",
+    "currency": "HKD",
+    "locale": "zh-HK"
+  },
+  "trading_hours": {
+    "market": "Hong Kong Stock Exchange",
+    "open_time": "09:30",
+    "close_time": "16:00",
+    "lunch_start": "12:00",
+    "lunch_end": "13:00",
+    "timezone": "HKT",
+    "trading_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+  },
+  "supported_assets": {
+    "equity": {
+      "name": "股票",
+      "description": "香港交易所上市的普通股票",
+      "examples": ["0700.HK", "0941.HK", "1299.HK"]
+    },
+    "reit": {
+      "name": "房地產投資信托基金",
+      "description": "香港交易所上市的REIT",
+      "examples": ["00775.HK", "04086.HK"]
+    },
+    "etf": {
+      "name": "交易所交易基金",
+      "description": "香港交易所上市的ETF",
+      "examples": ["02800.HK", "02833.HK", "03033.HK"]
+    },
+    "warrant": {
+      "name": "衍生權證",
+      "description": "香港交易所上市的權證產品",
+      "examples": ["12345.HK"]
+    },
+    "trust": {
+      "name": "信託產品",
+      "description": "香港交易所上市的信託基金",
+      "examples": ["67890.HK"]
+    }
+  },
+  "data_sources": {
+    "primary": {
+      "hkma_apis": {
+        "name": "香港金融管理局API",
+        "base_url": "https://api.hkma.gov.hk/public/market-data-and-statistics",
+        "rate_limit": 60,
+        "priority": 1,
+        "enabled": true,
+        "endpoints": {
+          "hibor": {
+            "name": "香港銀行同業拆息率",
+            "path": "/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily",
+            "frequency": "daily",
+            "description": "HIBOR利率數據"
+          },
+          "monetary_base": {
+            "name": "貨幣基礎",
+            "path": "/daily-monetary-statistics/daily-figures-monetary-base",
+            "frequency": "daily",
+            "description": "香港貨幣基礎統計"
+          },
+          "exchange_rate": {
+            "name": "匯率",
+            "path": "/monthly-statistical-bulletin/er-ir/er-eeri-daily",
+            "frequency": "daily",
+            "description": "港幣匯率數據"
+          },
+          "interbank_liquidity": {
+            "name": "銀行同業流動資金",
+            "path": "/daily-monetary-statistics/daily-figures-interbank-liquidity",
+            "frequency": "daily",
+            "description": "香港銀行體系流動資金"
+          },
+          "efbn": {
+            "name": "外匯基金票據及債券",
+            "path": "/daily-monetary-statistics/efbn-indicative-price",
+            "frequency": "daily",
+            "description": "香港外匯基金票據及債券價格"
+          },
+          "rmb_liquidity": {
+            "name": "人民幣流動資金安排",
+            "path": "/daily-monetary-statistics/usage-rmb-liquidity-fac",
+            "frequency": "daily",
+            "description": "香港人民幣流動資金安排"
+          }
+        }
+      }
+    },
+    "secondary": {
+      "yahoo_finance_hk": {
+        "name": "Yahoo Finance香港",
+        "base_url": "https://query1.finance.yahoo.com/v8/finance/chart/",
+        "rate_limit": 100,
+        "priority": 2,
+        "enabled": true,
+        "timeout": 15,
+        "data_types": ["stock_prices", "market_data"]
+      }
+    },
+    "fallback": {
+      "alpha_vantage": {
+        "name": "Alpha Vantage",
+        "base_url": "https://www.alphavantage.co/query",
+        "rate_limit": 5,
+        "priority": 3,
+        "enabled": false,
+        "api_key_required": true,
+        "data_types": ["stock_prices"]
+      }
+    }
+  },
+  "market_indices": {
+    "hang_seng_index": {
+      "name": "恆生指數",
+      "symbol": "HSI",
+      "description": "香港股市主要指數",
+      "constituents_file": "data/cache/hsi_constituents.json",
+      "total_constituents": 82,
+      "update_frequency": "quarterly"
+    },
+    "hscei": {
+      "name": "恆生中國企業指數",
+      "symbol": "HSCEI",
+      "description": "香港上市的中國企業指數"
+    },
+    "hscci": {
+      "name": "恆生科技指數",
+      "symbol": "HSTECH",
+      "description": "香港科技股指數"
+    }
+  },
+  "blue_chip_stocks": {
+    "tencent": {
+      "symbol": "0700.HK",
+      "name": "騰訊控股",
+      "sector": "Technology",
+      "weight": 0.08
+    },
+    "china_mobile": {
+      "symbol": "0941.HK",
+      "name": "中國移動",
+      "sector": "Telecommunications",
+      "weight": 0.05
+    },
+    "aia": {
+      "symbol": "1299.HK",
+      "name": "友邦保險",
+      "sector": "Insurance",
+      "weight": 0.04
+    },
+    "ping_an": {
+      "symbol": "2318.HK",
+      "name": "中國平安",
+      "sector": "Financial Services",
+      "weight": 0.04
+    },
+    "hkex": {
+      "symbol": "0388.HK",
+      "name": "港交所",
+      "sector": "Financial Services",
+      "weight": 0.02
+    }
+  },
+  "performance": {
+    "cache": {
+      "enabled": true,
+      "memory_ttl": 300,
+      "disk_ttl": 3600,
+      "redis_url": null
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 120,
+      "burst_limit": 20
+    },
+    "monitoring": {
+      "enabled": true,
+      "health_check_interval": 60,
+      "alert_thresholds": {
+        "response_time": 5.0,
+        "error_rate": 0.05,
+        "cache_hit_rate": 0.8
+      }
+    }
+  },
+  "api": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "debug": false,
+    "cors_enabled": true,
+    "rate_limiting": true,
+    "authentication": {
+      "enabled": false,
+      "api_key_header": "X-API-Key"
+    },
+    "endpoints": {
+      "stocks": "/stocks",
+      "economic": "/economic",
+      "market": "/market",
+      "indices": "/indices"
+    }
+  },
+  "risk_management": {
+    "position_limits": {
+      "max_position_size": 0.10,
+      "max_total_exposure": 1.0,
+      "max_leverage": 2.0
+    },
+    "risk_controls": {
+      "max_drawdown": 0.15,
+      "var_confidence": 0.95,
+      "stress_test_scenarios": ["market_crash", "interest_rate_shock", "currency_crisis"]
+    },
+    "compliance": {
+      "sfc_regulations": true,
+      "audit_logging": true,
+      "trade_surveillance": true
+    }
+  },
+  "technical_analysis": {
+    "indicators": {
+      "rsi": {
+        "name": "相對強弱指數",
+        "periods": [14, 21, 30],
+        "overbought": 70,
+        "oversold": 30
+      },
+      "macd": {
+        "name": "MACD指標",
+        "fast_period": 12,
+        "slow_period": 26,
+        "signal_period": 9
+      },
+      "bollinger_bands": {
+        "name": "布林帶",
+        "period": 20,
+        "std_dev": 2
+      },
+      "moving_averages": {
+        "name": "移動平均線",
+        "periods": [5, 10, 20, 50, 200]
+      }
+    },
+    "strategies": {
+      "trend_following": {
+        "name": "趨勢跟蹤策略",
+        "indicators": ["macd", "moving_averages"],
+        "timeframes": ["1d", "1w"]
+      },
+      "mean_reversion": {
+        "name": "均值回歸策略",
+        "indicators": ["rsi", "bollinger_bands"],
+        "timeframes": ["1d"]
+      }
+    }
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file": "logs/hk_trading_system.log",
+    "max_file_size": "100MB",
+    "backup_count": 5
+  },
+  "environment": {
+    "name": "production",
+    "database_url": "sqlite:///data/hk_trading.db",
+    "redis_url": null,
+    "monitoring_url": null
+  },
+  "feature_flags": {
+    "enable_gpu_acceleration": false,
+    "enable_ml_predictions": false,
+    "enable_real_time_streaming": false,
+    "enable_algorithmic_trading": false,
+    "enable_advanced_analytics": true
+  }
+}
