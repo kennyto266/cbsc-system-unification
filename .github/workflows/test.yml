@@ -61,7 +61,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Cache pip dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
@@ -134,7 +134,7 @@ jobs:
 
       - name: Archive test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
           path: |
@@ -178,7 +178,7 @@ jobs:
             --threshold 10  # 10% regression threshold
 
       - name: Upload benchmark results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: performance-results
           path: |
@@ -220,7 +220,7 @@ jobs:
           bandit -r simplified_system/src backend/ -f json -o bandit-report.json
 
       - name: Upload security reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-results
           path: |
@@ -264,7 +264,7 @@ jobs:
           pytest tests/ -v -m "gpu" --junitxml=gpu-test-results.xml
 
       - name: Upload GPU test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: gpu-test-results
           path: gpu-test-results.xml
@@ -298,7 +298,7 @@ jobs:
             --junitxml=slow-test-results.xml
 
       - name: Upload slow test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: slow-test-results
           path: slow-test-results.xml
@@ -324,7 +324,7 @@ jobs:
           pip install jinja2 matplotlib
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Generate comprehensive test report
         run: |
@@ -333,7 +333,7 @@ jobs:
             --github-run-id ${{ github.run_id }}
 
       - name: Upload test reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: comprehensive-test-report
           path: test-reports/
