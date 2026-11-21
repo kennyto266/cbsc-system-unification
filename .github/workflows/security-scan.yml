@@ -157,6 +157,10 @@ jobs:
       with:
         python-version: '3.11'
 
+    - name: Install simulation dependency
+      # 呢個 job 之前完全冇 install 步 — sim 會 import src/database_secure.py (sqlalchemy) (CI哨兵 11-21)
+      run: pip install sqlalchemy
+
     - name: Run SQL Injection Attack Simulation
       run: |
         echo "Running SQL injection attack simulation..."
