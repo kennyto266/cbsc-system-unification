@@ -82,6 +82,11 @@ class SecureDatabaseManager:
         r'(xp_cmdshell)',      # SQL Server attack
         r'(sp_executesql)',    # SQL Server attack
         r'(;\s*(drop|delete|insert|update|create|alter))',  # Stacked queries
+        r"('\s*or\s*')",          # Tautology: ' OR '1'='1
+        r"(\bor\s+['\"]?\d+['\"]?\s*=\s*['\"]?\d+)",  # Tautology: OR 1=1 / OR '1'='1
+        r"'(\w+)'\s*=\s*'\1'?",   # Tautology: WHERE '1'='1 (same literal both sides, trailing quote optional)
+        r'(information_schema)',  # Schema enumeration
+        r'(sysobjects)',          # System objects enumeration
     ]
 
     # 允许的表名和列名
