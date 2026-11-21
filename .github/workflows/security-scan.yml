@@ -158,8 +158,9 @@ jobs:
         python-version: '3.11'
 
     - name: Install simulation dependency
-      # 呢個 job 之前完全冇 install 步 — sim 會 import src/database_secure.py (sqlalchemy) (CI哨兵 11-21)
-      run: pip install sqlalchemy
+      # 呢個 job 之前完全冇 install 步 — sim 會 import src/database_secure.py (sqlalchemy);
+      # create_engine postgresql dialect 需要 psycopg driver (requirements.txt 兩者都冇) (CI哨兵 11-21)
+      run: pip install "sqlalchemy>=2" "psycopg[binary]"
 
     - name: Run SQL Injection Attack Simulation
       run: |
