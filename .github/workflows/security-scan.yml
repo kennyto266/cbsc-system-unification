@@ -163,6 +163,10 @@ jobs:
       run: pip install "sqlalchemy>=2" "psycopg[binary]"
 
     - name: Run SQL Injection Attack Simulation
+      env:
+        # database_secure.py L372 module-level singleton 喺 import 已建 DB 連線 — sim 原本
+        # 喺 import 之後先設 DATABASE_URL, 遲咗 (永不生效); step env 由頭生效, sqlite 免 server (CI哨兵 11-21)
+        DATABASE_URL: sqlite:///test.db
       run: |
         echo "Running SQL injection attack simulation..."
         python -c "
