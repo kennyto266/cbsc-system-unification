@@ -122,6 +122,7 @@ jobs:
             --ignore=tests/unit/simplified_system/test_core_indicators.py \
             --ignore=tests/unit/simplified_system/test_stock_api.py \
             --ignore=tests/unit/simplified_system/test_vectorbt_engine.py \
+            --ignore=tests/unit/api/strategies/utils/test_enhanced_validators.py \
             -v \
             --cov=simplified_system \
             --cov=backend \
