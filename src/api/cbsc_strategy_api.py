@@ -663,7 +663,7 @@ async def list_strategies(
     is_active: Optional[bool] = Query(None, description="是否激活過濾"),
     page: int = Query(1, ge=1, description="頁碼"),
     page_size: int = Query(20, ge=1, le=100, description="每頁大小"),
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """獲取策略列表"""
     return await strategy_manager.get_strategies(
@@ -678,7 +678,7 @@ async def list_strategies(
 @router.post("/", response_model=Strategy, status_code=201)
 async def create_strategy(
     request: CreateStrategyRequest,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """創建新策略"""
     return await strategy_manager.create_strategy(request, current_user.id)
@@ -686,7 +686,7 @@ async def create_strategy(
 @router.get("/{strategy_id}", response_model=Strategy)
 async def get_strategy(
     strategy_id: str,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """獲取策略詳情"""
     return await strategy_manager.get_strategy(strategy_id, current_user.id)
@@ -695,7 +695,7 @@ async def get_strategy(
 async def update_strategy(
     strategy_id: str,
     request: UpdateStrategyRequest,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """更新策略"""
     return await strategy_manager.update_strategy(strategy_id, request, current_user.id)
@@ -703,7 +703,7 @@ async def update_strategy(
 @router.delete("/{strategy_id}", status_code=204)
 async def delete_strategy(
     strategy_id: str,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """刪除策略"""
     await strategy_manager.delete_strategy(strategy_id, current_user.id)
@@ -712,7 +712,7 @@ async def delete_strategy(
 async def execute_strategy(
     strategy_id: str,
     execution_request: StrategyExecutionRequest,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """執行策略"""
     return await strategy_manager.execute_strategy(strategy_id, execution_request, current_user.id)
@@ -720,7 +720,7 @@ async def execute_strategy(
 @router.post("/{strategy_id}/stop")
 async def stop_strategy(
     strategy_id: str,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """停止策略執行"""
     await strategy_manager.stop_strategy(strategy_id, current_user.id)
@@ -729,7 +729,7 @@ async def stop_strategy(
 @router.get("/{strategy_id}/status", response_model=StrategyRealTimeStatus)
 async def get_strategy_status(
     strategy_id: str,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """獲取策略實時狀態"""
     return await strategy_manager.get_strategy_status(strategy_id, current_user.id)
@@ -737,7 +737,7 @@ async def get_strategy_status(
 @router.get("/{strategy_id}/metrics", response_model=StrategyPerformance)
 async def get_strategy_metrics(
     strategy_id: str,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """獲取策略性能指標"""
     return await strategy_manager.get_strategy_metrics(strategy_id, current_user.id)
@@ -750,7 +750,7 @@ async def get_strategy_templates():
 @router.post("/{strategy_id}/validate", response_model=StrategyConfigValidation)
 async def validate_strategy(
     strategy_id: str,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """驗證策略配置"""
     strategy = await strategy_manager.get_strategy(strategy_id, current_user.id)

@@ -17,16 +17,17 @@ import uuid
 import pandas as pd
 import numpy as np
 from sqlalchemy.orm import Session
+from pydantic import BaseModel, Field
 from sqlalchemy import and_, or_, desc, func
 
 # 導入統一數據模型
-from ..models.strategy import (
+from src.models.strategy import (
     Strategy, StrategyConfig, StrategyPerformance, StrategyCategory,
     StrategyCreateSchema, StrategyUpdateSchema, StrategyResponseSchema,
     StrategyConfigCreateSchema, StrategyConfigResponseSchema,
     StrategyPerformanceResponseSchema
 )
-from ..models.unified_base import StatusEnum, RiskLevelEnum
+from src.models.unified_base import StatusEnum, RiskLevelEnum
 
 # 導入認證系統
 try:
@@ -102,7 +103,7 @@ class StrategyTemplate(BaseModel):
     strategy_type: StrategyType = Field(..., description="策略類型")
     default_parameters: StrategyParameters = Field(..., description="默認參數")
     required_indicators: List[str] = Field(default_factory=list, description="必需指標")
-    risk_level: RiskLevelEnum = Field(RiskLevelEnum.MEDIUM, description="風險等級")
+    risk_level: str = Field(RiskLevelEnum.MEDIUM, description="風險等級")
 
 # ============================================================================
 # 統一策略管理器 (Unified Strategy Manager)
@@ -523,10 +524,11 @@ class UnifiedStrategyManager:
                 raise HTTPException(status_code=404, detail=f"策略不存在: {strategy_id}")
 
             # 聚合性能數據
+            # 過去一年的數據（交易日）
             performances = db.query(StrategyPerformance)\
                 .filter(StrategyPerformance.strategy_id == strategy_id)\
                 .order_by(desc(StrategyPerformance.date))\
-                .limit(252)  # 過去一年的數據（交易日）
+                .limit(252) \
                 .all()
 
             if not performances:
@@ -686,7 +688,7 @@ class UnifiedStrategyManager:
                 "status": "failed",
                 "error": str(e)
             }
-            finally:
+        finally:
                 db.close()
 
 # 全局策略管理器實例

@@ -138,12 +138,9 @@ def init_container(
 
 
 # Convenience injection decorators
-@inject
-async def get_strategy_service(
-    strategy_service: BaseStrategyService = Provide[Container.base_strategy_service],
-) -> BaseStrategyService:
-    """Inject strategy service"""
-    return strategy_service
+async def get_strategy_service() -> BaseStrategyService:
+    """Inject strategy service (resolve directly from container; FastAPI-safe signature)"""
+    return Container.base_strategy_service()
 
 
 @inject

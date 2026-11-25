@@ -73,6 +73,8 @@ dev = [
     "schedule>=1.2.0",
     "sqlalchemy>=2.0.0",
     "vectorbt>=0.24.0",
+    "aiofiles>=23.1.0",
+    "psycopg[binary]>=3.1.0",
 ]
 ml = [
     "tensorflow>=2.15.0",

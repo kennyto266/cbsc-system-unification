@@ -449,6 +449,9 @@ class AuthService:
 # 全局认证服务实例
 auth_service = AuthService()
 
+# Module-level FastAPI dependency (bound method keeps OAuth2 token + db Depends signature)
+get_current_user = auth_service.get_current_user
+
 # 初始化函数
 def init_auth_service():
     """初始化认证服务"""

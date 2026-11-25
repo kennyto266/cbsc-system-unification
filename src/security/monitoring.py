@@ -19,8 +19,8 @@ from collections import defaultdict, deque
 import redis
 import smtplib
 from functools import wraps
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 logger = logging.getLogger(__name__)
 

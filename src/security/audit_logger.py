@@ -145,11 +145,7 @@ class AuditLogger:
                         details TEXT,  -- JSON string
                         success BOOLEAN,
                         error_message TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        INDEX(timestamp),
-                        INDEX(event_type),
-                        INDEX(user_id),
-                        INDEX(severity)
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
 

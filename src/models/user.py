@@ -6,19 +6,19 @@
 
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
-from sqlalchemy import Column, String, Boolean, DateTime, Text, Table, ForeignKey
+from sqlalchemy import Column, String, Boolean, DateTime, Text, Table, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from pydantic import BaseModel, Field, EmailStr, validator
 import secrets
 import hashlib
 
-from .unified_base import UnifiedBaseModel, UnifiedSchema, StatusEnum
+from .unified_base import UnifiedBase, UnifiedBaseModel, UnifiedSchema, StatusEnum
 
 # 多對多關聯表
 user_roles = Table(
     'user_roles',
-    UnifiedBaseModel.metadata,
+    UnifiedBase.metadata,
     Column('user_id', String(36), ForeignKey('user.id'), primary_key=True),
     Column('role_id', String(36), ForeignKey('role.id'), primary_key=True),
     Column('assigned_at', DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
@@ -28,7 +28,7 @@ user_roles = Table(
 
 role_permissions = Table(
     'role_permissions',
-    UnifiedBaseModel.metadata,
+    UnifiedBase.metadata,
     Column('role_id', String(36), ForeignKey('role.id'), primary_key=True),
     Column('permission_id', String(36), ForeignKey('permission.id'), primary_key=True),
     Column('granted_at', DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),

@@ -235,7 +235,7 @@ async def get_personal_strategy_manager() -> PersonalStrategyManager:
 
 @router.get("/dashboard", response_model=PersonalDashboardData)
 async def get_personal_dashboard(
-    current_user: User = Depends(get_current_user()),
+    current_user: User = Depends(get_current_user),
     manager: PersonalStrategyManager = Depends(get_personal_strategy_manager)
 ):
     """
@@ -261,7 +261,7 @@ async def get_personal_strategies(
     strategy_type: Optional[StrategyType] = Query(None, description="策略类型过滤"),
     status: Optional[StrategyStatus] = Query(None, description="状态过滤"),
     is_active: Optional[bool] = Query(None, description="是否激活"),
-    current_user: User = Depends(get_current_user()),
+    current_user: User = Depends(get_current_user),
     manager: PersonalStrategyManager = Depends(get_personal_strategy_manager)
 ) -> StrategyListResponse:
     """
@@ -311,7 +311,7 @@ async def get_personal_strategies(
 @router.post("/strategies", response_model=Strategy, status_code=status.HTTP_201_CREATED)
 async def create_personal_strategy(
     request: CreateStrategyRequest,
-    current_user: User = Depends(get_current_user()),
+    current_user: User = Depends(get_current_user),
     manager: PersonalStrategyManager = Depends(get_personal_strategy_manager)
 ) -> Strategy:
     """
@@ -366,7 +366,7 @@ async def create_personal_strategy(
 @router.get("/strategies/{strategy_id}", response_model=StrategyDetailResponse)
 async def get_personal_strategy_detail(
     strategy_id: str,
-    current_user: User = Depends(get_current_user()),
+    current_user: User = Depends(get_current_user),
     manager: PersonalStrategyManager = Depends(get_personal_strategy_manager)
 ) -> StrategyDetailResponse:
     """
@@ -417,7 +417,7 @@ async def get_personal_strategy_detail(
 async def update_personal_strategy(
     strategy_id: str,
     request: UpdateStrategyRequest,
-    current_user: User = Depends(get_current_user()),
+    current_user: User = Depends(get_current_user),
     manager: PersonalStrategyManager = Depends(get_personal_strategy_manager)
 ) -> Strategy:
     """
@@ -475,7 +475,7 @@ async def update_personal_strategy(
 @router.delete("/strategies/{strategy_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_personal_strategy(
     strategy_id: str,
-    current_user: User = Depends(get_current_user()),
+    current_user: User = Depends(get_current_user),
     manager: PersonalStrategyManager = Depends(get_personal_strategy_manager)
 ):
     """
@@ -515,7 +515,7 @@ async def delete_personal_strategy(
 async def get_strategy_metrics(
     strategy_id: str,
     time_range: int = Query(30, ge=1, le=365, description="时间范围（天）"),
-    current_user: User = Depends(get_current_user()),
+    current_user: User = Depends(get_current_user),
     manager: PersonalStrategyManager = Depends(get_personal_strategy_manager)
 ) -> StrategyMetricsResponse:
     """
@@ -657,7 +657,7 @@ async def websocket_realtime_data(
 
 @router.get("/preferences", response_model=UserPreferences)
 async def get_user_preferences(
-    current_user: User = Depends(get_current_user()),
+    current_user: User = Depends(get_current_user),
     manager: PersonalStrategyManager = Depends(get_personal_strategy_manager)
 ):
     """获取用户偏好设置"""
@@ -694,7 +694,7 @@ async def get_user_preferences(
 @router.put("/preferences")
 async def update_user_preferences(
     preferences: UserPreferences,
-    current_user: User = Depends(get_current_user()),
+    current_user: User = Depends(get_current_user),
     manager: PersonalStrategyManager = Depends(get_personal_strategy_manager)
 ):
     """更新用户偏好设置"""
@@ -765,7 +765,7 @@ class StrategyOperationLog(BaseModel):
 async def control_strategy(
     strategy_id: str,
     request: StrategyControlRequest,
-    current_user: User = Depends(get_current_user()),
+    current_user: User = Depends(get_current_user),
     manager: PersonalStrategyManager = Depends(get_personal_strategy_manager)
 ) -> StrategyControlResult:
     """
@@ -883,7 +883,7 @@ async def control_strategy(
 @router.post("/strategies/batch-control", response_model=BatchStrategyControlResult)
 async def batch_control_strategies(
     request: BatchStrategyControlRequest,
-    current_user: User = Depends(get_current_user()),
+    current_user: User = Depends(get_current_user),
     manager: PersonalStrategyManager = Depends(get_personal_strategy_manager)
 ) -> BatchStrategyControlResult:
     """
@@ -1029,7 +1029,7 @@ async def batch_control_strategies(
 async def get_strategy_operation_history(
     strategy_id: str,
     limit: int = Query(50, ge=1, le=200, description="返回记录数限制"),
-    current_user: User = Depends(get_current_user()),
+    current_user: User = Depends(get_current_user),
     manager: PersonalStrategyManager = Depends(get_personal_strategy_manager)
 ):
     """

@@ -22,7 +22,7 @@ from .unified_strategy_service import (
 )
 
 # 導入數據模型
-from ..models.strategy import (
+from src.models.strategy import (
     StrategyCreateSchema,
     StrategyUpdateSchema,
     StrategyResponseSchema,
@@ -97,7 +97,7 @@ async def list_strategies(
     status: Optional[str] = Query(None, description="狀態過濾"),
     page: int = Query(1, ge=1, description="頁碼"),
     page_size: int = Query(20, ge=1, le=100, description="每頁大小"),
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """
     獲取策略列表
@@ -140,7 +140,7 @@ async def list_strategies(
 @router.post("/", response_model=StrategyResponseSchema, status_code=201)
 async def create_strategy(
     request: StrategyCreateSchema,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """
     創建新策略
@@ -180,7 +180,7 @@ async def create_strategy(
 @router.get("/{strategy_id}", response_model=StrategyResponseSchema)
 async def get_strategy(
     strategy_id: str,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """
     獲取策略詳情
@@ -205,7 +205,7 @@ async def get_strategy(
 async def update_strategy(
     strategy_id: str,
     request: StrategyUpdateSchema,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """
     更新策略
@@ -243,7 +243,7 @@ async def update_strategy(
 @router.delete("/{strategy_id}", status_code=204)
 async def delete_strategy(
     strategy_id: str,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """
     刪除策略
@@ -274,7 +274,7 @@ async def execute_strategy(
     strategy_id: str,
     execution_request: StrategyExecutionRequest,
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """
     執行策略
@@ -313,7 +313,7 @@ async def execute_strategy(
 @router.post("/{strategy_id}/stop", response_model=Dict[str, str])
 async def stop_strategy(
     strategy_id: str,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """
     停止策略執行
@@ -341,7 +341,7 @@ async def stop_strategy(
 @router.get("/{strategy_id}/status", response_model=StrategyStatusResponse)
 async def get_strategy_status(
     strategy_id: str,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """
     獲取策略實時狀態
@@ -369,7 +369,7 @@ async def get_strategy_status(
 @router.get("/{strategy_id}/metrics", response_model=StrategyMetrics)
 async def get_strategy_metrics(
     strategy_id: str,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """
     獲取策略性能指標
@@ -399,7 +399,7 @@ async def get_strategy_metrics(
 @router.post("/{strategy_id}/validate", response_model=StrategyValidationResponse)
 async def validate_strategy(
     strategy_id: str,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """
     驗證策略配置
@@ -455,7 +455,7 @@ async def get_strategy_templates():
 @router.post("/validate-parameters", response_model=StrategyValidationResponse)
 async def validate_strategy_parameters(
     parameters: Dict[str, Any],
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """
     驗證策略參數
@@ -485,7 +485,7 @@ async def validate_strategy_parameters(
 @router.post("/batch/stop", response_model=Dict[str, Any])
 async def batch_stop_strategies(
     strategy_ids: List[str],
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """
     批量停止策略
@@ -522,7 +522,7 @@ async def batch_stop_strategies(
 async def batch_execute_strategies(
     strategy_ids: List[str],
     execution_request: StrategyExecutionRequest,
-    current_user: User = Depends(get_current_user())
+    current_user: User = Depends(get_current_user)
 ):
     """
     批量執行策略

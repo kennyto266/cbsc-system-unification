@@ -135,6 +135,7 @@ class StatusEnum:
     ACTIVE = "active"
     INACTIVE = "inactive"
     PENDING = "pending"
+    COMPLETED = "completed"
     ARCHIVED = "archived"
     DELETED = "deleted"
 
