@@ -319,6 +319,7 @@ class TestMemoryPool(unittest.TestCase):
 
     def test_allocation_exceeds_pool(self):
         """Test allocation when pool is full"""
+        self.pool = MockMemoryPool(initial_size_mb=100, max_size_mb=100, block_size_mb=10)
         # Allocate all blocks
         allocations = []
         for i in range(10):
